@@ -1,8 +1,8 @@
 
 
-This file covers the licenses and copyrights of some of the libraries that are used by certain optional modules of the INCABuilder framework. None of the licenses in this file apply to the INCABuilder framework itself.
+This file covers the licenses and copyrights of some of the libraries that are used by certain optional modules of the Mobius framework. None of the licenses in this file apply to the Mobius framework itself.
 
-See LICENSE.md for the license of the INCABuilder framework itself.
+See LICENSE.md for the license of the Mobius framework itself.
 
 These license, notice and copyright texts were obtained on 04.04.2019
 
@@ -73,7 +73,7 @@ This product includes software developed at Data61, CSIRO
 
 # MIT LICENSE
 
-The json_io.cpp file uses the nlohmann/json library Copyright © 2013-2018 Niels Lohmann
+The mobius_json_io.cpp file uses the nlohmann/json library Copyright © 2013-2018 Niels Lohmann
 
 
 
