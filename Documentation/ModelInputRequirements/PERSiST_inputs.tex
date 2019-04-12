@@ -1,0 +1,96 @@
+\documentclass[11pt]{article}
+
+%\usepackage[utf8]{inputenc}
+\usepackage[a4paper, margin=1in]{geometry}
+
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumerate}
+\usepackage{gensymb}
+
+\usepackage{amsthm}
+
+\usepackage{natbib}
+
+\setlength\parindent{0pt}
+\setlength\parskip{5pt}
+
+\usepackage{listings}
+\lstset{
+basicstyle=\small\ttfamily,
+columns=flexible,
+breaklines=true,,
+stepnumber=1,
+}
+
+\definecolor{silver}{gray}{0.9}
+
+\theoremstyle{definition}
+
+\newsavebox\notebox
+\newtheorem{mynote}{Note}
+\newenvironment{note}%
+  {\begin{lrbox}{\notebox}%
+   \begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+   \begin{mynote}}%
+  {\end{mynote}%
+   \end{minipage}%
+   \end{lrbox}%
+   \begin{trivlist}
+     \item[]\colorbox{silver}{\usebox\notebox}
+   \end{trivlist}}
+
+\newsavebox\examplebox
+\newtheorem{myexample}{Example}
+\newenvironment{example}%
+  {\begin{lrbox}{\examplebox}%
+   \begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+   \begin{myexample}}%
+  {\end{myexample}%
+   \end{minipage}%
+   \end{lrbox}%
+   \begin{trivlist}
+     \item[]\colorbox{silver}{\usebox\examplebox}
+   \end{trivlist}}
+
+
+\title{Inputs to PERSiST}
+\author{Magnus Dahler Norling}
+
+\begin{document}
+
+\maketitle
+
+%\tableofcontents
+
+\section{Introduction}
+
+This document describes what inputs are used by the PERSiST model. For documentation of the model itself, see the published paper \cite{futter14}. For the format of the inputs, see the file format documentation.
+
+\section{Required inputs}
+
+Required inputs have to have a value for every day of the period you intend to run the model. If you don't have values for all days, you have do use interpolation methods to fill in the missing values yourself. How to do this in a smart way is a big topic on its own, and will not be covered here.
+
+\begin{enumerate}[i]
+\item {\bf\tt "Air temperature"}. The air temperature is the mean daily air temperature in $\degree C$. Recommended index set dependencies: none or {\tt \{"Reaches"\}}..
+\item {\bf\tt "Actual precipitation"}. The actual precipitation is the amount of measured precipitation in $mm/day$. Recommended index set dependencies: none or {\tt \{"Reaches"\}}.
+\end{enumerate}
+
+\section{Optional inputs}
+
+If an optional input is provided at all it has to have to have a value for every day of the period you intend to run the model. If it is not included, a value is typically computed for it instead based on parameter values. If you give an optional input an index set dependency, it is fine if you only provide a timeseries for some of the indexes. The value for the other indexes will then be computed as normal.
+
+\begin{enumerate}[i]
+\item {\bf\tt "Abstraction flow"}. How much water is removed from the reach by human activity, in $m^3/s$. Replaces the parameter of the same name. Recommended index set dependencies: none or {\tt \{"Reaches"\}}.
+\item {\bf\tt "Effluent flow"}. How much water is added to the reach e.g. by sewer treatment works, in $m^3/s$. Replaces the parameter of the same name. Recommended index set dependencies: none or {\tt \{"Reaches"\}}.
+\item {\bf\tt "\%"}. The relative area of the catchment covered by a certain land use type. Replaces the parameter of the same name. Has to have index set dependencies {\tt \{"Landscape units"\}} or {\tt \{"Reaches" "Landscape units"\}}.
+\end{enumerate}
+
+\bibliographystyle{plain}
+\bibliography{../citations}
+
+\end{document}
+
+

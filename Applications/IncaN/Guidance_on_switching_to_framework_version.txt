@@ -1,0 +1,14 @@
+Comments on switching from old INCA-N to the new framework version with in-built PERSiST:
+
+Last updated: 2019-03-05
+By: Leah Jackson-Blake
+
+As the hydrology model has changed, it is likely that there will be different volumes of water in the soil and groundwater store compared to previous model versions. This means that simulated concentrations in these stores will also change. Many rate parameters are proportional to NO3 and NH4 concentrations, so small changes in simulated concentration can make a difference to the simulation. Here are some things we had to do when converting from the old to the new versions:
+
+- Within the framework version, the units of the deposition inputs have changed from annual to daily fluxes, so related parameters need dividing by 365
+
+- Re-calibrate the N uptake-related parameters, ensuring that the yearly accumulated nitrogen uptake remains within literature values, and the seasonal pattern over the year follows the expected shape (with a minimum around the winter, and a maximum in summer, in our case).
+
+- Adjust the groundwater retained depth parameter (a PERSiST parameter) so that the groundwater volume is large enough to buffer changes in N inputs from the soil store appropriately. Note that this parameter is likely to be very uncertain unless long-term calibration data is available which shows a long-term trend in groundwater N concentration. For short applications (e.g. one or two years), it is probably sensible to set this parameter to a large enough value that the groundwater N concentration doesn't change much over the course of the model run. Note: the maximum capacity of the groundwater store must be larger than this value.
+
+- Re-calibrate the in-stream denitrification equation

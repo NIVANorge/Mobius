@@ -1,0 +1,1339 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper, margin=1in]{geometry}
+
+\usepackage{bold-extra}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumerate}
+\usepackage{gensymb}
+\usepackage{fancyvrb}
+
+\usepackage{tabularx}
+
+\usepackage{amsthm, amsmath}
+
+\usepackage{array}
+
+\usepackage{natbib}
+
+\setlength\parindent{0pt}
+\setlength\parskip{5pt}
+
+\usepackage{listings}
+
+\lstdefinestyle{textstyle}{
+basicstyle=\small\ttfamily,
+columns=flexible,
+breaklines=true,
+stepnumber=1,
+}
+
+\definecolor{bulgarianrose}{rgb}{0.28, 0.02, 0.03}
+\definecolor{bluepigment}{rgb}{0.2, 0.2, 0.6}
+\definecolor{burgundy}{rgb}{0.5, 0.0, 0.13}
+\definecolor{silver}{gray}{0.9}
+
+\lstdefinestyle{mycpp}{
+language=C++,
+style=textstyle,
+keywordstyle=\color{bluepigment},
+stringstyle=\color{burgundy},
+commentstyle=\color{bulgarianrose},
+%morecomment=[l][\color{bulgarianrose}]{\#},
+directivestyle=\color{burgundy},
+}
+
+
+%\newcolumntype{y}{>{\vsize=.5\textwidth}l} % Did not work as expected :(
+\newcolumntype{y}{p{0.4\textwidth}}
+\newcolumntype{z}{p{0.9\textwidth}}
+
+\newcommand{\apipar}[2]{
+{\tt #1} & #2 \\
+}
+
+\newcommand{\apidesc}[1]{
+\hline
+\multicolumn{2}{|z|}{\bf Description:}\\
+\multicolumn{2}{|z|}{#1}\\
+}
+
+\newcommand{\apiret}[1]{
+\hline
+\multicolumn{2}{|z|}{\bf Returns:}\\
+\multicolumn{2}{|z|}{#1}\\
+}
+
+\newcommand{\apientry}[3]{
+\begin{table}[H]
+\begin{tabularx}{\textwidth}{|y X|}
+\hline
+\rule{0pt}{20pt}
+{\bf\tt\Large\color{bluepigment}#1} & \multicolumn{1}{r|}{#2} \\
+\hline
+\multicolumn{2}{|l|}{\bf Arguments:}\\
+#3
+\hline
+\end{tabularx}
+\end{table}}
+
+
+\theoremstyle{definition}
+
+\newsavebox\notebox
+\newtheorem{mynote}{Note}
+\newenvironment{note}%
+  {\begin{lrbox}{\notebox}%
+   \begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+   \begin{mynote}}%
+  {\end{mynote}%
+   \end{minipage}%
+   \end{lrbox}%
+   \begin{trivlist}
+     \item[]\colorbox{silver}{\usebox\notebox}
+   \end{trivlist}}
+
+\newsavebox\examplebox
+\newtheorem{myexample}{Example}
+\newenvironment{example}%
+  {\begin{lrbox}{\examplebox}%
+   \begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+   \begin{myexample}}%
+  {\end{myexample}%
+   \end{minipage}%
+   \end{lrbox}%
+   \begin{trivlist}
+     \item[]\colorbox{silver}{\usebox\examplebox}
+   \end{trivlist}}
+
+\title{Documentation of model building in Mobius}
+\author{Magnus Dahler Norling}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+This is documentation for model developers. Documentation for model users and framework developers will be provided in separate documents (eventually).
+
+\begin{note}
+It is recommended for any model developers to take a look at the tutorials and experiment with making changes to them before reading all of the documentation. The tutorials will also provide the information about how to compile the models into finished exes. After you have some experience, it is also a good idea to look at existing models (in the Modules folder of the github repository) for more advanced examples.
+\end{note}
+
+\section{Basic concepts}
+
+\subsection{The model}
+
+The model object contains all immutable information about the model that will not change with each particular usage of the model. The model object contains lists of various model entities and information about these that are provided by the model developer in the model registration routine. The different model entities are presented in Table \ref{tab:modelentity}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|>{\bf}l|p{10cm} |}
+\hline
+Index sets & Parameters, inputs and equation results can index over one or more index sets. For instance, you may want to evalute the same equations in multiple contexts, such as once per reach in a river, and in that case you want an index set for these reaches. \\
+\hline
+Parameter groups & Parameter groups are collections of parameters. A parameter group can vary with an index set, making each parameter have a separate value for each index in the index set. The parameter group can also be a child group of another parameter group. In that case, each parameter in the group has a separate value for each pair of indexes from the index set of its group and the parent group. This can be chained to make parameters vary with as many index sets as one wants. \\
+\hline
+Parameters & Parameters are values used to tune the equations of the modell. Parameters do not vary over time. Currently four different types of parameters are supported: double precision floating point, unsigned integer, boolean and time. \\
+\hline
+Inputs & Inputs are forcings on the model that vary over time. An example of an input is a time series of daily air temperature that has been measured in the field. Inputs can also vary with index sets. For instance, one can have a separate air temperature series for each subcatchment area in the model.\\
+\hline
+Equations & The model has a set of equations that are executed in a specific order for every timestep of the model (see later for how the run order is determined). Each equation can look up the value of various parameters, inputs, results of other equations (both from the current timestep and earlier) and produces a single output value for each time it is evaluated. There are several types of equations. The main two are discrete timestep (or basic) equations and ordinary differential equations (ODE). \\
+\hline
+Solvers & Each solver contains a list ODE equations that it will solve over one timestep whenever it is run. The solver must be registered with additional information about e.g. which integrator method it will use. \\
+\hline
+\end{tabular}
+\caption{The model entities}
+\label{tab:modelentity}
+\end{table}
+
+\subsection{The dataset}
+
+The dataset contains information about the specific setup of a model. This includes all the indexes of each index set, as well as all the specific values of the parameters and input series. It will also contain the result series after the model is run. The typical way of setting up a dataset is by reading it in from a parameter file and an input file. The file formats for these are provided in separate documentation.
+
+\section{Model structure}
+
+\subsection{Index sets and indexes}
+
+Index sets is one of the fundamental concepts in the Mobius framework. Examples of index sets can for instance be "Reaches", or "Landscape units". Parameters, equation results and inputs can index over index sets, so that the same equation is evaluated for many indexes, and with different parameter values for each (combination of) indexes.
+
+\begin{example}
+The equation "Snow fall" depends on the input timeseries "Actual precipitation" and "Air temperature", and on the parameter "Canopy interception". Say that "Canopy interception" indexes over the index set "Landscape units". In this case, "Snow fall" will be evaluated once per index in the "Landscape units" index set, using the corresponding parameter value of "Canopy interception" for each index. If one of the inputs also index over "Reaches", then "Snow fall" will be evaluated once per reach-landscape unit pair. This generalizes to higher number of index sets.
+\end{example}
+
+Which index sets each model has is fixed, and determined by the model developer. However, which indexes each index set contains can usually be determined by the model user, for instance by configuring a parameter file. Some models do however require a fixed set of particular indexes for some of its index sets. For instance INCA-N only works with three particular soil boxes.
+
+There are two types of index sets
+\begin{enumerate}[i]
+\item Basic index sets. These have no additional structure except for the order of the indexes.
+\item Branched index sets. These contain additional connectivity information, and are typically used to encode river structures. Each index in a branched index set has a list of incoming branches, the branches being other indexes in the same index set.
+\end{enumerate}
+
+\subsection{Parameter structure}
+Each parameter belongs to a parameter group, which again can belong to another parameter group and so on. Moreover, each parameter group can index over an index set. This means that each parameter can in practice be viewed as a multidimensional array of parameter values, where each dimension in the array is indexed by one of the model's index sets. It is possible for a parameter to index over the same index set multiple times. For instance, the PERSiST hydrology model \cite{futter14} has a "Percolation matrix" parameter where both the row and column in the matrix is indexed by the soil box.
+
+\begin{example}
+A PERSiST "Percolation matrix", from a parameter file. (See separate documentation for a detailed description of the parameter file format).
+\begin{lstlisting}[style=textstyle]
+"Percolation matrix" :
+0.2 0.8 0.0
+1.0 0.5 0.5
+0.0 0.0 1.0
+
+0.1 0.9 0.0
+1.0 0.6 0.4
+0.0 0.0 1.0
+\end{lstlisting}
+The parameter indexes over "Landscape units" once (signifying what matrix you are looking at) and "Soils" twice (signifying which row and column). The percolation matrix is used to say something about what proportion of the water will flow between each soil box, but we will not go into detail about that here.
+\end{example}
+
+The parameter group and index set structure of the parameters are entirely fixed by the model (developer), and can not be configured in the parameter file. But one can usually configure which indexes each index set has and which values the parameter has for each (tuple of) index(es). 
+
+\subsection{Input structure}
+An input is a timeseries (usually of measured data or preprocessed data that is based on measured data). Inputs are used as forcings in many models. For instance, hydrological models often use precipitation timeseries to determine how much water enters the system at each day. Inputs can either be global for the system, or like parameters can index over one or more index sets. For instance, one may want to have a separate precipitation timeseries for each subcatchment (reach). Unlike with parameters, which index set each input indexes over is determined in the input file. This can sometimes change the equation structure of the model. For instance, if precipitation and air temperature does not depend on which subcatchment one are in, the framework may decide for some models that equations like "Precipitation falling as snow" should only be evaluated once globally instead of per subcatchment. This does however also depend on which parameters these equations reference. If "Precipitation falling as snow" references a parameter that indexes over the "Reaches" index set, that equation will still evaluate once per reach.
+
+\subsection{Equation  batch structure}
+During the main run of the model, the model will for each timestep evaluate all equations (sometimes called state variables) in a given order. Equations can also be evaluated for multiple indexes. For instance any equations having to do with flow or volume of a reach are typically evaluated for each index in a "Reaches" index set. Equations are sorted so that an equation is always evaluated after other equations that it uses the result values of. To facilitate this, the model builds an equation batch structure.
+
+\begin{example}\label{ex:persiststructure}
+The equation batch structure for the framework implementation of PERSiST.
+\begin{lstlisting}[style=textstyle]
+**** Result Structure ****
+[Reaches][Landscape units]
+        -----
+        Snow melt
+        Rainfall
+        -----
+
+[Reaches][Landscape units][Soils]
+        -----
+        Percolation input
+        Saturation excess input
+        Input
+        Water depth 1
+        Saturation excess
+        Water depth 2
+        Evapotranspiration X3
+        Evapotranspiration X4
+        Evapotranspiration
+        Water depth 3
+        Total runoff
+        Drought runoff
+        Percolation out
+        Water depth 4
+        Runoff
+        Runoff to reach
+        Water depth
+        -----
+
+[Reaches][Landscape units]
+        -----
+        Snow fall
+        Snow as water equivalent
+        (Cumulative) Total runoff to reach
+        Diffuse flow output
+        -----
+
+[Reaches]
+        -----
+        (Cumulative) Total diffuse flow output
+        Reach flow input
+        ----- (SOLVER: Reach solver)
+        Reach time constant
+        (ODE) Reach flow
+        (ODE) Reach volume
+        -----
+        Reach velocity
+        Reach depth
+        -----
+\end{lstlisting}
+\end{example}
+
+The model has an ordered list of batch groups, where each batch group has an ordered list of batches. Each batch group also has an ordered list of index sets that it indexes over. Each batch can either be a discrete batch or a solver batch. The model will evaluate each batch group at a time. Then for each combination of indexes in the index sets it evaluates each batch in the batch group in order. In discrete batches, each equation is evaluated in order. In solver batches, the ODE system will be integrated possibly evaluating each equation many times. In Example \ref{ex:persiststructure}, the first three batch groups contain one batch each, while the last batch group contains three batches. 
+
+\begin{note}
+The only time a batch group can have more than one batch is if it contains both a solver batch and one or more discrete batches (or possibly another solver batch using a different integrator). Two discrete batches next to each other that index over the same index sets will always be merged.
+\end{note}
+
+\begin{example}\label{ex:pseucocode}
+Pseudocode for how the model evaluates the batch structure in Example \ref{ex:persiststructure}.
+\begin{lstlisting}[style=textstyle]
+for every timestep:
+	for every reach R:
+		for every landscape unit LU:
+			evaluate "Snow melt" and "Rainfall" for this LU in this R.
+	for every reach R:
+		for every landscape unit LU:
+			for every soil box S:
+				evaluate "Percolation input" to "Water depth" for this S in this LU in this R
+	for every reach R:
+		for every landscape unit LU:
+			evaluate "Snow fall" to "Diffuse flow output" for this LU in this R
+	for every reach R:
+		evaluate "Total diffuse flow output" and "Reach flow input"
+		run a solver that integrates the ODE system containing the equations "Reach time constant" to "Reach volume" (possibly evaluating them many times)
+		evaluate "Reach velocity" and "Reach depth"
+\end{lstlisting}	
+\end{example}
+
+At the end of a model run, one can extract a timeseries of each of these equations for any combination of indexes that they index over. For instance one can look at the timeseries for "Snow melt" in \{"Langtjern", "Forest"\}, or the timeseries for "Water depth" in \{"Langtjern", "Peatland", "Organic soil layer"\} (given that these were indexes provided for this particular dataset).
+
+Unlike parameters, equations can never index over one index set more than once. We will go through how the index sets of an equation is determined and how it is placed in a batch structure later.
+
+\section{Model building}\label{sec:modelbuilding}
+
+\subsection{Setting up a project and creating a model object}
+
+We refer to the quick start guide on the front page of the github repository as well as the tutorials on how to quickly get a project started.
+
+Usually you will have one header (.h) file with the procedures you use to build your model, and one source file (.cpp) with the main function of the C++ program, where you do all application-level operations such as creating and destroying model and dataset objects or reading in parameter values from files, running the model and so on.
+
+\begin{example}\label{ex:examplemain}
+Example of a main.cpp
+\begin{lstlisting}[style=mycpp]
+#define MOBIUS_PRINT_TIMING_INFO 1
+
+#include "../mobius.h"   //NOTE: This path is relative to the location of this file
+#include "mymodel.h"
+
+int main()
+{
+	const char *InputFile = "mytestinputs.dat";
+	const char *ParFile    = "mytestparameters.dat";
+
+	mobius_model *Model = BeginModelDefinition();
+	
+	AddTestModel(Model);
+	
+	ReadInputDependenciesFromFile(Model, InputFile);
+
+	EndModelDefinition(Model);
+
+	PrintResultStrucuture(Model);
+
+	mobius_data_set *DataSet = GenerateDataSet(Model);
+
+	ReadParametersFromFile(DataSet, ParFile);
+	ReadInputsFromFile(DataSet, InputFile);
+
+	RunModel(DataSet);
+
+	u64 Timesteps = GetTimesteps(DataSet);
+	PrintResultSeries(DataSet, "AX", {}, Timesteps);
+}
+
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+mymodel.h
+\begin{lstlisting}[style=mycpp]
+static void
+AddTestModel(mobius_model *Model)
+{
+	auto Days = RegisterUnit(Model, "days");
+	auto Dimensionless = RegisterUnit(Model);
+
+	auto System = RegisterParameterGroup(Model, "System");
+	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
+	RegisterParameterDate(Model, System, "Start date", "1980-1-1");
+
+	auto X = RegisterInput(Model, "X");
+	auto A = RegisterParameterDouble(Model, System, "A", Dimensionless, 1.0);
+
+	auto AX = RegisterEquation(Model, "AX", Dimensionless);
+
+	EQUATION(Model, AX,
+		return PARAMETER(A) * INPUT(X);
+	)
+}
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+mytestparameters.dat
+\begin{lstlisting}[style=textstyle]
+parameters:
+"Timesteps":
+10
+
+"Start date":
+"2019-02-22"
+
+"A":
+5.0
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+mytestinputs.dat
+\begin{lstlisting}[style=textstyle]
+timesteps:
+10
+
+inputs:
+"X":
+1 2 3 4 5 6 7 8 9 10
+\end{lstlisting}
+\end{example}
+
+Example \ref{ex:examplemain} shows a main function that you can usually keep unchanged throughout model development. The only thing you may want to change in it is the debug printout ({\tt PrintResultSeries}) at the end, to print out different result series. Your main model development will happen inside {\tt mymodel.h} (which you can name anything you like). You will also have to update your parameter and input files as the model requirements change. The parameter file can be autogenerated, something that is explained in the tutorials.
+
+\subsubsection{A note on visualisation of model results}
+
+During model development it can be pretty unsatisfactory to just look at the numbers printed out by {\tt PrintResultSeries} in order to determine if the model performs as expected. It can be a good idea to set up an INCAView-compatible model application early, or make a mobius.py - compatible dll for the model in order to do plots in python. We will not provide an in-depth description of how to do that in this document, but it should not be too difficult to follow the example of existing model applications. See also some notes about this on the front page of the Mobius github repository.
+
+\subsection{Entity registration, handles, and equation bodies}\label{sec:registrationandhandles}
+
+The {\tt mobius\_model} object contains lists of various model entities (see Table \ref{tab:modelentity} for an explanaition) and information about these. It is the model developers' job to register all the entities and provide the needed information for each one.
+
+\begin{example}\label{ex:registration}
+Example of entity registration.
+\begin{lstlisting}[style=mycpp]
+auto X = RegisterInput(Model, "X");
+auto A = RegisterParameterDouble(Model, System, "A", Dimensionless, 1.0);
+\end{lstlisting}
+The input "X" is tied to the model and is given the name "X". The parameter (of type double) is tied to the Model, the parameter group System, given the name "A", the unit Dimensionless, and the default value 1.0. A full model building API describing all the registration functions is given in Section \ref{sec:registrationproc}.
+\end{example}
+
+Each registration function returns a handle. In Example \ref{ex:registration}, the handles are {\tt X} and {\tt A} (declared with {\tt auto} to signify that we don't care about their exact type). Handles are "tickets" one can use to talk about an entity one has already registered. If you provide the handle {\tt A} in the context of extracting a parameter value, the model will know that you are talking about the parameter "A" that you registered earlier.
+
+Every equation in the model also receives an equation body, and inside the equation body one can extract the values of registered parameters, inputs and equations by referring to them by their handle.
+
+\begin{example}\label{ex:equation}
+The equation "AX" references the value of the parameter "A" and the input "X" by using the handles returned from the registration of those entities.
+\begin{lstlisting}[style=mycpp]
+auto AX = RegisterEquation(Model, "AX", Dimensionless);
+EQUATION(Model, AX,
+	return PARAMETER(A) * INPUT(X);
+)
+\end{lstlisting}
+\end{example}
+
+\begin{note}
+If you are confused by the syntax of declaring an equation body because it does not look like valid C++, don't worry. {\tt EQUATION} is a macro that expands to declaring a C++11 lambda that is then stored in the {\tt Model} object. The macro is needed to hide some of the underlying functionality, like what object the {\tt PARAMETER} and {\tt INPUT} accessors read their values from, so that the model builder does not have to type too much repetitive code all the time.
+\end{note}
+
+\subsection{Implementing an example mathematical model in Mobius}
+
+The SimplyP model \cite{jackson-blake17} uses the following very simple snow module.
+
+\begin{table}[H]
+\centering
+\label{tab:simplypsnow}
+\begin{tabular}{|lllllll|}
+\hline
+Symbol & Type & Units & Name & Default & Min & Max \\
+\hline
+$D_{snow,0}$ & parameter & $mm$                                    & Initial snow depth & 0.0 & 0.0 & 10000.0\\
+$f_{DDSM}$    & parameter & $mm\, d^{-1}\, \degree C^{-1}$ & Degree-day factor for snowmelt & 2.74 &1.6 & 6\\
+\hline
+$Pptn$            & input timeseries &  $mm\, d^{-1}$                     & Precipitation & & & \\
+$T_{air}$        & input timeseries & $\degree C$                           & Air temperature & & & \\
+\hline
+$P_{snow}$   & state variable &  $mm\, d^{-1}$               & Precipitation falling as snow & & & \\
+$P_{rain}$     & state variable &   $mm\, d^{-1}$              & Precipitation falling as rain & & & \\
+$P_{melt}$   & state variable &  $mm\, d^{-1}$                & Snow melt & & & \\
+$D_{snow}$   & state variable & $mm$                                & Snow depth (water equivalents) & & & \\
+$P$               & state variable &  $mm\, d^{-1}$                & Hydrological input to soil & & &\\
+\hline
+\end{tabular}
+\caption{SimplyP snow parameters and state variables}
+\end{table}
+The state variables at a given timestep $t$ are given by the following equations
+\begin{align*}
+P_{snow,t} &= \begin{cases}
+0 & \mbox{ if }T_{air,t} > 0\\
+Pptn_t & \mbox{ otherwise.}
+\end{cases}\\
+P_{rain,t} &= \begin{cases}
+0 & \mbox{ if }T_{air,t} <= 0\\
+Pptn_t & \mbox{ otherwise.}
+\end{cases}\\
+P_{melt,t} &= \min(D_{snow,t-1},  \,\max(0, f_{DDSM}T_{air,t}))\\
+D_{snow,t} &= D_{snow,t-1}+P_{snow,t}-P_{melt,t}\\
+P_t &= P_{rain,t} + P_{melt,t}
+\end{align*}
+Say that one also wants a different initial snow depth and degree-day factor for each reach (subcatchment). First one has to register all of the model entities.
+\begin{example}
+Registration of model entities for the SimplyP snow module.
+\begin{lstlisting}[style=mycpp,mathescape]
+auto Mm                = RegisterUnit(Model, "mm");
+auto MmPerDegreePerDay = RegisterUnit(Model, "mm/$^\circ$C/day");
+auto MmPerDay          = RegisterUnit(Model, "mm/day");
+
+auto Reach = RegisterIndexSetBranched(Model, "Reaches");
+
+auto Snow = RegisterParameterGroup(Model, "Snow", Reach);
+
+auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth", Mm, 0.0, 0.0, 10000.0);
+auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 1.6, 6.0);
+
+auto Precipitation  = RegisterInput(Model, "Precipitation");
+auto AirTemperature = RegisterInput(Model, "Air temperature");
+
+auto PrecipitationFallingAsSnow = RegisterEquation(Model, "Precipitation falling as snow", MmPerDay);
+auto PrecipitationFallingAsRain = RegisterEquation(Model, "Precipitation falling as rain", MmPerDay);
+auto PotentialDailySnowmelt     = RegisterEquation(Model, "Potential daily snowmelt", MmPerDay);
+auto SnowMelt                   = RegisterEquation(Model, "Snow melt", MmPerDay);
+auto SnowDepth                  = RegisterEquation(Model, "Snow depth", Mm);
+auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
+
+SetInitialValue(Model, SnowDepth, InitialSnowDepth);
+\end{lstlisting}
+\end{example}
+
+Note that we also use the {\tt SetInitialValue} procedure to tell the model that "Snow depth" should have initial value "Initial snow depth". The value of "Initial snow depth" is not determined at this point, but it will be determined before one runs the model (typically by reading a parameter file), and the framework will remember that it should set this value as the initial value of "Snow depth" before the run starts. We have also added the state variable "Potential daily snowmelt" as a partial calculation used in "Snow melt", however that is not strictly necessary. Next one provides the equation bodies.
+
+\begin{example}\label{ex:simplypequations}
+Equation bodies for the SimplyP snow module.
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, PrecipitationFallingAsSnow,
+	double precip = INPUT(Precipitation);
+	if(INPUT(AirTemperature) <= 0) { return precip; }
+	else { return 0.0; }
+)
+
+EQUATION(Model, PrecipitationFallingAsRain,
+	double precip = INPUT(Precipitation);
+	if(INPUT(AirTemperature) > 0) { return precip; }
+	else { return 0.0; }
+)
+
+EQUATION(Model, PotentialDailySnowmelt,
+	return Max(0.0, PARAMETER(DegreeDayFactorSnowmelt) * INPUT(AirTemperature));
+)
+
+EQUATION(Model, SnowMelt,
+	return Min(LAST_RESULT(SnowDepth), RESULT(PotentialDailySnowmelt));
+)
+
+EQUATION(Model, SnowDepth,
+	return LAST_RESULT(SnowDepth) + RESULT(PrecipitationFallingAsSnow) - RESULT(SnowMelt);
+)
+
+EQUATION(Model, HydrologicalInputToSoilBox,
+	return RESULT(SnowMelt) + RESULT(PrecipitationFallingAsRain);
+)
+\end{lstlisting}
+\end{example}
+
+In Example \ref{ex:simplypequations} we see that {\tt RESULT} refers to the value of another equation from the current timestep, while {\tt LAST\_RESULT} refers to the value from the previous timestep. Looking at the model result structure that is printed using the {\tt PrintModelResultStructure} procedure, we see the following.
+
+\begin{example}
+Batch structure for the SimplyP snow module.
+\begin{lstlisting}[style=textstyle]
+[]
+        -----
+        Precipitation falling as snow
+        Precipitation falling as rain
+        -----
+
+[Reaches]
+        -----
+        Potential daily snowmelt
+        Snow melt
+        Snow depth
+        Hydrological input to soil box
+        -----
+\end{lstlisting}
+\end{example}
+
+The framework automatically determined that "Potential daily snowmelt" has to index over "Reaches" since it references the parameter "Degree-day factor for snowmelt", which we declared to be part of the "Snow" group, which indexes over "Reaches". Next, "Snow melt" does not reference any parameters, but it does reference "Potential daily snowmelt", and so it too has to index over "Reaches". "Snow depth" inherits a "Reaches" dependency both from "Snow melt" and from its intial value parameter "Initial snow depth".
+
+Even if we had declared the equations in a different order, the framework would have been able to put them in an order that makes sense. Every equation will be evaluated after any other equation that it accesses the current-timestep result of (i.e. using the {\tt RESULT} accessor). Previous-timestep result accesses ({\tt LAST\_RESULT}) do not have any impact on evaluation order. In this case, the equations "Snow depth" and "Hydrological input to soil box" do not depend on (the current-day value of) each other, and so they could have been placed by the framework in any order respective to one another.
+
+In this example we used an input file that does not declare any index set dependencies for "Air temperature" or "Precipitation". If we had instead used an input file where these two timeseries are given per index in "Reaches", we would get the following batch structure.
+
+\begin{example}
+Batch structure for the SimplyP snow module if the user provided precipitation and air temperature timeseries per reach.
+\begin{lstlisting}[style=textstyle]
+[Reaches]
+        -----
+        Precipitation falling as snow
+        Precipitation falling as rain
+        Potential daily snowmelt
+        Snow melt
+        Snow depth
+        Hydrological input to soil box
+        -----
+\end{lstlisting}
+\end{example}
+
+Because of the dynamic batch structure, it can change if you start adding other equations later. For instance, the framework may decide to interleave new equations between the existing ones, or move some of the existing ones to a later batch, but correctness is always preserved.
+
+\subsubsection{Warning about value accesses inside conditionals}
+
+You may have noticed that in the "Precipitation falling as snow" example we extracted the value of precipitation outside the {\tt if} conditional.
+
+\begin{example}\label{ex:simplypequations}
+Correct. Extracting values outside conditionals.
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, PrecipitationFallingAsSnow,
+	double precip = INPUT(Precipitation);
+	if(INPUT(AirTemperature) <= 0) { return precip; }
+	else { return 0.0; }
+)
+\end{lstlisting}
+\end{example}
+
+This has to do with a limiting factor of the implementation of the framework. It is related to how it registers what equations depend on what other entities. When the model is finalized, the framework evaluates each equation once in a certain state to determine what entities it referenced. Since the equation may go down either branch (but not both) of the conditional {\tt if} during this registration phase, it may miss value accesses that happened in the other branch. You can however access a value inside a conditional if you access it inside both branches.
+
+\begin{example}\label{ex:simplypequations}
+WRONG. DO NOT DO THIS! Extracting values inside conditionals.
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, PrecipitationFallingAsSnow,
+	if(INPUT(AirTemperature) <= 0) { return  INPUT(Precipitation); }
+	else { return 0.0; }
+)
+\end{lstlisting}
+\end{example}
+
+The general rule is that if you access an entity value at any point in the equation body, you have to make sure that this entity value is accessed regardless of the state of any other values.
+
+\begin{note}
+This means that you also have to make sure that an equation does not (potentially) return before it has accessed all the values it could access!
+\end{note}
+
+\subsubsection{What to do inside of or outside of equation bodies}
+
+Generally you should try to limit what kind of expressions you use inside equation bodies. Things to do inside {\tt EQUATION} bodies:
+\begin{enumerate}[i]
+\item Access values using {\tt PARAMETER}, {\tt INPUT}, {\tt RESULT}, {\tt LAST\_RESULT}, or any of the more advanced accesses described in Section \ref{sec:advancedaccess}.
+\item Simple control flow like {\tt for} or {\tt if} (but remember the warning about accesses inside conditionals above!!).
+\item Calling functions (that don't have side effects) that do mathematical computations on values, like {\tt exp} (the exponential function).
+\item Always returning a value of type double (if you do not do this, you will get an error).
+\item You can refer to variables that are declared outside the equation body, but you should generally limit this to the entity handles you get from entity registration. Any variable you reference inside the equation body will be copied (by value) using the rules of C++11 lambda captures.
+\end{enumerate}
+
+Things to do outside equation bodies, in the registration code.
+\begin{enumerate}[i]
+\item Registering entities using the registration procedures.
+\item Registering additional relationships between model entities, such as with the {\tt SetInitialValue} procedure, or {\tt SetSolver} (explained later).
+\end{enumerate}
+
+Remember that you always have to register an entity before you refer to it inside an equation body.
+
+\subsection{Advanced equation types}
+
+\subsubsection{Cumulation equations}
+
+Cumulation equations allow you to sum up the result of another equation over a given index set. Cumulation equations are unique in that you don't provide a body for them. Instead, the framework infers the body of the equation from the data provided in the registration.
+
+\begin{example}\label{ex:cumulation}
+Declaring a cumulative equation that sum up the value of the {\tt DiffuseFlowOutput} of each landscape unit, determining the total diffuse flow output of the subcatchment.
+\begin{lstlisting}[style=mycpp]
+auto TotalDiffuseFlowOutput = RegisterEquationCumulative(Model, "Total diffuse flow output", DiffuseFlowOutput, LandscapeUnits);
+//NOTE: Don't provide an equation body for TotalDiffuseFlowOutput!
+\end{lstlisting}
+\end{example}
+
+A cumulative equation will get the same unit as the equation it cumulates. It will also get the same index set dependencies \emph{except} for the index set it cumulates over. In Example \ref{ex:cumulation}, if "Diffuse flow output" indexes over "Reaches" and "Landscape units", then "Total diffuse flow output" indexes over "Reaches" only.
+
+\subsubsection{ODE equations and solvers}
+
+A solver is a model entity of its own. A solver is registered with an integration method and some configuration values to the integration method. One can then add an equation to the solver batch using {\tt SetSolver} (see example below). All equations with the same solver will be treated as one batch. This means that the solver inherits all the index set dependencies of all the equations in the solver. All the equations will then be evaluated for all of these indexes regardless of whether they had all the index sets as dependencies individually. The solver can (and usually will) evaluate the entire set of equations more than one time per timestep (and index combination). For instance it is not uncommon that a solver evaluates all the equations for 10 or more sub-timesteps per timestep. Moreover, some integration methods (like higher-order Runge-Kutta methods) require multiple evaluations per sub-timestep.
+
+In the next example we have a predator-prey system subject to the Lotka-Volterra equations
+\begin{align*}
+\dot{x} &= \alpha x - \beta xy\\
+\dot{y} &= \delta xy - \gamma y
+\end{align*}
+Where $x$ is the prey population, $y$ is the predator population and $\alpha$, $\beta$, $\gamma$ and $\delta$ are parameters. This can be implemented as follows
+
+\begin{example}\label{ex:lotkavolterra}
+Implementing the Lotka-Volterra system in Mobius. Parameter and unit registration is omitted.
+\begin{lstlisting}[style=mycpp]
+auto LVSolver = RegisterSolver(Model, "Lotka-Volterra solver", 0.1, IncaDascru); //It is not important what you name the solver.
+auto Predation = RegisterEquation(Model, "Predation", Individuals);
+SetSolver(Model, Predation, LVSolver);
+auto PredatorGrowth = RegisterEquation(Model, "Predator growth", Individuals);
+SetSolver(Model, PredatorGrowth, LVSolver);
+auto PreyPopulation = RegisterEquationODE(Model, "Prey population", Individuals);
+SetSolver(Model, PreyPopulation, LVSolver);
+SetInitialValue(Model, PreyPopulation, InitialPreyPopulation); //InitialPreyPopulation is a parameter
+auto PredatorPopulation = RegisterEquationODE(Model, "Predator population", Individuals);
+SetSolver(Model, PredatorPopulation, LVSolver);
+SetInitialValue(Model, PredatorPopulation, InitialPredatorPopulation); //InitialPredatorPopulation is a parameter
+
+EQUATION(Model, Predation,
+	return PARAMETER(PredationBaseRate) * RESULT(PreyPopulation) * RESULT(PredatorPopulation); //PredationBaseRate is beta
+)
+
+EQUATION(Model, PredatorGrowth,
+	return PARAMETER(PredatorBaseGrowhtRate) * RESULT(PreyPopulation) * RESULT(PredatorPopulation); //PredatorBaseGrowthRate is delta
+)
+
+EQUATION(Model, PreyPopulation,
+	return PARAMETER(PreyBirthRate) * RESULT(PreyPopulation) - RESULT(Predation); //PreyBirthRate is alpha
+)
+
+EQUATION(Model, PredatorPopulation,
+	return -PARAMETER(PredatorDeathRate) * RESULT(PredatorPopulation) + RESULT(PredatorGrowth); //PredatorDeathRate is gamma
+)
+\end{lstlisting}
+\end{example}
+
+There are a couple of things to note from Example \ref{ex:lotkavolterra}.
+\begin{enumerate}[i]
+\item You can put both regular and ODE equations on a solver. The regular equations will serve as partial computations that can be used by the ODE equations. In the example, it is a little excessive to factor out {\tt Predation} and {\tt PredatorGrowth} as their own equations, but one can easily imagine more complicated examples where a big computation can be reused by many ODE equations.
+\item Instead of returning the value of its state variable, an ODE equation has to return the time-derivative of its state variable. The integrator will then integrate the equation system to calculate the actual values of the ODE state variables.
+\item The integration of the ODE equations starts every timestep at the end-of-timestep value from the previous timestep, and then integrates the system over one timestep.
+\end{enumerate}
+
+For each time the solver evaluates its batch (i.e. typically many times per timestep), the regular equations are evaluated in order before the ODE equations. Within an ODE-system, a reference to a {\tt RESULT} from the current solver batch will give you the intermediate sub-timestep value that the integrator is currently at. The {\tt RESULT} of an ODE equation will refer to the (integrated) value of the state variable, not the value returned by the ODE equation, which was the time-derivative of the state variable.
+
+If you refer to the {\tt RESULT} value of a solver batch equation from an equation belonging to a different batch (i.e. it was not put on the same solver or any solver at all), you will get the end-of timestep value of that state variable. This is also the value that will be stored in the result timeseries that you can extract after a model run.
+
+\begin{note}
+While for regular equations the framework sorts them so that an equation is evaluated after another equation if it uses the value of the other equation, this is not the case if the other equation is an ODE equation. In that case the only requirement is that the referencing equation is put in the same batch (if it was registered with the same solver) or a batch later than the ODE equation. This is again because the ODE equation does not return a state value, but a derivative. All the state variables of the ODEs within a batch are advanced "simultaneously" during the integration step. See more about this in Section \ref{sec:advancedbatchstructure}.
+\end{note}
+
+Which integration methods are available is subject to expansion. It is better that you look for them yourself in the source code, such as in {\tt mobius\_solver.h} or {\tt boost\_solvers.h}. Usually, {\tt IncaDascru} (an adaptive 4th order Runge-Kutta) performs pretty well unless the ODE system is stiff. In case of a stiff system, you could use an implicit solver like {\tt BoostRosenbrock4}, but it is significantly slower and should only be used if absolutely needed.
+
+\subsubsection{Initial value equations}
+
+Initial value equations are special equations that are not evaluated during the main model run. Instead they are evaluated once (sometimes over multiple indexes) at the start of the model run to determine the initial value of another state variable. This is useful, because sometimes you don't want the initial value of a state variable to be given by a parameter, but by a computation depending on several parameters or initial values of other state variables.
+
+\begin{example}\label{ex:initialvalue}
+An initial value equation referencing parameters.
+\begin{lstlisting}[style=mycpp]
+auto SoilVolume = RegisterEquation(Model, "Soil volume", M3);
+auto InitialSoilVolume = RegisterEquationInitialValue(Model, "Initial soil volume", M3);
+SetInitialValue(Model, SoilVolume, InitialSoilVolume);
+
+EQUATION(Model, InitialSoilVolume,
+	return PARAMETER(CatchmentArea) * 1e6 * PARAMETER(InitialSoilDepth);
+)
+//...
+\end{lstlisting}
+\end{example}
+
+Initial value equations can also reference the result of other equations. What this means in practice is that they access the initial value of the other equation, whether that is given by a parameter or another initial value equation. Every equation is always given the initial value of 0 unless an initial value is explicitly specified. When you reference the initial value of another equation, you reference the handle of the equation itself, not the handle of the initial value equation (The initial value equation does not have any storage of its own for the value it generates, it just generates a value that is stored for the equation it is computing the initial value for).
+
+\begin{example}
+Another initial value equation that references the initial value computed in Example \ref{ex:initialvalue}.
+\begin{lstlisting}[style=mycpp]
+auto InitialSoilPMass = RegisterEquation(Model, "Initial soil P mass", Kg);
+
+EQUATION(Model, InitialSoilPMass,
+	return PARAMETER(InitialSoilPConcentration) * RESULT(SoilVolume); //NOTE: we have to reference SoilVolume rather than InitialSoilVolume here.
+)
+\end{lstlisting}
+\end{example}
+
+There are a couple of things to be aware of when referencing {\tt RESULT}s inside an initial value equation.
+\begin{enumerate}[i]
+\item Initial value equations have their own evaluation order \emph{inside the solver batches of the equations they generate initial values for}. What this means is that if you have two initial value equations where their "parent" equations are in the same batch, you can let the initial value equations have a different dependency order than the parent equations.
+\item You can not reference the {\tt RESULT} of an equation that is in a later batch. You can also not reference the {\tt RESULT} of an equation that comes in a previous batch \emph{unless} you use explicit indexing. This is an implementation limitation. If this is something that causes big problems for users, this is something we could try to improve. Note that this is again something you just have to be aware of while building the model, since the batch structure may not be apparent until a large part of the model has come together. You will usually not get error messages if you reference results that are not "available", but you may get a 0 or a result that is misindexed.
+\end{enumerate}
+
+\subsection{Advanced value accesses}\label{sec:advancedaccess}
+
+\subsubsection{Special state values}
+
+The framework lets you access a few additional variables that tell you something about the state the equation is called under. These are.
+\begin{enumerate}[i]
+\item {\tt CURRENT\_INDEX(IndexSetHandle)} This will return an {\tt index\_t} which tells you the current index of the index set corresponding to the provided {\tt IndexSetHandle}. An {\tt index\_t} is a small struct that contains information about what index set and what index it belongs to. In addition to providing the value of the current index, {\tt CURRENT\_INDEX} forces the equation to depend on this index set, i.e. it will be evaluated for each index in the index set (otherwise, if it was not evaluated for each index in the index set, it would not make sense to ask what was the current index of that index set during evaluation).
+\item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
+\item {\tt FIRST\_INDEX(IndexSetHandle)} Gives you an {\tt index\_t} corresponding to the first index of that index set. Registers no dependencies.
+\item {\tt INDEX\_NUMBER(IndexSetHandle, Number)} Gives you an {\tt index\_t} corresponding to the index of that number. However, be careful when using this that the index is smaller than {\tt INDEX\_COUNT(IndexSetHandle)}. Also, it is probably better to use a predeclared index, which guarantees you that what you are referring to has the right index name  (see Section \ref{sec:predeclared} below). Registers no dependencies.
+\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an unsigned integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is "1999-1-15", then during the first timestep, the current day of year will be 15.
+\item {\tt DAYS\_THIS\_YEAR()} Returns an unsigned integer that is either 365 (in a normal year) or 366 (in a leap year).
+\end{enumerate}
+
+\begin{note}
+The {\tt index\_t} structure only contains numeric info about what index set handle it belongs to and the number of the index. However, instead of specifying these directly, it is better to use one of the wrapper macros that allow you to get an index of a specific index set. There are also a couple of overloaded operators that allow you to do size comparisons or increment {\tt index\_t}'s.
+\end{note}
+
+\subsubsection{Explicit indexing and explicit iteration}
+
+The most common case is that you don't have to use any explicit {\tt for} loops. Instead the batch structure takes care of the {\tt for} loops for you, evaluating every equation for all combination of indexes it depends on. Moreover, if you want to sum up the result of an equation, you can always use a cumulation equation. There may however be situations where you want to do something more complicated.
+
+\begin{example}\label{ex:persistpercout}
+A simplified version of the percolation output function in PERSiST.
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, PercolationOut,
+	double percolationOut = 0.0;
+	
+	for(index_t OtherSoil = CURRENT_INDEX(SoilBoxes) + 1; OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
+	{
+		double mpi = PARAMETER(Infiltration, OtherSoil);
+		double perc = Min(mpi, PARAMETER(PercolationMatrix, OtherSoil) * RESULT(TotalRunoff));
+		percolationOut += Min(perc, RESULT(WaterDepth3));
+	}
+	return percolationOut;
+)
+\end{lstlisting}
+\end{example}
+
+In Example \ref{ex:persistpercout} we are in one of PERSiST's soil layers, and we want to iterate over every soil layer below this one (in this case, the indexes have been declared in order from top to bottom, so "below" is the same as after in the list of indexes), to see how much of the runoff from this soil layer is distributed to the other soil layers. To do this we iterate from {\tt CURRENT\_INDEX(SoilBoxes)+1} to {\tt INDEX\_COUNT(SoilBoxes)}. We then look up the maximum infiltration to the other soil box by calling {\tt PARAMETER(Infiltration, OtherSoil)}. We are looking up the value of the parameter {\tt Infiltration}, but instead of looking up the value for the current index of {\tt SoilBoxes} using {\tt PARAMETER(Infiltration)}, we provide an explicit index for the other soil box.
+
+There are a few prerequisites for allowing you to do this
+\begin{enumerate}[i]
+\item The parameter {\tt Infiltration} has to depend on the index set {\tt SoilBoxes}.
+\item Moreover, {\tt SoilBoxes} has to be the immediate index set dependency for {\tt Infiltration}. This means that {\tt Infiltration} is in a parameter group that indexes over {\tt SoilBoxes} directly (as opposed to only having a parent group that indexes over {\tt SoilBoxes}).
+\end{enumerate}
+Even if you explicitly index only one index set, the parameter can have more than one index set dependency. I.e. its parameter group can be a member of another parameter group which itself has an index set dependency. When you explicitly index only the immediate index set dependency, the index of the higher level index sets is as usual inferred to be the current index of these index sets in the execution state. Moreover, the call will register a dependency for {\tt PercolationOut} on the higher level index set(s) that were automatically inferred, but not on {\tt SoilBoxes}. (Though, {\tt PercolationOut} does get a dependency on  {\tt SoilBoxes} any way from the call to {\tt CURRENT\_INDEX(SoilBoxes)}).
+
+\begin{example}
+Equation {\tt A} refers to {\tt PARAMETER(B, IX)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units"\}, where "Landscape units" is the immediate dependency, and "Reaches" is a dependency of the parent group of the immediate group. The index {\tt IX} will refer to an index of "Landscape units". The framework determines that {\tt A} has to index over "Reaches".
+\end{example}
+
+You can also provide more than one explicit index.
+
+\begin{example}\label{ex:multipleexplicitindexes}
+Equation {\tt A} refers to {\tt PARAMETER(B, IX, IY)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units", "Soils"\}, where "Soils" is the immediate dependency, "Landscape units" is a dependency of the parent group of the immediate group, and "Reaches" is again a dependency of a parent of that group. The index {\tt IX} will refer to an index of "Landscape units", {\tt IY} of "Soils". The framework determines that {\tt A} has to index over "Reaches".
+\end{example}
+
+Example \ref{ex:multipleexplicitindexes} also generalizes to higher numbers of explicit indexes. If you only want to explicitly index one of the higher index sets and let the framework infer the index of the immediate one, you can do the following.
+
+\begin{example}
+Explicitly indexing a higher index only.
+\begin{lstlisting}[style=mycpp]
+PARAMETER(PercolationMatrix, OtherSoil, CURRENT_INDEX(SoilBoxes))
+\end{lstlisting}
+\end{example}
+
+Explicit indexing of {\tt INPUT}s is currently not available.
+
+Explicit indexing of {\tt RESULT} and {\tt LAST\_RESULT} follows some of the same rules as explicit indexing of parameters, however here you have to be much more careful. For one thing, during model development, you can not be sure in which order the index set dependencies of an equation will be in, or even which index set dependencies it will have. This is after all determined by the framework at runtime. You therefore have to check that you guessed the correct order of the dependencies by looking at the equation batch structure (which could change if you for instance change the dependencies of some parameters).
+
+\begin{note}
+You should generally be careful with explicit indexing of {\tt RESULT}s inside equations that are in a solver batch. If you explicitly index a result from the same batch you will either get just the end-of-timestep value (if you indexed an already evaluated index) or a 0 (if you for some reason explicitly indexed the currently evaluated index). This is because the sub-timestep values of the ODE system are not stored out to the main result storage and are discarded after (or during) integration. To give an example, while an expression like {\tt RESULT(WaterDepth, CURRENT\_INDEX(Soils))} would give the same value as {\tt RESULT(WaterDepth)} outside a solver (albeit slower), it would give a 0 inside a solver (if {\tt WaterDepth} is also evaluated in the solver). Of course, there should not be any reason to use such an expression in the first place. Explicit indexing of parameters is ok, but see the notes on performance under Section \ref{sec:performance}.
+\end{note}
+
+\subsubsection{Predeclared indexes}\label{sec:predeclared}
+
+In some cases you may not want the indexes of an index set to be user defined, instead you want the model to determine the indexes. In that case you can call {\tt RequireIndex} one or more times to tell the model what indexes you want in the index set. This call will also return to you an {\tt index\_t} value that you can use to explicitly refer to this index inside {\tt EQUATION}s.
+
+\begin{example}
+Explicit indexing using predeclared indexes for the index set with handle {\tt Soils}.
+\begin{lstlisting}[style=mycpp]
+index_t DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
+index_t Soilwater = RequireIndex(Model, Soils, "Soil water");
+index_t Groundwater = RequireIndex(Model, Soils, "Groundwater");
+
+EQUATION(Model, DirectRunoffVolume,
+	return RESULT(WaterDepth, DirectRunoff) * 1000.0;
+)
+\end{lstlisting}
+\end{example}
+
+The order of these indexes in the index set will be the order they were declared in using {\tt RequireIndex}.
+
+\subsubsection{Branch iteration}
+
+If you have a branched index set, you may want to use the special connectivity information that is carried by its indexes. You can do this using branch iteration, which iterates over all the branch inputs to the current index of this index set.
+
+\begin{example}
+Iterating over all the branch inputs to the current index of the branched index set with handle {\tt Reach}. Here we sum up the result of {\tt ReachFlow} coming in from each branch.
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, ReachUpstreamFlow,
+	double upstreamflow = 0.0;
+	FOREACH_INPUT(Reach,
+		upstreamflow += RESULT(ReachFlow, *Input);
+	)
+	return upstreamflow;
+)
+\end{lstlisting}
+\end{example}
+
+The {\tt FOREACH\_INPUT} expression is a macro that expands to an iteration over the branches. The {\tt index\_t} of each branch that is iterated over is given by {\tt *Input}.
+
+\subsection{Debugging features}
+
+Apart from using full C++ debugging techniques, there are a few framework features that may help you to better debug unexpected model behaviour. We have already covered using {\tt PrintResultStructure(Model)} to show you the equation batch structure, which is something you should have turned on at all times during model development. You can also use {\tt PrintParameterStorageStructure(DataSet)} and {\tt PrintInputStorageStructure(DataSet)} to show you the index set dependencies of each parameter and input timeseries.
+
+There are also five flags that you can turn on that will make the model store and print out additional debug information during the model run. These have to be declared above your {\tt \#include "mobius.h"}
+
+\begin{example}
+Declaring the debug flags.
+\begin{lstlisting}[style=mycpp]
+#define MOBIUS_TIMESTEP_VERBOSITY 1
+#define MOBIUS_TEST_FOR_NAN 1
+#define MOBIUS_PRINT_TIMING_INFO 1
+#define MOBIUS_EQUATION_PROFILING 1
+#define MOBIUS_INDEX_BOUNDS_TESTS 1
+
+#include "../../mobius.h"
+\end{lstlisting}
+\end{example}
+
+You can turn the debug flags either on or off by setting them to 1 or 0 respectively (or turn them off by removing them entirely).
+
+\begin{enumerate}[i]
+\item {\tt MOBIUS\_TIMESTEP\_VERBOSITY}. This has 3 levels. If it is set to 1 it will print out the number of the timestep for every timestep. If it is set to 2, it will also print out every time it changes the state of an index set during the iteration. If it is set to 3 it will also print out every time it finishes the evaluation of an equation (or an integration in the case of a solver), along with the value. This can give you a full sense of the model evaluation like it is described in Example \ref{ex:pseucocode} (You should probably turn down the number of timesteps if you want to test the model in this mode).
+\item {\tt MOBIUS\_TEST\_FOR\_NAN}. If turned on, this will test every result value to see if it was an inf or nan. In the case of such a value, it will halt the model execution and print out the current timestep, the state of the index sets, and the state of all the parameter, input and result dependencies of the equation that produced the illegal value. This will make the model run a little slower even if it does not encounter an illegal value. The nan test will not work correctly if you compile with the -ffast-math flag. The -ffast-math flag may make the model run a little faster, but the underlying floating point architecture will no longer make nans detectable, which can interfer both with this safeguard and other safeguards you may put in.
+\item {\tt MOBIUS\_PRINT\_TIMING\_INFO}. If turned on, this will time and print out how long it took to run the model (both in milliseconds and processor instructions). This only gives very coarse information, but can be useful to detect if something weird happened (does the model suddenly run much slower after you added a new equation?).
+\item {\tt MOBIUS\_EQUATION\_PROFILING}. This will give you very fine-grained information about how many processor ticks every equation evaluation took on average, and how many times each equation was evaluated. Note that the time to evaluate an equation is not always the same as the time to produce a result value since a solver may evaluate an equation many times to produce a result value for it. See Section \ref{sec:performance} about tips on how to improve the speed of the model. Having this flag turned on will make the framework itself a little slower.
+\item {\tt MOBIUS\_INDEX\_BOUNDS\_TESTS}. This should probably be turned on as often as possible during model development. It will catch if during explicit indexing you provided an {\tt index\_t} that was out of bounds for this index set. It will also give you an error if you use it to index a different index set than it was created from. Unfortunately, the error message it prints does not provide a lot of information right now. Having this flag turned on will make the model run a little slower.
+\end{enumerate}
+
+\subsection{Tips on model performance (speed)}\label{sec:performance}
+
+This section will contain a few general tips on how to make the model run as fast as possible.
+
+One important thing you can do is to turn on the {\tt MOBIUS\_EQUATION\_PROFILING} flag (see the previous section) to see which individual equations are slow. You should then weigh the importance of improving the speed of an equation by the number of times it is evaluated. Equations with many index set dependencies are evaluated more often than equations with few index set dependencies, and equations in solvers are evaluated \emph{many} more times than equations that are not on solvers.
+
+The following things are common causes of slow equations:
+\begin{enumerate}[i]
+\item Calling transcendental functions from the C++ (C) standard math library, like {\tt exp}, {\tt pow} or {\tt sin}. The standard implementation of these is often slow because they have to satisfy a large range of criteria. If you know that you only need implementations that are correct in a short value range (i.e. $[0, 2\pi)$) or need a smaller precisional correctness (say only 4 digits), then you may be able to find implementations that are much faster. You could also look into implementing that yourself, but this is a big topic of its own, and will not be covered here. Of course, it may often not be worth it going into the trouble of replacing the implementation of these.
+\item Explicit indexing (e.g. calling {\tt RESULT(Handle, Index)}) is always slower than implicit indexing (e.g. {\tt RESULT(Handle)}). This is because the model keeps all the values you need for implicitly indexed values in a quick buffer that it updates for you using a heavily optimized system. On the other hand, if you explicitly index a value, the model has to first determine where that value is stored using an index calculation, and then go back to main storage to retrieve it (risking cache misses).
+\end{enumerate}
+
+Since equations on solvers are much more expensive than equations outside solvers, you may sometimes want to see if you can factor a calculation made in a solver equation out to a separate equation that can be evaluated before the solver is run.
+
+\begin{example}
+Instead of doing the reach flow in one calculation,
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, ReachFlow,         //ReachFlow is an ODE equation
+	double reachflowinput = 0.0;
+	FOREACH_INPUT(Reach,
+		reachflowinput += RESULT(ReachFlow, *Input);
+	)
+	reachflowinput += RESULT(TotalDiffuseFlowOutput);	
+
+	return ( reachflowinput - RESULT(ReachFlow) ) / ( RESULT(ReachTimeConstant) * (1.0 - PARAMETER(B)));
+)
+\end{lstlisting}
+separate out the expensive bit that uses explicit indexing (and don't run the expensive bit on the solver).
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, ReachFlowInput,            //ReachFlowInput should not run on the solver
+	double upstreamflow = 0.0;
+	FOREACH_INPUT(Reach,
+		upstreamflow += RESULT(ReachFlow, *Input);
+	)
+	return upstreamflow + RESULT(TotalDiffuseFlowOutput);
+)
+
+EQUATION(Model, ReachFlow,               //ReachFlow should still run on the solver
+	return (RESULT(ReachFlowInput) - RESULT(ReachFlow) ) / ( RESULT(ReachTimeConstant) * (1.0 - PARAMETER(B)));
+)
+\end{lstlisting}
+\end{example}
+
+Cumulation equations are also always faster than explicit for loops, because the framework can use some tricks to determine how to look up the indexes of values accessed by a cumulation equation. Only use explicit for loops if you have to.
+
+\subsection{Determining the batch structure of advanced models}\label{sec:advancedbatchstructure}
+
+\begin{note}
+This section is very technical, and so you could probably skip it until your model does something completely unexpected and you have to figure out why.
+\end{note}
+
+Every equation has three types of dependencies that are important to model structure.
+\begin{enumerate}[i]
+\item Index set dependencies are the index sets that the equation should index over (i.e. be evaluated for every combination of indexes of). Again, remember that unlike for parameters, index sets can only appear once in the dependency list of an equation.
+\item Direct result dependencies are other equations of which this equation references the {\tt RESULT} of (using implicit indexing: {\tt RESULT(Handle)}).
+\item Cross index result dependencies are other equations of which this equation references the {\tt RESULT} of using explicit indexing (e.g. {\tt RESULT(Handle, Index)}).
+\end{enumerate}
+
+When processing information about equation dependencies during model finalization (in the {\tt EndModelDefinition} procedure), every equation gets its index set dependencies and result dependencies using the following rules:
+\begin{enumerate}[i]
+\item A cumulation equation has the equation it cumulates as a direct result dependency (this is an exception to the description of direct result dependencies above). It also gets all the index set dependencies of the equation it cumulates \emph{minus} the index set it cumulates over.
+\item An equation gets all the index set dependencies of all the parameters and inputs it references. If the reference uses explicit indexing, it will not get a dependency for the index sets that are explicitly indexed. It will also get a dependency on index sets it calls {\tt CURRENT\_INDEX} or {\tt FOREACH\_INDEX} on.
+\item An equation gets all the index set dependencies of its initial value parameter or initial value equation if it has one.
+\item An equation gets all the index set dependencies of all the other equations it references the {\tt RESULT} or {\tt LAST\_RESULT} of. The same rules for explicit indexing hold as for parameters. Note that this creates a large directed dependency graph between equations, where index set dependencies propagate down all the paths of the graph. Thus an equation can inherit an index set dependency not only from an equation it directly accesses the result of, but also one that was accessed by that equation and so on.
+\end{enumerate}
+
+The list of equations (excluding initial value equations) are processed into a batch structure obeying the following rules:
+\begin{enumerate}[i]
+\item All equations that were put on a solver have to belong to the same solver batch, and no other equations can belong to this batch. The index set dependencies of the batch is the union of the index set dependencies of all its equations. Similarly, the direct result (or cross-index) dependencies of a solver are the union of all the direct (or cross-index) result dependencies of its equations.
+\item Non-ode equations in a solver are sorted in order so that a given non-ode-equation comes after any other non-ode equations that it has a direct result dependency on. ODE equations are placed after the non-ode equations in any order (in practice the order they were declared in).
+\item Solver batches have to be placed after any equations (not belonging to itself) that it has a direct result dependency on, and in the same batch group as or after any it has a cross-index result dependency on.
+\item If two non-solver equations that have the same index set dependencies are placed next to each other, they are merged into a batch.
+\item A non-solver equation has to be placed after any other equation it has a direct result dependency on. It has to be placed in the same batch group as or after any equation it has a cross-index result dependency on.
+\item If a solver batch is next to one or more non-solver batches (or different solver batches) with the same index set dependencies, they form a batch group.
+\end{enumerate}
+
+The rules above do not determine a unique structure. To improve the run speed of the model, the framework will also try to move batches and equations around (without breaking the rules) so that there are as few batches and batch groups as possible in the structure. I.e. it will prefer to place equations with the same index set dependencies next to each other. The algorithm we use is not guaranteed to find the most optimal structure (indeed, we are not even sure if such an algorithm would be polynomial or not), but it does produce pretty good results for the particular models we have built so far. The reason that such an minimalization of the amount of batch groups is a good idea is that there is some overhead associated with every time the model running code starts evaluating a new batch group.
+
+During model creation you may accidentally specify equations that have direct result dependencies on each other in a circular way. This means that there is no possible way for the framework to place them in an order where each equation has access to all the result values it needs. The framework will detect this and print an error. Here ODE equations are exceptional in that any equation in the same solver can have a direct dependency on the result of an ODE equation regardless of circular dependencies.
+
+This can sometimes be tricky if a solver is involved. Equation A can not depend on any equation in solver batch B if any equation at all in B (even those that A does not depend on) has a dependency on A. Just remember that the framework can never sort A into the middle of B as it has to evaluate all of B in one go.
+
+For each batch, the order of evaluating the initial value of each equation (either by reading it from a parameter, setting it to a constant, or evaluating an initial value equation) is given its own evaluation order based on the dependencies of the initial value equations.
+
+\begin{note}
+The description given here does not give all the implementation details. To get a complete understanding you probably have to look up the implementation of the {\tt EndModelDefinition} function in {\tt mobius\_model.cpp}.
+\end{note}
+
+
+\section{Application building API}
+
+We logically separate application building from model building. By application building we mean the process of building a program that can allocate a new model, allocate a dataset for it, put values in the dataset, choose how and when to run the model using the given parameters and inputs, extract result values and process them, and so on. By model building we mean the process of filling a given model object with information about the model structure, such as what parameters and equations it has, and what the equation bodies are. It is recommended to separate out the model building to its own procedure, because then the model can be reused by different applications.
+
+\subsection{Data types}
+
+\subsection{Procedures}
+
+\apientry{BeginModelDefinition}{Application building procedure.}{
+\apipar{const char *Name}{(optional) The name of the model.}
+\apipar{const char *Version}{(optional) The version of the model.}
+\apiret{A {\tt mobius\_model*} pointer to a newly created model object.}
+\apidesc{Heap-allocates a new model object. The model object can be freed using {\tt delete}.}
+}
+
+\apientry{ReadInputDependenciesFromFile}{Application building procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Filename}{Name of an input file (of the .dat format).}
+\apidesc{If you wish to use an input file you have to let the model read the input dependencies before calling {\tt EndModelDefinition} so that it can properly determine the model structure. This has to happen after the inputs are registered. You then have to read the actual input values into a dataset using {\tt ReadInputsFromFile} after finalizing the model. The current procedure also registers any additional timeseries that are present in the input file.}
+}
+
+\apientry{EndModelDefinition}{Application building procedure.}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apidesc{Finalizes the model object. You can no longer call model building procedures on it, and you should not try to make any further changes to it in general. This procedure generates the final equation batch structure of the model according to the rules given in Section \ref{sec:advancedbatchstructure}.}
+}
+
+\apientry{GenerateDataSet}{Application building procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apiret{A {\tt mobius\_data\_set*} pointer to a newly created dataset object.}
+\apidesc{Heap-allocates a new dataset. The dataset can be freed using {\tt delete}. You can have multiple datasets per model. You have to keep the model object alive as long as you want to use the dataset (i.e. don't {\tt delete} the model before you are finished with the dataset). You can only generate a dataset from a model that has been finalized using {\tt EndModelDefinition}.}
+}
+
+\apientry{ReadParametersFromFile}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to the dataset object.}
+\apipar{const char *Filename}{The name of the parameter file (of the .dat format)}
+\apidesc{Reads the indexes of each index set and the values of all the parameters from a parameter file into the dataset.}
+}
+
+\apientry{ReadInputsFromFile}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to the dataset object.}
+\apipar{const char *Filename}{The name of the input file (of the .dat format)}
+\apidesc{Reads the input timeseries from the file into the dataset. This can only be called if all the index sets registered in the model has been given indexes in the dataset (either by calling {\tt ReadParametersFromFile} or by calling {\tt SetIndexes}).}
+}
+
+\apientry{RunModel}{Appication building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to the dataset object.}
+\apidesc{Attempts to run the model (that the dataset was generated from) with the parameter and input values given in this dataset. The start date is read from the "Start date" parameter if it exists, and the number of timesteps is read from the "Timesteps" parameter if it exists. All result timeseries are stored in the dataset.}
+}
+
+There are a few more procedures that we will try to document soon.
+
+%TODO: These should possibly be documented:
+%CopyDataSet(mobius_data_set *)
+%SetIndexes(mobius_data_set *, token_string, vector<token_string>)
+%SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vector<std::pair<token_string, std::vector<token_string>>>& Inputs)
+%SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, x Value)
+%GetParameterX(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes)
+%SetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char *> &IndexNames, const double *InputSeries, size_t InputSeriesSize)
+%GetResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize)
+%GetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize, bool AlignWithResults = false)
+%PrintResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
+%PrintInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
+%PrintIndexes(mobius_data_set *DataSet, const char *IndexSetName)
+%PrintResultStructure(mobius_model *)
+%PrintParameterStorageStructure(mobius_data_set *)
+%PrintInputStorageStructure(mobius_data_set *)
+
+
+\section{Model building API}
+
+\subsection{Registration procedures}\label{sec:registrationproc}
+
+The registration procedures can only be called on a {\tt mobius\_model} object that has not been finalized using {\tt EndModelDefinition}.
+
+\apientry{RegisterUnit}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{(optional) The name of the unit.}
+\apiret{A {\tt unit\_h} handle to the newly registered unit.}
+\apidesc{Register a new unit with the model. If the name is omitted, it is assumed to be "dimensionless".}
+}
+
+\apientry{RegisterIndexSet}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the index set.}
+\apiret{An {\tt index\_set\_h} handle to the newly registered index set.}
+\apidesc{Register a new (basic) index set with the model.}
+}
+
+\apientry{RegisterIndexSetBranched}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the index set.}
+\apiret{An {\tt index\_set\_h} handle to the newly registered index set.}
+\apidesc{Register a new branched index set with the model.}
+}
+
+\apientry{RequireIndex}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{index\_set\_h IndexSet}{Handle to an index set.}
+\apipar{const char *Name}{The name of the index.}
+\apiret{An {\tt index\_t} giving the number of the new index in the index set.}
+\apidesc{Require the index set to have this index. If an index set has one or more required indexes, it can only have those indexes and not user-defined ones. Can only be called on basic index sets, not branched index sets.}
+}
+
+\apientry{RegisterParameterGroup}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the parameter group.}
+\apipar{index\_set\_h IndexSet}{(optional) Handle to an index set that the group should index over.}
+\apiret{An {\tt parameter\_group\_h} handle to the newly registered parameter group.}
+\apidesc{Register a new parameter group with the model.}
+}
+
+\apientry{SetParentGroup}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{parameter\_group\_h Child}{A handle to the child group.}
+\apipar{parameter\_group\_h Parent}{A handle to the parent group.}
+\apiret{{\tt void}}
+\apidesc{Set {\tt Parent} to be the parent group of {\tt Child}. Every parameter in {\tt Child} will index both over the index set of {\tt Child} and the index set of {\tt Parent}.}
+}
+
+\apientry{RegisterInput}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the input.}
+\apipar{unit\_h Unit}{(optional) A unit for the input.}
+\apiret{An {\tt input\_h} handle to the newly registered input timeseries.}
+\apidesc{Register a new input timeseries with the model.}
+}
+
+\apientry{RegisterParameterDouble}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{parameter\_group\_h ParameterGroup}{Handle to the parameter group that the parameter should be put in.}
+\apipar{const char *Name}{The full name of the parameter.}
+\apipar{unit\_h Unit}{Handle to the unit of the parameter.}
+\apipar{double Default}{The default value of the parameter.}
+\apipar{double Min}{(optional) The minimum value of the parameter.}
+\apipar{double Max}{(optional) The maximum value of the parameter.}
+\apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apiret{A {\tt parameter\_double\_h} handle to the newly registered parameter.}
+\apidesc{Register a new parameter of type double with the model.}
+}
+
+\apientry{RegisterParameterUInt}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{parameter\_group\_h ParameterGroup}{Handle to the parameter group that the parameter should be put in.}
+\apipar{const char *Name}{The full name of the parameter.}
+\apipar{unit\_h Unit}{Handle to the unit of the parameter.}
+\apipar{u64 Default}{The default value of the parameter.}
+\apipar{u64 Min}{(optional) The minimum value of the parameter.}
+\apipar{u64 Max}{(optional) The maximum value of the parameter.}
+\apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apiret{A {\tt parameter\_uint\_h} handle to the newly registered parameter.}
+\apidesc{Register a new parameter of type uint with the model.}
+}
+
+\apientry{RegisterParameterBool}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object}
+\apipar{parameter\_group\_h ParameterGroup}{Handle to the parameter group that the parameter should be put in}
+\apipar{const char *Name}{The full name of the parameter}
+\apipar{bool Default}{The default value of the parameter}
+\apipar{const char *Description}{(optional) A long-form description of the parameter}
+\apiret{A {\tt parameter\_bool\_h} handle to the newly registered parameter.}
+\apidesc{Register a new parameter of type bool with the model}
+}
+
+\apientry{RegisterParameterDate}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{parameter\_group\_h ParameterGroup}{Handle to the parameter group that the parameter should be put in.}
+\apipar{const char *Name}{The full name of the parameter.}
+\apipar{const char *Default}{The default value of the parameter. Must be on the format "y-m-d".}
+\apipar{const char *Min}{(optional) The minimum value of the parameter. Must be on the form "y-m-d".}
+\apipar{const char *Max}{(optional) The maximum value of the parameter. Must be on the form "y-m-d".}
+\apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apiret{A {\tt parameter\_time\_h} handle to the newly registered parameter.}
+\apidesc{Register a new parameter of type date(time) with the model.}
+}
+
+\apientry{RegisterEquation}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the equation.}
+\apipar{unit\_h Unit}{Handle to the unit of the equation.}
+\apiret{A {\tt equation\_h} handle to the newly registered equation.}
+\apidesc{Register a new equation with the model. The is is a basic equation. The equation body has to be provided separately using the {\tt EQUATION} macro.}
+}
+
+\apientry{RegisterEquationODE}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the equation.}
+\apipar{unit\_h Unit}{Handle to the unit of the equation.}
+\apiret{A {\tt equation\_h} handle to the newly registered equation.}
+\apidesc{Register a new equation of type ODE with the model. The equation body has to be provided separately using the {\tt EQUATION} macro.}
+}
+
+\apientry{RegisterEquationInitialValue}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the equation.}
+\apipar{unit\_h Unit}{Handle to the unit of the equation.}
+\apiret{A {\tt equation\_h} handle to the newly registered equation.}
+\apidesc{Register a new initial value equation with the model. The equation body has to be provided separately using the {\tt EQUATION} macro.}
+}
+
+\apientry{RegisterEquationCumulative}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The full name of the equation.}
+\apipar{equation\_h Cumulates}{Handle to the equation that should be cumulated (can not be an initial value equation).}
+\apipar{index\_set\_h CumulatesOver}{Handle to the index set that should be cumulated over.}
+\apipar{parameter\_double\_h Weight}{(optional) A weight parameter for the cumulation.}
+\apiret{A {\tt equation\_h} handle to the newly registered equation.}
+\apidesc{Register a new initial value equation with the model. No equation body should be provided. If a weight is provided it has to index over the {\tt CumulatesOver} index set. For the purpose of the cumulation, the weight is scaled so that it sums to $1$. }
+}
+
+\apientry{SetInitialValue}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{equation\_h Equation}{The equation to set the initial value for.}
+\apipar{double Value}{A constant value to set as the initial value.}
+\apiret{{\tt void}.}
+\apidesc{Set the initial value of an equation to be a constant.}
+}
+
+\apientry{SetInitialValue}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{equation\_h Equation}{The equation to set the initial value for.}
+\apipar{parameter\_double\_h InitialValue}{A handle to a parameter of type double.}
+\apiret{{\tt void}.}
+\apidesc{Set the initial value of an equation to be determined by a parameter.}
+}
+
+\apientry{SetInitialValue}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{equation\_h Equation}{The equation to set the initial value for.}
+\apipar{equation\_h InitialValueEq}{A handle to an initial value equation.}
+\apiret{{\tt void}.}
+\apidesc{Set the initial value of an equation to be computed by an initial value equation.}
+}
+
+\apientry{ResetEveryTimestep}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{equation\_h Equation}{Handle to an ODE equation.}
+\apiret{{\tt void}.}
+\apidesc{Tell the model that instead of starting the ODE state variable at the end value from the previous timestep, it should start at 0 each timestep. This is primarily used if you want to integrate some variable over each timestep, such as when you compute mean values.}
+}
+
+\apientry{RegisterSolver}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{Name of the solver batch (for internal reference).}
+\apipar{double h}{The suggested sub-timestep length of the solver (in the range 0 to 1).}
+\apipar{mobius\_solver\_setup\_function *SetupFunction}{One of the integrator setup functions provided by mobius\_solvers.h or boost\_solvers.h, or others.}
+\apipar{double RelErr}{(only available for some choices of SetupFunction) The relative error tolerance of the solver.}
+\apipar{double AbsErr}{(only available for some choices of SetupFunction) The absolute error tolerance of the solver.}
+\apiret{A {\tt solver\_h} handle to the newly registered solver.}
+\apidesc{Register a new solver batch with the model. You may have to look at the source code to determine which solvers accept error tolerances.}
+}
+
+\apientry{SetSolver}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{equation\_h Equation}{Handle to the equation to put in the solver batch.}
+\apipar{solver\_h}{The solver batch to put the equation in.}
+\apiret{{\tt void}.}
+\apidesc{Put an equation in a solver batch. Can only be done with basic or ODE equations.}
+}
+
+\apientry{Get\emph{X}Handle}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The name of an already registered X.}
+\apiret{A {\tt \emph{x}\_h} handle.}
+\apidesc{X is either Equation, Input, ParameterGroup, ParameterDouble, ParameterUInt, ParameterBool, ParameterTime, IndexSet, or Solver. Is useful if you want to modularize different parts of your model into several different registration procedures, but need one module to access some of the handles of another one.}
+}
+
+\subsection{Equation body declaration}
+
+There are a lot of advanced rules governing the use cases of the macros in this section, and so we recommend that you read the documentation above (that means at least all of Section \ref{sec:modelbuilding}, which describes the details. All the equation bodies of the registered equations have to be declared before calling {\tt EndModelDefinition} on the model object.
+
+\begin{SaveVerbatim}{EqCode}
+SetEquation(Model, Handle,
+	[=](value_set_accessor *ValueSet__) -> double {
+		Decl
+	}
+);
+\end{SaveVerbatim}
+
+\begin{SaveVerbatim}{ForCode}
+for(<every index in that is a branch input to CURRENT_INDEX(IndexSet)>)
+{
+	Def
+}
+\end{SaveVerbatim}
+
+\apientry{EQUATION}{Equation macro}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{equation\_h Equation}{A handle to the equation to declare the body for.}
+\apipar{Decl}{The code for the equation body.}
+\apidesc{{\tt EQUATION(Model, Handle, Decl)} expands to}
+\multicolumn{2}{|z|}{\BUseVerbatim{EqCode}}\\
+\multicolumn{2}{|z|}{where {\tt Decl} stands for possibly multiple lines of code of an equation body. These lines of code always have to return a {\tt double}. The {\tt value\_set\_accessor} is an object that can be used by other macros (such as {\tt PARAMETER} or {\tt RESULT}) inside the {\tt Decl} to extract values.}\\
+}
+
+The following macros are only available inside the {\tt Decl} of an {\tt EQUATION}. This is because they expand to something that refer to the {\tt value\_set\_accessor} that is given as an argument in the lambda inside the expansion of the {\tt EQUATION} macro.
+
+\apientry{PARAMETER}{Equation macro}{
+\apipar{parameter\_\emph{x}\_h ParameterHandle}{Handle to a parameter that you wish to extract the value of, where {\tt x} is either {\tt double}, {\tt uint} or {\tt bool}.}
+\apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
+\apiret{Either a {\tt double}, a {\tt u64} or a {\tt bool} depending on what type of handle was passed in.}
+\apidesc{Returns the value of the parameter, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this parameter, depending on the context of the evaluation.}
+}
+
+\apientry{INPUT}{Equation macro}{
+\apipar{input\_h InputHandle}{Handle to an input that you wish to extract the value of.}
+\apiret{A {\tt double}.}
+\apidesc{Returns the current timestep value of the input timeseries, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this input, depending on the context of the evaluation.}
+}
+
+\apientry{RESULT}{Equation macro}{
+\apipar{equation\_h EquationHandle}{Handle to an equation that you wish to extract the value of.}
+\apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
+\apiret{A {\tt double}.}
+\apidesc{Returns the value of the current timestep result of the equation, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this equation, depending on the context of the evaluation.}
+}
+
+\apientry{LAST\_RESULT}{Equation macro}{
+\apipar{equation\_h EquationHandle}{Handle to an equation that you wish to extract the previous-timestep value of.}
+\apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
+\apiret{A {\tt double}.}
+\apidesc{Returns the value of the previous timestep result of the equation, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a (last-result) dependency of the surrounding {\tt Equation} on this equation, depending on the context of the evaluation.}
+}
+
+\apientry{EARLIER\_RESULT}{Equation macro}{
+\apipar{equation\_h EquationHandle}{Handle to an equation that you wish to extract an earlier-timestep value of.}
+\apipar{u64 StepBack}{How many timesteps back you want to go.}
+\apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
+\apiret{A {\tt double}.}
+\apidesc{Looks up the result of the equation value for the current timestep minus {\tt StepBack} number of timesteps. So if {\tt StepBack=0} you get the current result, if {\tt StepBack=1} you get the last result and so on. This registers the same dependencies as a {\tt LAST\_RESULT} lookup.}
+}
+
+\apientry{CURRENT\_DAY\_OF\_YEAR}{Equation macro}{
+\apipar{}{None.}
+\apiret{A {\tt u64}.}
+\apidesc{Returns the current day of the year in the context of the simulation. January 1st corresponds to a current day of year of 1. This is a macro that expands to an expression that extracts the value from the {\tt value\_set\_accessor}.}
+}
+
+\apientry{DAYS\_THIS\_YEAR}{Equation macro}{
+\apipar{}{None.}
+\apiret{A {\tt u64}.}
+\apidesc{Returns the amount of days this year in the context of the simulation. Is either 365 (in a common year) or 366 (in a leap year). This is a macro that expands to an expression that extracts the value from the {\tt value\_set\_accessor}.}
+}
+
+\apientry{INDEX\_COUNT}{Equation macro}{
+\apipar{index\_set\_h IndexSet}{Handle to an index set.}
+\apiret{A {\tt size\_t}.}
+\apidesc{Returns the amount of indexes in this index set. This is a macro that expands to an expression that extracts the value from the {\tt value\_set\_accessor}.}
+}
+
+\apientry{CURRENT\_INDEX}{Equation macro}{
+\apipar{index\_set\_h IndexSet}{Handle to an index set.}
+\apiret{A {\tt index\_t}.}
+\apidesc{Returns the current (numeric) index of the given index set. This is a macro that expands to an expression that either extracts the value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
+}
+
+\apientry{FOREACH\_INPUT}{Equation macro}{
+\apipar{index\_set\_h IndexSet}{Handle to a branched index set.}
+\apipar{Def}{The code to put inside of the for loop.}
+\apidesc{Expands to something that looks like}
+\multicolumn{2}{|z|}{\BUseVerbatim{ForCode}}\\
+\multicolumn{2}{|z|}{Inside {\tt Def} you can refer to the index of the iterated branch by {\tt *Input}. Note that {\tt FOREACH\_INPUT} calls {\tt CURRENT\_INDEX(IndexSet)}, and thus registers an index set dependency.}\\
+}
+
+\apientry{INPUT\_COUNT}{Equation macro}{
+\apipar{index\_set\_h IndexSet}{Handle to a branched index set.}
+\apiret{A {\tt size\_t}.}
+\apidesc{Returns the amount of branch input indexes to the current index in the index set. This is a macro that expands to an expression that either extracts the value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
+}
+
+\bibliographystyle{plain}
+\bibliography{citations}
+
+\end{document}
+
+

@@ -1,0 +1,13 @@
+,Param_long,Param short,Min,Max
+0,Degree-day factor for snowmelt,DDFmelt,0.1,5
+1,Proportion of precipitation that contributes to quick flow,fquick,0,0.99
+2,PET reduction factor,alphaPET,0,2
+3,Soil field capacity,FC,0.1,1000
+4,Gradient of stream velocity-discharge relationship,a_Q,0.01,1
+5,Exponent of stream velocity-discharge relationship,b_Q,0.2,0.6
+6,Soil water time constant,Ts,0.01,30
+7,Snow depth / soil temperature factor,k_SoilT_snowDepth,-3,-0.001
+8,"Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)",k_SoilCondCapacity,0.01,0.8
+9,Gradient of the soil water [DOC] response to changing soil temperature,k_DOC_gradient,0.001,1
+10,"Coefficient describing intercept in [DOC]= m * soilT + c equation, as a proportion of the baseline DOC concentration",k_DOC_intercept,0.1,1
+11,Baseline soil water DOC concentration,DOC_baseline,0,70

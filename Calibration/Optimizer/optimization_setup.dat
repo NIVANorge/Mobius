@@ -1,0 +1,46 @@
+
+max_function_calls :
+200
+
+discard_timesteps :
+365
+
+parameter_calibration :
+
+# Format:
+#           "name" {"index1" "index2" ..etc..}
+#           min max
+# OR
+#           link {
+#                "name1" {"index1" "index2" ..etc.. }
+#                "name2" {"index3" "index4" ..etc.. }
+#                ..etc..
+#           } min max
+#
+# OR
+#           partition {
+#				"name1" {"index1" "index2" ..etc.. }
+#               "name2" {"index3" "index4" ..etc.. }
+#                ..etc..
+#           } min max
+
+
+"a" {"Tveitvatn"}
+0.01 0.5
+
+"b" {"Tveitvatn"}
+0.3 0.8
+
+link {
+	"Time constant" {"Soil water" "Forest Productive"}
+	"Time constant" {"Soil water" "Forest Unproductive"}
+} 3 15
+
+partition {
+	"Percolation matrix" {"Forest Productive" "Soil water" "Soil water"}
+	"Percolation matrix" {"Forest Productive" "Soil water" "Groundwater"}
+} 0 1
+
+objectives:
+
+"Reach flow" {"Tveitvatn"}     "Discharge" {"Tveitvatn"}     mean_square_error

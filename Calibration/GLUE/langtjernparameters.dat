@@ -1,0 +1,172 @@
+index_sets:
+"Landscape units" : {"Forest" "Peatland"}
+"Soil boxes" : {"Upper box" "Lower box"}
+"Reaches" : {"R1"}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days)
+10957
+
+"Start date" :
+"1986-1-1"
+
+"Flow routing max base" :     #(day) Width of the convolution filter that smooths out the flow from the groundwater to the river over time
+5
+
+"Degas velocity" :     #(m/day) DIC mass transfer velocity from upper soil layer/river to the atmosphere
+15
+
+"DIC concentration at saturation" :     #(kg/m3) If DIC concentration is higher than this degas sets in
+0.018
+
+"Mineralisation response to temperature" :     #(dimensionless)
+1.3
+
+###################### "Landscape units" ######################
+"Degree day factor" :     #(mm/°C/day) Degree day factor, rate at which the snow will melt water in snow will freeze
+2.5 2.5
+
+"Refreezing coefficient" :     #(dimensionless) Proportion of meltwater that can refreeze
+0.05 0.05
+
+"Storage fraction" :     #(dimensionless) Proportion of meltwater that can be stored in the snowpack
+0.1 0.1
+
+"Snow threshold temperature" :     #(°C) Threshold temperature above which precipitation falls as rain
+0 0
+
+"Initial snow depth" :     #(mm) The depth of snow, expressed as water equivalents, at the start of the simulation
+0 0
+
+"Water equivalent factor" :     #(dimensionless)
+0.3 0.3
+
+"Growing degree threshold" :     #(°C) The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
+0 0
+
+"Degree day evapotranspiration" :     #(mm/°C/day) Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
+0.12 0.12
+
+"Fraction of field capacity where evapotranspiration reaches its maximal" :     #(dimensionless)
+0.7 0.7
+
+"Thermal conductivity of soil" :     #(W/m/°C)
+0.7 0.7
+
+"Specific heat capacity due to freeze/thaw" :     #(MJ/m3/°C)
+6.6 6.6
+
+"Snow depth / soil temperature factor" :     #(/cm)
+-0.02 -0.02
+
+"Specific heat capacity of soil" :     #(MJ/m3/°C)
+1.1 1.1
+
+"Soil depth" :     #(m)
+0.2 0.2
+
+"Initial soil temperature" :     #(°C)
+20 20
+
+"Litter fall" :     #(kg/m2/day) Litter fall from the canopy to the upper soil layer
+0.02 0.02
+
+###################### "Landscape units" "Soil boxes" ######################
+"Field capacity" :     #(mm) Maximum soil moisture storage
+150 150
+150 150
+
+"Relative runoff exponent" :     #(dimensionless) Power parameter that determines the relative contribution to runoff
+2 2
+2 2
+
+"Initial soil moisture" :     #(mm)
+10 10
+10 10
+
+"Initial SOC in soil box" :     #(kg/m2)
+2 2
+2 2
+
+###################### "Soil boxes" ######################
+"Percolation rate from soil box" :     #(mm/day)
+0.1 0.1
+
+"Sorption rate" :     #(/day) Rate coefficient for DOC sorption (DOC to SOC)
+0.1 0.01
+
+"Desorption rate" :     #(/day) Rate coefficient for SOC desorption (SOC to DOC)
+0.0001 0.00001
+
+"Base mineralisation rate in soil" :     #(/day)
+1e-3 1e-5
+
+###################### "Reaches" ######################
+"Recession coefficent for upper groundwater storage (K1)" :     #(/day)
+0.1
+
+"Recession coefficent for upper groundwater storage (K0)" :     #(/day)
+0.1
+
+"Recession coefficient for lower groundwater storage (K2)" :     #(/day)
+0.1
+
+"Threshold for second runoff in upper storage (UZL)" :     #(mm)
+10
+
+"Percolation rate from upper to lower groundwater storage" :     #(mm/day)
+0.1
+
+"Initial upper groundwater storage" :     #(mm)
+5
+
+"Initial lower groundwater storage" :     #(mm)
+5
+
+"Catchment area" :     #(km2)
+1
+
+"Reach has effluent input" :
+false
+
+"Effluent flow" :     #(m3/day) The rate of liquid inputs to a reach from e.g. sewage treatment works
+0
+
+"Reach length" :     #(m) The length of the main stem of the stream / reach in a subcatchment
+1000
+
+"Reach width" :     #(m) The average width of the main stem of the stream / reach in a subcatchment
+10
+
+"a" :     #(/m2) The flow velocity 'a' parameter V=aQ^b
+0.04
+
+"b" :     #(dimensionless) The flow velocity 'b' parameter V=aQ^b
+0.67
+
+"Initial reach flow" :     #(m3/day) The flow in the reach at the start of the simulation. This parameter is only used for reaches that don't have other reaches as inputs.
+1000
+
+"Initial water temperature" :     #(°C)
+20
+
+"Minimum water temperature" :     #(°C)
+0
+
+"Water temperature lag factor" :     #(dimensionless)
+3
+
+"Base mineralisation rate in reach" :     #(/day)
+1e-005
+
+"Sigma 1" :     #(dimensionless) Parameter used for determining the rate of photo-oxidation in reach
+0.001
+
+"Sigma 2" :     #(dimensionless) Parameter used for determining the rate of photo-oxidation in reach
+0.0001
+
+###################### "Reaches" "Landscape units" ######################
+"%" :     #(dimensionless) How much of the catchment area that is made up by this type of land cover.
+50 50
+

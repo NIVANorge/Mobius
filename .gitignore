@@ -1,0 +1,15 @@
+
+sqlite3/shell.c
+sqlite3/sqlite3.c
+sqlite3/sqlite3.h
+sqlite3/sqlite3.o
+sqlite3/sqlite3ext.h
+*.exe
+*.db
+json/json.hpp
+.ipynb_checkpoints
+*.pyc
+*.dll
+*.o
+*.png
+*.pkl

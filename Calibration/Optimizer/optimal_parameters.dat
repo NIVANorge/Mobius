@@ -1,0 +1,185 @@
+# Parameter file generated for (unnamed model) V0.0 at 2019-02-11 14:51:12
+
+index_sets:
+"Landscape units" : {"Forest Productive" "Forest Unproductive" "Peat" "Open mountainous landscape" "Arable" "Lake surfaces"}
+"Soils" : {"Direct runoff" "Soil water" "Groundwater"}
+"Reaches" : {"Tveitvatn" {"Gauslå" "Tveitvatn"} {"Herefoss" "Gauslå"} {"Boen" "Herefoss"} {"Tveit" "Boen"}}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days) [0, 18446744073709551615]
+2922
+
+"Start date" :     # ["1000-01-01", "3000-12-31"]
+"1996-01-01"
+
+###################### "Landscape units" ######################
+"Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
+1 1 1 1 1 1
+
+"Snow melt temperature" :     #(°C) [-4, 4] The temperature at or above which snow can melt
+0 0 0 0 0 0
+
+"Degree day melt factor" :     #(mm/°C/day) [1, 4] Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature
+3 3 3 3 3 3
+
+"Rain multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling
+1 1 1 1 1 1
+
+"Initial snow depth" :     #(mm SWE) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
+12 12 12 12 12 12
+
+"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
+0.15 0.15 0.15 0.15 0.15 0.15
+
+"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
+1 2 1 1 1 1
+
+"Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
+0 0 0 0 0 0
+
+###################### "Landscape units" "Soils" "Soils" ######################
+"Percolation matrix" :     #(dimensionless) [0, 1]
+0.1 0.9 0
+1 0.62660238603483 0.37339761396517
+0 0 1
+
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+###################### "Soils" ######################
+"This is a quick box" :
+true false false
+
+"Allow inundation" :
+false false false
+
+"Allow infiltration" :
+false false false
+
+###################### "Soils" "Landscape units" ######################
+"Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
+150 150 150 150 150 150
+150 150 150 150 150 150
+100 100 100 100 100 100
+
+"Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
+1 1 1 1 1 1
+1 1 1 1 1 1
+1 1 1 1 1 1
+
+"Infiltration" :     #(mm/day) [0, 200] The maximum rate at which water can infiltrate into a box from overlying boxes
+100 100 100 100 100 100
+100 100 100 100 100 100
+100 100 100 100 100 100
+
+"Retained water depth" :     #(mm) [0, 9999] The depth of water in a box which does not contribute to runoff generation but can still contribute to evapotranspiration
+150 150 150 150 150 150
+150 150 150 150 150 150
+100 100 100 100 100 100
+
+"Drought runoff fraction" :     #(dimensionless) [0, 0.5] The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth
+0.1 0.1 0.1 0.1 0.1 0.1
+0 0 0 0 0 0
+0 0 0 0 0 0
+
+"Time constant" :     #(days) [0.1, 9999] The inverse of the rate at which water flows out of a box
+3 3 3 3 3 3
+3 3 6 6 6 6
+50 50 50 50 50 50
+
+"Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
+1 1 1 1 1 1
+0 0 0 0 0 0
+0 0 0 0 0 0
+
+"Relative evapotranspiration index" :     #(dimensionless) [0, 1] The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket
+1 1 1 1 1 1
+0 0 0 0 0 0
+0 0 0 0 0 0
+
+"Maximum capacity" :     #(mm) [0, 9999] The maximum depth of water which can be held in a bucket
+150 150 150 150 150 150
+300 300 300 300 300 300
+500 500 500 500 500 500
+
+"Inundation threshold" :     #(mm) [0, 9999] The depth of water in a bucket below which inundation from the stream can occur
+10 10 10 10 10 10
+500 500 500 500 500 500
+10 10 10 10 10 10
+
+"Porosity" :     #(dimensionless) [0.1, 0.9] The void fraction of a box which is able to hold water
+0.2 0.2 0.2 0.2 0.2 0.2
+0.3 0.3 0.3 0.3 0.3 0.3
+0.2 0.2 0.2 0.2 0.2 0.2
+
+"Inundation offset" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+
+###################### "Reaches" ######################
+"Terrestrial catchment area" :     #(km2) [0.1, 999999] The terrestrial area of a subcatchment, excluding open water
+371.5 279.9 959.8 217.1 34.7
+
+"Reach length" :     #(m) [0.1, 999999] The length of the main stem of the stream / reach in a subcatchment
+60000 40000 60000 28000 8000
+
+"Reach width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
+2 2 2 2 2
+
+"a" :     #(1/m2) [1e-005, 0.99] The flow velocity 'a' parameter V=aQ^b
+0.457715104701981 0.05 0.06 0.06 0.06
+
+"b" :     #(dimensionless) [0.1, 0.99] The flow velocity 'b' parameter V=aQ^b
+0.734420327734523 0.9 0.9 0.9 0.9
+
+"Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
+0 0 0 0 0
+
+"Reach snow multiplier" :     #(dimensionless) [0.5, 1.5] The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+1 1 1 1 1
+
+"Reach rain multiplier" :     #(dimensionless) [0.5, 1.5] The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+1 1 1 1 1
+
+"Abstraction flow" :     #(m3/s) [0, 9999] The rate at which water is removed from a reach by human activities
+0 0 0 0 0
+
+"Effluent flow" :     #(m3/s) [0, 9999] The rate of liquid inputs to a reach from e.g. sewage treatment works
+0.001 0.001 0.001 0.001 0.001
+
+"Reach has abstraction" :
+false false false false false
+
+"Reach has effluent input" :
+true true true true true
+
+"Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
+2 2 2 2 2
+
+###################### "Reaches" "Landscape units" ######################
+"%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
+22 33 3 32 0 10
+87 5 3 0 0 5
+64 18 5 6 0 7
+84 2 4 1 5 4
+51 0 1 0 40 8
+

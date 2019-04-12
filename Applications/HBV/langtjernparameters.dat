@@ -1,0 +1,92 @@
+# Parameter file generated for Carbon model V0.0 at 2019-02-12 14:59:00
+
+index_sets:
+"Landscape units" : {"Forest"}
+"Reaches" : {"R1"}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days) [0, 18446744073709551615]
+10957
+
+"Start date" :     # ["1000-01-01", "3000-12-31"]
+"1986-01-01"
+
+###################### "Landscape units" ######################
+"Degree day factor" :     #(mm/°C/day) [1.5, 4] Degree day factor, rate at which the snow will melt water in snow will freeze
+2.5
+
+"Refreezing coefficient" :     #(dimensionless) [0.01, 0.1] Proportion of meltwater that can refreeze
+0.05
+
+"Storage fraction" :     #(dimensionless) [0.01, 0.2] Proportion of meltwater that can be stored in the snowpack
+0.1
+
+"Snow threshold temperature" :     #(°C) [-3, 5] Threshold temperature above which precipitation falls as rain
+0
+
+"Initial snow depth" :     #(mm) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
+0
+
+"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
+0
+
+"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
+0.12
+
+"Fraction of field capacity where evapotranspiration reaches its maximal" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.7
+
+"Field capacity" :     #(mm) [10, 600] Maximum soil moisture storage in upper soil layer
+150
+
+"Beta recharge exponent" :     #(dimensionless) [1, 10] Power parameter that determines the relative contribution to groundwater recharge
+1
+
+"Initial soil moisture" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
+100
+
+###################### "Reaches" ######################
+"Recession coefficient for groundwater slow flow (K1)" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Recession coefficient for groundwater fast flow (K0)" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.2
+
+"Threshold for second runoff in groundwater storage (UZL)" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
+2
+
+"Initial groundwater storage" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
+10
+
+"Flow routing max base" :     #(day) [1, 10] Width of the convolution filter that smooths out the flow from the groundwater to the river over time
+1
+
+"Catchment area" :     #(km2) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Reach has effluent input" :
+false
+
+"Effluent flow" :     #(m3/day) [0, 99999999] The rate of liquid inputs to a reach from e.g. sewage treatment works
+0
+
+"Reach length" :     #(m) [0.1, 999999] The length of the main stem of the stream / reach in a subcatchment
+1000
+
+"Reach width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
+1
+
+"a" :     #(/m2) [1e-005, 0.99] The flow velocity 'a' parameter V=aQ^b
+0.4
+
+"b" :     #(dimensionless) [0.1, 0.99] The flow velocity 'b' parameter V=aQ^b
+0.67
+
+"Initial reach flow" :     #(m3/day) [0.0001, 9999999] The flow in the reach at the start of the simulation. This parameter is only used for reaches that don't have other reaches as inputs.
+1000
+
+###################### "Reaches" "Landscape units" ######################
+"%" :     #(dimensionless) [0, 100] How much of the catchment area that is made up by this type of land cover.
+100
+

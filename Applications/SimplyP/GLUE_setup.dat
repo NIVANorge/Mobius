@@ -1,0 +1,59 @@
+
+
+
+num_runs :
+100
+
+num_threads :
+8
+
+quantiles :
+0.025 0.05 0.5 0.95 0.975
+
+discard_timesteps :
+50
+
+parameter_calibration :
+
+# Format:
+#           "name" {"index1" "index2" ..etc..}
+#           distribution min max
+# OR
+#           link {
+#                "name1" {"index1" "index2" ..etc.. }
+#                "name2" {"index3" "index4" ..etc.. }
+#                ..etc..
+#           } distribution min max
+# TODO: Naturally the format has to be a little different when we implement other distributions (has to include mean, standard deviation etc.)
+
+"Proportion of precipitation that contributes to quick flow"  {}
+uniform 0.01 0.08
+
+"Baseflow index"                                              {}
+uniform 0.18 1.0
+
+"Groundwater time constant"                                   {}
+uniform 16.25 200.0
+
+"Gradient of stream velocity-discharge relationship"          {}
+uniform 0.12 0.99
+
+"Exponent of stream velocity-discharge relationship"          {}
+uniform 0.11 0.99
+
+"Soil water time constant"                                    {"Arable"}
+uniform 0.25 4.0
+
+"Soil water time constant"                                    {"Semi-natural"}
+uniform 2.5 20.0
+
+
+
+objectives:
+# Format:
+# Modeled    {Indexes} Observed    {Indexes} PerformanceMeasure Threshold OptimalValue
+
+#"Reach flow" {"Tveitvatn"}    "Discharge" {"Tveitvatn"}        nash_sutcliffe     0.0       1.0
+
+"Reach flow (daily mean, cumecs)" {"Tarland1"}     "observed Q" {}     mean_absolute_error 0.01 0.0
+

@@ -1,0 +1,54 @@
+index_sets:
+"Geographical location" : {"Plateau" "Forest" "Nasty bogs"}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :
+3650
+
+"Start date" :
+"1980-12-4"
+
+"Thrasher death rate from meteor strikes" :
+0.1
+
+"Giblet willingness to migrate" :
+0.005
+
+"Thrasher willingness to migrate" :
+0.004
+
+"Thrasher growth from predation" :
+0.5
+
+"Giblet birthday mean" :
+60                        # The average day of year a Giblet is born
+
+"Giblet birthday standard deviation" :
+20
+
+###################### "Geographical location" ######################
+"Initial thrasher population" :
+0 0 20
+
+"Giblet birth rate" :
+0.4 0.2 0.1          #Giblets really don't like the bogs
+
+"Predation rate" :
+0.0002 0.0004 0.0002 #Thrashers catch Giblets more easily in the forest since the Giblets can not see them at a distance there.
+
+"Thrasher death rate" :
+0.015 0.02 0.01      #However Thrashers also catch diseases more easily in the Forest. Thrashers like better to live in the bogs.
+
+"Giblet carrying capacity" :
+400 350 200
+
+"Thrasher fear factor" :
+0.5 0.1 0.0          #Thrashers fear the plateau because they know of the meteor strikes going on up there.
+
+###################### "Geographical location" "Geographical location" ######################
+"Migration matrix" :
+0.0 1.0 0.2
+1.0 0.0 1.0
+0.2 1.0 0.0
+

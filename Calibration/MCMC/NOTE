@@ -1,0 +1,15 @@
+
+
+
+This implementation uses Keith O'Haras MCMC library for C++.
+https://www.kthohr.com/mcmclib.html
+
+However one has to make a modification to the source code to make it work (the target log kernel needs to be passed what chain index it is called by since we use pre-allocated working space for the model run (the inca_data_set)).
+
+This makes installation of the MCMC package nontrivial, as I don't want to upload the modified source code.
+
+For now I have not decided what to do about this or whether we want to keep using that library.
+
+Also, the functionality of setting up an MCMC run for INCA right now is pretty rudimentary. It is not complete by any means.
+
+-MDN

@@ -1,0 +1,312 @@
+index_sets:
+"Landscape units" : {"Forest" "SVegUg" "SVegGNF" "SVegF" "Arable" "Urban"}
+"Reaches" : {"Cricklade-Castle"}
+
+parameters:
+###################### (no indexers) ######################
+"Timesteps" :
+100
+
+"Start date" :
+"1999-1-1"
+
+###################### "Landscape units" ######################
+"Initial snow pack depth" :
+0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+
+"Degree-day factor for snowmelt" :
+3 3 3 3 3 3
+
+"Temperature below which all precipitation is snow" :
+-1.500000 -1.500000 -1.500000 -1.500000 -1.500000 -1.500000
+
+"Temperature above which all precipitation is rain" :
+1.000000 1.000000 1.000000 1.000000 1.000000 1.000000
+
+"Snowfall correction factor" :
+1.230000 1.230000 1.230000 1.230000 1.230000 1.230000
+
+"Rainfall correction factor" :
+1.080000 1.080000 1.080000 1.080000 1.080000 1.080000
+
+"Temperature at which snow melts" :
+0.500000 0.500000 0.500000 0.500000 0.500000 0.500000
+
+"Evaporation from snow" :
+0.089999999999999997 0.089999999999999997 0.089999999999999997 0.089999999999999997 0.089999999999999997 0.089999999999999997
+
+"Thermal conductivity of soil" :
+0.69999999999999996 0.69999999999999996 0.69999999999999996 0.69999999999999996 0.69999999999999996 0.69999999999999996
+
+"Specific heat capacity due to freeze/thaw" :
+6.5999999999999996 6.5999999999999996 6.5999999999999996 6.5999999999999996 6.5999999999999996 6.5999999999999996
+
+"Water equivalent factor" :
+0.29999999999999999 0.29999999999999999 0.29999999999999999 0.29999999999999999 0.29999999999999999 0.29999999999999999
+
+"Snow depth / soil temperature factor" :
+-0.025000000000000001 -0.025000000000000001 -0.025000000000000001 -0.025000000000000001 -0.025000000000000001 -0.025000000000000001
+
+"Specific heat capacity of soil" :
+1.1000000000000001 1.1000000000000001 1.1000000000000001 1.1000000000000001 1.1000000000000001 1.1000000000000001
+
+"Soil depth" :
+0.20000000000000001 0.20000000000000001 0.20000000000000001 0.20000000000000001 0.20000000000000001 0.20000000000000001
+
+"Initial soil temperature" :
+20.000000 20.000000 20.000000 20.000000 20.000000 20.000000
+
+"Direct runoff initial flow" :
+0.001 0.001 0.001 0.001 0.001 0.001
+
+"Soil water initial flow" :
+0.001 0.001 0.001 0.001 0.001 0.001
+
+"Direct runoff initial nitrate concentration" :
+8 8 8 8 8 8
+
+"Direct runoff initial ammonium concentration" :
+6 6 6 6 6 6
+
+"Soil water initial nitrate concentration" :
+0.10000000000000001 0.10000000000000001 0.10000000000000001 0.10000000000000001 0.10000000000000001 0.10000000000000001
+
+"Soil water initial ammonium concentration" :
+0.029999999999999999 0.029999999999999999 0.029999999999999999 0.029999999999999999 0.029999999999999999 0.029999999999999999
+
+"Soil water denitrification rate" :
+0.001 0.001 0.001 0.001 0.001 0
+
+"Nitrogen fixation rate" :
+0 0 0 0 0 0
+
+"Nitrate plant uptake rate" :
+0.040000000000000001 0.040000000000000001 0.040000000000000001 0.050000000000000003 0.059999999999999998 0
+
+"Maximum nitrogen uptake rate" :
+70 40 45 95 95 70
+
+"Fertilizer nitrate addition rate" :
+0 0 0 0.5 0.59999999999999998 0
+
+"Ammonium nitrification rate" :
+0.050000000000000003 0.089999999999999997 0.050000000000000003 0.14999999999999999 0.014999999999999999 0
+
+"Ammonium mineralisation rate" :
+0.29999999999999999 0.69999999999999996 0.14999999999999999 0.29999999999999999 0.29999999999999999 0
+
+"Ammonium immobilisation rate" :
+0.01 0.02 0.050000000000000003 0.02 0.02 0
+
+"Fertilizer addition rate" :
+0 0 0 0.25 0.34999999999999998 0
+
+"Ammonium plant uptake rate" :
+0.14999999999999999 0.14999999999999999 0.14999999999999999 0.14999999999999999 0.001 0
+
+"Plant growth start day" :
+50 50 50 50 60 0
+
+"Plant growth period" :
+253 253 253 190 190 0
+
+"Fertilizer addition start day" :
+0 0 0 60 60 0
+
+"Fertilizer addition period" :
+0 0 0 150 150 0
+
+"Soil moisture deficit maximum" :
+150 150 150 150 150 150
+
+"Maximum temperature difference" :
+4.5 4.5 4.5 4.5 4.5 4.5
+
+"Denitrification temperature threshold" :
+9999 9999 9999 9999 9999 9999
+
+"Nitrification temperature threshold" :
+9999 9999 9999 9999 9999 9999
+
+"Mineralisation temperature threshold" :
+9999 9999 9999 9999 9999 9999
+
+"Immobilisation temperature threshold" :
+9999 9999 9999 9999 9999 9999
+
+"Soil water sustainable flow" :
+9999 9999 9999 9999 9999 9999
+
+"Direct runoff sustainable flow" :
+9999 9999 9999 9999 9999 9999
+
+"Denitrification response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"Denitrification base temperature response" :
+30 30 30 30 30 30
+
+"Fixation response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"Fixation base temperature response" :
+30 30 30 30 30 30
+
+"Nitrification response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"Nitrification base temperature response" :
+30 30 30 30 30 30
+
+"Mineralisation response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"Mineralisation base temperature response" :
+30 30 30 30 30 30
+
+"Immobilisation response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"Immobilisation base temperature response" :
+30 30 30 30 30 30
+
+"NO3 uptake response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"NO3 uptake base temperature response" :
+30 30 30 30 30 30
+
+"NH4 uptake response to a 10° change in temperature" :
+2 2 2 2 2 2
+
+"NH4 uptake base temperature response" :
+30 30 30 30 30 30
+
+"Growth curve offset" :
+0.66000000000000003 0.66000000000000003 0.66000000000000003 0.66000000000000003 0.66000000000000003 0.66000000000000003
+
+"Growth curve amplitude" :
+0.34000000000000002 0.34000000000000002 0.34000000000000002 0.34000000000000002 0.34000000000000002 0.34000000000000002
+
+"Direct runoff time constant" :
+2 2 2 2 2 2
+
+"Soil water time constant" :
+4 4 4 4 4 4
+
+"Ratio of total to available water in soil" :
+2 2 2 2 2 2
+
+###################### "Reaches" ######################
+"Initial water temperature" :
+20.000000
+
+"Minimum water temperature" :
+20.000000
+
+"Water temperature lag factor" :
+3.000000
+
+"Terrestrial catchment area" :
+547.86000000000001
+
+"Base flow index" :
+0.68000000000000005
+
+"Threshold soil zone flow" :
+0.5
+
+"Rainfall excess proportion" :
+0.050000000000000003
+
+"Maximum infiltration rate" :
+5
+
+"Groundwater denitrification rate" :
+0
+
+"Maximum groundwater effective depth" :
+30
+
+"Proportion of filled pore space" :
+0.59999999999999998
+
+"Groundwater residence time" :
+56
+
+"Groundwater initial flow" :
+0.001
+
+"Groundwater initial nitrate concentration" :
+8
+
+"Groundwater initial ammonium concentration" :
+0.029999999999999999
+
+"Groundwater sustainable flow" :
+9999
+
+"Nitrate dry deposition" :
+2.9689999999999999
+
+"Nitrate wet deposition" :
+3.1600000000000001
+
+"Ammonium dry deposition" :
+3.1150000000000002
+
+"Ammonium wet deposition" :
+3.8279999999999998
+
+"Reach length" :
+8000
+
+"a" :
+0.0207
+
+"b" :
+0.67000000000000004
+
+"Reach denitrification rate" :
+0.01
+
+"Reach nitrification rate" :
+4
+
+"Reach effluent nitrate concentration" :
+10
+
+"Reach effluent ammonium concentration" :
+1
+
+"Effluent flow" :
+0.0086449999999999999
+
+"Abstraction flow" :
+0
+
+"Latitude" :
+0.000000
+
+"Longitude" :
+0.000000
+
+"Reach has abstraction" :
+false
+
+"Reach has effluent input" :
+true
+
+"Initial stream flow" :
+1
+
+"Initial stream nitrate concentration" :
+1.2
+
+"Initial stream ammonium concentration" :
+0.59999999999999998
+
+###################### "Reaches" "Landscape units" ######################
+"%" :
+11.08 2.0800000000000001 0 40.700000000000003 37.780000000000001 8.3599999999999994
+
