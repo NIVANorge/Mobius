@@ -1,7 +1,7 @@
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
 
-Mobius is a general framework for running large sets of equations, both discrete-timestep equations and ordinary differential equations, that model bio-geo-chemical systems. Typically each equation can be evaluated over many indexes being they geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
+Mobius is a general framework for running large sets of equations, both discrete-timestep equations and ordinary differential equations, that model biogeochemical systems. Typically each equation can be evaluated over many indexes being they geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
 
 Primarily Mobius was developed to model catchments (routing of precipitation through soil and groundwater into rivers and streams and assorted transport and reactions of chemical compounds and sediments), but can also be used to build e.g. biological population models.
 
