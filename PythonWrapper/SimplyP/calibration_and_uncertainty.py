@@ -93,6 +93,7 @@ def parameter_df_to_lmfit(df):
     
 def set_parameter_values(params, dataset):
     """ Set the current parameter values in 'dataset' to those specified by 'params'.
+        NOTE: Ignores error parameters with names beginning 'err_'
     
     Args:
         params:      Obj. LMFit 'Parameters' object
@@ -102,10 +103,11 @@ def set_parameter_values(params, dataset):
         None. Parameter values in 'dataset' are changed.
     """
     for key in params.keys():
-        name = params[key].user_data['name']
-        index =  params[key].user_data['index']
-        val = params[key].value
-        dataset.set_parameter_double(name, index, val)
+        if key.split('_')[0] != 'err':
+            name = params[key].user_data['name']
+            index =  params[key].user_data['index']
+            val = params[key].value
+            dataset.set_parameter_double(name, index, val)
         
 def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0):
     """ Set the parameters of 'dataset' to 'params' and run the model. For each data
@@ -123,8 +125,7 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
                      
     Returns:
         Array of residuals.
-    """
-    
+    """   
     # Update parameters and run model
     dataset_copy = dataset.copy()
     set_parameter_values(params, dataset_copy)
@@ -200,22 +201,25 @@ def minimize_residuals(params, dataset, comparisons, method='nelder', norm=False
     
     return (mi, res)
     
-def log_likelihood(params, error_param_dict, dataset, comparisons, skip_timesteps=0):
-    """
-    """
-    # Separate model params from error params
-    model_params = lmfit.Parameters()
-    error_params = lmfit.Parameters()
+def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
+    """ Log-likelihood assuming heteroscedastic Gaussian errors.
     
-    for par in params.keys():
-        if par.split('_')[0] == 'err':
-            error_params.add(params[par])
-        else:
-            model_params.add(params[par]) 
-    
+    Args:
+        params:           Obj. LMFit 'Parameters' object
+        error_param_dict: Dict. Maps observed series to error terms e.g.
+                              
+                              {'Observed Q':'err_q'}
+                          
+                          Error terms must be named 'err_XXX'                              
+        comparisons:      List. Datasets to be compared
+        skip_timesteps:   Int. Number of steps to skip before performing comparison
+        
+    Returns:
+        Float. Total log-likelihood.
+    """   
     # Update parameters and run model
     dataset_copy = dataset.copy()
-    set_parameter_values(model_params, dataset_copy)
+    set_parameter_values(params, dataset_copy)
     dataset_copy.run_model()
     
     ll_tot = 0
@@ -229,7 +233,7 @@ def log_likelihood(params, error_param_dict, dataset, comparisons, skip_timestep
         sim = sim[skip_timesteps:]
         obs = obs[skip_timesteps:]
         
-        error_par = error_params[error_param_dict[obsname]].value
+        error_par = params[error_param_dict[obsname]].value
         sigma_e = error_par*sim
       
         ll = norm(sim, sigma_e).logpdf(obs)
@@ -242,9 +246,31 @@ def log_likelihood(params, error_param_dict, dataset, comparisons, skip_timestep
     
     return ll_tot
 
-def run_mcmc(params, error_param_dict, dataset, comparisons, skip_timesteps=0, nworkers=8, 
+def run_mcmc(params, error_param_dict, comparisons, skip_timesteps=0, nworkers=8, 
              ntemps=1, nsteps=1000, nwalk=100, nburn=500, thin=5):
-    """
+    """ Sample from the posterior using emcee. 
+    
+        NOTE: The code save the "raw" chains (i.e. no burning or thinning) for later use.
+    
+    Args:
+        params:           Obj. LMFit 'Parameters' object
+        error_param_dict: Dict. Maps observed series to error terms e.g.
+                              
+                              {'Observed Q':'err_q'}
+                          
+                          Error terms must be named 'err_XXX'
+        comparisons:      List. Datasets to be compared
+        skip_timesteps:   Int. Number of steps to skip before performing comparison
+        nworkers:         Int. Number of processes to use for parallelisation
+        ntemps:           Int. Number of temperature for parallel-tempering. Use 1
+                          to run the standard 'ensemble sampler'
+        nsteps:           Int. Number of steps per chain
+        nwalk:            Int. Number of chains/walkers
+        nburn:            Int. Number of steps to discrad from the start of each chain as 'burn-in'
+        thin:             Int. Keep only every 'thin' steps
+        
+    Returns:
+        LMFit emcee result object.
     """
     # Check user input
     error_params = [i for i in params.keys() if i.split('_')[0]=='err']
@@ -257,9 +283,11 @@ def run_mcmc(params, error_param_dict, dataset, comparisons, skip_timesteps=0, n
                 'Minimum bound for %s must be >0.' % error_param
         
     # Run MCMC
+    start = time.time()
+
     mcmc = lmfit.Minimizer(log_likelihood, 
                            params, 
-                           fcn_args=(error_param_dict, dataset, comparisons),
+                           fcn_args=(error_param_dict, comparisons),
                            fcn_kws={'skip_timesteps':skip_timesteps},
                            nan_policy='omit',
                           )
@@ -273,18 +301,189 @@ def run_mcmc(params, error_param_dict, dataset, comparisons, skip_timesteps=0, n
                         workers=nworkers,                  
                         float_behavior='posterior',
                        )
+
+    end = time.time()
+    print('Time elapsed running emcee: %.2f minutes.\n' % ((end - start)/60))
     
-    return (mcmc, result)
+    #print('EMCEE average acceptance rate: %.2f' % np.mean(sampler.acceptance_fraction))
+    
+    return result
+
+def chain_plot(result, file_name=None):
+    """ Plot 'raw' chains for each variable.
+    
+    Args:
+        result:    LMFit emcee result object
+        file_name: Raw str. Path for plot to be created
+        
+    Returns:
+        None.
+    """  
+    samples = result.chain
+    labels = result.var_names
+    n_dim = samples.shape[2]
+    
+    fig_height = max(30, len(labels)*3.5)
+
+    fig, axes = plt.subplots(nrows=n_dim, ncols=1, figsize=(10, fig_height))    
+    for idx, label in enumerate(labels):        
+        axes[idx].plot(samples[:,:,idx].T, '-', color='k', alpha=0.3)
+        axes[idx].set_title(label, fontsize=12) 
+    plt.subplots_adjust(hspace=0.5)   
+    plt.tight_layout()
+    
+    if file_name:
+        fig.savefig(file_name, dpi=300)
+
+def triangle_plot(result, nburn, thin, file_name=None, truths=None):
+    """ Triange/corner plot of MCMC results. Removes burn-in period and thins
+        before plotting.
+        
+    Args:
+        result:    LMFit emcee result object
+        nburn:     Int. Number of steps to discard as burn-in
+        thin:      Int. Keep only every 'thin' steps
+        file_name: Raw str. Path for plot to be created
+        truths:    Array-like or None. True values, if known 
+    """ 
+    ndim = result.chain.shape[2]
+    samples = result.chain[:, nburn::thin, :].reshape((-1, ndim))
+    
+    corner.corner(samples,
+                  labels=result.var_names,
+                  quantiles=[0.025, 0.5, 0.975],
+                  show_titles=True, 
+                  truths=truths,
+                  title_args={'fontsize':20},
+                  label_kwargs={'fontsize':18},
+                  verbose=True,
+                 )
+    
+    if file_name:
+        plt.savefig(file_name, dpi=200)
+
+def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
+    """ Plot the results the data series defined in 'comparisons' for a sinlge model run.
+    
+    Args:
+        dataset:        Obj. Mobius 'dataset' object
+        comparisons:    List. Datasets to be compared
+        skip_timesteps: Int. Number of steps to skip before performing comparison
+        file_name:      Raw str. Path for plot to be created
+        
+    Returns:
+        None.
+    """
+    fig_height = max(30, len(comparisons)*3.5)
+
+    fig, axes = plt.subplots(nrows=len(comparisons), ncols=1, figsize=(15, fig_height)) 
+    
+    for idx, comparison in enumerate(comparisons):
+        
+        simname, simindexes, obsname, obsindexes = comparison
+        
+        sim = dataset.get_result_series(simname, simindexes)
+        obs = dataset.get_input_series(obsname, obsindexes, alignwithresults=True)
+       
+        start_date = dt.datetime.strptime(dataset.get_parameter_time('Start date', []),'%Y-%m-%d')
+        timesteps = dataset.get_parameter_uint('Timesteps', [])
+        date_idx = np.array(pd.date_range(start_date, periods=timesteps))
+        
+        sim = sim[skip_timesteps:]
+        obs = obs[skip_timesteps:]
+        date_idx = date_idx[skip_timesteps:]
+
+        df = pd.DataFrame({'Date':date_idx,
+                           '%s [%s]' % (obsname, ', '.join(obsindexes)):obs,
+                           '%s [%s]' % (simname, ', '.join(simindexes)):sim,
+                          })
+        df.set_index('Date', inplace=True)
+
+        unit = dataset.get_result_unit(simname) # Assumes that the unit is the same for obs and sim
+    
+        df.plot(ax=axes[idx], style=['o--', '-'])
+        axes[idx].set_ylabel('$%s$' % unit)
+
+    plt.tight_layout()
+            
+    if file_name:
+        plt.savefig(filename, dpi=200)
+    
+def gof_stats_map(result, dataset, comparisons, skip_timesteps):
+    """ Run the model with the 'best' (i.e. MAP) parameter set and print
+        goodness-of-fit statistics.
+    
+    Args:
+        result:         LMFit emcee result object
+        dataset:        Obj. Mobius 'dataset' object
+        comparisons:    List. Datasets to be compared
+        skip_timesteps: Int. Number of steps to skip before performing comparison
+        
+    Returns:
+        None. 
+    """
+    set_parameter_values(result.params, dataset)
+    dataset.run_model()
+    print('\nBest sample (max log likelihood):')
+    print_goodness_of_fit(dataset, comparisons, skip_timesteps)
+
+def print_goodness_of_fit(dataset, comparisons, skip_timesteps=0):
+    """ Print various goodness-of-fit statistics for the datasets compared in
+        'comparisons'.
+        
+    Args:
+        dataset:        Obj. Mobius 'dataset' object
+        comparisons:    List. Datasets to be compared
+        skip_timesteps: Int. Number of steps to skip before performing comparison
+        
+    Returns:
+        None.
+    """
+    for comparison in comparisons :
+        simname, simindexes, obsname, obsindexes = comparison
+
+        sim = dataset.get_result_series(simname, simindexes)
+        obs = dataset.get_input_series(obsname, obsindexes, alignwithresults=True)
+
+        sim = sim[skip_timesteps:]
+        obs = obs[skip_timesteps:]
+        
+        residuals = sim - obs
+        nonnan = np.count_nonzero(~np.isnan(residuals))
+        
+        bias = np.nansum(residuals) / nonnan
+        meanabs = np.nansum(np.abs(residuals)) / nonnan
+        sumsquare = np.nansum(np.square(residuals))
+        meansquare = sumsquare / nonnan
+        
+        meanob = np.nansum(obs) / nonnan
+        
+        nashsutcliffe = 1 - sumsquare / np.nansum(np.square(obs - meanob))
+        
+        print('\nGoodness of fit for %s [%s] vs %s [%s]:' % (simname, ', '.join(simindexes), 
+                                                             obsname, ', '.join(obsindexes)))
+        print('Mean error (bias): %f' % bias)
+        print('Mean absolute error: %f' % meanabs)
+        print('Mean square error: %f' % meansquare)
+        print('Nash-Sutcliffe coefficient: %f' % nashsutcliffe)
+        print('Number of observations: %s\n' % nonnan)
+
+        
+###################################################################################################################
+
+dataset = wr.DataSet.setup_from_parameter_and_input_files('../../Applications/SimplyP/Morsa/MorsaParameters.dat', 
+                                                          '../../Applications/SimplyP/Morsa/MorsaInputs.dat')
 
 if __name__ == '__main__': 
-
+    
     # Unpack options from pickled file
     with open('pickled\\mcmc_settings.pkl', 'rb') as handle:
         settings_dict = pickle.load(handle)
-    
+
     params = settings_dict['params']
     error_param_dict = settings_dict['error_param_dict']
-    dataset = settings_dict['dataset']
+    dataset_params_dat = settings_dict['dataset_params_dat']
+    dataset_input_dat = settings_dict['dataset_input_dat']
     comparisons = settings_dict['comparisons']
     skip_timesteps = settings_dict['skip_timesteps']
     nworkers = settings_dict['nworkers']
@@ -296,30 +495,23 @@ if __name__ == '__main__':
     result_path = settings_dict['result_path'] 
     chain_path = settings_dict['chain_path']
     corner_path = settings_dict['corner_path']
-    
-    # Perform sampling
-    mcmc, result = run_mcmc(params, error_param_dict, dataset, comparisons, skip_timesteps=skip_timesteps, 
-                            nworkers=nworkers, ntemps=ntemps, nsteps=nsteps, nwalk=nwalk, nburn=nburn, 
-                            thin=thin)
+
+    # Perform MCMC sampling (but keep everything at present i.e. no burning or thinning)
+    result = run_mcmc(params, error_param_dict, comparisons, skip_timesteps=skip_timesteps, nworkers=nworkers,
+                      ntemps=ntemps, nsteps=nsteps, nwalk=nwalk, nburn=0, thin=1)
 
     # Save results
     with open(result_path, 'wb') as output:
-        pickle.dump([mcmc, result], output)
+        pickle.dump(result, output)
         
     # Plotting
-    result.flatchain.plot(subplots=True, figsize=(15, 10), color='k', alpha=0.3)
-    plt.savefig(chain_path, dpi=200)
-    
-    tri = corner.corner(result.flatchain,
-                        labels=result.var_names,
-                        quantiles=[0.025, 0.5, 0.975],
-                        show_titles=True, 
-                        title_args={'fontsize':20},
-                        label_kwargs={'fontsize':18},
-                        verbose=True,
-                       )
-    plt.savefig(corner_path, dpi=200)
+    chain_plot(result, file_name=chain_path)
+    triangle_plot(result, nburn, thin, file_name=corner_path)
 
-    #GoF_stats_single_sample(samplelist, lnproblist, dataset, calibration, objective, n_ms)    
-    
-    
+    # MAP simulation
+    set_parameter_values(result.params, dataset)
+    dataset.run_model()
+    plot_objective(dataset, comparisons)
+
+    # Goodness-of-fit stats
+    gof_stats_map(result, dataset, comparisons, skip_timesteps)
