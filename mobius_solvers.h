@@ -8,16 +8,27 @@ MOBIUS_SOLVER_FUNCTION(MobiusEulerImpl_)
 	//NOTE: This is not meant to be used as a proper solver, it is just an illustration of how a solver function works.
 	
 	double haccum = 0.0;
-	while(haccum < 1.0)
+	while(true)
 	{
+		double hleft = 1.0 - haccum;
+		double use_h = h;
+		bool Done = false;
+		if(h >= hleft)
+		{
+			use_h = hleft;
+			Done = true;
+		}
+		
 		EquationFunction(x0, wk);
 		
 		for(u32 Idx = 0; Idx < n; ++Idx)
 		{
-			x0[Idx] += h*wk[Idx];
+			x0[Idx] += use_h*wk[Idx];
 		}
 		
-		haccum += h;
+		if(Done) break;
+		
+		haccum += use_h;
 	}
 }
 
