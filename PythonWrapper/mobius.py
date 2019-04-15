@@ -132,7 +132,7 @@ def check_dll_error() :
 		raise RuntimeError(errmsg)
 	
 class DataSet :
-	def __init__(self, datasetptr) :
+	def __init__(self, datasetptr):
 		self.datasetptr = datasetptr
 	
 	@classmethod
@@ -174,7 +174,7 @@ class DataSet :
 		'''
 		Extract one of the result series that was produced by the model. Can only be called after dataset.run_model() has been called at least once.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the result series. Example : "Soil moisture"
 			indexes          -- list of strings. A list of index names to identify the particular input series. Example : ["Langtjern"] or ["Langtjern", "Forest"]
 		
@@ -195,7 +195,7 @@ class DataSet :
 		'''
 		Extract one of the input series that were provided with the dataset.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the input series. Example : "Air temperature"
 			indexes          -- list of strings. A list of index names to identify the particular input series. Example : ["Langtjern"] or ["Langtjern", "Forest"]
 			alignwithresults -- boolean. If False: Extract the entire input series that was provided in the input file. If True: Extract the series from the parameter 'Start date', with 'Timesteps' number of values (i.e. aligned with any result series of the dataset).
@@ -220,7 +220,7 @@ class DataSet :
 		'''
 		Overwrite one of the input series in the dataset.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the input series. Example : "Air temperature"
 			indexes          -- list of strings. A list of index names to identify the particular input series. Example : ["Langtjern"] or ["Langtjern", "Forest"]
 			inputseries      -- list of double. The values to set.
@@ -235,7 +235,7 @@ class DataSet :
 		'''
 		Overwrite the value of one parameter. Can only be called on parameters that were registered with the type double.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Maximum capacity"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 			value            -- float. The value to write to the parameter.
@@ -247,7 +247,7 @@ class DataSet :
 		'''
 		Overwrite the value of one parameter. Can only be called on parameters that were registered with the type uint.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Fertilizer addition start day"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 			value            -- unsigned integer. The value to write to the parameter.
@@ -259,7 +259,7 @@ class DataSet :
 		'''
 		Overwrite the value of one parameter. Can only be called on parameters that were registered with the type bool.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Reach has effluent inputs"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 			value            -- bool. The value to write to the parameter.
@@ -271,7 +271,7 @@ class DataSet :
 		'''
 		Overwrite the value of one parameter. Can only be called on parameters that were registered with the type time.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Start date"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 			value            -- string. The value to write to the parameter. Must be on the format "YYYY-MM-dd", e.g. "1999-05-15"
@@ -286,7 +286,7 @@ class DataSet :
 		'''
 		Read the value of one parameter. Can only be called on parameters that were registered with the type double.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Maximum capacity"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
@@ -301,7 +301,7 @@ class DataSet :
 		'''
 		Read the value of one parameter. Can only be called on parameters that were registered with the type uint.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Fertilizer addition start day"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
@@ -316,7 +316,7 @@ class DataSet :
 		'''
 		Read the value of one parameter. Can only be called on parameters that were registered with the type bool.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Reach has effluent inputs"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
@@ -329,7 +329,7 @@ class DataSet :
 		'''
 		Read the value of one parameter. Can only be called on parameters that were registered with the type time.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Start date"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
@@ -348,7 +348,7 @@ class DataSet :
 		'''
 		Retrieve the recommended min and max values for a parameter. Can only be called on a parameter that was registered with type double.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Baseflow index"
 			
 		Returns:
@@ -364,7 +364,7 @@ class DataSet :
 		'''
 		Retrieve the recommended min and max values for a parameter. Can only be called on a parameter that was registered with type uint.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the parameter. Example : "Fertilizer addition period"
 			
 		Returns:
@@ -431,7 +431,7 @@ class DataSet :
 		'''
 		Get the name of each index in an index set.
 		
-		Keyword arguments:
+		Arguments:
 			index_set          -- string. The name of the index set
 		
 		Returns:
@@ -448,7 +448,7 @@ class DataSet :
 		'''
 		Get the name of each index set a parameter indexes over.
 		
-		Keyword arguments:
+		Arguments:
 			name            -- string. The name of the parameter
 		
 		Returns:
@@ -465,7 +465,7 @@ class DataSet :
 		'''
 		Get the name of each index set a result indexes over.
 		
-		Keyword arguments:
+		Arguments:
 			name            -- string. The name of the result series
 		
 		Returns:
@@ -482,7 +482,7 @@ class DataSet :
 		'''
 		Get the name of each index set an input series indexes over.
 		
-		Keyword arguments:
+		Arguments:
 			name            -- string. The name of the input series
 		
 		Returns:
@@ -499,7 +499,7 @@ class DataSet :
 		'''
 		Get the name and type of all the parameters in the model as a list of pairs of strings.
 		
-		Keyword arguments:
+		Arguments:
 			groupname       -- string. (optional) Only list the parameters belonging to this parameter group.
 		'''
 		num = mobiusdll.DllGetAllParametersCount(self.datasetptr, _CStr(groupname))
@@ -538,7 +538,7 @@ class DataSet :
 		'''
 		Find out if a particular input timeseries was provided in the input file (or set maually using set_input_series), or if it is missing.
 		
-		Keyword arguments:
+		Arguments:
 			name             -- string. The name of the input series. Example : "Air temperature"
 			indexes          -- list of strings. A list of index names to identify the particular input series. Example : ["Langtjern"] or ["Langtjern", "Forest"]
 			
@@ -553,7 +553,7 @@ class DataSet :
 		'''
 		Get the branch inputs of an index in a branched index set.
 		
-		Keyword arguments:
+		Arguments:
 			indexsetname     -- string. The name of an index set. This index set has to be branched.
 			indexname        -- string. The name of an index in this index set.
 			

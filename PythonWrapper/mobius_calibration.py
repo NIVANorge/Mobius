@@ -1,3 +1,10 @@
+
+
+
+
+#NOTE: This is old, SimplyP/calibration_and_uncertainty.py is better.
+
+
 from scipy import optimize
 import numpy as np
 import numdifftools as nd
@@ -108,9 +115,11 @@ def log_likelyhood(params, dataset, calibration, objective, n_ms=0):
     fn, comparisons, skiptimesteps = objective
     
     #Ms = params[len(calibration)-n_comparisons:] # Pick out associated error terms from calibration
-    Ms = [params[len(calibration)-3], params[len(calibration)-2],
-          params[len(calibration)-1], params[len(calibration)-1], params[len(calibration)-1]] #NOTE: for tying Ms between vars
+    #Ms = [params[len(calibration)-3], params[len(calibration)-2],
+    #      params[len(calibration)-1], params[len(calibration)-1], params[len(calibration)-1]] #NOTE: for tying Ms between vars
     
+    M = params[len(calibration)]
+	
     set_values(datasetcopy, params, calibration, n_ms) # Drop Ms from calibration
     
     datasetcopy.run_model()
@@ -126,7 +135,7 @@ def log_likelyhood(params, dataset, calibration, objective, n_ms=0):
         sim2 = sim[skiptimesteps:]
         obs2 = obs[skiptimesteps:]
         
-        M = Ms[i]
+        #M = Ms[i]
         sigma_e = M*sim2
         
         likes = norm(sim2, sigma_e).logpdf(obs2)
