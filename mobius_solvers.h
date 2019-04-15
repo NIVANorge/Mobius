@@ -33,7 +33,8 @@ MOBIUS_SOLVER_SETUP_FUNCTION(MobiusEuler)
 
 MOBIUS_SOLVER_FUNCTION(IncaDascruImpl_)
 {
-	//NOTE: This is the original solver from INCA based on the DASCRU Runge-Kutta 4 solver.
+	//NOTE: This is the original solver from INCA based on the DASCRU Runge-Kutta 4 solver. See also
+	// Rational Runge-Kutta Methods for Solving Systems of Ordinary Differential Equations, Computing 20, 333-342.
 	
 	double x, hmin, xs, hs, q, h3, r, e;
     int ib1, ib2, sw, i, j, ijk0, ijk1, ijk2, be, bh=1, br=1, bx=1;
