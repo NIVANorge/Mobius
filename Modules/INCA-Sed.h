@@ -53,8 +53,8 @@ AddINCASedModel(mobius_model *Model)
 	auto SplashDetachmentSoilErodibility        = RegisterParameterDouble(Model, Sediment, "Splash detachment soil erodibility", KgPerM2PerS, 1.0);
 	auto VegetationIndex                        = RegisterParameterDouble(Model, Sediment, "Vegetation index", Dimensionless, 1.0);
 	
-	auto InitialSurfaceSedimentStore            = RegisterParameterDouble(Model, Sediment, "Initial surface sediment store", KgPerKm2, 100.0);
-	
+	auto InitialSurfaceSedimentStore            = RegisterParameterDouble(Model, Sediment, "Initial surface sediment store", KgPerKm2, 0.0, 0.0, 10.0);
+	auto InitialSoilMassInTheOAHorizon          = RegisterParameterDouble(Model, Sediment, "Initial soil mass in the O/A horizon", KgPerKm2, 0.0, 0.0, 1000000.0);
 	
 	auto SubcatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length");
@@ -64,9 +64,6 @@ AddINCASedModel(mobius_model *Model)
 	auto RunoffToReach = GetEquationHandle(Model, "Runoff to reach");
 	
 	
-	auto IncaSolver = RegisterSolver(Model, "Inca solver", 0.1, IncaDascru);
-	
-	
 	///////////// Erosion and sediment transport ////////////////
 	
 	auto SedimentMobilisedViaSplashDetachment = RegisterEquation(Model, "Sediment mobilised via splash detachment", KgPerKm2PerDay);
@@ -74,19 +71,24 @@ AddINCASedModel(mobius_model *Model)
 	auto FlowErosionKFactor                   = RegisterEquation(Model, "Flow erosion K factor", KgPerKm2PerDay);
 	auto SedimentTransportCapacity            = RegisterEquation(Model, "Sediment transport capacity", KgPerKm2PerDay);
 	
-	auto SurfaceSedimentStore   = RegisterEquationODE(Model, "Surface sediment store", KgPerKm2);
-	SetSolver(Model, SurfaceSedimentStore, IncaSolver);
+	auto SurfaceSedimentStore   = RegisterEquation(Model, "Surface sediment store", KgPerKm2);
 	SetInitialValue(Model, SurfaceSedimentStore, InitialSurfaceSedimentStore);
 	
 	auto SedimentDeliveryToReach              = RegisterEquation(Model, "Sediment delivery to reach", KgPerKm2PerDay);
-	SetSolver(Model, SedimentDeliveryToReach, IncaSolver);
 	auto AreaScaledSedimentDeliveryToReach    = RegisterEquation(Model, "Area scaled sediment delivery to reach", KgPerDay);
 	
 	auto TotalSedimentDeliveryToReach         = RegisterEquationCumulative(Model, "Total sediment delivery to reach", AreaScaledSedimentDeliveryToReach, LandscapeUnits);
 	
-	auto SoilMassInTheOAHorizon               = RegisterEquationODE(Model, "Soil mass in the O/A horizon", KgPerKm2);
-	SetSolver(Model, SoilMassInTheOAHorizon, IncaSolver);
-	//SetInitialValue(Model, SoilMassInTheOAHorizon)
+	auto SoilMassInTheOAHorizon               = RegisterEquation(Model, "Soil mass in the O/A horizon", KgPerKm2);
+	SetInitialValue(Model, SoilMassInTheOAHorizon, InitialSoilMassInTheOAHorizon);
+	
+	
+	EQUATION(Model, SedimentTransportCapacity,
+		double qquick = RESULT(RunoffToReach, DirectRunoff) / 86.4;
+		double flow = Max(0.0, qquick - PARAMETER(TransportCapacityDirectRunoffThreshold));
+		return 86400.0 * PARAMETER(TransportCapacityScalingFactor) 
+			* pow((PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(TransportCapacityNonlinearCoefficient));
+	)
 	
 	//TODO: Documentation says this should use Reffq = "effective precipitation". Is that the same as rainfall?
 	EQUATION(Model, SedimentMobilisedViaSplashDetachment,
@@ -101,28 +103,39 @@ AddINCASedModel(mobius_model *Model)
 			* pow( (1e-3 * PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(FlowErosionNonlinearCoefficient));
 	)
 	
-	EQUATION(Model, SedimentTransportCapacity,
-		double qquick = RESULT(RunoffToReach, DirectRunoff) / 86.4;
-		double flow = Max(0.0, qquick - PARAMETER(TransportCapacityDirectRunoffThreshold));
-		return 86400.0 * PARAMETER(TransportCapacityScalingFactor) 
-			* pow((1e-3 * PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(TransportCapacityNonlinearCoefficient));
-	)
-	
 	EQUATION(Model, SedimentMobilisedViaFlowErosion,
-		double SFE = RESULT(FlowErosionKFactor) * (RESULT(SedimentTransportCapacity) - RESULT(SedimentMobilisedViaSplashDetachment)) / (RESULT(SedimentTransportCapacity) + RESULT(FlowErosionKFactor));
-		if(RESULT(SedimentTransportCapacity) + RESULT(FlowErosionKFactor) == 0) return 0.0;
-		return Max(0.0, SFE);
+		double TC = RESULT(SedimentTransportCapacity);
+		
+		double SFE = RESULT(FlowErosionKFactor)
+				* SafeDivide(TC - RESULT(SedimentMobilisedViaSplashDetachment),
+							TC + RESULT(FlowErosionKFactor));
+		SFE = Max(0.0, SFE);
+		
+		double SSD = RESULT(SedimentMobilisedViaSplashDetachment);
+		
+		double surfacestorebeforeerosion = LAST_RESULT(SurfaceSedimentStore) + SSD;
+	
+		if(TC > surfacestorebeforeerosion)
+		{
+			double remainingcap = TC - surfacestorebeforeerosion;
+			return Min(remainingcap, SFE);
+		}
+		
+		return 0.0;
 	)
 	
 	EQUATION(Model, SedimentDeliveryToReach,
 		double SSD = RESULT(SedimentMobilisedViaSplashDetachment);
 		double SFE = RESULT(SedimentMobilisedViaFlowErosion);
-		double STC = RESULT(SedimentTransportCapacity);
-		if(RESULT(SurfaceSedimentStore) > 0 || SSD  > STC)
+		double TC = RESULT(SedimentTransportCapacity);
+		
+		double surfacestorebeforeerosion = LAST_RESULT(SurfaceSedimentStore) + SSD;
+	
+		if(surfacestorebeforeerosion > TC)
 		{
-			return STC;
+			return TC;
 		}
-		return SSD + SFE;
+		return surfacestorebeforeerosion + SFE;
 	)
 	
 	EQUATION(Model, AreaScaledSedimentDeliveryToReach,
@@ -131,17 +144,15 @@ AddINCASedModel(mobius_model *Model)
 	
 	EQUATION(Model, SurfaceSedimentStore,
 		double SSD = RESULT(SedimentMobilisedViaSplashDetachment);
-		double STC = RESULT(SedimentTransportCapacity);
 		double Mland = RESULT(SedimentDeliveryToReach);
-		if(RESULT(SurfaceSedimentStore) > 0 || SSD > STC)
-		{
-			return SSD - Mland;
-		}
-		return 0.0;
+		
+		double SSDthatwastransported = Min(SSD, RESULT(SedimentTransportCapacity));
+		
+		return LAST_RESULT(SurfaceSedimentStore) + SSD - SSDthatwastransported;
 	)
 	
 	EQUATION(Model, SoilMassInTheOAHorizon,
-		return -RESULT(SedimentDeliveryToReach);
+		return LAST_RESULT(SoilMassInTheOAHorizon) - RESULT(SedimentDeliveryToReach);
 	)
 	
 	///////////////// Suspended sediment ////////////////////////////////
@@ -153,8 +164,8 @@ AddINCASedModel(mobius_model *Model)
 	auto SedimentSizeClass = RegisterParameterGroup(Model, "Sediment size class", SizeClass);
 	
 	auto PercentageOfSedimentInGrainSizeClass   = RegisterParameterDouble(Model, SedimentSizeClass, "Percentage of sediment in grain size class", PercentU, 20);
-	auto SmallestDiameterOfSedimentClass        = RegisterParameterDouble(Model, SedimentSizeClass, "Smallest diameter of sediment in size class", Metres, 0.0, 0.0, 2e3, "These are specified by the model and should not be changed unless you know what you are doing");
-	auto LargestDiameterOfSedimentClass         = RegisterParameterDouble(Model, SedimentSizeClass, "Largest diameter of sediment in size class", Metres, 2e-6);
+	auto SmallestDiameterOfSedimentClass        = RegisterParameterDouble(Model, SedimentSizeClass, "Smallest diameter of sediment in size class", Metres, 0.0, 0.0, 1.0);
+	auto LargestDiameterOfSedimentClass         = RegisterParameterDouble(Model, SedimentSizeClass, "Largest diameter of sediment in size class", Metres, 2e-6), 0.0, 1.0;
 	
 	auto SedimentReach = RegisterParameterGroup(Model, "Sediment reach", Reach);
 	SetParentGroup(Model, SedimentReach, SedimentSizeClass);
