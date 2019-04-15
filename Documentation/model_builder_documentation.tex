@@ -127,7 +127,7 @@ It is recommended for any model developers to take a look at the tutorials and e
 
 \subsection{The model}
 
-The model object contains all immutable information about the model that will not change with each particular usage of the model. The model object contains lists of various model entities and information about these that are provided by the model developer in the model registration routine. The different model entities are presented in Table \ref{tab:modelentity}.
+The model object contains all immutable information about the model that will not change with each particular usage of the model. The model object contains lists of various model entities and information about these that are provided by the model developer in the model registration routine(s). The different model entities are presented in Table \ref{tab:modelentity}.
 
 \begin{table}[H]
 \centering
@@ -141,7 +141,7 @@ Parameters & Parameters are values used to tune the equations of the modell. Par
 \hline
 Inputs & Inputs are forcings on the model that vary over time. An example of an input is a time series of daily air temperature that has been measured in the field. Inputs can also vary with index sets. For instance, one can have a separate air temperature series for each subcatchment area in the model.\\
 \hline
-Equations & The model has a set of equations that are executed in a specific order for every timestep of the model (see later for how the run order is determined). Each equation can look up the value of various parameters, inputs, results of other equations (both from the current timestep and earlier) and produces a single output value for each time it is evaluated. There are several types of equations. The main two are discrete timestep (or basic) equations and ordinary differential equations (ODE). \\
+Equations & The model has a set of equations that are executed in a specific order for every timestep of the model (see later descriptions of how the run order is determined). Each equation can look up the value of various parameters, inputs, results of other equations (both from the current timestep and earlier) and produces a single output value every time it is evaluated. There are several types of equations. The main two are discrete timestep (or basic) equations and ordinary differential equations (ODE). \\
 \hline
 Solvers & Each solver contains a list ODE equations that it will solve over one timestep whenever it is run. The solver must be registered with additional information about e.g. which integrator method it will use. \\
 \hline
@@ -152,7 +152,7 @@ Solvers & Each solver contains a list ODE equations that it will solve over one 
 
 \subsection{The dataset}
 
-The dataset contains information about the specific setup of a model. This includes all the indexes of each index set, as well as all the specific values of the parameters and input series. It will also contain the result series after the model is run. The typical way of setting up a dataset is by reading it in from a parameter file and an input file. The file formats for these are provided in separate documentation.
+The dataset contains information about a specific setup of a model. This includes all the indexes of each index set, as well as values for all the parameters and input series in the model. It will also contain the result series of each equation after the model is run. The typical way of setting up a dataset is by reading it in from a parameter file and an input file. The file formats for these are documented separately.
 
 \section{Model structure}
 
@@ -281,7 +281,7 @@ for every timestep:
 
 At the end of a model run, one can extract a timeseries of each of these equations for any combination of indexes that they index over. For instance one can look at the timeseries for "Snow melt" in \{"Langtjern", "Forest"\}, or the timeseries for "Water depth" in \{"Langtjern", "Peatland", "Organic soil layer"\} (given that these were indexes provided for this particular dataset).
 
-Unlike parameters, equations can never index over one index set more than once. We will go through how the index sets of an equation is determined and how it is placed in a batch structure later.
+Unlike parameters, equations can never index over one index set more than once. We will go through how the index set dependencies of an equation are determined and how it is placed in a batch structure later.
 
 \section{Model building}\label{sec:modelbuilding}
 
@@ -388,7 +388,7 @@ During model development it can be pretty unsatisfactory to just look at the num
 
 \subsection{Entity registration, handles, and equation bodies}\label{sec:registrationandhandles}
 
-The {\tt mobius\_model} object contains lists of various model entities (see Table \ref{tab:modelentity} for an explanaition) and information about these. It is the model developers' job to register all the entities and provide the needed information for each one.
+The {\tt mobius\_model} object contains lists of various model entities (see Table \ref{tab:modelentity} for an explanaition) and information about these. It is the model developer's job to register all the entities and provide the needed information for each one.
 
 \begin{example}\label{ex:registration}
 Example of entity registration.
@@ -604,8 +604,8 @@ Generally you should try to limit what kind of expressions you use inside equati
 \begin{enumerate}[i]
 \item Access values using {\tt PARAMETER}, {\tt INPUT}, {\tt RESULT}, {\tt LAST\_RESULT}, or any of the more advanced accesses described in Section \ref{sec:advancedaccess}.
 \item Simple control flow like {\tt for} or {\tt if} (but remember the warning about accesses inside conditionals above!!).
-\item Calling functions (that don't have side effects) that do mathematical computations on values, like {\tt exp} (the exponential function).
-\item Always returning a value of type double (if you do not do this, you will get an error).
+\item Calling functions (that don't have side effects) that do mathematical computations on values, like {\tt exp}, {\tt pow}, {\tt sin} etc.
+\item Always returning a value of type double (if you do not do this, you will get a compilation error).
 \item You can refer to variables that are declared outside the equation body, but you should generally limit this to the entity handles you get from entity registration. Any variable you reference inside the equation body will be copied (by value) using the rules of C++11 lambda captures.
 \end{enumerate}
 
@@ -870,7 +870,7 @@ You can turn the debug flags either on or off by setting them to 1 or 0 respecti
 \item {\tt MOBIUS\_TEST\_FOR\_NAN}. If turned on, this will test every result value to see if it was an inf or nan. In the case of such a value, it will halt the model execution and print out the current timestep, the state of the index sets, and the state of all the parameter, input and result dependencies of the equation that produced the illegal value. This will make the model run a little slower even if it does not encounter an illegal value. The nan test will not work correctly if you compile with the -ffast-math flag. The -ffast-math flag may make the model run a little faster, but the underlying floating point architecture will no longer make nans detectable, which can interfer both with this safeguard and other safeguards you may put in.
 \item {\tt MOBIUS\_PRINT\_TIMING\_INFO}. If turned on, this will time and print out how long it took to run the model (both in milliseconds and processor instructions). This only gives very coarse information, but can be useful to detect if something weird happened (does the model suddenly run much slower after you added a new equation?).
 \item {\tt MOBIUS\_EQUATION\_PROFILING}. This will give you very fine-grained information about how many processor ticks every equation evaluation took on average, and how many times each equation was evaluated. Note that the time to evaluate an equation is not always the same as the time to produce a result value since a solver may evaluate an equation many times to produce a result value for it. See Section \ref{sec:performance} about tips on how to improve the speed of the model. Having this flag turned on will make the framework itself a little slower.
-\item {\tt MOBIUS\_INDEX\_BOUNDS\_TESTS}. This should probably be turned on as often as possible during model development. It will catch if during explicit indexing you provided an {\tt index\_t} that was out of bounds for this index set. It will also give you an error if you use it to index a different index set than it was created from. Unfortunately, the error message it prints does not provide a lot of information right now. Having this flag turned on will make the model run a little slower.
+\item {\tt MOBIUS\_INDEX\_BOUNDS\_TESTS}. This should probably be turned on as often as possible during model development. It will catch if during explicit indexing you provided an {\tt index\_t} that was out of bounds for this index set. It will also give you an error if you use it to index a different index set than it was created from. Having this flag turned on will make the model run a little slower.
 \end{enumerate}
 
 \subsection{Tips on model performance (speed)}\label{sec:performance}

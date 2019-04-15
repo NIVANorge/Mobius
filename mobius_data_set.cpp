@@ -24,6 +24,15 @@ GenerateDataSet(mobius_model *Model)
 		DataSet->AllIndexesHaveBeenSet = true;
 	}
 	
+	DataSet->ParameterStorageStructure.Model = Model;
+	DataSet->ParameterStorageStructure.Type  = EntityType_Parameter;
+	
+	DataSet->InputStorageStructure.Model     = Model;
+	DataSet->InputStorageStructure.Type      = EntityType_Input;
+	
+	DataSet->ResultStorageStructure.Model    = Model;
+	DataSet->ResultStorageStructure.Type     = EntityType_Equation;
+	
 	return DataSet;
 }
 
@@ -91,6 +100,8 @@ CopyStorageStructure(storage_structure &Source, storage_structure &Dest, size_t 
 	if(Source.LocationOfHandleInUnit) Dest.LocationOfHandleInUnit = CopyArray(size_t, FirstUnusedHandle, Source.LocationOfHandleInUnit);
 	Dest.TotalCount = Source.TotalCount;
 	Dest.HasBeenSetUp = Source.HasBeenSetUp;
+	
+	Dest.Model = Source.Model;
 }
 
 static mobius_data_set *
@@ -257,11 +268,17 @@ OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, con
 #if MOBIUS_INDEX_BOUNDS_TESTS
 		if(Index >= Count)
 		{
-			MOBIUS_FATAL_ERROR("Index out of bounds for index set number " << IndexSet.Handle << ", got index " << Index << ", count was " << Count << std::endl);
+			const char *EntityName = GetName(Structure.Model, Structure.Type, Handle);
+			const char *TypeName   = GetEntityTypeName(Structure.Type);
+			MOBIUS_PARTIAL_ERROR("ERROR: Index out of bounds for index set \"" << GetName(Structure.Model, IndexSet) << "\", got index " << Index << ", count was " << Count << std::endl);
+			MOBIUS_FATAL_ERROR("This happened while looking up the value of the " << TypeName << " \"" << EntityName << "\"." << std::endl);
 		}
 		if(Index.IndexSetHandle != IndexSet.Handle)
 		{
-			MOBIUS_FATAL_ERROR("Used an index addressed to index set number " << Index.IndexSetHandle << " for indexing index set number " << IndexSet.Handle << "." << std::endl);
+			const char *EntityName = GetName(Structure.Model, Structure.Type, Handle);
+			const char *TypeName   = GetEntityTypeName(Structure.Type);
+			MOBIUS_PARTIAL_ERROR("ERROR: Used an index addressed to the index set \"" << GetName(Structure.Model, index_set_h {Index.IndexSetHandle}) << "\" for indexing the index set \"" << GetName(Structure.Model, IndexSet) << "\"." << std::endl);
+			MOBIUS_FATAL_ERROR("This happened while looking up the value of the " << TypeName << " \"" << EntityName << "\"." << std::endl);
 		}
 #endif
 		
@@ -273,6 +290,27 @@ OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, con
 #if !defined(MOBIUS_INDEX_BOUNDS_TESTS)
 #define MOBIUS_INDEX_BOUNDS_TESTS 0
 #endif
+
+inline void
+CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index, size_t Count, entity_type Type, entity_handle Handle)
+{
+	bool CountError = (Index >= Count);
+	bool HandleError = (Index.IndexSetHandle != IndexSet.Handle);
+	if(CountError || HandleError)
+	{
+		const char *EntityName = GetName(Model, Type, Handle);
+		const char *TypeName   = GetEntityTypeName(Type);
+		if(CountError)
+		{
+			MOBIUS_PARTIAL_ERROR("ERROR: Index out of bounds for index set \"" << GetName(Model, IndexSet) << "\", got index " << Index << ", count was " << Count << std::endl);
+		}
+		if(HandleError)
+		{
+			MOBIUS_PARTIAL_ERROR("ERROR: Used an index addressed to the index set \"" << GetName(Model, index_set_h {Index.IndexSetHandle}) << "\" for indexing the index set \"" << GetName(Model, IndexSet) << "\"." << std::endl);
+		}
+		MOBIUS_FATAL_ERROR("This happened while looking up the value of the " << TypeName << " \"" << EntityName << "\"." << std::endl);
+	}
+}
 
 // NOTE: Returns the storage index of a value corresponding to this Handle with the given index set indexes.
 // Indexes must be set up so that Indexes[I] is the index of the I'th index set that the entity one wishes to look up depends on.
@@ -300,14 +338,7 @@ OffsetForHandle(storage_structure &Structure, const index_t *Indexes, size_t Ind
 		index_t Index = Indexes[Level];
 		
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		if(Index >= Count)
-		{
-			MOBIUS_FATAL_ERROR("Index out of bounds for index set number " << IndexSet.Handle << ", got index " << Index << ", count was " << Count << std::endl);
-		}
-		if(Index.IndexSetHandle != IndexSet.Handle)
-		{
-			MOBIUS_FATAL_ERROR("Used an index addressed to index set number " << Index.IndexSetHandle << " for indexing index set number " << IndexSet.Handle << "." << std::endl);
-		}
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -360,14 +391,7 @@ OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, con
 		}
 		
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		if(Index >= Count)
-		{
-			MOBIUS_FATAL_ERROR("Index out of bounds for index set number " << IndexSet.Handle << ", got index " << Index << ", count was " << Count << std::endl);
-		}
-		if(Index.IndexSetHandle != IndexSet.Handle)
-		{
-			MOBIUS_FATAL_ERROR("Used an index addressed to index set number " << Index.IndexSetHandle << " for indexing index set number " << IndexSet.Handle << "." << std::endl);
-		}
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -419,14 +443,7 @@ OffsetForHandle(storage_structure &Structure, index_t *CurrentIndexes, index_t *
 		}
 
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		if(Index >= Count)
-		{
-			MOBIUS_FATAL_ERROR("Index out of bounds for index set number " << IndexSet.Handle << ", got index " << Index << ", count was " << Count << std::endl);
-		}
-		if(Index.IndexSetHandle != IndexSet.Handle)
-		{
-			MOBIUS_FATAL_ERROR("Used an index addressed to index set number " << Index.IndexSetHandle << " for indexing index set number " << IndexSet.Handle << "." << std::endl);
-		}
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
