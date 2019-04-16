@@ -160,8 +160,6 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 							TC + RESULT(FlowErosionKFactor));
 		SFE = Max(0.0, SFE);
 		
-		double SSD = RESULT(MobilisedViaSplashDetachment);
-		
 		double surfacestorebeforeerosion = RESULT(SurfaceGrainStoreBeforeTransport) - RESULT(TransportBeforeFlowErosion);
 		
 		if(surfacestorebeforeerosion > 0.0) return 0.0; //NOTE: If there is any surface sediment left we know that we already exceeded our transport capacity, and so we can not mobilise any more.

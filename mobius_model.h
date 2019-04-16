@@ -32,6 +32,22 @@ MODEL_ENTITY_HANDLE(parameter_group_h)
 
 #undef MODEL_ENTITY_HANDLE
 
+enum entity_type
+{
+	EntityType_Parameter,
+	EntityType_Input,
+	EntityType_Equation,
+};
+
+inline const char *
+GetEntityTypeName(entity_type Type)
+{
+	//NOTE: It is important that this matches the above enum:
+	const char *Typenames[3] = {"parameter", "input", "equation"};
+	return Typenames[(size_t)Type];
+}
+
+
 struct index_t
 {
 	entity_handle IndexSetHandle;
@@ -313,6 +329,8 @@ struct storage_unit_specifier
 	std::vector<entity_handle> Handles;
 };
 
+struct mobius_model;
+
 struct storage_structure
 {
 	std::vector<storage_unit_specifier> Units;
@@ -324,6 +342,10 @@ struct storage_structure
 	size_t TotalCount;
 	
 	bool HasBeenSetUp = false;
+	
+	//NOTE: The following two are only here in case we need to look up the name of an index set when reporting an error about misindexing if the MOBIUS_INDEX_BOUNDS_TESTS is turned on. It is not that clean to have this here, though :(
+	const mobius_model *Model;
+	entity_type Type;
 	
 	~storage_structure();
 };
@@ -597,6 +619,25 @@ inline const char *
 GetParameterName(const mobius_model *Model, entity_handle ParameterHandle) //NOTE: In case we don't know the type of the parameter and just want the name.
 {
 	return Model->ParameterSpecs[ParameterHandle].Name;
+}
+
+inline const char *
+GetName(const mobius_model *Model, entity_type Type, entity_handle Handle)
+{
+	switch(Type)
+	{
+		case EntityType_Parameter:
+		return GetParameterName(Model, Handle);
+		break;
+		
+		case EntityType_Input:
+		return GetName(Model, input_h {Handle});
+		break;
+		
+		case EntityType_Equation:
+		return GetName(Model, equation_h {Handle});
+		break;
+	}
 }
 
 #define GET_ENTITY_HANDLE(Type, Typename, Typename2) \

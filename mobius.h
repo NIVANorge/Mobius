@@ -13,6 +13,7 @@ TODOs:
 	- Remove units as model entities entirely and only store / input them as strings? They seem like an unnecessary step right now.
 	- Manage the memory for all the data in the equation batch structure in such a way that it is aligned with how it will be read. (will have to not use std::vector in that case...)
 	- (Even more) convenience accessors for the DataSet so that io and application code does not have to understand the inner structure of the DataSet that much.
+	- Should entity handles contain their entity type in the upper bits?? May simplify entity system somewhat.
 */
 
 
