@@ -15,6 +15,9 @@ There is also the option to compile the models to .dll's that can be called and 
 
 Mobius is a reimplementation and extension of the functionality that was provided by https://github.com/biogeochemistry/INCA , but with a higher emphasis on run-time performance. Since then we have also started to add new models, ODE solvers and calibration systems.
 
+Developed by by Magnus Dahler Norling
+for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
+
 ## Available models
 
 The following models are already implemented using the Mobius framework (see the model-specific folders [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
@@ -28,9 +31,6 @@ Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); t
 ## Documentation
 
 Documentation can be found in the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) folder. This is still under development, and will be added to gradually. See also the quick start guide below and the tutorials.
-
-Developed by by Magnus Dahler Norling
-for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
 
 ## Quick start guide
 *This is a guide on how to get the tutorials running and to start building your own models.*
@@ -91,7 +91,7 @@ and activate it
     
 Then install the required packages
 
-    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab=0.34.9 notebook=5.6.0
+    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3
     
 To test your installation, `'cd'` into the top level of your local copy of the Mobius repository and run
 
