@@ -541,8 +541,6 @@ EndModelDefinition(mobius_model *Model)
 	{
 		equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
 		
-		bool isc = (strcmp(Spec.Name, "Control")==0);
-		
 		if(IsValid(Spec.Solver))
 		{
 			//TODO: Instead of always pushing this at the end, could we try to insert it earlier if it is possible to place it next to another batch with the same index set dependencies?
