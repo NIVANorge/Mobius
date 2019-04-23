@@ -15,9 +15,9 @@ There is also the option to compile the models to .dll's that can be called and 
 
 Mobius is a reimplementation and extension of the functionality that was provided by https://github.com/biogeochemistry/INCA , but with a higher emphasis on run-time performance. Since then we have also started to add a few new models, ODE solvers and calibration systems.
 
-The implementations of PERSiST, INCA-N and INCA-N-Classic are translated from biogeochemistry/INCA/
+Existing models currently implemented using the Mobius framework can be found [here](https://github.com/NIVANorge/Mobius/tree/master/Applications). The implementations of PERSiST, INCA-N and INCA-N-Classic are translated from biogeochemistry/INCA/
 
-Documentation can be found in the Documentation folder. This documentation is however still under development, and will be added gradually. For a start, see the quick start guide below and the tutorials.
+Documentation can be found in the Documentation folder. This is still under development, and will be added gradually. For a start, see the quick start guide below and the tutorials.
 
 
 Developed by by Magnus Dahler Norling
