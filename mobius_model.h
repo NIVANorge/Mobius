@@ -32,7 +32,7 @@ MODEL_ENTITY_HANDLE(parameter_group_h)
 
 #undef MODEL_ENTITY_HANDLE
 
-enum entity_type
+enum entity_type   //NOTE: Is currently only used so that the storage_structure knows what it is storing and can ask the Model for the name associated to a handle if an error occurs.
 {
 	EntityType_Parameter,
 	EntityType_Input,
@@ -343,7 +343,7 @@ struct storage_structure
 	
 	bool HasBeenSetUp = false;
 	
-	//NOTE: The following two are only here in case we need to look up the name of an index set when reporting an error about misindexing if the MOBIUS_INDEX_BOUNDS_TESTS is turned on. It is not that clean to have this here, though :(
+	//NOTE: The following two are only here in case we need to look up the name of an index set or handle when reporting an error about misindexing if the MOBIUS_INDEX_BOUNDS_TESTS is turned on. It is not that clean to have this information here, though :(
 	const mobius_model *Model;
 	entity_type Type;
 	
