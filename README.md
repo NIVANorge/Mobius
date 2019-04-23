@@ -9,7 +9,7 @@ The framework lets you focus on specifying parameters, input timeseries (forcing
 
 Mobius can produce executables that can be run standalone or together with the graphical user interface INCAView. https://github.com/Lecheps/INCAView
 
-There is also the option to compile the models to .dll's that can be called and interacted with from python using our python wrapper interface. The python wrapper interface is great for writing your own calibration systems or for making your own post-processing and plots.
+There is also the option to compile the models to .dll's that can be called and interacted with from python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots.
 
 ![Alt text](Documentation/img/optimizer_MAP.png?raw=true "Example of a plot made using the framework and the python wrapper.")
 
@@ -21,7 +21,7 @@ Documentation can be found in the Documentation folder. This documentation is ho
 
 
 Developed by by Magnus Dahler Norling
-for NIVA (Norwegian institute for water research)
+for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
 
 
 
