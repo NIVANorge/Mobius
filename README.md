@@ -1,11 +1,11 @@
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
 
-Mobius is a general framework for running large sets of equations, both discrete-timestep equations and ordinary differential equations, that model biogeochemical systems. Typically each equation can be evaluated over many indexes being they geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
+Mobius is a general framework for running large sets of equations, both discrete-timestep equations and ordinary differential equations, that model biogeochemical systems. Typically each equation can be evaluated over many indexes, representing e.g. geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
 
 Primarily Mobius was developed to model catchments (routing of precipitation through soil and groundwater into rivers and streams and assorted transport and reactions of chemical compounds and sediments), but can also be used to build e.g. biological population models.
 
-The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the run structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written directly in Matlab or python.
+The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written directly in Matlab or python.
 
 Mobius can produce executables that can be run standalone or together with the graphical user interface INCAView. https://github.com/Lecheps/INCAView
 
@@ -13,22 +13,29 @@ There is also the option to compile the models to .dll's that can be called and 
 
 ![Alt text](Documentation/img/optimizer_MAP.png?raw=true "Example of a plot made using the framework and the python wrapper.")
 
-Mobius is a reimplementation and extension of the functionality that was provided by https://github.com/biogeochemistry/INCA , but with a higher emphasis on run-time performance. Since then we have also started to add a few new models, ODE solvers and calibration systems.
+Mobius is a reimplementation and extension of the functionality that was provided by https://github.com/biogeochemistry/INCA , but with a higher emphasis on run-time performance. Since then we have also started to add new models, ODE solvers and calibration systems.
 
-Existing models currently implemented using the Mobius framework can be found [here](https://github.com/NIVANorge/Mobius/tree/master/Applications). The implementations of PERSiST, INCA-N and INCA-N-Classic are translated from biogeochemistry/INCA/
+## Available models
 
-Documentation can be found in the Documentation folder. This is still under development, and will be added gradually. For a start, see the quick start guide below and the tutorials.
+The following models are already implemented using the Mobius framework (see the model-specific folders [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
+ * "Simply" models (SimplyP, SimplyHydrol, SimplyC)
+ * "INCA" models (INCA-N, INCA-C, INCA-Sed, INCA-Microplastics, PERSiST) 
+ * HBV
+ 
+Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA
+
+## Documentation
+
+Documentation can be found in the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) folder. This is still under development, and will be added to gradually. See also the quick start guide below and the tutorials.
 
 Developed by by Magnus Dahler Norling
 for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
 
-
-
 ## Quick start guide
 *This is a guide on how to get the tutorials running and to start building your own models.*
 
-First, download the entire Mobius repository. It is recommended that you keep yout copy up to date, so it is probably a good idea to clone it using git and keep it updated that way. There are several tutorials online on how to do that.
+First, download the entire Mobius repository. It is recommended that you keep your copy up to date, so it is probably a good idea to clone it using git and keep it updated that way. There are several tutorials online on how to do that.
 
 Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler.
 
@@ -46,18 +53,51 @@ Make sure that the /bin/ folder of your installation of g++ is in your PATH vari
 
 To compile Tutorial 1, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe to see the output. Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens. This is the best way to learn. A detailed documentation of the API will be added later.
 
-To edit the C++ files, you can use whatever text editor you want, such as Notepad++, or you can find an IDE. We will not go through how to learn C++ here, but you will not need to know that many advanced concepts. Any online tutorial of just the basics will hopefully do (and also you can just learn by example from the models that are in this repository already, e.g the tutorials or the files in the Modules folder ).
+To edit the C++ files, you can use whatever text editor you want, such as Notepad++, or you can find an IDE. We will not go through how to learn C++ here, but you will not need to know that many advanced concepts. Any online tutorial of just the basics will hopefully do (and also you can just learn by example from the models that are in this repository already, e.g the tutorials or the files in the Modules folder).
 
-After understanding basic model building we also recommended you to learn the python wrapper interface to e.g. do your own post-processing and plotting with the model results. See more in the PythonWrapper readme.
+After understanding basic model building we also recommended you to learn the python wrapper interface to e.g. do your own post-processing and plotting with the model results. See more in the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper).
 
+## Dependencies
 
+### C++
 
-
-The basic functionality of the Mobius system has no other library dependencies than the C++ standard library. However if you want to use more advanced solvers such as the boost odeint solvers, you have to download boost (and copy the header files to your compiler's iclude directory).
+The basic functionality of the Mobius system has no other library dependencies than the C++ standard library which, on Windows, will be installed when you install g++ using MingW, as described above. However, if you want to use more advanced solvers such as the boost odeint solvers, you have to download boost (and copy the header files to your compiler's include directory).
 https://www.boost.org/
-You will not need to compile any of the boost libraries, we only use the header-only libraries.
+You will not need to compile any of the boost libraries; we use the header-only libraries.
 
 Other more advanced functionality such as the C++-written calibration systems rely on other libraries. That will eventually be documented somewhere else.
+
+### Python wrapper
+
+The Python wrapper has so far only been tested using **64-bit Python 3.6**. The main dependencies are:
+
+ * Numpy
+ * Scipy
+ * Matplotlib
+ * Pandas
+ * LMFit
+ * EMCEE
+ * Corner
+
+Additonally, we recommend using the wrapper via JupyterLab, in which case you will need to install that too.
+
+Python dependencies are most easily managed using the [Anaconda distribution](https://www.anaconda.com/distribution/) and the `'conda'` package manager. From the Anaconda prompt, first create a new environment using
+
+    conda create -n mobius python=3.6
+    
+and activate it
+
+    activate mobius
+    
+Then install the required packages
+
+    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab=0.34.9 notebook=5.6.0
+    
+To test your installation, `'cd'` into the top level of your local copy of the Mobius repository and run
+
+    jupyter lab
+    
+Using the JupyterLab file browser, navigate to `'PythonWrapper\SimplyP'` and work through `'simplyp_calibration.ipynb'`.    
 
 ## Building INCAView compatible exes
 
