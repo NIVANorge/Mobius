@@ -49,12 +49,12 @@ AddIncaPModel(mobius_model *Model)
 	auto ChemicalImmobilisationFactor = RegisterParameterDouble();
 	auto ChangeInRateWithA10DegreeChangeInTemperature = RegisterParameterDouble();
 	auto TemperatureAtWhichResponseIs1 = RegisterParameterDouble();
-	
+	auto LowerTemperatureThresholdImmobilisation = RegisterParameterDouble();
 	
 	auto PhosphorousWetDeposition      = RegisterEquation(Model, "Fertilizer wet deposition", KgPerHaPerDay);
 	auto LiquidPInputsToSoil           = RegisterEquation(Model, "Liquid P inputs to soil", KgPerHaPerDay);
 	auto SoilwaterEPC0                 = RegisterEquation(Model, "SoilwaterEPC0", MgPerL);
-	auto PhosphorousSorptionDesorption = RegisterEquation(Model, "Phosphorous sorption/desorption", KgPerKm2PerDay);
+	auto SoilPSorptionDesorption       = RegisterEquation(Model, "Soil P sorption/desorption", KgPerKm2PerDay);
 	auto TemperatureFactor             = RegisterEquation(Model, "Temperature factor", Dimensionless);
 	auto SoilMoistureFactor            = RegisterEquation(Model, "Soil moisture factor", Dimensionless);
 	auto SeasonalPlantGrowthIndex      = RegisterEquation(Model, "Seasonal plant growth index", Dimensionless);
@@ -124,7 +124,7 @@ AddIncaPModel(mobius_model *Model)
 		return epc0;
 	)
 	
-	EQUATION(Model, PhosphorousSorptionDesorption,
+	EQUATION(Model, SoilPSorptionDesorption,
 		double nsoilinv = 1.0/PARAMETER(SoilFreundlichIsothermConstant);
 		return
 			1e-3*PARAMETER(SoilSorptionScalingFactor)*
@@ -169,26 +169,32 @@ AddIncaPModel(mobius_model *Model)
 	EQUATION(Model, SoilwaterTDPMass,
 		return
 			  100.0 * RESULT(LiquidPInputsToSoil) 
-			- RESULT(PhosphorousSorptionDesorption) 
+			- RESULT(SoilPSorptionDesorption) 
 			- RESULT(PlantPUptakeFromSoilwater)
 			
 			- RESULT(SoilWaterTDPMass) * (RESULT(SoilToDirectRunoffFraction) + RESULT(SoilToGroundwaterFraction) + RESULT(SoilToReachFraction))
 			+ RESULT(DirectRunoffTDPMass) * RESULT(DirectRunoffToSoilFraction);
 	)
 	
+	EQUATION(Model, ChemicalImmobilisation,
+		double Ctemp = RESULT(TemperatureFactor);
+		if(INPUT(AirTemperature) <= PARAMETER(LowerTemperatureThresholdImmobilisation)) Ctemp = 0.0;
+		return PARAMETER(ChemicalImmobilisationFactor) * Ctemp * RESULT(SoilLabilePMass)
+	)
+	
 	EQUATION(Model, SoilLabilePMass,
 		return
 			  100.0 * RESULT(SolidPInputsToSoil)
-			+ RESULT(PhosphorousSorptionDesorption)
+			+ RESULT(SoilPSorptionDesorption)
 			+ PARAMETER(WeatheringFactor) * RESULT(TemperatureFactor) * RESULT(SoilInactivePMass)
 			- RESULT(SedimentDeliveryToReach) * SafeDivide(RESULT(SoilLabilePMass), RESULT(SoilMassInTheOAHorizon))
-			- PARAMETER(ChemicalImmobilisationFactor) * RESULT(TemperatureFactor) * RESULT(SoilLabilePMass);
+			- RESULT(ChemicalImmobilisation);
 			
 	)
 	
 	EQUATION(Model, SoilInactivePMass,
 		return
-			  PARAMETER(ChemicalImmobilisationFactor) * RESULT(TemperatureFactor) * RESULT(SoilLabilePMass)
+			  RESULT(ChemicalImmobilisation)
 			- PARAMETER(WeatheringFactor) * RESULT(TemperatureFactor) * RESULT(SoilInactivePMass)
 			- RESULT(SedimentDeliveryToReach) * SafeDivide(RESULT(SoilInactivePMass), RESULT(SoilMassInTheOAHorizon));
 	)
@@ -207,11 +213,89 @@ AddIncaPModel(mobius_model *Model)
 			SET_RESULT(SoilWaterTDPMass, tdp);
 			SET_RESULT(SoilLabilePMass, Csatlabile*Msoil);
 		}
+		
+		return 0.0;
 	)
 	
 	
 	EQUATION(Model, SoilwaterTDPConcentration,
 		return 1000.0 * SafeDivide(RESULT(SoilWaterTDPMass), RESULT(SoilwaterVolume));
+	)
+	
+	
+	
+	
+	EQUATION(Model, GroundwaterEPC0,
+		double Maquifer = 1e9*PARAMETER(AquiferMass);
+		double Psorbedgw = RESULT(PMassInTheAquiferMatrix);
+		double epc0 = RESULT(GroundwaterTDPConcentration);
+		double ngw = PARAMETER(GroundwaterFreundlichIsothermConstant);
+		double Kfgw = PARAMETER(GroundwaterPSorptionCoefficient);
+		if(Kfgw > 0.0 && Psorbedgw > 0.0)
+		{
+			epc0 = pow(1e6 * Psorbedgw / (Kfgw * Maquifer), ngw);
+		}
+		return epc0;
+	)
+	
+	EQUATION(Model, SoilPSorptionDesorption,
+		double nsoilinv = 1.0/PARAMETER(SoilFreundlichIsothermConstant);
+		return
+			1e-3*PARAMETER(SoilSorptionScalingFactor)*
+			(
+				  pow(RESULT(SoilwaterTDPConcentration), nsoilinv)
+				- pow(RESULT(SoilwaterEPC0), nsoilinv)
+			)*RESULT(SoilWaterVolume);
+	)
+	
+	EQUATION(Model, GroundwaterPSorptionDesorption,
+		double ngwinv = 1.0/PARAMETER(GroundwaterFreundlichIsothermConstant);
+		return
+			1e-3*PARAMETER(GroundwaterSorptionScalingFactor)*
+			(
+				  pow(RESULT(GroundwaterTDPConcentration), ngwinv)
+				- pow(RESULT(GroundwaterEPC0), ngwinv)
+			)*RESULT(GroundwaterVolume);
+	)
+	
+	EQUATION(Model, GroundwaterTDPMass,
+		return
+			- RESULT(GroundwaterPSorptionDesorption)
+			
+			- RESULT(GroundwaterTDPMass) * RESULT(GroundwaterToReachFraction)
+			+ RESULT(SoilWaterTDPMass) * RESULT(SoilToGroundwaterFraction);
+	)
+	
+	EQUATION(Model, PMassInTheAquiferMatrix,
+		return RESULT(GroundwaterPSorptionDesorption);
+	)
+	
+	EQUATION(Model, GroundwaterPControl,
+		//TODO: Make sure this is executed at the right place.
+	
+		double Maquifer = 1e9*PARAMETER(AquiferMass);
+		double Csataquifer = PARAMETER(AquiferMatrixPSaturation);
+		double Psorbed = RESULT(PMassInTheAquiferMatrix);
+		
+		double tdp = LAST_RESULT(GroundwaterTDPMass) + Psorbed - Csataquifer*Maquifer;
+		
+		if(Psorbed/Maquifer >= Csataquifer)
+		{
+			SET_RESULT(GroundwaterTDPMass, tdp);
+			SET_RESULT(PMassInTheAquiferMatrix, Csataquifer*Maquifer);
+		}
+	)
+	
+	EQUATION(Model, GroundwaterTDPConcentration,
+		return 1000.0 * SafeDivide(RESULT(GroundwaterTDPMass), RESULT(GroundwaterVolume));
+	)
+	
+	
+	
+	EQUATION(Model, DirectRunoffTDPMass,
+		return 
+			  RESULT(SoilwaterTDPMass) * RESULT(SoilToDirectRunoffFraction)
+			- RESULT(DirectRunoffTDPMass) * (RESULT(DirectRunoffToSoilFraction) + RESULT(DirectRunoffToReachFraction));
 	)
 	
 	
@@ -242,6 +326,71 @@ AddIncaPModel(mobius_model *Model)
 	auto EpiphyteGrowthRate = RegisterEquation(Model, "Epiphyte growth rate", GCPerM2PerDay);
 	auto EpiphyteDeathRate  = RegisterEquation(Model, "Epiphyte death rate", GCPerM2PerDay);
 	auto EpiphyteBiomass    = RegisterEquationODE(Model, "Epiphyte biomass", GCPerM2);
+	
+	
+	
+	
+	
+	
+	EQUATION(Model, ReachPPInputFromLand,
+		return
+			  PARAMETER(PPEnrichmentFactor)
+			* RESULT(TotalSedimentDeliveryToReach)
+			* SafeDivide(RESULT(SoilLabilePMass) + RESULT(SoilInactivePMass), RESULT(SoilMassInTheOAHorizon));
+	)
+	
+	EQUATION(Model, AreaScaledReachPPInputFromLand,
+		return RESULT(ReachPPInputFromLand) * PARAMETER(SubcatchmentArea) * PARAMETER(Percent) / 100.0;
+	)
+	
+	auto TotalReachPPInputFromLand = RegisterEquationCumulative(Model, "Total reach PP input from land", AreaScaledReachPPInputFromLand, LandscapeUnits);
+	
+	EQUATION(Model, ReachTDPInputFromLand,
+		return
+			  RESULT(DirectRunoffTDPMass) * RESULT(DirectRunoffToReachFraction)
+			+ RESULT(SoilwaterTDPMass) * RESULT(SoilToReachFraction)
+			+ RESULT(GroundwaterTDPMass) * RESULT(GroundwaterToReachFraction);
+	)
+	
+	EQUATION(Model, AreaScaledReachTDPInputFromLand,
+		return RESULT(ReachTDPInputFromLand) * PARAMETER(SubcatchmentArea) * PARAMETER(Percent) / 100.0;
+	)
+	
+	auto TotalReachTDPInputFromLand = RegisterEquationCumulative(Model, "Total reach TDP input from land", AreaScaledReachTDPInputFromLand, LandscapeUnits);
+	
+	EQUATION(Model, WaterColumnTDPInput,
+		double upstreamtdp = 0.0;
+		
+		FOREACH_INPUT(Reach,
+			upstreamtdp += RESULT(WaterColumnTDPOutput, *Input);
+		)
+		
+		//TODO: effluent inputs
+		
+		return upstreamtdp + RESULT(TotalReachTDPInputFromLand);
+	)
+	
+	EQUATION(Model, WaterColumnTDPOutput,
+		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(WaterColumnTDPMass), RESULT(ReachVolume));
+	)
+	
+	EQUATION(Model, ReachTDPUptakeByEpiphytes,
+		return 1e-3 * PARAMETER(ProportionOfPInEpiphytes) * RESULT(EpiphyteGrowthRate) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
+	)
+	
+	EQUATION(Model, WaterColumnTDPMass,
+		//TODO: abstraction
+		return
+			  RESULT(WaterColumnTDPInput)
+			- RESULT(WaterColumnTDPOutput)
+			- RESULT(ReachTDPUptakeByEpiphytes)
+			//TODO: sorption
+	)
+	
+	EQUATION(Model, WaterColumnTDPConcentration,
+		return 1e3 * SafeDivide(RESULT(WaterColumnTDPMass), RESULT(ReachVolume));
+	)
+	
 	
 	EQUATION(Model, MacrophyteGrowthRate,
 		double TDPpw = RESULT(PorewaterTDPConcentration);
