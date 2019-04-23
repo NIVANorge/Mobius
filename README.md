@@ -91,7 +91,7 @@ and activate it
     
 Then install the required packages
 
-    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab=0.34.9 notebook=5.6.0
+    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3
     
 To test your installation, `'cd'` into the top level of your local copy of the Mobius repository and run
 
