@@ -165,7 +165,7 @@ AddINCASedModel(mobius_model *Model)
 	
 	auto PercentageOfSedimentInGrainSizeClass   = RegisterParameterDouble(Model, SedimentSizeClass, "Percentage of sediment in grain size class", PercentU, 20);
 	auto SmallestDiameterOfSedimentClass        = RegisterParameterDouble(Model, SedimentSizeClass, "Smallest diameter of sediment in size class", Metres, 0.0, 0.0, 1.0);
-	auto LargestDiameterOfSedimentClass         = RegisterParameterDouble(Model, SedimentSizeClass, "Largest diameter of sediment in size class", Metres, 2e-6), 0.0, 1.0;
+	auto LargestDiameterOfSedimentClass         = RegisterParameterDouble(Model, SedimentSizeClass, "Largest diameter of sediment in size class", Metres, 2e-6, 0.0, 1.0);
 	
 	auto SedimentReach = RegisterParameterGroup(Model, "Sediment reach", Reach);
 	SetParentGroup(Model, SedimentReach, SedimentSizeClass);

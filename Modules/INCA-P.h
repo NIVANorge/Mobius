@@ -3,7 +3,7 @@
 
 //NOTE: Just starting to sketch out some parts of the model. It is far from finished.
 
-//This particular implementation follows J.A.Jackson-Blake &al 2016
+//This particular implementation follows L.A.Jackson-Blake &al 2016
 
 
 inline double
@@ -27,69 +27,184 @@ SorptionComputation(double SorptionScalingFactor, double TDPConcentration, doubl
 
 
 static void
-AddIncaPModel(mobius_model *Model)
+AddINCAPModel(mobius_model *Model)
 {
 	auto Dimensionless = RegisterUnit(Model);
 	auto GCPerM2       = RegisterUnit(Model, "G C / m^2");
 	auto GCPerM2PerDay = RegisterUnit(Model, "G C / m^2 / day");
 	auto KgPerKm2      = RegisterUnit(Model, "kg/km^2");
 	auto KgPerHaPerDay = RegisterUnit(Model, "kg/Ha/day");
+	auto KgPerHaPerYear = RegisterUnit(Model, "kg/Ha/year");
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km^2/day");
 	auto PerDay         = RegisterUnit(Model, "1/day");
-	auto PerKgSoil      = RegisterUnit(Model, "1/(kg soil)");
+	auto KgPerKg       = RegisterUnit(Model, "kg/kg");
 	auto KgPerHa       = RegisterUnit(Model, "kg/Ha");
+	auto JulianDay     = RegisterUnit(Model, "Julian day");
+	auto Days          = RegisterUnit(Model, "days");
+	auto MPerDay       = RegisterUnit(Model, "m/day");
+	auto DegreesCelsius     = RegisterUnit(Model, "°C");
+	auto MgPerL        = RegisterUnit(Model, "mg/l");
+	auto M3PerKm2      = RegisterUnit(Model, "m^3/km^2");
+	auto TonnesPerM2   = RegisterUnit(Model, "10^3 kg/m^2");
+	
+	
+	auto IncaSolver = RegisterSolver(Model, "Inca solver", 0.1, IncaDascru);
+	
+	auto Soils = GetIndexSetHandle(Model, "Soils");
+	
+	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
+	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
+	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
+	
+	//NOTE: These are from PERSiST:
+	auto WaterDepth3           = GetEquationHandle(Model, "Water depth 3"); //NOTE: This is right before percolation and runoff is subtracted.
+	auto WaterDepth            = GetEquationHandle(Model, "Water depth");   //NOTE: This is after everything is subtracted.
+	auto RunoffToReach         = GetEquationHandle(Model, "Runoff to reach");
+	auto SaturationExcessInput = GetEquationHandle(Model, "Saturation excess input");
+	auto PercolationInput      = GetEquationHandle(Model, "Percolation input");
+	auto PercolationOut        = GetEquationHandle(Model, "Percolation out");
+	
+	
+	auto SoilwaterVolume             = RegisterEquation(Model, "Soil water volume", M3PerKm2);
+	auto GroundwaterVolume           = RegisterEquation(Model, "Groundwater volume", M3PerKm2);
+	auto DirectRunoffToReachFraction = RegisterEquation(Model, "Direct runoff to reach fraction", PerDay);
+	auto DirectRunoffToSoilFraction  = RegisterEquation(Model, "Direct runoff to soil fraction", PerDay);
+	auto SoilToDirectRunoffFraction  = RegisterEquation(Model, "Soil to direct runoff fraction", PerDay);
+	auto SoilToGroundwaterFraction   = RegisterEquation(Model, "Soil to groundwater fraction", PerDay);
+	auto SoilToReachFraction         = RegisterEquation(Model, "Soil to reach fraction", PerDay);
+	auto GroundwaterToReachFraction  = RegisterEquation(Model, "Groundwater to reach fraction", PerDay);
+	
+	EQUATION(Model, SoilwaterVolume,
+		return RESULT(WaterDepth, Soilwater) * 1000.0;
+	)
+	
+	EQUATION(Model, GroundwaterVolume,
+		return RESULT(WaterDepth, Groundwater) * 1000.0;
+	)
+	
+	EQUATION(Model, DirectRunoffToReachFraction,
+		return SafeDivide(RESULT(RunoffToReach, DirectRunoff), RESULT(WaterDepth3, DirectRunoff));
+	)
+	
+	EQUATION(Model, DirectRunoffToSoilFraction,
+		return SafeDivide(RESULT(PercolationInput, Soilwater), RESULT(WaterDepth3, DirectRunoff));
+	)
+	
+	EQUATION(Model, SoilToDirectRunoffFraction,
+		return SafeDivide(RESULT(SaturationExcessInput, DirectRunoff), RESULT(WaterDepth3, Soilwater));
+	)
+	
+	EQUATION(Model, SoilToReachFraction,
+		return SafeDivide(RESULT(RunoffToReach, Soilwater), RESULT(WaterDepth3, Soilwater));
+	)
+	
+	EQUATION(Model, SoilToGroundwaterFraction,
+		return SafeDivide(RESULT(PercolationInput, Groundwater), RESULT(WaterDepth3, Soilwater));
+	)
+
+	EQUATION(Model, GroundwaterToReachFraction,
+		return SafeDivide(RESULT(RunoffToReach, Groundwater), RESULT(WaterDepth3, Groundwater));
+	)
+	
 	
 	auto Land = GetParameterGroupHandle(Model, "Landscape units");
+	
+	
+	//TODO: As always, find good default/min/max values and descriptions for parameters.
 	
 	auto LiquidManurePTimeseries     = RegisterInput(Model, "Liquid manure P", KgPerHaPerDay);
 	auto LiquidFertilizerPTimeseries = RegisterInput(Model, "Liquid fertilizer P", KgPerHaPerDay);
 	auto SolidManurePTimeseries      = RegisterInput(Model, "Solid manure P", KgPerHaPerDay);
 	auto SolidFertilizerPTimeseries  = RegisterInput(Model, "Solid fertilizer P", KgPerHaPerDay);
 	auto PlantResiduePTimeseries     = RegisterInput(Model, "Plant residue P", KgPerHaPerDay);
-	auto PhosphorousDryDepositionTimeseries = RegisterInput(Model, "Phosphorous dry deposition", KgPerHaPerDay);
+	auto PhosphorousDryDepositionTimeseries = RegisterInput(Model, "P dry deposition", KgPerHaPerDay);
+	auto PhosphorousWetDepositionTimeseries = RegisterInput(Model, "P wet deposition", KgPerHaPerDay);
 	
-	auto LiquidManureP = RegisterParameterDouble(Model, Land, "Liquid manure P", KgPerHaPerDay, 0.0, 0.0, 100.0, "Inputs of phosphorous to soil through liquid manure. Only used if the timeseries of the same name is not provided.");
-	auto LiquidFertilizerP = RegisterParameterDouble(Model, Land, "Liquid fertilizer P", KgPerHaPerDay, 0.0, 0.0, 100.0, "Inputs of phosphorous to soil through liquid fertilizer. Only used if the timeseries of the same name is not provided.");
-	auto SolidManureP  = RegisterParameterDouble();
-	auto SolidFertilizerP = RegisterParameterDouble();
-	auto PlantResidueP = RegisterParameterDouble();
-	auto PhosphorousDryDeposition = RegisterParameterDouble();
+	auto LiquidManureP = RegisterParameterDouble(Model, Land, "Liquid manure P inputs", KgPerHaPerDay, 0.0, 0.0, 100.0, "Inputs of phosphorous to soil through liquid manure. Only used if the timeseries of the same name is not provided.");
+	auto LiquidFertilizerP = RegisterParameterDouble(Model, Land, "Liquid fertilizer P inputs", KgPerHaPerDay, 0.0, 0.0, 100.0, "Inputs of phosphorous to soil through liquid fertilizer. Only used if the timeseries of the same name is not provided.");
+	auto SolidManureP  = RegisterParameterDouble(Model, Land, "Solid manure P inputs", KgPerHaPerDay, 0.0);
+	auto SolidFertilizerP = RegisterParameterDouble(Model, Land, "Solid fertilizer P inputs", KgPerHaPerDay, 0.0);
+	auto PlantResidueP = RegisterParameterDouble(Model, Land, "Plant residue P inputs", KgPerHaPerDay, 0.0);
+	auto PhosphorousDryDeposition = RegisterParameterDouble(Model, Land, "P dry deposition", KgPerHaPerDay, 0.0);
+	auto PhosphorousWetDepositionPar = RegisterParameterDouble(Model, Land, "P wet deposition", KgPerHaPerDay, 0.0); //TODO: Should be computed differently!
 	
-	auto SoilSorptionScalingFactor = RegisterParameterDouble(Model, Land, "Soil sorption scaling factor", PerDay); //TODO
-	auto SoilPSorptionCoefficient = RegisterParameterDouble(Model, Land, "Soil P sorption coefficient", PerKgSoil); //TODO
-	auto SoilFreundlichIsothermConstant = RegisterParameterDouble(Model, Land, "Soil freundlich isotherm constant", Dimensionless); //TODO
-	auto FertilizerAdditionStartDay = RegisterParameterUInt();
-	auto FertilizerAdditionPeriod   = RegisterParameterUInt();
-	auto GrowingSeasonStart = RegisterParameterUInt();
-	auto GrowingSeasonPeriod = RegisterParameterUInt();
-	auto PlantGrowthCurveAmplitude = RegisterParameterDouble();
-	auto PlantGrowthCurveOffset    = RegisterParameterDouble();
-	auto PlantPUptakeFactor = RegisterParameterDouble();
-	auto MaxDailyPUptake = RegisterParameterDouble();
-	auto MaxAnnualPUptake = RegisterParameterDouble();
-	auto MaxSoilLabilePContent = RegisterParameterDouble();
-	auto WeatheringFactor = RegisterParameterDouble();
-	auto ChemicalImmobilisationFactor = RegisterParameterDouble();
-	auto ChangeInRateWithA10DegreeChangeInTemperature = RegisterParameterDouble();
-	auto TemperatureAtWhichResponseIs1 = RegisterParameterDouble();
-	auto LowerTemperatureThresholdImmobilisation = RegisterParameterDouble();
+	auto SoilSorptionScalingFactor = RegisterParameterDouble(Model, Land, "Soil sorption scaling factor", PerDay, 1.0);
+	auto SoilPSorptionCoefficient = RegisterParameterDouble(Model, Land, "Soil P sorption coefficient", KgPerKg, 1.0);
+	auto SoilFreundlichIsothermConstant = RegisterParameterDouble(Model, Land, "Soil Freundlich isotherm constant", Dimensionless, 1.0);
+	auto FertilizerAdditionStartDay = RegisterParameterUInt(Model, Land, "Fertilizer addition start day", JulianDay, 20, 0, 365);
+	auto FertilizerAdditionPeriod   = RegisterParameterUInt(Model, Land, "Fertilizer addition period", Days, 20, 0, 365);
+	auto GrowingSeasonStart = RegisterParameterUInt(Model, Land, "Growing season start day", JulianDay, 20, 0, 365);
+	auto GrowingSeasonPeriod = RegisterParameterUInt(Model, Land, "Growing season period", Days, 20, 0, 365);
+	auto PlantGrowthCurveAmplitude = RegisterParameterDouble(Model, Land, "Plant growth curve amplitude", Dimensionless, 1.0, 0.0, 1.0);
+	auto PlantGrowthCurveOffset    = RegisterParameterDouble(Model, Land, "Plant growth curve offset", Dimensionless, 0.0, 0.0, 1.0);
+	auto PlantPUptakeFactor = RegisterParameterDouble(Model, Land, "Plant P uptake factor", MPerDay, 1.0);
+	auto MaxDailyPUptake = RegisterParameterDouble(Model, Land, "Maximum daily plant P uptake", KgPerHaPerDay, 100.0);
+	auto MaxAnnualPUptake = RegisterParameterDouble(Model, Land, "Maximum annual plant P uptake", KgPerHaPerYear, 100.0);
+	auto MaxSoilLabilePContent = RegisterParameterDouble(Model, Land, "Maximum soil labile P content", KgPerKg, 1.0, 0.0, 1.0);
+	auto WeatheringFactor = RegisterParameterDouble(Model, Land, "Weathering factor", PerDay, 1.0);
+	auto ChemicalImmobilisationFactor = RegisterParameterDouble(Model, Land, "Chemical immobilisation factor", PerDay, 1.0);
+	auto ChangeInRateWithA10DegreeChangeInTemperature = RegisterParameterDouble(Model, Land, "Change in rate with a 10 degree change in temperature", Dimensionless, 1.0, 0.0, 5.0);
+	auto TemperatureAtWhichResponseIs1 = RegisterParameterDouble(Model, Land, "Temperature at which response is 1", DegreesCelsius, 20.0);
+	auto LowerTemperatureThresholdImmobilisation = RegisterParameterDouble(Model, Land, "Lower temperature threshold for immobilisation", DegreesCelsius, 0.0);
+	
+	//TODO: Groundwater parameters should maybe not be per landscape unit.
+	auto GroundwaterSorptionScalingFactor = RegisterParameterDouble(Model, Land, "Groundwater sorption scaling factor", PerDay, 1.0);
+	auto GroundwaterPSorptionCoefficient = RegisterParameterDouble(Model, Land, "Groundwater P sorption coefficient", KgPerKg, 1.0);
+	auto GroundwaterFreundlichIsothermConstant = RegisterParameterDouble(Model, Land, "Groundwater Freundlich isotherm constant", Dimensionless, 1.0);
+	auto AquiferMass = RegisterParameterDouble(Model, Land, "Aquifer mass", TonnesPerM2, 1.0);
+	auto AquiferMatrixPSaturation = RegisterParameterDouble(Model, Land, "Aquifer matrix P saturation", MgPerL, 20.0);
 	
 	auto PhosphorousWetDeposition      = RegisterEquation(Model, "Fertilizer wet deposition", KgPerHaPerDay);
 	auto LiquidPInputsToSoil           = RegisterEquation(Model, "Liquid P inputs to soil", KgPerHaPerDay);
-	auto SoilwaterEPC0                 = RegisterEquation(Model, "SoilwaterEPC0", MgPerL);
-	auto SoilPSorptionDesorption       = RegisterEquation(Model, "Soil P sorption/desorption", KgPerKm2PerDay);
+	auto SolidPInputsToSoil            = RegisterEquation(Model, "Solid P inputs to soil", KgPerHaPerDay);
 	auto TemperatureFactor             = RegisterEquation(Model, "Temperature factor", Dimensionless);
 	auto SoilMoistureFactor            = RegisterEquation(Model, "Soil moisture factor", Dimensionless);
 	auto SeasonalPlantGrowthIndex      = RegisterEquation(Model, "Seasonal plant growth index", Dimensionless);
-	auto AccumulatedAnnualPUptake      = RegisterEquation(Model, "Accumulated annual P uptake", KgPerHa);
-	auto PlantPUptakeFromSoilwater     = RegisterEquation(Model, "Plant P uptake from soilwater", KgPerKm2PerDay);
-	auto SoilwaterTDPMass              = RegisterEquationODE(Model, "Soil water TDP mass", KgPerKm2);
-	auto SoilLabilePMass               = RegisterEquationODE(Model, "Soil labile P mass", KgPerKm2);
-	auto SoilInactivePMass             = RegisterEquationODE(Model, "Soil inactive P mass", KgPerKm2);
 	
-	auto SoilMassInTheOAHorizon = GetEquationHandle(Model, "Soil mass in the O/A horizon"); //From IncaSed.h
+	auto SoilwaterEPC0                 = RegisterEquation(Model, "SoilwaterEPC0", MgPerL);
+	SetSolver(Model, SoilwaterEPC0, IncaSolver);
+	auto SoilPSorptionDesorption       = RegisterEquation(Model, "Soil P sorption/desorption", KgPerKm2PerDay);
+	SetSolver(Model, SoilPSorptionDesorption, IncaSolver);
+	auto PlantPUptakeFromSoilwater     = RegisterEquation(Model, "Plant P uptake from soilwater", KgPerKm2PerDay);
+	SetSolver(Model, PlantPUptakeFromSoilwater, IncaSolver);
+	auto ChemicalImmobilisation        = RegisterEquation(Model, "Chemical immobilisation", KgPerKm2PerDay);
+	SetSolver(Model, ChemicalImmobilisation, IncaSolver);
+	auto SoilwaterTDPMass              = RegisterEquationODE(Model, "Soil water TDP mass", KgPerKm2);
+	SetSolver(Model, SoilwaterTDPMass, IncaSolver);
+	//SetInitialValue
+	auto SoilLabilePMass               = RegisterEquationODE(Model, "Soil labile P mass", KgPerKm2);
+	SetSolver(Model, SoilLabilePMass, IncaSolver);
+	//SetInitialValue
+	auto SoilInactivePMass             = RegisterEquationODE(Model, "Soil inactive P mass", KgPerKm2);
+	SetSolver(Model, SoilInactivePMass, IncaSolver);
+	//SetInitialValue
+	auto SoilwaterTDPConcentration     = RegisterEquation(Model, "Soil water TDP concentration", MgPerL);
+	SetSolver(Model, SoilwaterTDPConcentration, IncaSolver);
+	auto DirectRunoffTDPMass           = RegisterEquationODE(Model, "Direct runoff TDP mass", KgPerKm2);
+	SetSolver(Model, DirectRunoffTDPMass, IncaSolver);
+	//SetInitialValue
+	auto GroundwaterEPC0               = RegisterEquation(Model, "Groundwater EPC0", MgPerL);
+	SetSolver(Model, GroundwaterEPC0, IncaSolver);
+	auto GroundwaterPSorptionDesorption = RegisterEquation(Model, "Groundwater P sorption/desorption", KgPerKm2PerDay);
+	SetSolver(Model, GroundwaterPSorptionDesorption, IncaSolver);
+	auto GroundwaterTDPMass            = RegisterEquationODE(Model, "Groundwater TDP mass", KgPerKm2);
+	SetSolver(Model, GroundwaterTDPMass, IncaSolver);
+	//SetInitialValue
+	auto PMassInTheAquiferMatrix       = RegisterEquationODE(Model, "P mass in the aquifer matrix", KgPerKm2);
+	SetSolver(Model, PMassInTheAquiferMatrix, IncaSolver);
+	//SetInitialValue
+	auto GroundwaterTDPConcentration   = RegisterEquation(Model, "Groundwater TDP concentration", KgPerKm2);
+	SetSolver(Model, GroundwaterTDPConcentration, IncaSolver);
+	
+	auto SoilPControl                  = RegisterEquation(Model, "Soil P control", Dimensionless);
+	auto GroundwaterPControl           = RegisterEquation(Model, "Groundwater P control", Dimensionless);
+	auto AccumulatedAnnualPUptake      = RegisterEquation(Model, "Accumulated annual P uptake", KgPerHa);
+	
+	auto SoilMassInTheOAHorizon  = GetEquationHandle(Model, "Soil mass in the O/A horizon"); //From IncaSed.h
 	auto SedimentDeliveryToReach = GetEquationHandle(Model, "Sediment delivery to reach"); //From IncaSed.h
-	auto SoilTemperature        = GetEquationHandle(Model, "Soil temperature"); //From SoilTemperature.h
+	auto SoilTemperature         = GetEquationHandle(Model, "Soil temperature"); //From SoilTemperature.h
+	
+	auto AirTemperature = GetInputHandle(Model, "Air temperature");
 	
 	
 	EQUATION(Model, PhosphorousWetDeposition,
@@ -152,12 +267,13 @@ AddIncaPModel(mobius_model *Model)
 				RESULT(SoilwaterTDPConcentration),
 				RESULT(SoilwaterEPC0),
 				PARAMETER(SoilFreundlichIsothermConstant),
-				RESULT(SoilWaterVolume)
+				RESULT(SoilwaterVolume)
 				);
 	)
 	
 	EQUATION(Model, SoilMoistureFactor,
-		//TODO
+		return 1.0;
+		//TODO!!!
 	)
 	
 	EQUATION(Model, TemperatureFactor,
@@ -183,7 +299,7 @@ AddIncaPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, AccumulatedAnnualPUptake,
-		double acc = LAST_RESULT(AccumulatedAnnualPUptake) + RESULT(PlantPUptakeFromSoilwater) / 100.0;
+		double acc = LAST_RESULT(AccumulatedAnnualPUptake) + LAST_RESULT(PlantPUptakeFromSoilwater) / 100.0;
 		if(CURRENT_DAY_OF_YEAR() == 1) acc = 0.0;
 		return acc;
 	)
@@ -194,14 +310,14 @@ AddIncaPModel(mobius_model *Model)
 			- RESULT(SoilPSorptionDesorption) 
 			- RESULT(PlantPUptakeFromSoilwater)
 			
-			- RESULT(SoilWaterTDPMass) * (RESULT(SoilToDirectRunoffFraction) + RESULT(SoilToGroundwaterFraction) + RESULT(SoilToReachFraction))
+			- RESULT(SoilwaterTDPMass) * (RESULT(SoilToDirectRunoffFraction) + RESULT(SoilToGroundwaterFraction) + RESULT(SoilToReachFraction))
 			+ RESULT(DirectRunoffTDPMass) * RESULT(DirectRunoffToSoilFraction);
 	)
 	
 	EQUATION(Model, ChemicalImmobilisation,
 		double Ctemp = RESULT(TemperatureFactor);
 		if(INPUT(AirTemperature) <= PARAMETER(LowerTemperatureThresholdImmobilisation)) Ctemp = 0.0;
-		return PARAMETER(ChemicalImmobilisationFactor) * Ctemp * RESULT(SoilLabilePMass)
+		return PARAMETER(ChemicalImmobilisationFactor) * Ctemp * RESULT(SoilLabilePMass);
 	)
 	
 	EQUATION(Model, SoilLabilePMass,
@@ -226,13 +342,13 @@ AddIncaPModel(mobius_model *Model)
 		//TODO: Make sure this is executed at the right place!!
 	
 		double Csatlabile = PARAMETER(MaxSoilLabilePContent);
-		double Msoil      = PARAMETER(SoilMassInTheOAHorizon);
+		double Msoil      = RESULT(SoilMassInTheOAHorizon);
 		double Plab       = RESULT(SoilLabilePMass);
-		double tdp = LAST_RESULT(SoilWaterTDPMass) + Plab - Csatlabile*Msoil;
+		double tdp = LAST_RESULT(SoilwaterTDPMass) + Plab - Csatlabile*Msoil;
 		
 		if(SafeDivide(Plab, Msoil) >= Csatlabile)
 		{
-			SET_RESULT(SoilWaterTDPMass, tdp);
+			SET_RESULT(SoilwaterTDPMass, tdp);
 			SET_RESULT(SoilLabilePMass, Csatlabile*Msoil);
 		}
 		
@@ -241,7 +357,7 @@ AddIncaPModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, SoilwaterTDPConcentration,
-		return 1000.0 * SafeDivide(RESULT(SoilWaterTDPMass), RESULT(SoilwaterVolume));
+		return 1000.0 * SafeDivide(RESULT(SoilwaterTDPMass), RESULT(SoilwaterVolume));
 	)
 	
 	
@@ -274,7 +390,7 @@ AddIncaPModel(mobius_model *Model)
 			- RESULT(GroundwaterPSorptionDesorption)
 			
 			- RESULT(GroundwaterTDPMass) * RESULT(GroundwaterToReachFraction)
-			+ RESULT(SoilWaterTDPMass) * RESULT(SoilToGroundwaterFraction);
+			+ RESULT(SoilwaterTDPMass) * RESULT(SoilToGroundwaterFraction);
 	)
 	
 	EQUATION(Model, PMassInTheAquiferMatrix,
@@ -295,6 +411,8 @@ AddIncaPModel(mobius_model *Model)
 			SET_RESULT(GroundwaterTDPMass, tdp);
 			SET_RESULT(PMassInTheAquiferMatrix, Csataquifer*Maquifer);
 		}
+		
+		return 0.0;
 	)
 	
 	EQUATION(Model, GroundwaterTDPConcentration,
@@ -310,7 +428,7 @@ AddIncaPModel(mobius_model *Model)
 	)
 	
 	
-	
+/*	
 	
 	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
 	
@@ -574,6 +692,6 @@ AddIncaPModel(mobius_model *Model)
 	EQUATION(Model, EpiphyteBiomass,
 		return RESULT(EpiphyteGrowthRate) - RESULT(EpiphyteDeathRate);
 	)
-	
+*/
 	
 }
