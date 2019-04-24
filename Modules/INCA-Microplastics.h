@@ -456,8 +456,6 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		
 		return 0.0;
 	)
-	
-	//TODO: In-reach and in-bed breakdown between classes.
 }
 
 
