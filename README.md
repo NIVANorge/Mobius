@@ -61,43 +61,16 @@ After understanding basic model building we also recommended you to learn the py
 
 ### C++
 
-The basic functionality of the Mobius system has no other library dependencies than the C++ standard library which, on Windows, will be installed when you install g++ using MingW, as described above. However, if you want to use more advanced solvers such as the boost odeint solvers, you have to download boost (and copy the header files to your compiler's include directory).
+The basic functionality of the Mobius system has no other library dependencies than the C++ standard library, which will be installed when you install g++ as described above. However, if you want to use more advanced solvers such as the boost::numeric::odeint solvers, you have to download boost (and copy the header files to your compiler's include directory).
 https://www.boost.org/
-You will not need to compile any of the boost libraries; we use the header-only libraries.
+You will not need to compile any of the boost libraries separately; we use the header-only libraries.
 
 Other more advanced functionality such as the C++-written calibration systems rely on other libraries. That will eventually be documented somewhere else.
 
 ### Python wrapper
 
-The Python wrapper has so far only been tested using **64-bit Python 3.6**. The main dependencies are:
-
- * Numpy
- * Scipy
- * Matplotlib
- * Pandas
- * LMFit
- * EMCEE
- * Corner
-
-Additonally, we recommend using the wrapper via JupyterLab, in which case you will need to install that too.
-
-Python dependencies are most easily managed using the [Anaconda distribution](https://www.anaconda.com/distribution/) and the `'conda'` package manager. From the Anaconda prompt, first create a new environment using
-
-    conda create -n mobius python=3.6
-    
-and activate it
-
-    activate mobius
-    
-Then install the required packages
-
-    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3
-    
-To test your installation, `'cd'` into the top level of your local copy of the Mobius repository and run
-
-    jupyter lab
-    
-Using the JupyterLab file browser, navigate to `'PythonWrapper\SimplyP'` and work through `'simplyp_calibration.ipynb'`.    
+See the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper).
+  
 
 ## Building INCAView compatible exes
 
