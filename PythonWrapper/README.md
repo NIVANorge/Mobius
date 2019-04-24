@@ -8,9 +8,9 @@ To learn the basics of how to build and compile models, see the [quick start gui
 
 The C++-end code of the C++-python interface is in python_wrapper.h, while the python-end of it is in mobius.py.
 
-To use a model with the python wrapper, create your own .cpp file along the lines of persistwrapper.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of compilepersist.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded using mobius.initialize('name_of_dll.dll')
+To use a model with the python wrapper, create your own .cpp file along the lines of Persist/persistwrapper.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of compilepersist.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded using mobius.initialize('name_of_dll.dll')
 
-We have already built some examples atop of mobius.py to show you how you can interact with the models through the interface. See e.g. optimization_example.py or the SimplyP example [here](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb). There is also docstring documentation in mobius.py, and we have made some calibration utilities available through mobius_calibration.py.
+We have already built some examples atop of mobius.py to show you how you can interact with the models through the interface. See e.g. optimization_example.py or the SimplyP example [here](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb). There is also docstring documentation in mobius.py, and we have made some calibration utilities available through mobius_calib_uncert_lmfit.py (mobius_calibration.py is older code, but can also serve as a good example of what you can do).
 
 
 ![Alt text](../Documentation/img/triangle_plot.png?raw=true "Triangle plot from running emcee on reach flow in SimplyP")
