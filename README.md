@@ -80,7 +80,7 @@ We already have .cpp files ready for compilation that are set up to produce INCA
 To set up your own .cpp files like these, try to follow the example from one of those files.
 
 To compile them you also need the sqlite3 library. Download the source code for sqlite3 from https://www.sqlite.org/download.html . You should put the sqlite3 files in Mobius/sqlite3 (create a new folder). Then compile sqlite3 into a linkable object file using
-    `gcc -c sqlite3.c -O2 (Windows)`
+    `gcc -c sqlite3.c -O2`
 
 You also have to download json.hpp from https://github.com/nlohmann/json/tree/develop/single_include/nlohmann and put it in Mobius/json (create a new folder). The json library does not need any separate compilation.
 
