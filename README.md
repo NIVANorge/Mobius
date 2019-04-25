@@ -118,12 +118,11 @@ Note that compiling INCAView itself is not trivial as you need to install QtCrea
 
 Then to get started with INCAViewer:
 - Double click on INCAView.exe. 
-- Click 'Load parameter database' and navigate to and select the .db file you just created. The parameters should load and appear in the top left panel. Click on any of the parameter names, and its values should appear to the right. These values are editable, and changes are saved to the parameter database but not to the original .dat file. To export changes you make to the parameter values, click the 'Export parameters' button at the bottom.
+- Click 'Load parameter database' and navigate to and select the .db file you just created. The parameters should load and appear in the top left panel. Click on any of the parameter group names, and the associated parameter values should appear to the right. These values are editable, and changes are saved to the parameter database but not to the original .dat file. To export changes you make to the parameter values, click the 'Export parameters' button at the bottom or run the convert_parameters command from the command line as above with the file names in the opposite order.
 - Click 'Select input file' and navigate to the .dat file which contains your driving meteorological data and any other inputs you wish to read in (e.g. observations)
 - Click 'Run model'. Results and inputs should be listed in the top right hand panels.
 - Click through results and inputs to explore the output. Hold down the Shift or Ctrl keys to select multiple series at the same time, and do Ctrl click to deselect. When you have a simulated and an observed series selected, you can get goodness of fit statistics by selecting the 'Results info' tab at the bottom left of the window. Note that if your observations have lots of missing values, you need to check the 'Scatter plot for inputs' box for them to appear on the plot.
-- Click 'Export results' to save results to file.
-- and then 'Load input data' to load in the input .dat file.  
+- Click 'Export results' to save results in a csv format to a file.
 
 
 ![Alt text](Documentation/img/incaviewpersist.png?raw=true "Example of running the PERSiST model in INCAView.")
