@@ -59,7 +59,7 @@ https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installati
 ## Compile a model, run it, and make some changes
 
 The basics of compiling are simple once you have a compiler installed:
-- Make a .bat file, which tells the compiler to compile the contents of the .bat file into a machine-readable executable. For all the example models, these .bat files have already been written.
+- Make a .bat file, which contains the command line instruction(s) for the compiler to compile the .cpp file into an executable. Most existing models have such .bat files already.
 - Open the command line prompt (e.g. press the windows key and type 'cmd' and then hit enter)
 - From the command line, navigate to wherever your .bat file is located. To change drives (e.g. from C: to D:), just type the name of drive you want to be in and hit enter. When you're in the right drive, change to your desired folder by typing cd then the filepath, e.g. `cd C:\GitHub\Mobius\Applications\SimplyP`
 - Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
