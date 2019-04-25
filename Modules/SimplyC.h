@@ -19,8 +19,8 @@ AddSimplyCModel(mobius_model *Model)
 	auto PerDegreesC = RegisterUnit(Model, "1/degreesC");
 
 	// Set up indexers
-	auto Reach          = GetIndexSetHandle(Model, "Reaches"); //Defined in SimplyHydrol.h
-	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units"); //Defined in SimplyHydrol.h
+	auto Reach          = GetIndexSetHandle(Model, "Reaches"); //Defined in SimplyQ.h
+	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units"); //Defined in SimplyQ.h
 //	auto LowCarbon   = RequireIndex(Model, LandscapeUnits, "Low soil carbon");
 //	auto HighCarbon  = RequireIndex(Model, LandscapeUnits, "High soil carbon");
 

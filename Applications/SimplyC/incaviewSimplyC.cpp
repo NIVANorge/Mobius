@@ -9,7 +9,7 @@
 
 #include "../../Modules/UnitConversions.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SimplyHydrol_noGW.h"
+#include "../../Modules/SimplyQ_noGW.h"
 #include "../../Modules/SoilTemperature_simply.h"
 
 #include "../../incaview_compatibility.h"
