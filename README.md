@@ -77,7 +77,7 @@ After understanding basic model building we recommended you explore the python w
 ## Navigating around the repository
 
 - The main model definition files are within the 'Modules' folder. This is where the meat is in terms of parameter definitions, equations, etc. All these files have a .h file extension.
-- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder.
+- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders typically also have a few example parameter and input files.
 - For now all the source code of the main Mobius functionality is in the base folder. The models rely on this base functionality to organize data in memory and executie the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier. Beware however that you should make sure not to include mobius.h into several different compilation units in your project if you need to have more than one compilation unit.
 
 ## Dependencies
