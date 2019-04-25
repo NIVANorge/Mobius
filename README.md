@@ -64,6 +64,8 @@ The basics of compiling are simple once you have a compiler installed:
 - From the command line, navigate to wherever your .bat file is located. To change drives (e.g. from C: to D:), just type the name of drive you want to be in and hit enter. When you're in the right drive, change to your desired folder by typing cd then the filepath, e.g. `cd C:\GitHub\Mobius\Applications\SimplyP`
 - Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
 
+You could also set up a build system of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
+
 To compile **Tutorial 1**, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe to see the output. Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens (remembering that you have to recompile after any change before running to see an effect in the output). This is the best way to learn. A detailed documentation of the API will be added later.
 
 To edit the C++ files, you can use whatever text editor you want, such as Notepad++, or you can find an IDE. We will not go through how to learn C++ here, but you will not need to know that many advanced concepts. Any online tutorial of just the basics will hopefully do (and also you can just learn by example from the models that are in this repository already, e.g the tutorials or the files in the Modules folder).
