@@ -114,8 +114,10 @@ To compile models for INCAViewer, from the command line run the .bat file which 
 INCAView requires a parameter database to be supplied. To create a parameter database from a parameter .dat file, from the command line type `mymodelname.exe` and hit enter (substituting your model name in). A list of options will then be printed to the command line, including one to create a parameter database file from a .dat file:
 `mymodelname.exe convert_parameters myparameters.dat myparameters.db`
 
+Note that compiling INCAView itself is not trivial as you need to install QtCreator and also get a hold of some libssh-related .dll's. Instead of doing this yourself you should probably ask us to get a compiled version of INCAView. We will find a more reliable way to distribute this soon-ish.
+
 Then to get started with INCAViewer:
-- Double click on INCAView.exe (from within the INCAView repository)
+- Double click on INCAView.exe. 
 - Click 'Load parameter database' and navigate to and select the .db file you just created. The parameters should load and appear in the top left panel. Click on any of the parameter names, and its values should appear to the right. These values are editable, and changes are saved to the parameter database but not to the original .dat file. To export changes you make to the parameter values, click the 'Export parameters' button at the bottom.
 - Click 'Select input file' and navigate to the .dat file which contains your driving meteorological data and any other inputs you wish to read in (e.g. observations)
 - Click 'Run model'. Results and inputs should be listed in the top right hand panels.
@@ -123,7 +125,5 @@ Then to get started with INCAViewer:
 - Click 'Export results' to save results to file.
 - and then 'Load input data' to load in the input .dat file.  
 
-
-In the future, we may also look into a way of distributing precompiled exes of INCAView and some of the models.
 
 ![Alt text](Documentation/img/incaviewpersist.png?raw=true "Example of running the PERSiST model in INCAView.")
