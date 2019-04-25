@@ -180,6 +180,7 @@ AddINCASedModel(mobius_model *Model)
 	SetParentGroup(Model, SedimentReach, SedimentSizeClass);
 	
 	auto EffluentSedimentConcentration   = RegisterParameterDouble(Model, SedimentReach, "Effluent sediment concentration", MgPerL, 0.0);
+	auto EffluentSedimentConcentrationTimeseries = RegisterInput(Model, "Effluent sediment concentration", MgPerL);
 	
 	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
 	
@@ -227,10 +228,13 @@ AddINCASedModel(mobius_model *Model)
 	
 	auto ReachWidth = GetParameterDoubleHandle(Model, "Reach width");
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
+	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input");
 	auto ReachDepth = GetEquationHandle(Model, "Reach depth");
 	auto ReachFlow  = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume = GetEquationHandle(Model, "Reach volume");
 	auto ReachVelocity = GetEquationHandle(Model, "Reach velocity");
+	
+	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
 	EQUATION(Model, InitialSuspendedSedimentMass,
 		//NOTE: probably have to have the CURRENT_INDEX(Reach) for it to work correctly. Because of problem in initial value system.
@@ -312,10 +316,12 @@ AddINCASedModel(mobius_model *Model)
 		if(CURRENT_INDEX(SizeClass) != 0) clayrelease = 0.0;      //NOTE: This assumes that index 0 is always clay though...
 		
 		//TODO: Abstraction??
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * PARAMETER(ReachHasEffluentInput);
+		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentSedimentConcentrationTimeseries, EffluentSedimentConcentration);
 		
 		return 
 			  RESULT(SedimentOfSizeClassDeliveredToReach) 
-			+ PARAMETER(EffluentSedimentConcentration) * PARAMETER(EffluentFlow) //TODO: Allow for effluent timeseries
+			+ effluentconc * effluentflow * 86.4
 			+ RESULT(ReachUpstreamSuspendedSediment) 
 			- RESULT(ReachSuspendedSedimentOutput) 
 			+ PARAMETER(ReachLength) * PARAMETER(ReachWidth) * (RESULT(SedimentEntrainment) + clayrelease - RESULT(SedimentDeposition));

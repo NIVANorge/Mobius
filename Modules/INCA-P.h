@@ -1,10 +1,5 @@
 
-
-
-//NOTE: Just starting to sketch out some parts of the model. It is far from finished.
-
 //This particular implementation follows L.A.Jackson-Blake &al 2016
-
 
 inline double
 EPC0Computation(double SorptionCoefficient, double SolidPhosphorousMass, double SoilMass, double FreundlichIsothermConstant, double TDPConcentration)
@@ -30,8 +25,8 @@ static void
 AddINCAPModel(mobius_model *Model)
 {
 	auto Dimensionless = RegisterUnit(Model);
-	auto GCPerM2       = RegisterUnit(Model, "gC / m^2");
-	auto GCPerM2PerDay = RegisterUnit(Model, "gC / m^2 / day");
+	auto GCPerM2       = RegisterUnit(Model, "gC/m^2");
+	auto GCPerM2PerDay = RegisterUnit(Model, "gC/m^2/day");
 	auto KgPerKm2      = RegisterUnit(Model, "kg/km^2");
 	auto KgPerHaPerDay = RegisterUnit(Model, "kg/Ha/day");
 	auto KgPerHaPerYear = RegisterUnit(Model, "kg/Ha/year");
@@ -508,6 +503,8 @@ AddINCAPModel(mobius_model *Model)
 	auto PSaturationInBedSediment = RegisterParameterDouble(Model, Reaches, "P saturation in bed sediment", KgPerKg, 0.2);
 	auto BedSedimentDepth = RegisterParameterDouble(Model, Reaches, "Bed sediment depth", M, 1.0);
 	auto BedSedimentPorosity = RegisterParameterDouble(Model, Reaches, "Bed sediment porosity", Dimensionless, 0.3);
+	auto EffluentPPConcentration = RegisterParameterDouble(Model, Reaches, "Effluent PP concentration", MgPerL, 0.0);
+	auto EffluentTDPConcentration = RegisterParameterDouble(Model, Reaches, "Effluent TDP concentration", MgPerL, 0.0);
 	
 	auto RatioOfHydrolysablePToDOC = RegisterParameterDouble(Model, Reaches, "Ration of hydrolysable P to DOC", KgPerKg, 1.0);
 	auto RegressionBetweenTDPAndSRPConstant = RegisterParameterDouble(Model, Reaches, "Regression between TDP and SRP (constant)", Kg, 0.0);
@@ -520,6 +517,8 @@ AddINCAPModel(mobius_model *Model)
 	auto InitialMacrophyteBiomass           = RegisterParameterDouble(Model, Reaches, "Initial macrophyte biomass", GCPerM2, 0.0);
 	auto InitialEpiphyteBiomass             = RegisterParameterDouble(Model, Reaches, "Initial epiphyte biomass", GCPerM2, 0.0);
 	
+	auto EffluentPPConcentrationTimeseries = RegisterInput(Model, "Effluent PP concentration", MgPerL);
+	auto EffluentTDPConcentrationTimeseries = RegisterInput(Model, "Effluent TDP concentration", MgPerL);
 	auto DOCConcentration = RegisterInput(Model, "DOC concentration", MgPerL);
 	
 	
@@ -538,6 +537,10 @@ AddINCAPModel(mobius_model *Model)
 	auto Percent          = GetParameterDoubleHandle(Model, "%"); //From Persist.h
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length"); //From Persist.h
 	auto ReachWidth       = GetParameterDoubleHandle(Model, "Reach width"); //From Persist.h
+	auto EffluentFlow     = GetParameterDoubleHandle(Model, "Effluent flow"); // From Persist.h
+	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input");
+	
+	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
 	
 	auto ReachPSolver = RegisterSolver(Model, "Reach P solver", 0.1, IncaDascru);
@@ -673,9 +676,10 @@ AddINCAPModel(mobius_model *Model)
 			upstreamtdp += RESULT(WaterColumnTDPOutput, *Input);
 		)
 		
-		//TODO: effluent inputs
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * (double)PARAMETER(ReachHasEffluentInput);
+		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentTDPConcentrationTimeseries, EffluentTDPConcentration);
 		
-		return upstreamtdp + RESULT(TotalReachTDPInputFromLand);
+		return upstreamtdp + RESULT(TotalReachTDPInputFromLand) + effluentflow * effluentconc * 86.4;
 	)
 	
 	EQUATION(Model, WaterColumnPPInput,
@@ -685,9 +689,10 @@ AddINCAPModel(mobius_model *Model)
 			upstreampp += RESULT(WaterColumnPPOutput, *Input);
 		)
 		
-		//TODO: effluent inputs
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * (double)PARAMETER(ReachHasEffluentInput);
+		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentPPConcentrationTimeseries, EffluentPPConcentration);
 		
-		return upstreampp + RESULT(TotalReachPPInputFromLand);
+		return upstreampp + RESULT(TotalReachPPInputFromLand) + effluentflow * effluentconc * 86.4;
 	)
 	
 	EQUATION(Model, WaterColumnTDPOutput,
@@ -745,7 +750,6 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, WaterColumnTDPMass,
-		//TODO: abstraction
 		return
 			  RESULT(WaterColumnTDPInput)
 			- RESULT(WaterColumnTDPOutput)
@@ -756,7 +760,6 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, WaterColumnPPMass,
-		//TODO: abstraction
 		return
 			  RESULT(WaterColumnPPInput)
 			- RESULT(WaterColumnPPOutput)
