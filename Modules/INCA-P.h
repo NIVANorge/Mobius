@@ -30,23 +30,29 @@ static void
 AddINCAPModel(mobius_model *Model)
 {
 	auto Dimensionless = RegisterUnit(Model);
-	auto GCPerM2       = RegisterUnit(Model, "G C / m^2");
-	auto GCPerM2PerDay = RegisterUnit(Model, "G C / m^2 / day");
+	auto GCPerM2       = RegisterUnit(Model, "gC / m^2");
+	auto GCPerM2PerDay = RegisterUnit(Model, "gC / m^2 / day");
 	auto KgPerKm2      = RegisterUnit(Model, "kg/km^2");
 	auto KgPerHaPerDay = RegisterUnit(Model, "kg/Ha/day");
 	auto KgPerHaPerYear = RegisterUnit(Model, "kg/Ha/year");
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km^2/day");
+	auto KgPerDay       = RegisterUnit(Model, "kg/day");
 	auto PerDay         = RegisterUnit(Model, "1/day");
 	auto KgPerKg       = RegisterUnit(Model, "kg/kg");
 	auto KgPerHa       = RegisterUnit(Model, "kg/Ha");
 	auto JulianDay     = RegisterUnit(Model, "Julian day");
 	auto Days          = RegisterUnit(Model, "days");
+	auto M             = RegisterUnit(Model, "m");
 	auto MPerDay       = RegisterUnit(Model, "m/day");
 	auto DegreesCelsius     = RegisterUnit(Model, "°C");
 	auto MgPerL        = RegisterUnit(Model, "mg/l");
 	auto M3PerKm2      = RegisterUnit(Model, "m^3/km^2");
 	auto TonnesPerM2   = RegisterUnit(Model, "10^3 kg/m^2");
-	
+	auto M2PerGCPerDay = RegisterUnit(Model, "m^2 /gC/day");
+	auto SPerM3PerDay  = RegisterUnit(Model, "s/m^3/day");
+	auto SPerMPerGCPerDay = RegisterUnit(Model, "s/m/gC/day");
+	auto Kg            = RegisterUnit(Model, "kg");
+	auto PerKg         = RegisterUnit(Model, "1/kg");
 	
 	auto IncaSolver = RegisterSolver(Model, "Inca solver", 0.1, IncaDascru);
 	
@@ -428,51 +434,145 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	
-/*	
+	
 	
 	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
 	
-	auto EpiphyteGrowthRateCoefficient = RegisterParameterDouble(Model, Reaches, "Epiphyte growth rate coefficient", );
-	auto EpiphyteTemperatureDependency = RegisterParameterDouble;
-	auto HalfSaturationOfPForEpiphyteGrowth = RegisterParameterDouble;
-	auto EpiphyteDeathRateCoefficent;
-	auto MacrophyteGrowthRateCoefficient;
-	auto MacrophyteTemperatureDependency;
-	auto SelfShadingForMacrophytes;
-	auto HalfSaturationOfPForMacrophyteGrowth;
-	auto MacrophyteDeathRateCoefficient;
+	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
+	auto Reach =          GetIndexSetHandle(Model, "Reaches");
+	
+	auto PPEnrichmentFactor = RegisterParameterDouble(Model, Reaches, "PP enrichment factor", Dimensionless, 1.0);
+	auto ProportionOfPInEpiphytes = RegisterParameterDouble(Model, Reaches, "Proportion of P in epiphytes", KgPerKg, 0.2);
+	auto ProportionOfPInMacrophytes = RegisterParameterDouble(Model, Reaches, "Proportion of P in macrophytes", KgPerKg, 0.2);
+	auto EpiphyteGrowthRateCoefficient = RegisterParameterDouble(Model, Reaches, "Epiphyte growth rate coefficient", M2PerGCPerDay, 1.0);
+	auto EpiphyteTemperatureDependency = RegisterParameterDouble(Model, Reaches, "Epiphyte temperature dependency", Dimensionless, 1.0);
+	auto HalfSaturationOfPForEpiphyteGrowth = RegisterParameterDouble(Model, Reaches, "Half saturation of P for epiphyte growth", MgPerL, 1.0);
+	auto EpiphyteDeathRateCoefficent = RegisterParameterDouble(Model, Reaches, "Epiphyte death rate coefficient", SPerM3PerDay, 1.0);
+	auto MacrophyteGrowthRateCoefficient = RegisterParameterDouble(Model, Reaches, "Macrophyte growth rate coefficient", PerDay, 1.0);
+	auto MacrophyteTemperatureDependency = RegisterParameterDouble(Model, Reaches, "Macrophyte temperature dependency", Dimensionless, 1.0);
+	auto SelfShadingForMacrophytes = RegisterParameterDouble(Model, Reaches, "Self-shading for macrophytes", GCPerM2, 1.0);
+	auto HalfSaturationOfPForMacrophyteGrowth = RegisterParameterDouble(Model, Reaches, "Half saturation of P for macrophyte growth", MgPerL, 1.0);
+	auto MacrophyteDeathRateCoefficient = RegisterParameterDouble(Model, Reaches, "Macrophyte death rate coefficient", SPerMPerGCPerDay, 1.0);
+	auto WaterColumnPSorptionCoefficient = RegisterParameterDouble(Model, Reaches, "Water column P sorption coefficient", PerKg, 0.1);
+	auto WaterColumnFreundlichIsothermConstant = RegisterParameterDouble(Model, Reaches, "Water column Freundlich isotherm constant", Dimensionless, 1.0);
+	auto WaterColumnSorptionScalingFactor = RegisterParameterDouble(Model, Reaches, "Water column sorption scaling factor", PerDay, 1.0);
+	auto WaterColumnStreamBedTDPExchangeFraction = RegisterParameterDouble(Model, Reaches, "Water column stream bed TDP exchange fraction", Dimensionless, 0.1);
+	auto PorewaterPSorptionCoefficient = RegisterParameterDouble(Model, Reaches, "Pore water P sorption coefficient", PerKg, 0.1);
+	auto PorewaterSorptionScalingFactor = RegisterParameterDouble(Model, Reaches, "Pore water sorption scaling factor", PerDay, 1.0);
+	auto PorewaterFreundlichIsothermConstant = RegisterParameterDouble(Model, Reaches, "Pore water Freundlich isotherm constant", Dimensionless, 1.0);
+	auto BedSedimentDepth = RegisterParameterDouble(Model, Reaches, "Bed sediment depth", M, 1.0);
+	auto BedSedimentPorosity = RegisterParameterDouble(Model, Reaches, "Bed sediment porosity", Dimensionless, 0.3);
+	
+	auto RatioOfHydrolysablePToDOC = RegisterParameterDouble(Model, Reaches, "Ration of hydrolysable P to DOC", KgPerKg, 1.0);
+	auto RegressionBetweenTDPAndSRPConstant = RegisterParameterDouble(Model, Reaches, "Regression between TDP and SRP (constant)", Kg, 0.0);
+	auto RegressionBetweenTDPAndSRPGradient = RegisterParameterDouble(Model, Reaches, "Regression between TDP and SRP (gradient)", KgPerKg, 0.0);
+	
+	
+	auto DOCConcentration = RegisterInput(Model, "DOC concentration", MgPerL);
 	
 	
 	auto SolarRadiation = GetEquationHandle(Model, "Solar radiation"); //NOTE: From SolarRadiation.h This one is not computed exactly as specified in published INCA-P, but similar.
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature"); //NOTE: From WaterTemperature.h
 	auto ReachFlow        = GetEquationHandle(Model, "Reach flow"); //NOTE: From Persist.h
+	auto ReachVolume      = GetEquationHandle(Model, "Reach volume"); //From Persist.h
+	auto TotalSuspendedSedimentMass = GetEquationHandle(Model, "Total suspended sediment mass"); //From IncaSed.h
+	auto TotalBedSedimentMass = GetEquationHandle(Model, "Total bed sediment mass"); //From IncaSed.h
+	auto TotalEntrainment = GetEquationHandle(Model, "Total sediment entrainment"); //From IncaSed.h
+	auto TotalDeposition = GetEquationHandle(Model, "Total sediment deposition"); //From IncaSed.h
+	
+	auto SubcatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //From Persist.h
+	auto Percent          = GetParameterDoubleHandle(Model, "%"); //From Persist.h
+	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length"); //From Persist.h
+	auto ReachWidth       = GetParameterDoubleHandle(Model, "Reach width"); //From Persist.h
+	
+	
+	auto ReachPSolver = RegisterSolver(Model, "Reach P solver", 0.1, IncaDascru);
+	
+	auto ReachPPInputFromLand = RegisterEquation(Model, "Reach PP input from land", KgPerKm2PerDay);
+	auto AreaScaledReachPPInputFromLand = RegisterEquation(Model, "Area scaled reach PP input from land", KgPerDay);
+	auto TotalReachPPInputFromLand = RegisterEquationCumulative(Model, "Total reach PP input from land", AreaScaledReachPPInputFromLand, LandscapeUnits);
+	auto ReachTDPInputFromLand = RegisterEquation(Model, "Reach TDP input from land", KgPerKm2PerDay);
+	auto AreaScaledReachTDPInputFromLand = RegisterEquation(Model, "Area scaled reach TDP input from land", KgPerDay);
+	auto TotalReachTDPInputFromLand = RegisterEquationCumulative(Model, "Total reach TDP input from land", AreaScaledReachTDPInputFromLand, LandscapeUnits);
+	auto WaterColumnTDPInput = RegisterEquation(Model, "Water column TDP input", KgPerDay);
+	auto WaterColumnPPInput  = RegisterEquation(Model, "Water column PP input", KgPerDay);
+	
+	
+	auto WaterColumnTDPOutput = RegisterEquation(Model, "Water column TDP output", KgPerDay);
+	SetSolver(Model, WaterColumnTDPOutput, ReachPSolver);
+	auto WaterColumnPPOutput = RegisterEquation(Model, "Water column PP output", KgPerDay);
+	SetSolver(Model, WaterColumnPPOutput, ReachPSolver);
+	auto ReachTDPUptakeByEpiphytes = RegisterEquation(Model, "Reach TDP uptake by epiphytes", KgPerDay);
+	SetSolver(Model, ReachTDPUptakeByEpiphytes, ReachPSolver);
+	auto WaterColumnEPC0 = RegisterEquation(Model, "Water column EPC0", MgPerL);
+	SetSolver(Model, WaterColumnEPC0, ReachPSolver);
+	auto WaterColumnPSorptionDesorption = RegisterEquation(Model, "Water column sorption/desorption", KgPerDay);
+	SetSolver(Model, WaterColumnPSorptionDesorption, ReachPSolver);
+	auto WaterColumnTDPMass = RegisterEquationODE(Model, "Water column TDP mass", Kg);
+	SetSolver(Model, WaterColumnTDPMass, ReachPSolver);
+	//SetInitialValue
+	auto WaterColumnPPMass = RegisterEquationODE(Model, "Water column PP mass", Kg);
+	SetSolver(Model, WaterColumnPPMass, ReachPSolver);
+	//SetInitialValue
+	auto WaterColumnPorewaterTDPExchange = RegisterEquation(Model, "Water column pore water TDP exchange", KgPerDay);
+	SetSolver(Model, WaterColumnPorewaterTDPExchange, ReachPSolver);
+	auto ReachPPEntrainment = RegisterEquation(Model, "Reach PP entrainment", KgPerDay);
+	SetSolver(Model, ReachPPEntrainment, ReachPSolver);
+	auto ReachPPDeposition  = RegisterEquation(Model, "Reach PP deposition", KgPerDay);
+	SetSolver(Model, ReachPPDeposition, ReachPSolver);
+	auto WaterColumnTDPConcentration = RegisterEquation(Model, "Water column TDP concentration", MgPerL);
+	SetSolver(Model, WaterColumnTDPConcentration, ReachPSolver);
+	auto WaterColumnPPConcentration = RegisterEquation(Model, "Water column PP concentration", MgPerL);
+	SetSolver(Model, WaterColumnPPConcentration, ReachPSolver);
+	auto PorewaterEPC0 = RegisterEquation(Model, "Pore water EPC0", MgPerL);
+	SetSolver(Model, PorewaterEPC0, ReachPSolver);
+	auto StreamBedPSorptionDesorption = RegisterEquation(Model, "Stream bed P sorption/desorption", KgPerDay);
+	SetSolver(Model, StreamBedPSorptionDesorption, ReachPSolver);
+	auto PorewaterTDPUptakeByMacrophytes = RegisterEquation(Model, "Pore water TDP uptake by macrophytes", KgPerDay);
+	SetSolver(Model, PorewaterTDPUptakeByMacrophytes, ReachPSolver);
+	auto PorewaterTDPMass = RegisterEquationODE(Model, "Pore water TDP mass", Kg);
+	SetSolver(Model, PorewaterTDPMass, ReachPSolver);
+	//SetInitialValue
+	auto PorewaterTDPConcentration = RegisterEquation(Model, "Pore water TDP concentration", MgPerL);
+	SetSolver(Model, PorewaterTDPConcentration, ReachPSolver);
+	auto BedPPMass = RegisterEquationODE(Model, "Stream bed PP mass", Kg);
+	SetSolver(Model, BedPPMass, ReachPSolver);
+	//SetInitialValue
 	
 	
 	auto MacrophyteGrowthRate = RegisterEquation(Model, "Macrophyte growth rate", GCPerM2PerDay);
+	SetSolver(Model, MacrophyteGrowthRate, ReachPSolver);
 	auto MacrophyteDeathRate  = RegisterEquation(Model, "Macrophyte death rate", GCPerM2PerDay);
-	auto MacrophyteMass       = RegisterEquationODE(Model, "Macrophyte mass", GCPerM2);
-	
+	SetSolver(Model, MacrophyteDeathRate, ReachPSolver);
+	auto MacrophyteBiomass       = RegisterEquationODE(Model, "Macrophyte biomass", GCPerM2);
+	SetSolver(Model, MacrophyteBiomass, ReachPSolver);
+	//SetInitialValue
 	auto EpiphyteGrowthRate = RegisterEquation(Model, "Epiphyte growth rate", GCPerM2PerDay);
+	SetSolver(Model, EpiphyteGrowthRate, ReachPSolver);
 	auto EpiphyteDeathRate  = RegisterEquation(Model, "Epiphyte death rate", GCPerM2PerDay);
+	SetSolver(Model, EpiphyteDeathRate, ReachPSolver);
 	auto EpiphyteBiomass    = RegisterEquationODE(Model, "Epiphyte biomass", GCPerM2);
+	SetSolver(Model, EpiphyteBiomass, ReachPSolver);
+	//SetInitialValue
 	
 	
 	
 	
+	auto WaterColumnSRPConcentration = RegisterEquation(Model, "Water column SRP concentration", MgPerL);
+	auto WaterColumnPControl = RegisterEquation(Model, "Water column P control", Dimensionless);
+	auto PorewaterPControl   = RegisterEquation(Model, "Pore water P control", Dimensionless);
 	
 	
 	EQUATION(Model, ReachPPInputFromLand,
 		return
 			  PARAMETER(PPEnrichmentFactor)
-			* RESULT(TotalSedimentDeliveryToReach)
+			* RESULT(SedimentDeliveryToReach)
 			* SafeDivide(RESULT(SoilLabilePMass) + RESULT(SoilInactivePMass), RESULT(SoilMassInTheOAHorizon));
 	)
 	
 	EQUATION(Model, AreaScaledReachPPInputFromLand,
 		return RESULT(ReachPPInputFromLand) * PARAMETER(SubcatchmentArea) * PARAMETER(Percent) / 100.0;
 	)
-	
-	auto TotalReachPPInputFromLand = RegisterEquationCumulative(Model, "Total reach PP input from land", AreaScaledReachPPInputFromLand, LandscapeUnits);
 	
 	EQUATION(Model, ReachTDPInputFromLand,
 		return
@@ -484,8 +584,6 @@ AddINCAPModel(mobius_model *Model)
 	EQUATION(Model, AreaScaledReachTDPInputFromLand,
 		return RESULT(ReachTDPInputFromLand) * PARAMETER(SubcatchmentArea) * PARAMETER(Percent) / 100.0;
 	)
-	
-	auto TotalReachTDPInputFromLand = RegisterEquationCumulative(Model, "Total reach TDP input from land", AreaScaledReachTDPInputFromLand, LandscapeUnits);
 	
 	EQUATION(Model, WaterColumnTDPInput,
 		double upstreamtdp = 0.0;
@@ -545,8 +643,8 @@ AddINCAPModel(mobius_model *Model)
 				);
 	)
 	
-	EQUATION(Model, WaterColumnPoreWaterTDPExchange,
-		return 1e-3 * PARAMETER(WaterColumnStreamBedTDPExchangeFraction) * RESULT(ReachVolume) * (RESULT(PoreWaterTDPConcentration) - RESULT(WaterColumnTDPConcentration));
+	EQUATION(Model, WaterColumnPorewaterTDPExchange,
+		return 1e-3 * PARAMETER(WaterColumnStreamBedTDPExchangeFraction) * RESULT(ReachVolume) * (RESULT(PorewaterTDPConcentration) - RESULT(WaterColumnTDPConcentration));
 	)
 	
 	EQUATION(Model, ReachPPEntrainment,
@@ -564,7 +662,7 @@ AddINCAPModel(mobius_model *Model)
 			- RESULT(WaterColumnTDPOutput)
 			- RESULT(ReachTDPUptakeByEpiphytes)
 			- RESULT(WaterColumnPSorptionDesorption)
-			+ RESULT(WaterColumnPoreWaterTDPExchange);
+			+ RESULT(WaterColumnPorewaterTDPExchange);
 	)
 	
 	EQUATION(Model, WaterColumnPPMass,
@@ -578,6 +676,7 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, WaterColumnPControl,
+		return 0.0;
 		//TODO
 	)
 	
@@ -600,14 +699,14 @@ AddINCAPModel(mobius_model *Model)
 		return msrp * RESULT(WaterColumnTDPConcentration) + csrp;
 	)
 	
-	EQUATION(Model, PoreWaterEPC0,
+	EQUATION(Model, PorewaterEPC0,
 		return 
 			EPC0Computation(
-				PARAMETER(PoreWaterPSorptionCoefficient), 
+				PARAMETER(PorewaterPSorptionCoefficient), 
 				RESULT(BedPPMass), 
 				RESULT(TotalBedSedimentMass), 
-				PARAMETER(PoreWaterFreundlichIsothermConstant),
-				RESULT(PoreWaterTDPConcentration)
+				PARAMETER(PorewaterFreundlichIsothermConstant),
+				RESULT(PorewaterTDPConcentration)
 				);
 	)
 	
@@ -615,10 +714,10 @@ AddINCAPModel(mobius_model *Model)
 		double porewatervolume = PARAMETER(ReachLength) * PARAMETER(ReachWidth) * PARAMETER(BedSedimentDepth) * PARAMETER(BedSedimentPorosity);
 		return
 			SorptionComputation(
-				PARAMETER(PoreWaterSorptionScalingFactor),
-				RESULT(PoreWaterTDPConcentration),
-				RESULT(PoreWaterEPC0),
-				PARAMETER(PoreWaterFreundlichIsothermConstant),
+				PARAMETER(PorewaterSorptionScalingFactor),
+				RESULT(PorewaterTDPConcentration),
+				RESULT(PorewaterEPC0),
+				PARAMETER(PorewaterFreundlichIsothermConstant),
 				porewatervolume
 				);
 	)
@@ -627,9 +726,9 @@ AddINCAPModel(mobius_model *Model)
 		return 1e-3 * PARAMETER(ProportionOfPInMacrophytes) * RESULT(MacrophyteGrowthRate) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
 	)
 	
-	EQUATION(Model, PoreWaterTDPMass,
+	EQUATION(Model, PorewaterTDPMass,
 		return
-			- RESULT(WaterColumnPoreWaterTDPExchange)
+			- RESULT(WaterColumnPorewaterTDPExchange)
 			- RESULT(StreamBedPSorptionDesorption)
 			- RESULT(PorewaterTDPUptakeByMacrophytes);
 	)
@@ -641,13 +740,14 @@ AddINCAPModel(mobius_model *Model)
 			- RESULT(ReachPPEntrainment);
 	)
 	
-	EQUATION(Model, PoreWaterPControl,
+	EQUATION(Model, PorewaterPControl,
 		//TODO
+		return 0.0;
 	)
 	
-	EQUATION(Model, PoreWaterTDPConcentration,
+	EQUATION(Model, PorewaterTDPConcentration,
 		double porewatervolume = PARAMETER(ReachLength) * PARAMETER(ReachWidth) * PARAMETER(BedSedimentDepth) * PARAMETER(BedSedimentPorosity);
-		return 1e3 * SafeDivide(RESULT(PoreWaterTDPMass), porewatervolume);
+		return 1e3 * SafeDivide(RESULT(PorewaterTDPMass), porewatervolume);
 	)
 	
 	
@@ -655,22 +755,22 @@ AddINCAPModel(mobius_model *Model)
 		double TDPpw = RESULT(PorewaterTDPConcentration);
 		return
 			  PARAMETER(MacrophyteGrowthRateCoefficient)
-			* pow(PARAMETER(MacrophyteTemperatureDependency), RESULT(WaterTemperature) - 20.0);
-			* RESULT(MacrophyteMass)
+			* pow(PARAMETER(MacrophyteTemperatureDependency), RESULT(WaterTemperature) - 20.0)
+			* RESULT(MacrophyteBiomass)
 			* RESULT(SolarRadiation)
 			* PARAMETER(SelfShadingForMacrophytes)
 			* TDPpw / 
 				(
 				  (PARAMETER(HalfSaturationOfPForMacrophyteGrowth) + TDPpw)
-				* (PARAMETER(SelfShadingForMacrophytes) + RESULT(MacrophyteMass)
+				* (PARAMETER(SelfShadingForMacrophytes) + RESULT(MacrophyteBiomass))
 				);
 	)
 	
 	EQUATION(Model, MacrophyteDeathRate,
-		return PARAMETER(MacrophyteDeathRateCoefficient) * RESULT(MacrophyteMass) * RESULT(EpiphyteMass) * RESULT(ReachFlow);
+		return PARAMETER(MacrophyteDeathRateCoefficient) * RESULT(MacrophyteBiomass) * RESULT(EpiphyteBiomass) * RESULT(ReachFlow);
 	)
 	
-	EQUATION(Model, MacrophyteMass,
+	EQUATION(Model, MacrophyteBiomass,
 		return RESULT(MacrophyteGrowthRate) - RESULT(MacrophyteDeathRate);
 	)
 	
@@ -692,6 +792,4 @@ AddINCAPModel(mobius_model *Model)
 	EQUATION(Model, EpiphyteBiomass,
 		return RESULT(EpiphyteGrowthRate) - RESULT(EpiphyteDeathRate);
 	)
-*/
-	
 }

@@ -637,6 +637,10 @@ GetName(const mobius_model *Model, entity_type Type, entity_handle Handle)
 		case EntityType_Equation:
 		return GetName(Model, equation_h {Handle});
 		break;
+		
+		default:
+		MOBIUS_FATAL_ERROR("ERROR: (internal) ended up with wrong entity type!?" << std::endl);
+		return "unknown entity type";
 	}
 }
 

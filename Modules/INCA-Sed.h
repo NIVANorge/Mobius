@@ -208,7 +208,12 @@ AddINCASedModel(mobius_model *Model)
 	SetInitialValue(Model, SuspendedSedimentMass, InitialSuspendedSedimentMass);
 	SetSolver(Model, SuspendedSedimentMass, InstreamSedimentSolver);
 	
+	auto MassOfBedSediment = RegisterEquation(Model, "Mass of bed sediment", Kg);
 	
+	auto TotalBedSedimentMass       = RegisterEquationCumulative(Model, "Total bed sediment mass", MassOfBedSediment, SizeClass);
+	auto TotalSuspendedSedimentMass = RegisterEquationCumulative(Model, "Total suspended sediment mass", SuspendedSedimentMass, SizeClass);
+	auto TotalEntrainment           = RegisterEquationCumulative(Model, "Total sediment entrainment", SedimentEntrainment, SizeClass);
+	auto TotalDeposition            = RegisterEquationCumulative(Model, "Total sediment deposition", SedimentDeposition, SizeClass);
 	
 	auto ReachWidth = GetParameterDoubleHandle(Model, "Reach width");
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
@@ -224,7 +229,6 @@ AddINCASedModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachUpstreamSuspendedSediment,
-		//CURRENT_INDEX(SizeClass); //TODO: Has to be here until we fix the dependency system some more..
 		double sum = 0.0;
 		FOREACH_INPUT(Reach,
 			sum += RESULT(ReachSuspendedSedimentOutput, *Input);
@@ -284,6 +288,10 @@ AddINCASedModel(mobius_model *Model)
 	
 	EQUATION(Model, MassOfBedSedimentPerUnitArea,
 		return RESULT(SedimentDeposition) - RESULT(SedimentEntrainment);
+	)
+	
+	EQUATION(Model, MassOfBedSediment,
+		return RESULT(MassOfBedSedimentPerUnitArea) * PARAMETER(ReachWidth) * PARAMETER(ReachLength);
 	)
 	
 	EQUATION(Model, SuspendedSedimentMass,
