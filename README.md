@@ -20,9 +20,9 @@ for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
 
 ## Available models
 
-The following models are already implemented using the Mobius framework (see the model-specific folders [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
+The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
- * "Simply" models (SimplyP, SimplyHydrol, SimplyC)
+ * "Simply" models (SimplyP, SimplyQ, SimplyC)
  * "INCA" models (INCA-N, INCA-C, INCA-Sed, INCA-Microplastics, PERSiST) 
  * HBV
  
@@ -32,30 +32,50 @@ Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); t
 
 Documentation can be found in the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) folder. This is still under development, and will be added to gradually. See also the quick start guide below and the tutorials.
 
-## Quick start guide
+# Quick start guide
 *This is a guide on how to get the tutorials running and to start building your own models.*
 
-First, download the entire Mobius repository. It is recommended that you keep your copy up to date, so it is probably a good idea to clone it using git and keep it updated that way. There are several tutorials online on how to do that.
+## Download the repository
 
-Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler.
+First, download the entire Mobius repository. It is recommended that you keep your copy up to date, so it is probably a good idea to clone it and keep it updated using git, to save you having to re-download the repository whenever files are changed. There are several tutorials online on how to do that. One option, using GitHub desktop for a friendly user interface, is:
 
-To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit (this will be needed if you want to use the Python wrapper later).
+-	Download GitHub Desktop (https://desktop.github.com/)
+-	Navigate to the online repository (https://github.com/NIVANorge/Mobius)
+-	Click the green ‘Clone or download’ button at the right, and then the bottom left option ‘Open in Desktop’
+-	Set the 'Local path' to wherever you want the repository to be stored on your system then click ‘Clone’. GitHub desktop will then be launched, and the files will be saved to your computer.
+- Open GitHub Desktop whenever you want to check for updates. Any changes you make to the files should be saved somewhere else locally on your machine (unless you are an active mobius contributor with permission to commit changes). If files have changed online, you can update the repository on your computer by hitting the blue 'pull origin' box in the right panel.
 
-We would normally have recommended the TDM-gcc distribution of MingW since that allows you to use multithreading and openmp in C++ code, but unfortunately there is a bug with TDM-gcc (as of 2019-02-05) that makes Windows 10 (but not earlier Windows versions) unable to load .dll's that were compiled with it, so you can't use it if you later want to use the python wrapper on Windows 10.
+## Download a compiler
 
-You can use the version of MingW-w64 found here (click the sourceforge link to download):
-https://mingw-w64.org/doku.php/download/mingw-builds
-**Be sure during installation that you choose x86-64 under the 'Architecture' dropdown list.**
+Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
 
-If you use Linux, just use the distribution of g++ that comes with your Linux distribution, and it should work.
+- You can use the version of MingW-w64 found here (click the sourceforge link to download):
+https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installation that you choose x86-64 under the 'Architecture' dropdown list.** Take note of where the compiler is installed, you will need it shortly.
+- Linux: just use the distribution of g++ that comes with your Linux distribution, and it should work.
+- Make sure that the /bin/ folder of your installation of g++ is in your PATH variable, and that you don't have any other installations of g++ in the PATH: in Windows 10, hit the start button, then type 'system environment variables', and select the option that best matches this. Then click on 'Environment variables'. Within the 'User variables' or 'System variables', there should be a variable called 'Path' or 'PATH'. Within this there should be something like mingw64\bin. If it isn't there, add it (click 'New' and then 'Browse', and find and select the location of the \bin\ folder of your compiler, making sure to click 'ok' every time you close a dialogue box).
 
-Make sure that the /bin/ folder of your installation of g++ is in your PATH variable, and that you don't have any other installations of g++ in the PATH.
+(Note: we would normally have recommended the TDM-gcc distribution of MingW, as that allows you to use multithreading and openmp in C++ code, but unfortunately there is a bug in this (as of 2019-02-05) so that Windows 10 is unable to load .dll's compiled with it)
 
-To compile Tutorial 1, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe to see the output. Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens. This is the best way to learn. A detailed documentation of the API will be added later.
+## Compile a model, run it, and make some changes
+
+The basics of compiling are simple once you have a compiler installed:
+- Make a .bat file, which tells the compiler to compile the contents of the .bat file into a machine-readable executable. For all the example models, these .bat files have already been written.
+- Open the command line prompt (e.g. press the windows key and type 'cmd' and then hit enter)
+- From the command line, navigate to wherever your .bat file is located. To change drives (e.g. from C: to D:), just type the name of drive you want to be in and hit enter. When you're in the right drive, change to your desired folder by typing cd then the filepath, e.g. `cd C:\GitHub\Mobius\Applications\SimplyP`
+- Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
+
+To compile **Tutorial 1**, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe to see the output. Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens (remembering that you have to recompile after any change before running to see an effect in the output). This is the best way to learn. A detailed documentation of the API will be added later.
 
 To edit the C++ files, you can use whatever text editor you want, such as Notepad++, or you can find an IDE. We will not go through how to learn C++ here, but you will not need to know that many advanced concepts. Any online tutorial of just the basics will hopefully do (and also you can just learn by example from the models that are in this repository already, e.g the tutorials or the files in the Modules folder).
 
-After understanding basic model building we also recommended you to learn the python wrapper interface to e.g. do your own post-processing and plotting with the model results. See more in the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper).
+## Python wrapper
+
+After understanding basic model building we recommended you explore the python wrapper interface to e.g. do your own post-processing and plotting with the model results. See more in the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper), including examples of optimisation and auto-calibration. *Python functions to automate generation of the input .dat files from excel files will be added soon.*
+
+## Navigating around the repository
+
+- The main model definition files are within the 'Modules' folder. This is where the meat is in terms of parameter definitions, equations, etc. All these files have a .h file extension.
+- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them.
 
 ## Dependencies
 
@@ -72,20 +92,36 @@ Other more advanced functionality such as the C++-written calibration systems re
 See the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper).
   
 
-## Building INCAView compatible exes
+## Using INCAView
 
-If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with INCAView.
+INCAView is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with INCAView.
 
-We already have .cpp files ready for compilation that are set up to produce INCAView-compatible exes for most of our models. See e.g Applications/INCA-N/incan.cpp
-To set up your own .cpp files like these, try to follow the example from one of those files.
+### Creating INCAView compatible .exes
 
-To compile them you also need the sqlite3 library. Download the source code for sqlite3 from https://www.sqlite.org/download.html . You should put the sqlite3 files in Mobius/sqlite3 (create a new folder). Then compile sqlite3 into a linkable object file using
-    `gcc -c sqlite3.c -O2`
+We already have .cpp files ready for compilation that are set up to produce INCAView-compatible exes for most of our models. See e.g Applications/INCA-N/incan.cpp. To set up your own .cpp files like these, try to follow the example from one of those files.
+
+To compile INCAView compatible exes you also need the sqlite3 library:
+- Download the source code for sqlite3 from https://www.sqlite.org/download.html
+- Put the sqlite3 files in Mobius/sqlite3 (create a new folder)
+- Compile sqlite3 into a linkable object file by typing, from the command line: `gcc -c sqlite3.c -O2`
 
 You also have to download json.hpp from https://github.com/nlohmann/json/tree/develop/single_include/nlohmann and put it in Mobius/json (create a new folder). The json library does not need any separate compilation.
 
-See the INCAView repository for the interface itself.
+To compile models for INCAViewer, from the command line run the .bat file which refers to the .cpp file which is set up to produce INCAView-compatible exes. Often these .cpp files have the 'iv' suffix in their filename.
 
-We may also look into a way of distributing precompiled exes of INCAView and some of the models.
+INCAView requires a parameter database to be supplied. To create a parameter database from a parameter .dat file, from the command line type `mymodelname.exe` and hit enter (substituting your model name in). A list of options will then be printed to the command line, including one to create a parameter database file from a .dat file:
+`mymodelname.exe convert_parameters myparameters.dat myparameters.db`
+
+Then to get started with INCAViewer:
+- Double click on INCAView.exe (from within the INCAView repository)
+- Click 'Load parameter database' and navigate to and select the .db file you just created. The parameters should load and appear in the top left panel. Click on any of the parameter names, and its values should appear to the right. These values are editable, and changes are saved to the parameter database but not to the original .dat file. To export changes you make to the parameter values, click the 'Export parameters' button at the bottom.
+- Click 'Select input file' and navigate to the .dat file which contains your driving meteorological data and any other inputs you wish to read in (e.g. observations)
+- Click 'Run model'. Results and inputs should be listed in the top right hand panels.
+- Click through results and inputs to explore the output. Hold down the Shift or Ctrl keys to select multiple series at the same time, and do Ctrl click to deselect. When you have a simulated and an observed series selected, you can get goodness of fit statistics by selecting the 'Results info' tab at the bottom left of the window. Note that if your observations have lots of missing values, you need to check the 'Scatter plot for inputs' box for them to appear on the plot.
+- Click 'Export results' to save results to file.
+- and then 'Load input data' to load in the input .dat file.  
+
+
+In the future, we may also look into a way of distributing precompiled exes of INCAView and some of the models.
 
 ![Alt text](Documentation/img/incaviewpersist.png?raw=true "Example of running the PERSiST model in INCAView.")
