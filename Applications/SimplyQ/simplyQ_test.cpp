@@ -6,13 +6,13 @@
 
 #include "../../mobius.h"
 
-#include "../../Modules/SimplyHydrol.h"
+#include "../../Modules/SimplyQ.h"
 
 #define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
 
 int main()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyHydrol", "0.0");
+	mobius_model *Model = BeginModelDefinition("SimplyQ", "0.0");
 	
 	auto Days 	        = RegisterUnit(Model, "days");
 	auto System = RegisterParameterGroup(Model, "System");

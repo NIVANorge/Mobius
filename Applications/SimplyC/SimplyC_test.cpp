@@ -8,7 +8,7 @@
 
 #include "../../Modules/UnitConversions.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SimplyHydrol_noGW.h"
+#include "../../Modules/SimplyQ_noGW.h"
 #include "../../Modules/SoilTemperature_simply.h"
 
 #define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults

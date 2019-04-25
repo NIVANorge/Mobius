@@ -6,7 +6,7 @@
 
 #include "../../mobius.h"
 
-#include "../../Modules/SimplyHydrol.h"
+#include "../../Modules/SimplyQ.h"
 
 #include "../../incaview_compatibility.h"
 
@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 	incaview_commandline_arguments Args;
 	ParseIncaviewCommandline(argc, argv, &Args);
 	
-	mobius_model *Model = BeginModelDefinition("SimplyHydrol", "0.0");
+	mobius_model *Model = BeginModelDefinition("SimplyQ", "0.0");
 	
 	auto Days 	      = RegisterUnit(Model, "days");
 	auto System = RegisterParameterGroup(Model, "System");
