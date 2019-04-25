@@ -1,4 +1,4 @@
-# Parameter file generated for INCA-P V0.0 at 2019-04-24 15:00:52
+# Parameter file generated for INCA-P V0.0 at 2019-04-25 13:35:25
 
 index_sets:
 "Landscape units" : {"Semi-natural" "Improved grassland" "Arable"}
@@ -66,19 +66,19 @@ parameters:
 "Initial soil temperature" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
 20 20 20
 
-"Flow erosion scaling factor" :     #(s/m2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 1 1 1
 
-"Flow erosion direct runoff threshold" :     #(m3/s/km2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0 0
 
 "Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.15 0.15 0.15
 
-"Transport capacity scaling factor" :     #(kg/m2/km2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.01 0.01 0.01
 
-"Transport capacity direct runoff threshold" :     #(m3/s/km2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0 0
 
 "Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
@@ -87,20 +87,23 @@ parameters:
 "Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
 1 1 1
 
-"Flow erosion potential" :     #(kg/s/km2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.003 0.003 0.003
 
-"Splash detachment soil erodibility" :     #(kg/m2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0 0
 
 "Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0 0
 
-"Initial surface sediment store" :     #(kg/km2) [0, 10]
+"Initial surface sediment store" :     #(kg/km^2) [0, 10]
 0 0 0
 
-"Initial soil mass in the O/A horizon" :     #(kg/km2) [0, 1000000]
-0 0 0
+"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
+2 2 2
+
+"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
+600 600 600
 
 "Liquid manure P inputs" :     #(kg/Ha/day) [0, 100] Inputs of phosphorous to soil through liquid manure. Only used if the timeseries of the same name is not provided.
 0 0 0
@@ -176,6 +179,30 @@ parameters:
 
 "Lower temperature threshold for immobilisation" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0 0
+
+"Zero rate depth" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Max rate depth" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
+200 200 200
+
+"Initial direct runoff TDP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Initial soil water TDP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Initial groundwater TDP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Initial soil labile P ratio" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.01 0.01 0.01
+
+"Initial soil inactive P ratio" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.01 0.01 0.01
+
+"Initial aquifer P ratio" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.01 0.01 0.01
 
 "Groundwater sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 1 1 1
@@ -305,7 +332,7 @@ true
 "Water temperature lag factor" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 3
 
-"Bank erosion scaling factor" :     #(kg/m2/m3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
 "Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
@@ -317,8 +344,98 @@ true
 "Mean channel slope" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.8
 
-"Entrainment coefficient" :     #(s2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 2e-007
+
+"PP enrichment factor" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Proportion of P in epiphytes" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.2
+
+"Proportion of P in macrophytes" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.2
+
+"Epiphyte growth rate coefficient" :     #(m^2 /gC/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Epiphyte temperature dependency" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Half saturation of P for epiphyte growth" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Epiphyte death rate coefficient" :     #(s/m^3/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Macrophyte growth rate coefficient" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Macrophyte temperature dependency" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Self-shading for macrophytes" :     #(gC / m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Half saturation of P for macrophyte growth" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Macrophyte death rate coefficient" :     #(s/m/gC/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Water column P sorption coefficient" :     #(1/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Water column Freundlich isotherm constant" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Water column sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Water column stream bed TDP exchange fraction" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Pore water P sorption coefficient" :     #(1/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Pore water sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Pore water Freundlich isotherm constant" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Bed sediment depth" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Bed sediment porosity" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.3
+
+"Ration of hydrolysable P to DOC" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Regression between TDP and SRP (constant)" :     #(kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Regression between TDP and SRP (gradient)" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial water column TDP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial water column PP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial pore water TDP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial bed PP ratio" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial macrophyte biomass" :     #(gC / m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial epiphyte biomass" :     #(gC / m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
 
 ###################### "Reaches" "Landscape units" ######################
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
@@ -342,14 +459,14 @@ true
 0
 0
 
-"Initial mass of bed sediment per unit area" :     #(kg/m2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Initial mass of bed sediment per unit area" :     #(kg/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 0
 0
 0
 0
 
-"Initial suspended sediment mass" :     #(kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Initial suspended sediment concentration" :     #(mg/L) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 0
 0
