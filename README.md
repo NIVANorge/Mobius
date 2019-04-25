@@ -66,7 +66,7 @@ The basics of compiling are simple once you have a compiler installed:
 
 You could also set up a build system of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
 
-To compile **Tutorial 1**, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe to see the output. Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens (remembering that you have to recompile after any change before running to see an effect in the output). This is the best way to learn. A detailed documentation of the API will be added later.
+To compile **Tutorial 1**, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe to see the output. Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens (remembering that you have to recompile after any change before running to see an effect in the output). This is the best way to learn. Along with followint Tutorial 1-3, you can read the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) for a more detailed description of the API.
 
 To edit the C++ files, you can use whatever text editor you want, such as Notepad++, or you can find an IDE. We will not go through how to learn C++ here, but you will not need to know that many advanced concepts. Any online tutorial of just the basics will hopefully do (and also you can just learn by example from the models that are in this repository already, e.g the tutorials or the files in the Modules folder).
 
