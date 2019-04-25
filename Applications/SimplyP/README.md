@@ -12,4 +12,4 @@ The Mobius version offers dramatic performance improvements and increased flexib
 
 **More coming soon!**
 
- 1. **[Auto-calibration and uncertainty estimation](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb)**. An example illustrating how to auto-calibrate SimplyP and explore parametrci uncertainty using MCMC
+ 1. **[Auto-calibration and uncertainty estimation](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb)**. An example illustrating how to auto-calibrate SimplyP and explore parametric uncertainty using MCMC
