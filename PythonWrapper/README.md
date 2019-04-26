@@ -8,7 +8,7 @@ The C++-end code of the C++-python interface is in python_wrapper.h, while the p
 
 To use a model with the python wrapper, create your own .cpp file along the lines of Persist/persistwrapper.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of compilepersist.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded within Python using mobius.initialize('name_of_dll.dll')
 
-We have already built some examples atop of mobius.py to show you how you can interact with the models through the interface. See e.g. optimization_example.py or the SimplyP example [here](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb). There is also docstring documentation in mobius.py, and we have made some calibration utilities available through mobius_calib_uncert_lmfit.py (mobius_calibration.py is older code, but can also serve as a good example of what you can do).
+We have already built some examples atop of mobius.py to show you how you can interact with the models through the interface. See e.g. optimization_example.py in the PERSiST folder, or the SimplyP example [here](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb). There is also docstring documentation in mobius.py, and we have made some calibration utilities available through mobius_calib_uncert_lmfit.py (mobius_calibration.py is older code, but can also serve as a good example of what you can do).
 
 ## Dependencies
 
@@ -57,3 +57,8 @@ To test your installation, or whenever you want to start working with mobius thr
 3. When you have finished, close the notebook and then quick Jupyter Lab (File > Close notebook, File > Quit)
 
 ![Alt text](../Documentation/img/triangle_plot.png?raw=true "Triangle plot from running emcee on reach flow in SimplyP")
+
+## Work in progress:
+* Decide whether LMFit is useful, or whether its run-time overheads are too high
+* If necessary, create a new parameter class of our own, to replace LMFit's parameter class
+* Merge mobius_calib_uncert_lmfit.py and mobius_calibration.py
