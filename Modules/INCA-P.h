@@ -538,7 +538,7 @@ AddINCAPModel(mobius_model *Model)
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length"); //From Persist.h
 	auto ReachWidth       = GetParameterDoubleHandle(Model, "Reach width"); //From Persist.h
 	auto EffluentFlow     = GetParameterDoubleHandle(Model, "Effluent flow"); // From Persist.h
-	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input");
+	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input"); // From Persist.h
 	
 	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	

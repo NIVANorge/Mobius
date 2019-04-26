@@ -2,7 +2,7 @@
 
 
 
-#NOTE: This is old, SimplyP/calibration_and_uncertainty.py is better.
+#NOTE: This is old, mobius_calib_uncert_lmfit.py is better.
 
 
 from scipy import optimize

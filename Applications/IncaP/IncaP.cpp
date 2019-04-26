@@ -2,8 +2,8 @@
 //NOTE: the g++ compiler flag ffast-math will make it so that isnan does not work correctly, so don't use that flag.
 #define MOBIUS_TEST_FOR_NAN 0
 #define MOBIUS_EQUATION_PROFILING 0
-#define MOBIUS_PRINT_TIMING_INFO 1
-#define MOBIUS_INDEX_BOUNDS_TESTS 1
+#define MOBIUS_PRINT_TIMING_INFO 0
+#define MOBIUS_INDEX_BOUNDS_TESTS 0
 
 #include "../../mobius.h"
 
@@ -14,12 +14,12 @@
 #include "../../Modules/INCA-Sed.h"
 #include "../../Modules/INCA-P.h"
 
+#include "../../incaview_compatibility.h"
 
-
-int main()
+int main(int argc, char **argv)
 {
-    const char *InputFile     = "testinputs.dat";
-	const char *ParameterFile = "testparameters.dat";
+	incaview_commandline_arguments Args;
+	ParseIncaviewCommandline(argc, argv, &Args);
 	
 	mobius_model *Model = BeginModelDefinition("INCA-P", "0.0");
 	
@@ -35,19 +35,13 @@ int main()
 	AddINCASedModel(Model);
 	AddINCAPModel(Model);
 	
-	ReadInputDependenciesFromFile(Model, InputFile);
+	EnsureModelComplianceWithIncaviewCommandline(Model, &Args);
 	
 	EndModelDefinition(Model);
 	
+	//PrintResultStructure(Model);
+	
 	mobius_data_set *DataSet = GenerateDataSet(Model);
-    
-	ReadParametersFromFile(DataSet, ParameterFile);
 	
-	WriteParametersToFile(DataSet, "newparams.dat");
-
-	ReadInputsFromFile(DataSet, InputFile);
-	
-	PrintResultStructure(Model);
-    
-	RunModel(DataSet);
+	RunDatasetAsSpecifiedByIncaviewCommandline(DataSet, &Args);
 }
