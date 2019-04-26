@@ -1,4 +1,4 @@
-# Parameter file generated for INCA-P V0.0 at 2019-04-25 13:35:25
+# Parameter file generated for INCA-P V0.0 at 2019-04-26 13:42:10
 
 index_sets:
 "Landscape units" : {"Semi-natural" "Improved grassland" "Arable"}
@@ -374,7 +374,7 @@ true
 "Macrophyte temperature dependency" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 1
 
-"Self-shading for macrophytes" :     #(gC / m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Self-shading for macrophytes" :     #(gC/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 1
 
 "Half saturation of P for macrophyte growth" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
@@ -395,6 +395,9 @@ true
 "Water column stream bed TDP exchange fraction" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.1
 
+"P saturation in suspended sediment" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.2
+
 "Pore water P sorption coefficient" :     #(1/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.1
 
@@ -404,11 +407,20 @@ true
 "Pore water Freundlich isotherm constant" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 1
 
+"P saturation in bed sediment" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.2
+
 "Bed sediment depth" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
 1
 
 "Bed sediment porosity" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.3
+
+"Effluent PP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Effluent TDP concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
 
 "Ration of hydrolysable P to DOC" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 1
@@ -431,10 +443,10 @@ true
 "Initial bed PP ratio" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
-"Initial macrophyte biomass" :     #(gC / m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Initial macrophyte biomass" :     #(gC/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
-"Initial epiphyte biomass" :     #(gC / m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Initial epiphyte biomass" :     #(gC/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
 ###################### "Reaches" "Landscape units" ######################
