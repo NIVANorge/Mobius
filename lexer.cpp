@@ -77,6 +77,19 @@ struct token_stream
 		
 		AtChar = -1;
 		
+		//NOTE: In case the file has a BOM mark
+		if(FileDataLength >= 3)
+		{
+			if(
+				   FileData[0] == (char) 0xEF
+				&& FileData[1] == (char) 0xBB
+				&& FileData[2] == (char) 0xBF
+			)
+			{
+				AtChar = 2;
+			}
+		}
+		
 		StartLine = 0; StartColumn = 0; Line = 0; Column = 0; PreviousColumn = 0;
 		AtToken = -1;
 		
