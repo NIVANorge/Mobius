@@ -145,10 +145,10 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 					double MonthValue = MonthlyPET[MonthIndex];
 					
 					double PrevMonthValue = MonthlyPET[MonthIndex];
-					if(Year >= StartYear || M > 0) PrevMonthValue = MonthlyPET[MonthIndex - 1];
+					if(Year > StartYear || M > 0) PrevMonthValue = MonthlyPET[MonthIndex - 1];
 					
 					double NextMonthValue = MonthlyPET[MonthIndex];
-					if(Year <= EndYear || M < 11) NextMonthValue = MonthlyPET[MonthIndex + 1];
+					if(Year < EndYear || M < 11) NextMonthValue = MonthlyPET[MonthIndex + 1];
 					
 					int MonthLen = MonthLength(Year, M);
 					for(int Day = 0; Day < MonthLen; ++Day)

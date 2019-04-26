@@ -12,23 +12,25 @@ AddINCASedModel(mobius_model *Model)
 	auto Dimensionless = RegisterUnit(Model);
 	auto SPerM         = RegisterUnit(Model, "s/m");
 	auto MPerS         = RegisterUnit(Model, "m/s");
-	auto SPerM2        = RegisterUnit(Model, "s/m2");
-	auto M3PerSPerKm2  = RegisterUnit(Model, "m3/s/km2");
+	auto SPerM2        = RegisterUnit(Model, "s/m^2");
+	auto M3PerSPerKm2  = RegisterUnit(Model, "m^3/s/km^2");
 	auto Kg            = RegisterUnit(Model, "kg");
-	auto KgPerM2PerKm2 = RegisterUnit(Model, "kg/m2/km2");
-	auto KgPerSPerKm2  = RegisterUnit(Model, "kg/s/km2");
-	auto KgPerM2PerS   = RegisterUnit(Model, "kg/m2/s");
+	auto KgPerM2PerKm2 = RegisterUnit(Model, "kg/m^2/km^2");
+	auto KgPerSPerKm2  = RegisterUnit(Model, "kg/s/km^2");
+	auto KgPerM2PerS   = RegisterUnit(Model, "kg/m^2/s");
 	auto PercentU      = RegisterUnit(Model, "%");
-	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km2/day");
+	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km^2/day");
 	auto KgPerDay      = RegisterUnit(Model, "kg/day");
-	auto KgPerKm2      = RegisterUnit(Model, "kg/km2");
-	auto KgPerM2       = RegisterUnit(Model, "kg/m2");
-	auto KgPerM2PerDay = RegisterUnit(Model, "kg/m2/day");
-	auto JPerSPerM2    = RegisterUnit(Model, "J/s/m2");
+	auto KgPerKm2      = RegisterUnit(Model, "kg/km^2");
+	auto KgPerM2       = RegisterUnit(Model, "kg/m^2");
+	auto KgPerM2PerDay = RegisterUnit(Model, "kg/m^2/day");
+	auto JPerSPerM2    = RegisterUnit(Model, "J/s/m^2");
 	auto MgPerL        = RegisterUnit(Model, "mg/L");
 	auto Metres        = RegisterUnit(Model, "m");
-	auto KgPerM2PerM3SPerDay = RegisterUnit(Model, "kg/m2/m3 s/day");
-	auto S2PerKg       = RegisterUnit(Model, "s2/kg");
+	auto KgPerM2PerM3SPerDay = RegisterUnit(Model, "kg/m^2/m^3 s/day");
+	auto S2PerKg       = RegisterUnit(Model, "s^2/kg");
+	auto M             = RegisterUnit(Model, "m");
+	auto KgPerM3       = RegisterUnit(Model, "kg/m^3");
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
@@ -54,7 +56,8 @@ AddINCASedModel(mobius_model *Model)
 	auto VegetationIndex                        = RegisterParameterDouble(Model, Sediment, "Vegetation index", Dimensionless, 1.0);
 	
 	auto InitialSurfaceSedimentStore            = RegisterParameterDouble(Model, Sediment, "Initial surface sediment store", KgPerKm2, 0.0, 0.0, 10.0);
-	auto InitialSoilMassInTheOAHorizon          = RegisterParameterDouble(Model, Sediment, "Initial soil mass in the O/A horizon", KgPerKm2, 0.0, 0.0, 1000000.0);
+	auto SoilDepthInTheOAHorizon                = RegisterParameterDouble(Model, Sediment, "Average soil depth in the O/A horizon", M, 2.0); //TODO: Should this be the same as the soil depth in SoilTemperature.h? They are both used in INCA-P. 
+	auto SoilBulkDensity                        = RegisterParameterDouble(Model, Sediment, "Soil bulk density", KgPerM3, 600.0);
 	
 	auto SubcatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length");
@@ -79,8 +82,14 @@ AddINCASedModel(mobius_model *Model)
 	
 	auto TotalSedimentDeliveryToReach         = RegisterEquationCumulative(Model, "Total sediment delivery to reach", AreaScaledSedimentDeliveryToReach, LandscapeUnits);
 	
+	auto InitialSoilMassInTheOAHorizon        = RegisterEquationInitialValue(Model, "Initial soil mass in the O/A horizon", KgPerKm2);
 	auto SoilMassInTheOAHorizon               = RegisterEquation(Model, "Soil mass in the O/A horizon", KgPerKm2);
 	SetInitialValue(Model, SoilMassInTheOAHorizon, InitialSoilMassInTheOAHorizon);
+	
+	
+	EQUATION(Model, InitialSoilMassInTheOAHorizon,
+		return 1e6 * PARAMETER(SoilDepthInTheOAHorizon) * PARAMETER(SoilBulkDensity);
+	)
 	
 	
 	EQUATION(Model, SedimentTransportCapacity,
@@ -171,6 +180,7 @@ AddINCASedModel(mobius_model *Model)
 	SetParentGroup(Model, SedimentReach, SedimentSizeClass);
 	
 	auto EffluentSedimentConcentration   = RegisterParameterDouble(Model, SedimentReach, "Effluent sediment concentration", MgPerL, 0.0);
+	auto EffluentSedimentConcentrationTimeseries = RegisterInput(Model, "Effluent sediment concentration", MgPerL);
 	
 	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
 	
@@ -181,7 +191,7 @@ AddINCASedModel(mobius_model *Model)
 	auto EntrainmentCoefficient          = RegisterParameterDouble(Model, Reaches, "Entrainment coefficient", S2PerKg, 1.0);
 	auto InitialMassOfBedSedimentPerUnitArea = RegisterParameterDouble(Model, SedimentReach, "Initial mass of bed sediment per unit area", KgPerM2, 10);
 	
-	auto InitialSuspendedSedimentMass    = RegisterParameterDouble(Model, SedimentReach, "Initial suspended sediment mass", Kg, 1e2);
+	auto InitialSuspendedSedimentConcentration    = RegisterParameterDouble(Model, SedimentReach, "Initial suspended sediment concentration", MgPerL, 0.001);
 	
 	auto SedimentOfSizeClassDeliveredToReach = RegisterEquation(Model, "Sediment of size class delivered to reach", KgPerDay);
 	auto ReachUpstreamSuspendedSediment     = RegisterEquation(Model, "Reach upstream suspended sediment", KgPerDay);
@@ -204,6 +214,7 @@ AddINCASedModel(mobius_model *Model)
 	SetInitialValue(Model, MassOfBedSedimentPerUnitArea, InitialMassOfBedSedimentPerUnitArea);
 	SetSolver(Model, MassOfBedSedimentPerUnitArea, InstreamSedimentSolver);
 	
+	auto InitialSuspendedSedimentMass = RegisterEquationInitialValue(Model, "Initial suspended sediment mass", Kg);
 	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Suspended sediment mass", Kg);
 	SetInitialValue(Model, SuspendedSedimentMass, InitialSuspendedSedimentMass);
 	SetSolver(Model, SuspendedSedimentMass, InstreamSedimentSolver);
@@ -217,12 +228,18 @@ AddINCASedModel(mobius_model *Model)
 	
 	auto ReachWidth = GetParameterDoubleHandle(Model, "Reach width");
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
+	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input");
 	auto ReachDepth = GetEquationHandle(Model, "Reach depth");
 	auto ReachFlow  = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume = GetEquationHandle(Model, "Reach volume");
 	auto ReachVelocity = GetEquationHandle(Model, "Reach velocity");
 	
+	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
+	EQUATION(Model, InitialSuspendedSedimentMass,
+		//NOTE: probably have to have the CURRENT_INDEX(Reach) for it to work correctly. Because of problem in initial value system.
+		return 1e-3 * RESULT(ReachVolume, CURRENT_INDEX(Reach)) * PARAMETER(InitialSuspendedSedimentConcentration);
+	)
 	
 	EQUATION(Model, SedimentOfSizeClassDeliveredToReach,
 		return RESULT(TotalSedimentDeliveryToReach) * PARAMETER(PercentageOfSedimentInGrainSizeClass) / 100.0;
@@ -298,9 +315,13 @@ AddINCASedModel(mobius_model *Model)
 		double clayrelease = RESULT(ClayReleaseFromChannelBanks);
 		if(CURRENT_INDEX(SizeClass) != 0) clayrelease = 0.0;      //NOTE: This assumes that index 0 is always clay though...
 		
+		//TODO: Abstraction??
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * PARAMETER(ReachHasEffluentInput);
+		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentSedimentConcentrationTimeseries, EffluentSedimentConcentration);
+		
 		return 
 			  RESULT(SedimentOfSizeClassDeliveredToReach) 
-			+ PARAMETER(EffluentSedimentConcentration) * PARAMETER(EffluentFlow)
+			+ effluentconc * effluentflow * 86.4
 			+ RESULT(ReachUpstreamSuspendedSediment) 
 			- RESULT(ReachSuspendedSedimentOutput) 
 			+ PARAMETER(ReachLength) * PARAMETER(ReachWidth) * (RESULT(SedimentEntrainment) + clayrelease - RESULT(SedimentDeposition));

@@ -1,10 +1,5 @@
 
-
-
-//NOTE: Just starting to sketch out some parts of the model. It is far from finished.
-
 //This particular implementation follows L.A.Jackson-Blake &al 2016
-
 
 inline double
 EPC0Computation(double SorptionCoefficient, double SolidPhosphorousMass, double SoilMass, double FreundlichIsothermConstant, double TDPConcentration)
@@ -30,8 +25,8 @@ static void
 AddINCAPModel(mobius_model *Model)
 {
 	auto Dimensionless = RegisterUnit(Model);
-	auto GCPerM2       = RegisterUnit(Model, "gC / m^2");
-	auto GCPerM2PerDay = RegisterUnit(Model, "gC / m^2 / day");
+	auto GCPerM2       = RegisterUnit(Model, "gC/m^2");
+	auto GCPerM2PerDay = RegisterUnit(Model, "gC/m^2/day");
 	auto KgPerKm2      = RegisterUnit(Model, "kg/km^2");
 	auto KgPerHaPerDay = RegisterUnit(Model, "kg/Ha/day");
 	auto KgPerHaPerYear = RegisterUnit(Model, "kg/Ha/year");
@@ -43,6 +38,7 @@ AddINCAPModel(mobius_model *Model)
 	auto JulianDay     = RegisterUnit(Model, "Julian day");
 	auto Days          = RegisterUnit(Model, "days");
 	auto M             = RegisterUnit(Model, "m");
+	auto Mm            = RegisterUnit(Model, "mm");
 	auto MPerDay       = RegisterUnit(Model, "m/day");
 	auto DegreesCelsius     = RegisterUnit(Model, "°C");
 	auto MgPerL        = RegisterUnit(Model, "mg/l");
@@ -152,6 +148,15 @@ AddINCAPModel(mobius_model *Model)
 	auto ChangeInRateWithA10DegreeChangeInTemperature = RegisterParameterDouble(Model, Land, "Change in rate with a 10 degree change in temperature", Dimensionless, 1.0, 0.0, 5.0);
 	auto TemperatureAtWhichResponseIs1 = RegisterParameterDouble(Model, Land, "Temperature at which response is 1", DegreesCelsius, 20.0);
 	auto LowerTemperatureThresholdImmobilisation = RegisterParameterDouble(Model, Land, "Lower temperature threshold for immobilisation", DegreesCelsius, 0.0);
+	auto ZeroRateDepth = RegisterParameterDouble(Model, Land, "Zero rate depth", Mm, 0.0);
+	auto MaxRateDepth  = RegisterParameterDouble(Model, Land, "Max rate depth", Mm, 200.0);
+	
+	auto InitialDirectRunoffTDPConcentration = RegisterParameterDouble(Model, Land, "Initial direct runoff TDP concentration", MgPerL, 0.0);
+	auto InitialSoilwaterTDPConcentration = RegisterParameterDouble(Model, Land, "Initial soil water TDP concentration", MgPerL, 0.0);
+	auto InitialGroundwaterTDPConcentration = RegisterParameterDouble(Model, Land, "Initial groundwater TDP concentration", MgPerL, 0.0);
+	auto InitialSoilLabilePRatio = RegisterParameterDouble(Model, Land, "Initial soil labile P ratio", KgPerKg, 0.01);
+	auto InitialSoilInactivePRatio = RegisterParameterDouble(Model, Land, "Initial soil inactive P ratio", KgPerKg, 0.01);
+	auto InitialAquiferPRatio = RegisterParameterDouble(Model, Land, "Initial aquifer P ratio", KgPerKg, 0.01);
 	
 	//TODO: Groundwater parameters should maybe not be per landscape unit.
 	auto GroundwaterSorptionScalingFactor = RegisterParameterDouble(Model, Land, "Groundwater sorption scaling factor", PerDay, 1.0);
@@ -175,30 +180,36 @@ AddINCAPModel(mobius_model *Model)
 	SetSolver(Model, PlantPUptakeFromSoilwater, IncaSolver);
 	auto ChemicalImmobilisation        = RegisterEquation(Model, "Chemical immobilisation", KgPerKm2PerDay);
 	SetSolver(Model, ChemicalImmobilisation, IncaSolver);
+	auto InitialSoilwaterTDPMass       = RegisterEquationInitialValue(Model, "Initial soil water TDP mass", KgPerKm2);
 	auto SoilwaterTDPMass              = RegisterEquationODE(Model, "Soil water TDP mass", KgPerKm2);
 	SetSolver(Model, SoilwaterTDPMass, IncaSolver);
-	//SetInitialValue
+	SetInitialValue(Model, SoilwaterTDPMass, InitialSoilwaterTDPMass);
+	auto InitialSoilLabilePMass        = RegisterEquationInitialValue(Model, "Initial soil labile P mass", KgPerKm2);
 	auto SoilLabilePMass               = RegisterEquationODE(Model, "Soil labile P mass", KgPerKm2);
 	SetSolver(Model, SoilLabilePMass, IncaSolver);
-	//SetInitialValue
+	SetInitialValue(Model, SoilLabilePMass, InitialSoilLabilePMass);
+	auto InitialSoilInactivePMass      = RegisterEquationInitialValue(Model, "Initial soil inactive P mass", KgPerKm2);
 	auto SoilInactivePMass             = RegisterEquationODE(Model, "Soil inactive P mass", KgPerKm2);
 	SetSolver(Model, SoilInactivePMass, IncaSolver);
-	//SetInitialValue
+	SetInitialValue(Model, SoilInactivePMass, InitialSoilInactivePMass);
 	auto SoilwaterTDPConcentration     = RegisterEquation(Model, "Soil water TDP concentration", MgPerL);
 	SetSolver(Model, SoilwaterTDPConcentration, IncaSolver);
+	auto InitialDirectRunoffTDPMass    = RegisterEquationInitialValue(Model, "Initial direct runoff TDP mass", KgPerKm2);
 	auto DirectRunoffTDPMass           = RegisterEquationODE(Model, "Direct runoff TDP mass", KgPerKm2);
 	SetSolver(Model, DirectRunoffTDPMass, IncaSolver);
-	//SetInitialValue
+	SetInitialValue(Model, DirectRunoffTDPMass, InitialDirectRunoffTDPMass);
 	auto GroundwaterEPC0               = RegisterEquation(Model, "Groundwater EPC0", MgPerL);
 	SetSolver(Model, GroundwaterEPC0, IncaSolver);
 	auto GroundwaterPSorptionDesorption = RegisterEquation(Model, "Groundwater P sorption/desorption", KgPerKm2PerDay);
 	SetSolver(Model, GroundwaterPSorptionDesorption, IncaSolver);
+	auto InitialGroundwaterTDPMass     = RegisterEquationInitialValue(Model, "Initial groundwater TDP mass", KgPerKm2);
 	auto GroundwaterTDPMass            = RegisterEquationODE(Model, "Groundwater TDP mass", KgPerKm2);
 	SetSolver(Model, GroundwaterTDPMass, IncaSolver);
-	//SetInitialValue
+	SetInitialValue(Model, GroundwaterTDPMass, InitialGroundwaterTDPMass);
+	auto InitialPMassInTheAquiferMatrix = RegisterEquationInitialValue(Model, "Initial P mass in the aquifer matrix", KgPerKm2);
 	auto PMassInTheAquiferMatrix       = RegisterEquationODE(Model, "P mass in the aquifer matrix", KgPerKm2);
 	SetSolver(Model, PMassInTheAquiferMatrix, IncaSolver);
-	//SetInitialValue
+	SetInitialValue(Model, PMassInTheAquiferMatrix, InitialPMassInTheAquiferMatrix);
 	auto GroundwaterTDPConcentration   = RegisterEquation(Model, "Groundwater TDP concentration", KgPerKm2);
 	SetSolver(Model, GroundwaterTDPConcentration, IncaSolver);
 	
@@ -211,6 +222,31 @@ AddINCAPModel(mobius_model *Model)
 	auto SoilTemperature         = GetEquationHandle(Model, "Soil temperature"); //From SoilTemperature.h
 	
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");
+	
+	
+	EQUATION(Model, InitialDirectRunoffTDPMass,
+		return RESULT(WaterDepth, DirectRunoff) * PARAMETER(InitialDirectRunoffTDPConcentration);
+	)
+	
+	EQUATION(Model, InitialSoilwaterTDPMass,
+		return RESULT(WaterDepth, Soilwater) * PARAMETER(InitialSoilwaterTDPConcentration);
+	)
+	
+	EQUATION(Model, InitialGroundwaterTDPMass,
+		return RESULT(WaterDepth, Groundwater) * PARAMETER(InitialGroundwaterTDPConcentration);
+	)
+	
+	EQUATION(Model, InitialSoilLabilePMass,
+		return 1e-6 * RESULT(SoilMassInTheOAHorizon) * PARAMETER(InitialSoilLabilePRatio);
+	)
+	
+	EQUATION(Model, InitialSoilInactivePMass,
+		return 1e-6 * RESULT(SoilMassInTheOAHorizon) * PARAMETER(InitialSoilInactivePRatio);
+	)
+	
+	EQUATION(Model, InitialPMassInTheAquiferMatrix,
+		return 1e3 * PARAMETER(AquiferMass) * PARAMETER(InitialAquiferPRatio);
+	)
 	
 	
 	EQUATION(Model, PhosphorousWetDeposition,
@@ -278,8 +314,11 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilMoistureFactor,
-		return 1.0;
-		//TODO!!!
+		double depth = RESULT(WaterDepth, Soilwater);
+		double maxratedepth = PARAMETER(MaxRateDepth);
+		double zeroratedepth = PARAMETER(ZeroRateDepth);
+	
+		return SCurveResponse(depth, zeroratedepth, maxratedepth, 0.0, 1.0);
 	)
 	
 	EQUATION(Model, TemperatureFactor,
@@ -344,9 +383,6 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilPControl,
-		
-		//TODO: Make sure this is executed at the right place!!
-	
 		double Csatlabile = PARAMETER(MaxSoilLabilePContent);
 		double Msoil      = RESULT(SoilMassInTheOAHorizon);
 		double Plab       = RESULT(SoilLabilePMass);
@@ -356,6 +392,8 @@ AddINCAPModel(mobius_model *Model)
 		{
 			SET_RESULT(SoilwaterTDPMass, tdp);
 			SET_RESULT(SoilLabilePMass, Csatlabile*Msoil);
+			
+			return 1.0;
 		}
 		
 		return 0.0;
@@ -404,8 +442,6 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, GroundwaterPControl,
-		//TODO: Make sure this is executed at the right place.
-	
 		double Maquifer = 1e9*PARAMETER(AquiferMass);
 		double Csataquifer = PARAMETER(AquiferMatrixPSaturation);
 		double Psorbed = RESULT(PMassInTheAquiferMatrix);
@@ -416,6 +452,8 @@ AddINCAPModel(mobius_model *Model)
 		{
 			SET_RESULT(GroundwaterTDPMass, tdp);
 			SET_RESULT(PMassInTheAquiferMatrix, Csataquifer*Maquifer);
+			
+			return 1.0;
 		}
 		
 		return 0.0;
@@ -440,6 +478,7 @@ AddINCAPModel(mobius_model *Model)
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Reach =          GetIndexSetHandle(Model, "Reaches");
+	auto SizeClass =      GetIndexSetHandle(Model, "Sediment size class");
 	
 	auto PPEnrichmentFactor = RegisterParameterDouble(Model, Reaches, "PP enrichment factor", Dimensionless, 1.0);
 	auto ProportionOfPInEpiphytes = RegisterParameterDouble(Model, Reaches, "Proportion of P in epiphytes", KgPerKg, 0.2);
@@ -457,17 +496,29 @@ AddINCAPModel(mobius_model *Model)
 	auto WaterColumnFreundlichIsothermConstant = RegisterParameterDouble(Model, Reaches, "Water column Freundlich isotherm constant", Dimensionless, 1.0);
 	auto WaterColumnSorptionScalingFactor = RegisterParameterDouble(Model, Reaches, "Water column sorption scaling factor", PerDay, 1.0);
 	auto WaterColumnStreamBedTDPExchangeFraction = RegisterParameterDouble(Model, Reaches, "Water column stream bed TDP exchange fraction", Dimensionless, 0.1);
+	auto PSaturationSuspendedSediment = RegisterParameterDouble(Model, Reaches, "P saturation in suspended sediment", KgPerKg, 0.2);
 	auto PorewaterPSorptionCoefficient = RegisterParameterDouble(Model, Reaches, "Pore water P sorption coefficient", PerKg, 0.1);
 	auto PorewaterSorptionScalingFactor = RegisterParameterDouble(Model, Reaches, "Pore water sorption scaling factor", PerDay, 1.0);
 	auto PorewaterFreundlichIsothermConstant = RegisterParameterDouble(Model, Reaches, "Pore water Freundlich isotherm constant", Dimensionless, 1.0);
+	auto PSaturationInBedSediment = RegisterParameterDouble(Model, Reaches, "P saturation in bed sediment", KgPerKg, 0.2);
 	auto BedSedimentDepth = RegisterParameterDouble(Model, Reaches, "Bed sediment depth", M, 1.0);
 	auto BedSedimentPorosity = RegisterParameterDouble(Model, Reaches, "Bed sediment porosity", Dimensionless, 0.3);
+	auto EffluentPPConcentration = RegisterParameterDouble(Model, Reaches, "Effluent PP concentration", MgPerL, 0.0);
+	auto EffluentTDPConcentration = RegisterParameterDouble(Model, Reaches, "Effluent TDP concentration", MgPerL, 0.0);
 	
 	auto RatioOfHydrolysablePToDOC = RegisterParameterDouble(Model, Reaches, "Ration of hydrolysable P to DOC", KgPerKg, 1.0);
 	auto RegressionBetweenTDPAndSRPConstant = RegisterParameterDouble(Model, Reaches, "Regression between TDP and SRP (constant)", Kg, 0.0);
 	auto RegressionBetweenTDPAndSRPGradient = RegisterParameterDouble(Model, Reaches, "Regression between TDP and SRP (gradient)", KgPerKg, 0.0);
 	
+	auto InitialWaterColumnTDPConcentration = RegisterParameterDouble(Model, Reaches, "Initial water column TDP concentration", MgPerL, 0.0);
+	auto InitialWaterColumnPPConcentration  = RegisterParameterDouble(Model, Reaches, "Initial water column PP concentration", MgPerL, 0.0);
+	auto InitialPorewaterTDPConcentration   = RegisterParameterDouble(Model, Reaches, "Initial pore water TDP concentration", MgPerL, 0.0);
+	auto InitialBedPPRatio                  = RegisterParameterDouble(Model, Reaches, "Initial bed PP ratio", KgPerKg, 0.0);
+	auto InitialMacrophyteBiomass           = RegisterParameterDouble(Model, Reaches, "Initial macrophyte biomass", GCPerM2, 0.0);
+	auto InitialEpiphyteBiomass             = RegisterParameterDouble(Model, Reaches, "Initial epiphyte biomass", GCPerM2, 0.0);
 	
+	auto EffluentPPConcentrationTimeseries = RegisterInput(Model, "Effluent PP concentration", MgPerL);
+	auto EffluentTDPConcentrationTimeseries = RegisterInput(Model, "Effluent TDP concentration", MgPerL);
 	auto DOCConcentration = RegisterInput(Model, "DOC concentration", MgPerL);
 	
 	
@@ -475,7 +526,9 @@ AddINCAPModel(mobius_model *Model)
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature"); //NOTE: From WaterTemperature.h
 	auto ReachFlow        = GetEquationHandle(Model, "Reach flow"); //NOTE: From Persist.h
 	auto ReachVolume      = GetEquationHandle(Model, "Reach volume"); //From Persist.h
+	auto ReachAbstraction = GetEquationHandle(Model, "Reach abstraction"); //From Persist.h
 	auto TotalSuspendedSedimentMass = GetEquationHandle(Model, "Total suspended sediment mass"); //From IncaSed.h
+	auto MassOfBedSedimentPerUnitArea = GetEquationHandle(Model, "Mass of bed sediment per unit area"); //From IncaSed.h
 	auto TotalBedSedimentMass = GetEquationHandle(Model, "Total bed sediment mass"); //From IncaSed.h
 	auto TotalEntrainment = GetEquationHandle(Model, "Total sediment entrainment"); //From IncaSed.h
 	auto TotalDeposition = GetEquationHandle(Model, "Total sediment deposition"); //From IncaSed.h
@@ -484,6 +537,10 @@ AddINCAPModel(mobius_model *Model)
 	auto Percent          = GetParameterDoubleHandle(Model, "%"); //From Persist.h
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length"); //From Persist.h
 	auto ReachWidth       = GetParameterDoubleHandle(Model, "Reach width"); //From Persist.h
+	auto EffluentFlow     = GetParameterDoubleHandle(Model, "Effluent flow"); // From Persist.h
+	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input");
+	
+	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
 	
 	auto ReachPSolver = RegisterSolver(Model, "Reach P solver", 0.1, IncaDascru);
@@ -508,12 +565,18 @@ AddINCAPModel(mobius_model *Model)
 	SetSolver(Model, WaterColumnEPC0, ReachPSolver);
 	auto WaterColumnPSorptionDesorption = RegisterEquation(Model, "Water column sorption/desorption", KgPerDay);
 	SetSolver(Model, WaterColumnPSorptionDesorption, ReachPSolver);
+	auto WaterColumnTDPAbstraction = RegisterEquation(Model, "Water column TDP abstraction", KgPerDay);
+	SetSolver(Model, WaterColumnTDPAbstraction, ReachPSolver);
+	auto WaterColumnPPAbstraction  = RegisterEquation(Model, "Water column PP abstraction", KgPerDay);
+	SetSolver(Model, WaterColumnPPAbstraction, ReachPSolver);
+	auto InitialWaterColumnTDPMass = RegisterEquationInitialValue(Model, "Initial water column TDP mass", Kg);
 	auto WaterColumnTDPMass = RegisterEquationODE(Model, "Water column TDP mass", Kg);
 	SetSolver(Model, WaterColumnTDPMass, ReachPSolver);
-	//SetInitialValue
+	SetInitialValue(Model, WaterColumnTDPMass, InitialWaterColumnTDPMass);
+	auto InitialWaterColumnPPMass = RegisterEquationInitialValue(Model, "Initial water column PP mass", Kg);
 	auto WaterColumnPPMass = RegisterEquationODE(Model, "Water column PP mass", Kg);
 	SetSolver(Model, WaterColumnPPMass, ReachPSolver);
-	//SetInitialValue
+	SetInitialValue(Model, WaterColumnPPMass, InitialWaterColumnPPMass);
 	auto WaterColumnPorewaterTDPExchange = RegisterEquation(Model, "Water column pore water TDP exchange", KgPerDay);
 	SetSolver(Model, WaterColumnPorewaterTDPExchange, ReachPSolver);
 	auto ReachPPEntrainment = RegisterEquation(Model, "Reach PP entrainment", KgPerDay);
@@ -530,14 +593,16 @@ AddINCAPModel(mobius_model *Model)
 	SetSolver(Model, StreamBedPSorptionDesorption, ReachPSolver);
 	auto PorewaterTDPUptakeByMacrophytes = RegisterEquation(Model, "Pore water TDP uptake by macrophytes", KgPerDay);
 	SetSolver(Model, PorewaterTDPUptakeByMacrophytes, ReachPSolver);
+	auto InitialPorewaterTDPMass = RegisterEquationInitialValue(Model, "Initial pore water TDP mass", Kg);
 	auto PorewaterTDPMass = RegisterEquationODE(Model, "Pore water TDP mass", Kg);
 	SetSolver(Model, PorewaterTDPMass, ReachPSolver);
-	//SetInitialValue
+	SetInitialValue(Model, PorewaterTDPMass, InitialPorewaterTDPMass);
 	auto PorewaterTDPConcentration = RegisterEquation(Model, "Pore water TDP concentration", MgPerL);
 	SetSolver(Model, PorewaterTDPConcentration, ReachPSolver);
+	auto InitialBedPPMass = RegisterEquationInitialValue(Model, "Initial bed PP mass", Kg);
 	auto BedPPMass = RegisterEquationODE(Model, "Stream bed PP mass", Kg);
 	SetSolver(Model, BedPPMass, ReachPSolver);
-	//SetInitialValue
+	SetInitialValue(Model, BedPPMass, InitialBedPPMass);
 	
 	
 	auto MacrophyteGrowthRate = RegisterEquation(Model, "Macrophyte growth rate", GCPerM2PerDay);
@@ -546,21 +611,40 @@ AddINCAPModel(mobius_model *Model)
 	SetSolver(Model, MacrophyteDeathRate, ReachPSolver);
 	auto MacrophyteBiomass       = RegisterEquationODE(Model, "Macrophyte biomass", GCPerM2);
 	SetSolver(Model, MacrophyteBiomass, ReachPSolver);
-	//SetInitialValue
+	SetInitialValue(Model, MacrophyteBiomass, InitialMacrophyteBiomass);
 	auto EpiphyteGrowthRate = RegisterEquation(Model, "Epiphyte growth rate", GCPerM2PerDay);
 	SetSolver(Model, EpiphyteGrowthRate, ReachPSolver);
 	auto EpiphyteDeathRate  = RegisterEquation(Model, "Epiphyte death rate", GCPerM2PerDay);
 	SetSolver(Model, EpiphyteDeathRate, ReachPSolver);
 	auto EpiphyteBiomass    = RegisterEquationODE(Model, "Epiphyte biomass", GCPerM2);
 	SetSolver(Model, EpiphyteBiomass, ReachPSolver);
-	//SetInitialValue
-	
-	
-	
+	SetInitialValue(Model, EpiphyteBiomass, InitialEpiphyteBiomass);
 	
 	auto WaterColumnSRPConcentration = RegisterEquation(Model, "Water column SRP concentration", MgPerL);
 	auto WaterColumnPControl = RegisterEquation(Model, "Water column P control", Dimensionless);
 	auto PorewaterPControl   = RegisterEquation(Model, "Pore water P control", Dimensionless);
+	
+	EQUATION(Model, InitialWaterColumnTDPMass,
+		return PARAMETER(InitialWaterColumnTDPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //NOTE: I think we have to put CURRENT_INDEX(Reach) for it to get the correct value here, because otherwise it may not have been updated in the quickbuffer.... TODO: Fix initial value system!!!
+	)
+	
+	EQUATION(Model, InitialWaterColumnPPMass,
+		return PARAMETER(InitialWaterColumnTDPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //See note above
+	)
+	
+	EQUATION(Model, InitialPorewaterTDPMass,
+		return 1e-3 * PARAMETER(InitialPorewaterTDPConcentration) * PARAMETER(ReachWidth) * PARAMETER(ReachLength) * PARAMETER(BedSedimentDepth) * PARAMETER(BedSedimentPorosity);
+	)
+	
+	EQUATION(Model, InitialBedPPMass,
+		double sedimentmass = 0.0;
+		for(index_t Class = FIRST_INDEX(SizeClass); Class < INDEX_COUNT(SizeClass); ++Class)
+		{
+			//TODO: Have to check if this actually gets the correct value!
+			sedimentmass += RESULT(MassOfBedSedimentPerUnitArea, Class);
+		}
+		return PARAMETER(ReachWidth) * PARAMETER(ReachLength) * sedimentmass * PARAMETER(InitialBedPPRatio);
+	)
 	
 	
 	EQUATION(Model, ReachPPInputFromLand,
@@ -592,9 +676,10 @@ AddINCAPModel(mobius_model *Model)
 			upstreamtdp += RESULT(WaterColumnTDPOutput, *Input);
 		)
 		
-		//TODO: effluent inputs
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * (double)PARAMETER(ReachHasEffluentInput);
+		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentTDPConcentrationTimeseries, EffluentTDPConcentration);
 		
-		return upstreamtdp + RESULT(TotalReachTDPInputFromLand);
+		return upstreamtdp + RESULT(TotalReachTDPInputFromLand) + effluentflow * effluentconc * 86.4;
 	)
 	
 	EQUATION(Model, WaterColumnPPInput,
@@ -604,9 +689,10 @@ AddINCAPModel(mobius_model *Model)
 			upstreampp += RESULT(WaterColumnPPOutput, *Input);
 		)
 		
-		//TODO: effluent inputs
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * (double)PARAMETER(ReachHasEffluentInput);
+		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentPPConcentrationTimeseries, EffluentPPConcentration);
 		
-		return upstreampp + RESULT(TotalReachPPInputFromLand);
+		return upstreampp + RESULT(TotalReachPPInputFromLand) + effluentflow * effluentconc * 86.4;
 	)
 	
 	EQUATION(Model, WaterColumnTDPOutput,
@@ -615,6 +701,14 @@ AddINCAPModel(mobius_model *Model)
 	
 	EQUATION(Model, WaterColumnPPOutput,
 		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(WaterColumnPPMass), RESULT(ReachVolume));
+	)
+	
+	EQUATION(Model, WaterColumnTDPAbstraction,
+		return RESULT(WaterColumnTDPMass) * SafeDivide(RESULT(ReachAbstraction) * 86400.0, RESULT(ReachVolume)); 
+	)
+	
+	EQUATION(Model, WaterColumnPPAbstraction,
+		return RESULT(WaterColumnPPMass) * SafeDivide(RESULT(ReachAbstraction) * 86400.0, RESULT(ReachVolume)); 
 	)
 	
 	EQUATION(Model, ReachTDPUptakeByEpiphytes,
@@ -656,28 +750,41 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, WaterColumnTDPMass,
-		//TODO: abstraction
 		return
 			  RESULT(WaterColumnTDPInput)
 			- RESULT(WaterColumnTDPOutput)
 			- RESULT(ReachTDPUptakeByEpiphytes)
 			- RESULT(WaterColumnPSorptionDesorption)
+			- RESULT(WaterColumnTDPAbstraction)
 			+ RESULT(WaterColumnPorewaterTDPExchange);
 	)
 	
 	EQUATION(Model, WaterColumnPPMass,
-		//TODO: abstraction
 		return
 			  RESULT(WaterColumnPPInput)
 			- RESULT(WaterColumnPPOutput)
 			+ RESULT(ReachPPEntrainment)
 			- RESULT(ReachPPDeposition)
+			- RESULT(WaterColumnTDPAbstraction)
 			+ RESULT(WaterColumnPSorptionDesorption);
 	)
 	
 	EQUATION(Model, WaterColumnPControl,
+		double M_SS = RESULT(TotalSuspendedSedimentMass);
+		double Csatwc = PARAMETER(PSaturationSuspendedSediment);
+		double Psorbed = RESULT(WaterColumnPPMass);
+		
+		double tdp = LAST_RESULT(WaterColumnTDPMass) + Psorbed - Csatwc*M_SS;
+		
+		if(Psorbed/M_SS >= Csatwc)
+		{
+			SET_RESULT(WaterColumnTDPMass, tdp);
+			SET_RESULT(WaterColumnPPMass, Csatwc*M_SS);
+			
+			return 1.0;
+		}
+		
 		return 0.0;
-		//TODO
 	)
 	
 	EQUATION(Model, WaterColumnTDPConcentration,
@@ -741,7 +848,20 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, PorewaterPControl,
-		//TODO
+		double Mbed = RESULT(TotalBedSedimentMass);
+		double Csatpw = PARAMETER(PSaturationInBedSediment);
+		double Psorbed = RESULT(BedPPMass);
+		
+		double tdp = LAST_RESULT(PorewaterTDPMass) + Psorbed - Csatpw*Mbed;
+		
+		if(Psorbed/Mbed >= Csatpw)
+		{
+			SET_RESULT(PorewaterTDPMass, tdp);
+			SET_RESULT(BedPPMass, Csatpw*Mbed);
+			
+			return 1.0;
+		}
+		
 		return 0.0;
 	)
 	
