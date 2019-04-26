@@ -629,7 +629,8 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialWaterColumnPPMass,
-		return PARAMETER(InitialWaterColumnTDPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //See note above
+		double value = PARAMETER(InitialWaterColumnPPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //See note above
+		return value;
 	)
 	
 	EQUATION(Model, InitialPorewaterTDPMass,
@@ -765,7 +766,7 @@ AddINCAPModel(mobius_model *Model)
 			- RESULT(WaterColumnPPOutput)
 			+ RESULT(ReachPPEntrainment)
 			- RESULT(ReachPPDeposition)
-			- RESULT(WaterColumnTDPAbstraction)
+			- RESULT(WaterColumnPPAbstraction)
 			+ RESULT(WaterColumnPSorptionDesorption);
 	)
 	
@@ -841,7 +842,7 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, BedPPMass,
-		return
+ 		return
 			  RESULT(StreamBedPSorptionDesorption)
 			+ RESULT(ReachPPDeposition)
 			- RESULT(ReachPPEntrainment);
