@@ -13,11 +13,11 @@ import time
 from scipy.stats import norm
 from multiprocessing import Pool
 
-wrapper_fpath = (r"..\inca.py")
-optimize_funs_fpath = (r'..\inca_calibration.py')
+wrapper_fpath = (r"..\mobius.py")
+optimize_funs_fpath = (r'..\mobius_calibration.py')
 
-wr = imp.load_source('inca', wrapper_fpath)
-cf = imp.load_source('inca_calibration', optimize_funs_fpath)	
+wr = imp.load_source('mobius', wrapper_fpath)
+cf = imp.load_source('mobius_calibration', optimize_funs_fpath)	
 
 
 def log_prior(params, min, max) :
@@ -213,7 +213,7 @@ def GoF_stats_single_sample(samplelist, lnproblist, dataset, calibration, object
 
 #######################################################################
 
-wr.initialize('simplyp.dll')
+wr.initialize('..\..\Applications\SimplyP\simplyp.dll')
 
 dataset = wr.DataSet.setup_from_parameter_and_input_files('../../Applications/SimplyP/Morsa/MorsaParameters.dat', 
                                                           '../../Applications/SimplyP/Morsa/MorsaInputs.dat')
