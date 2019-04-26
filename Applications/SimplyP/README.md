@@ -12,7 +12,7 @@ The Mobius version offers dramatic performance improvements and increased flexib
 
 For instructions on getting started with Python, Jupyter notebooks and the python wrapper, see https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper#python-wrapper.
 
-The notebooks used in these tutorials are located within the PythonWrapper/SimplyP folder in the repository, and so will be available for you to work through interactively when you download the Mobius repository. 
+The notebooks used in these tutorials are located within the PythonWrapper/SimplyP folder in the repository, and so will be available for you to work through interactively when you download the Mobius repository (see instructions on how to do that [here](https://github.com/NIVANorge/Mobius#download-the-repository)). 
 
  1. **[Auto-calibration and uncertainty estimation](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb)**. An example illustrating how to auto-calibrate SimplyP and explore parametric uncertainty using MCMC
 
