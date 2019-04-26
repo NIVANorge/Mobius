@@ -3,7 +3,7 @@
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
 
-#include "../python_wrapper.h"
+#include "../../PythonWrapper/python_wrapper.h"
 
 #include "../../Modules/SimplyP.h"
 

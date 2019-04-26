@@ -1,7 +1,7 @@
 start_date : "1971-01-01"
 timesteps : 17167
 
-# Required: "Air temperature", "Precipitation"
+# Required: "Air temperature", "Precipitation" // Gridded data
 # Optional: "Potential evapotranspiration"  //N.B. value provided here calculated using Python SimplyP inputs.py code using Thornthwaite method, and is monthly data interpolated to daily
 
 additional_timeseries :
