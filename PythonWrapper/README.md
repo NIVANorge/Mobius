@@ -10,9 +10,7 @@ To use a model with the python wrapper, create your own .cpp file along the line
 
 We have already built some examples atop of mobius.py to show you how you can interact with the models through the interface. See e.g. optimization_example.py or the SimplyP example [here](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb). There is also docstring documentation in mobius.py, and we have made some calibration utilities available through mobius_calib_uncert_lmfit.py (mobius_calibration.py is older code, but can also serve as a good example of what you can do).
 
-### Installation
-
-#### Dependencies
+## Dependencies
 
 The Python wrapper has so far only been tested using **64-bit Python 3.6**. The main dependencies of mobius.py and mobius_calib_uncert_lmfit.py are:
 
