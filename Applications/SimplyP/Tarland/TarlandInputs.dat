@@ -1,8 +1,8 @@
 start_date : "1981-01-01"
 timesteps : 10957
 
-additional_timeseries : // All observed at Coull
-"observed Q"        unit "m^3/s"
+additional_timeseries :  		  # All observed at Coull
+"observed Q"        unit "m^3/s"  
 "observed Q mm/d"   unit "mm/day"
 "observed SS"       unit "mg/l"
 "observed TDP"      unit "mg/l"

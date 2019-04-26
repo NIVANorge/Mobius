@@ -24,7 +24,7 @@ int main()
 	AddSimplyPPhosphorusModule(Model);
 	AddSimplyPInputToWaterBodyModule(Model);
 	
-	ReadInputDependenciesFromFile(Model, "tarlandinputs.dat"); //NOTE: This has to happen here before EndModelDefinition
+	ReadInputDependenciesFromFile(Model, "Tarland/TarlandInputs.dat"); //NOTE: This has to happen here before EndModelDefinition
 	
 	EndModelDefinition(Model);
 	
@@ -37,9 +37,9 @@ int main()
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "newparams.dat");
 #else
-	ReadParametersFromFile(DataSet, "tarlandparameters.dat");
+	ReadParametersFromFile(DataSet, "Tarland/TarlandParameters.dat");
 
-	ReadInputsFromFile(DataSet, "tarlandinputs.dat");
+	ReadInputsFromFile(DataSet, "Tarland/TarlandInputs.dat");
 	
 	PrintResultStructure(Model);
 	//PrintParameterStorageStructure(DataSet);
