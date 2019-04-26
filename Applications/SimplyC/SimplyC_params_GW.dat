@@ -24,7 +24,7 @@ parameters:
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
 0.1
 
-"PET reduction factor" :     #(dimensionless) [0, 1]
+"PET multiplication factor" :     #(dimensionless) [0, 1]
 0.55
 
 "Soil field capacity" :     #(mm) [0, 5000]

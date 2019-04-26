@@ -19,19 +19,19 @@ parameters:
 250
 
 "Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5]
-3.1
+2.0
 
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
 0.1
 
-"PET reduction factor" :     #(dimensionless) [0, 1]
-0.55
+"PET multiplication factor" :     #(dimensionless) [0, 1]
+0.0
 
 "Soil field capacity" :     #(mm) [0, 5000]
 100
 
 "Gradient of stream velocity-discharge relationship" :     #(m^{-3}) [1e-05, 0.99] The a in V = aQ^b
-0.98
+0.4
 
 "Exponent of stream velocity-discharge relationship" :     #(dimensionless) [0.1, 0.99] The b in V = aQ^b
 0.7
@@ -53,12 +53,12 @@ parameters:
 0.8
 
 "Reach length" :     #(m) [0, 10000000]
-800
+400 # Actual is 800m
 
 "Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
 0.001
 
-###################### "Reaches" "Landscape units" ######################
+###################### "Reaches" "Landscape units" ##################
 "Land use proportions" :     #(dimensionless) [0, 1]
 1
 
@@ -71,4 +71,3 @@ parameters:
 
 "Baseline soil water DOC concentration" :     #(mg/l) [0, 70]
 15
-
