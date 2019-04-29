@@ -12,16 +12,16 @@ Mobius can produce executables that can be run standalone or together with the g
 ![Alt text](Documentation/img/optimizer_MAP.png?raw=true "Example of a plot made using the framework and the python wrapper.")
 
 ## Contents
-* Available models
-* Documentation
-* Quick start guide
-  - Download the repository
-  - Compile a model, run it, and make some changes
-  - Python wrapper
-  - Navigating around the repository
-  - The INCAView graphical user interface
-* Dependencies
-* Authors and acknowledgements
+* [Available models](https://github.com/NIVANorge/Mobius#available-models)
+* [Documentation](https://github.com/NIVANorge/Mobius#documentation)
+* [Quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide)
+  - [Download the repository](https://github.com/NIVANorge/Mobius#download-the-repository)
+  - [Compile a model, run it, and make some changes](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes)
+  - [Python wrapper](https://github.com/NIVANorge/Mobius#python-wrapper)
+  - [Navigating around the repository](https://github.com/NIVANorge/Mobius#navigating-around-the-repository)
+  - [The INCAView graphical user interface](https://github.com/NIVANorge/Mobius#the-incaview-graphical-user-interface)
+* [Dependencies](https://github.com/NIVANorge/Mobius#dependencies)
+* [Authors and acknowledgements](https://github.com/NIVANorge/Mobius#authors-and-acknowledgements)
 
 ## Available models
 
