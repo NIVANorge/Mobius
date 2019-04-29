@@ -641,7 +641,6 @@ AddINCAPModel(mobius_model *Model)
 		double sedimentmass = 0.0;
 		for(index_t Class = FIRST_INDEX(SizeClass); Class < INDEX_COUNT(SizeClass); ++Class)
 		{
-			//TODO: Have to check if this actually gets the correct value!
 			sedimentmass += RESULT(MassOfBedSedimentPerUnitArea, Class);
 		}
 		return PARAMETER(ReachWidth) * PARAMETER(ReachLength) * sedimentmass * PARAMETER(InitialBedPPRatio);

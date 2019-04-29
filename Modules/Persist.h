@@ -203,9 +203,7 @@ AddPersistModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, EvapoTranspirationX3,
-		//double depth = RESULT(WaterDepth2); //NOTE: To force a dependency. Makes the batch structure of the model a little cleaner, but is actually not necessary...
-		double x3 = Max(0.0, INPUT(AirTemperature) - PARAMETER(GrowingDegreeThreshold));
-		return x3;
+		return Max(0.0, INPUT(AirTemperature) - PARAMETER(GrowingDegreeThreshold));
 	)
 
 	EQUATION(Model, EvapoTranspirationX4,
@@ -255,7 +253,7 @@ AddPersistModel(mobius_model *Model)
 		
 		for(index_t OtherSoil = CURRENT_INDEX(SoilBoxes) + 1; OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
 		{
-			double mpi = Min(PARAMETER(Infiltration, OtherSoil, LU), (PARAMETER(MaximumCapacity, OtherSoil, LU) - RESULT(WaterDepth3, OtherSoil))); //NOTE: RESULT(WaterDepth3, OtherSoil) has not been computed yet, and so will be 0. In fact, it depends on values computed in this equation (mainly RESULT(PercolationInput, OtherSoil), and so can not possibly be computed before this unless the model structure is rewritten.
+			double mpi = Min(PARAMETER(Infiltration, OtherSoil, LU), (PARAMETER(MaximumCapacity, OtherSoil, LU) - RESULT(WaterDepth3, OtherSoil))); //NOTE: RESULT(WaterDepth3, OtherSoil) has not been computed yet, and so will be 0. In fact, it depends on values computed in this equation (mainly RESULT(PercolationInput, OtherSoil), and so can not possibly be computed before this unless the model structure is rewritten. TODO: Do something else here, maybe use LAST_RESULT(WaterDepth, OtherSoil) or similar.
 			double perc = Min(mpi * PARAMETER(RelativeAreaIndex, OtherSoil, LU) / relativeareaindex,
 				PARAMETER(PercolationMatrix, OtherSoil) * totalrunoff);
 			perc = Min(perc, RESULT(WaterDepth3));
