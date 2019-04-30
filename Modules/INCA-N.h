@@ -338,7 +338,7 @@ AddIncaNModel(mobius_model *Model)
 		double maxratedepth = PARAMETER(MaxRateDepth);
 		double zeroratedepth = PARAMETER(ZeroRateDepth);
 		
-		return LinearResponse(depth, zeroratedepth, maxratedepth, 0.0, 1.0); //TODO: Maybe replace with one of the more smooth response functions in mobius_math.h
+		return SCurveResponse(depth, zeroratedepth, maxratedepth, 0.0, 1.0);
 	)
 	
 	EQUATION(Model, CurrentGrowthCurveOffset,

@@ -127,7 +127,7 @@ parameters:
 0 0 0
 
 "Soil sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1 1
+0 0 0
 
 "Soil P sorption coefficient" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 1 1 1
@@ -205,7 +205,7 @@ parameters:
 0.01 0.01 0.01
 
 "Groundwater sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1 1
+0 0 0
 
 "Groundwater P sorption coefficient" :     #(kg/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 1 1 1
@@ -390,7 +390,7 @@ true
 1
 
 "Water column sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+0
 
 "Water column stream bed TDP exchange fraction" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.1
@@ -402,7 +402,7 @@ true
 0.1
 
 "Pore water sorption scaling factor" :     #(1/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+0
 
 "Pore water Freundlich isotherm constant" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 1

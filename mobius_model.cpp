@@ -1043,7 +1043,7 @@ ModelLoop(mobius_data_set *DataSet, value_set_accessor *ValueSet, mobius_inner_l
 inline void
 NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultValue, equation_h Equation)
 {
-	if(std::isnan(ResultValue) || std::isinf(ResultValue))
+	if(!std::isfinite(ResultValue))
 	{
 		//TODO: We should be able to report the timestep here.
 		MOBIUS_PARTIAL_ERROR("ERROR: Got a NaN or Inf value as the result of the equation " << GetName(Model, Equation) << " at timestep " << ValueSet->Timestep << std::endl);
@@ -1070,6 +1070,11 @@ NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultVa
 			{
 				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << ValueSet->CurParameters[Par].ValBool << std::endl);
 			}
+		}
+		for(input_h In : Spec.InputDependencies)
+		{
+			//TODO: Maaybe only report this if the input was provided?
+			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, In) << " was " << ValueSet->CurInputs[In.Handle] << std::endl);
 		}
 		for(equation_h Res : Spec.DirectResultDependencies )
 		{
