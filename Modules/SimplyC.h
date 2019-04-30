@@ -52,9 +52,9 @@ AddSimplyCModel(mobius_model *Model)
 	auto ReachVolume                 = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow                   = GetEquationHandle(Model, "Reach flow (end-of-day)");
 	auto DailyMeanReachFlow          = GetEquationHandle(Model, "Reach flow (daily mean, mm/day)");
-/* 	auto SnowMelt					 = GetEquationHandle(Model, "Snow melt");
+	auto SnowMelt					 = GetEquationHandle(Model, "Snow melt");
 	auto SnowDepth					 = GetEquationHandle(Model, "Snow depth as water equivalent");
-	auto PrecipitationFallingAsRain  = GetEquationHandle(Model, "Precipitation falling as rain"); */
+	auto PrecipitationFallingAsRain  = GetEquationHandle(Model, "Precipitation falling as rain");
 
 	// Equation from soil temperature module
 	auto SoilTemperature       = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");
@@ -75,18 +75,24 @@ AddSimplyCModel(mobius_model *Model)
 
 	//TO DO: test whether get better results by raising soil temp to power 2 or not (empirical analysis from Langtjern surface water DOC)
 	EQUATION(Model, SoilWaterCarbonConcentration,
+		/* // Linear relationship between soil DOC concentration and soil temperature
 		double minSoilTemp = -PARAMETER(SoilDOCInterceptCoefficient)/PARAMETER(SoilTemperatureCoefficient);
-		double SoilTempAboveZero = Max(minSoilTemp, RESULT(SoilTemperature)); //Quick fix to prevent negative concentrations if not squared. Needs revisiting
+		double SoilTempAboveZero = Max(minSoilTemp, RESULT(SoilTemperature)); //Quick fix to prevent high soil concs with negative soil temp
+		return PARAMETER(SoilTemperatureCoefficient) * PARAMETER(BaselineSoilDOCConcentration) * pow(SoilTempAboveZero,2)
+			   + PARAMETER(SoilDOCInterceptCoefficient) * PARAMETER(BaselineSoilDOCConcentration);
+		*/
+		// Power law relationship between soil DOC concentration and soil temperature
+		double SoilTempAboveZero = Max(0.0, RESULT(SoilTemperature));
 		return PARAMETER(SoilTemperatureCoefficient) * PARAMETER(BaselineSoilDOCConcentration) * pow(SoilTempAboveZero,2)
 			   + PARAMETER(SoilDOCInterceptCoefficient) * PARAMETER(BaselineSoilDOCConcentration);
 	)
 	
-	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
+/* 	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
 		return PARAMETER(LandUseProportions) * RESULT(InfiltrationExcess)
 			   * ConvertMgPerLToKgPerMm(RESULT(SoilWaterCarbonConcentration), PARAMETER(CatchmentArea));
-	)
+	) */
 	
-/* 	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
+	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
 		double quickDOCconcentration;
 		double f_melt = PARAMETER(ProportionToQuickFlow)*RESULT(SnowMelt)/RESULT(InfiltrationExcess);
 		double f_rain = 1.0-f_melt;
@@ -96,7 +102,7 @@ AddSimplyCModel(mobius_model *Model)
 			
 		return PARAMETER(LandUseProportions) * RESULT(InfiltrationExcess)
 			   * ConvertMgPerLToKgPerMm(quickDOCconcentration, PARAMETER(CatchmentArea));
-	) */
+	)
 
 	EQUATION(Model, SoilwaterCarbonFlux,
 		return
