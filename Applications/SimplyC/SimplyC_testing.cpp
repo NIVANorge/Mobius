@@ -1,6 +1,6 @@
 #define MOBIUS_TIMESTEP_VERBOSITY 0
 //NOTE: the g++ compiler flag ffast-math will make it so that isnan does not work correctly, so don't use that flag.
-#define MOBIUS_TEST_FOR_NAN 1 //0 or 1. Test for NaNs and if find print which equation, indexer and params associated with it. Slows model.
+#define MOBIUS_TEST_FOR_NAN 0 //0 or 1. Test for NaNs and if find print which equation, indexer and params associated with it. Slows model.
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 1
 

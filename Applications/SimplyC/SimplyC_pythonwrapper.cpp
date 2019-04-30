@@ -3,11 +3,11 @@
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
 
-#include "../python_wrapper.h"
+#include "../../PythonWrapper/python_wrapper.h"
 
 #include "../../Modules/UnitConversions.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SimplyHydrol_noGW.h"
+#include "../../Modules/SimplyQ_noGW.h"
 #include "../../Modules/SoilTemperature_simply.h"
 
 DLLEXPORT void *

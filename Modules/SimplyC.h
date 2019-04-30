@@ -30,6 +30,7 @@ AddSimplyCModel(mobius_model *Model)
 	auto CatchmentArea               = GetParameterDoubleHandle(Model, "Catchment area");
 //	auto BaseflowIndex               = GetParameterDoubleHandle(Model, "Baseflow index");
 	auto LandUseProportions			 = GetParameterDoubleHandle(Model, "Land use proportions");
+	auto ProportionToQuickFlow		 = GetParameterDoubleHandle(Model, "Proportion of precipitation that contributes to quick flow");
 
 	// Carbon params that don't vary with land class or sub-catchment/reach
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
@@ -51,6 +52,9 @@ AddSimplyCModel(mobius_model *Model)
 	auto ReachVolume                 = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow                   = GetEquationHandle(Model, "Reach flow (end-of-day)");
 	auto DailyMeanReachFlow          = GetEquationHandle(Model, "Reach flow (daily mean, mm/day)");
+/* 	auto SnowMelt					 = GetEquationHandle(Model, "Snow melt");
+	auto SnowDepth					 = GetEquationHandle(Model, "Snow depth as water equivalent");
+	auto PrecipitationFallingAsRain  = GetEquationHandle(Model, "Precipitation falling as rain"); */
 
 	// Equation from soil temperature module
 	auto SoilTemperature       = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");
@@ -69,10 +73,11 @@ AddSimplyCModel(mobius_model *Model)
 	SetSolver(Model, DailyMeanSoilwaterCarbonFluxToReach, SimplySolverLand);
 	ResetEveryTimestep(Model, DailyMeanSoilwaterCarbonFluxToReach);
 
+	//TO DO: test whether get better results by raising soil temp to power 2 or not (empirical analysis from Langtjern surface water DOC)
 	EQUATION(Model, SoilWaterCarbonConcentration,
 		double minSoilTemp = -PARAMETER(SoilDOCInterceptCoefficient)/PARAMETER(SoilTemperatureCoefficient);
-		double SoilTempAboveZero = Max(minSoilTemp, RESULT(SoilTemperature)); //Quick fix to prevent negative concentrations. Needs revisiting
-		return PARAMETER(SoilTemperatureCoefficient) * PARAMETER(BaselineSoilDOCConcentration) * SoilTempAboveZero
+		double SoilTempAboveZero = Max(minSoilTemp, RESULT(SoilTemperature)); //Quick fix to prevent negative concentrations if not squared. Needs revisiting
+		return PARAMETER(SoilTemperatureCoefficient) * PARAMETER(BaselineSoilDOCConcentration) * pow(SoilTempAboveZero,2)
 			   + PARAMETER(SoilDOCInterceptCoefficient) * PARAMETER(BaselineSoilDOCConcentration);
 	)
 	
@@ -80,6 +85,18 @@ AddSimplyCModel(mobius_model *Model)
 		return PARAMETER(LandUseProportions) * RESULT(InfiltrationExcess)
 			   * ConvertMgPerLToKgPerMm(RESULT(SoilWaterCarbonConcentration), PARAMETER(CatchmentArea));
 	)
+	
+/* 	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
+		double quickDOCconcentration;
+		double f_melt = PARAMETER(ProportionToQuickFlow)*RESULT(SnowMelt)/RESULT(InfiltrationExcess);
+		double f_rain = 1.0-f_melt;
+		double soilwaterDOCconc = RESULT(SoilWaterCarbonConcentration);
+		if (RESULT(InfiltrationExcess)>0.) quickDOCconcentration = f_melt*6.0 + f_rain*soilwaterDOCconc;
+		else quickDOCconcentration = soilwaterDOCconc;
+			
+		return PARAMETER(LandUseProportions) * RESULT(InfiltrationExcess)
+			   * ConvertMgPerLToKgPerMm(quickDOCconcentration, PARAMETER(CatchmentArea));
+	) */
 
 	EQUATION(Model, SoilwaterCarbonFlux,
 		return
@@ -100,8 +117,9 @@ AddSimplyCModel(mobius_model *Model)
 	
 //	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
 	
+	//To do: work initial condition out from baseline DOC parameter
 	auto StreamDOCMass = RegisterEquationODE(Model, "Reach DOC mass", Kg);
-	SetInitialValue(Model, StreamDOCMass, 0.0);
+	SetInitialValue(Model, StreamDOCMass, 0.02); 
 	SetSolver(Model, StreamDOCMass, SimplySolverReach);
 
 	auto StreamDOCFluxOut = RegisterEquation(Model, "DOC flux from reach, end-of-day", KgPerDay);

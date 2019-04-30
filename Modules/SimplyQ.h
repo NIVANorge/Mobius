@@ -229,9 +229,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto TotalSoilwaterFlowToReach = RegisterEquationCumulative(Model, "Total soilwater flow to reach from all land classes", SoilWaterFlowToReach, LandscapeUnits); //Sum over LU
 	
 	auto TotalGroundwaterFlowToReach = RegisterEquationCumulative(Model, "Total groundwater flow to reach from all land classes", GroundwaterFlowToReach, LandscapeUnits);
-		
-//	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MmPerDay);
-//	SetSolver(Model, ReachFlowInput, SimplySolverReach);
 	
 	auto InitialReachVolume = RegisterEquationInitialValue(Model, "Initial reach volume", Mm); 
 	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", Mm);
@@ -248,14 +245,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	SetSolver(Model, DailyMeanReachFlow, SimplySolverReach);
 	ResetEveryTimestep(Model, DailyMeanReachFlow);
 	
-
-/* 	EQUATION(Model, ReachFlowInput,
-		double upstreamflow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflow += RESULT(DailyMeanReachFlow, *Input) * PARAMETER(CatchmentArea, *Input) / PARAMETER(CatchmentArea);
-					 )
-		return upstreamflow + RESULT(InfiltrationExcess) + RESULT(TotalSoilwaterFlowToReach) + RESULT(TotalGroundwaterFlowToReach);
-	) */
 	
 	EQUATION(Model, InitialReachFlow,
 		double upstreamflow = 0.0;
