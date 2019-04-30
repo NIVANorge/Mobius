@@ -16,4 +16,4 @@ Documentation of individual models. However this is time consuming. Many of thes
 
 ## Known Mobius bugs:
 
--  If you have accidentally made a circular reference between equations, Mobius will report this. This is good. However if the circular reference involves both equations outside and inside a solver batch, Mobius will sometimes get confused about what equation inside the solver was involved in its error report.
+-  If you have accidentally made a circular reference between equations, Mobius will report this. This is good. However if the circular reference involves both equations outside and inside a solver batch, Mobius, in its error report, will sometimes get confused about what equation inside the solver was involved.
