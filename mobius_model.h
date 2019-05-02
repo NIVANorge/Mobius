@@ -1244,10 +1244,9 @@ GetCurrentParameter(value_set_accessor *ValueSet, parameter_bool_h Parameter)
 	return ValueSet->CurParameters[Parameter.Handle].ValBool;
 }
 
-//NOTE: This does NOT do error checking to see if we provided too many override indexes or if they were out of bounds! We could maybe add an option to do that
-// that is compile-out-able?
+
 size_t OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, const index_t *IndexCounts, const index_t *OverrideIndexes, size_t OverrideCount, entity_handle Handle);
-//size_t OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, const index_t *IndexCounts, entity_handle Handle);
+
 
 
 template<typename... T> double

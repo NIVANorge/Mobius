@@ -729,7 +729,7 @@ EndModelDefinition(mobius_model *Model)
 								if(std::find(CheckSpec.DirectResultDependencies.begin(), CheckSpec.DirectResultDependencies.end(), ThisEquation) != CheckSpec.DirectResultDependencies.end())
 								{
 									BatchDependsOnUs = true;
-									break; //UGH, since this is a loop macro that loops over two things, this break does not always do the correct thing.
+									break; //UGH, since this is a loop macro that loops over two things, this break will not break out of the second loop if it happens in the first...
 								}
 							)
 
@@ -1468,7 +1468,7 @@ RunModel(mobius_data_set *DataSet)
 	datetime ModelStartTime = GetStartDate(DataSet); //NOTE: This reads the "Start date" parameter.
 	
 #if MOBIUS_PRINT_TIMING_INFO
-		std::cout << "Running model " << Model->Name << " V" << Model->Version << " for " << Timesteps << " timesteps, starting at " << ModelStartTime.ToString() << std::endl;
+	std::cout << "Running model " << Model->Name << " V" << Model->Version << " for " << Timesteps << " timesteps, starting at " << ModelStartTime.ToString() << std::endl;
 #endif
 	
 	//NOTE: Allocate input storage in case it was not allocated during setup.
