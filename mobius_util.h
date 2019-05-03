@@ -8,6 +8,10 @@ inline void *
 AllocClearedArray_(size_t ElementSize, size_t ArrayLen)
 {
 	void *Result = malloc(ElementSize * ArrayLen);
+	if(!Result)
+	{
+		MOBIUS_FATAL_ERROR("ERROR: Ran out of memory." << std::endl);
+	}
 	memset(Result, 0, ElementSize * ArrayLen);
 	return Result;
 }

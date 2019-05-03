@@ -1,4 +1,4 @@
-# Parameter file generated for PERSiST V1.0 at 2019-03-22 14:36:03
+# Parameter file generated for INCA-C V1.0 at 2019-03-22 14:36:03
 
 index_sets:
 "Landscape units" : {"Forest" "Wetland"}
@@ -74,8 +74,8 @@ parameters:
 "Min moisture factor" :     #(dimensionless) [0, 1] The rate factor from moisture on carbon processes when soil moisture is at its minimal
 0.05 0.05
 
-"Litter fall rate" :     #(g/m^2/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.05 0.6
+"Litter fall rate" :     #(kg/Ha/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+6 0.5
 
 "Litter fall start day" :     #(Julian day) [1, 364]
 1 1
@@ -95,11 +95,11 @@ parameters:
 "SOC fast pool rate constant in the mineral layer" :     #(dimensionless) [0, 5000] Constant used to determine the rate of exchange between the fast and slow pools of SOC.
 125 150
 
-"Soil temperature rate multiplier" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1.1 1.1
+"Response to a 10° change in temperature" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+5.95 7
 
-"Soil temperature rate offset" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
-20 20
+"Temperature at which the response is 1" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
+14 10
 
 "DIC mass transfer velocity" :     #(m/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 200 200
@@ -108,31 +108,31 @@ parameters:
 3.75 3.75
 
 "SOC mineralisation base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.0038 0.00017
+0.003 0.00017
 
 "SOC mineralisation base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 5e-008 1e-006
 
 "SOC desorption base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.008 0.003
+0.0055 0.003
 
 "SOC desorption base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.012 0.001
 
 "DOC sorption base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.0001 0.01
+0.001 0.01
 
 "DOC sorption base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.031 0.15
 
 "DOC mineralisation base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-006 1e-007
+1e-005 1e-007
 
 "DOC mineralisation base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.0012 0.0001
 
 "DOC mineralisation rate in groundwater" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1 0.1
+0.0 0.0
 
 "Linear effect of SO4 on organic matter solubility in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.00027 0.00017
@@ -147,40 +147,40 @@ parameters:
 1 1
 
 "Direct runoff initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+0.5 2
 
 "Direct runoff initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0
 
 "Organic soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+30 40
 
 "Organic soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+2 2
 
 "Organic soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+3500 3e3
 
 "Mineral soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+6 20
 
 "Mineral soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+1 1
 
 "Mineral soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+900 1e2
 
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]
-0.1 0.9 0 0
-1 0.5 0.5 0
-0 0 0.5 0.5
-0 0 0 1
+0.1 0.9 0   0
+1   0.4 0.6 0
+0   0   0.6 0.4
+0   0   0   1
 
-0.1 0.9 0 0
-1 0.5 0.5 0
-0 0 0.5 0.5
-0 0 0 1
+0.1 0.9 0   0
+1   0.4 0.6 0
+0   0   0.6 0.4
+0   0   0   1
 
 ###################### "Soils" ######################
 "This is a quick box" :
@@ -188,9 +188,9 @@ true false false false
 
 ###################### "Soils" "Landscape units" ######################
 "Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
-10 10
-150 150
-150 150
+0 0
+290 290
+290 290
 100 100
 
 "Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
@@ -219,8 +219,8 @@ true false false false
 
 "Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
 1 1
-1 1
-65 65
+2 10
+35 35
 70 70
 
 "Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)

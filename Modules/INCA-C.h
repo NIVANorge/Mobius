@@ -24,6 +24,7 @@ AddINCACModel(mobius_model *Model)
 	auto Kg             = RegisterUnit(Model, "kg");
 	auto MgPerL         = RegisterUnit(Model, "mg/l");
 	auto KgPerHa        = RegisterUnit(Model, "kg/Ha");
+	auto KgPerHaPerDay  = RegisterUnit(Model, "kg/Ha/day");
 	
 	auto Soils          = GetIndexSetHandle(Model, "Soils");
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
@@ -44,20 +45,19 @@ AddINCACModel(mobius_model *Model)
 	auto MaxRateDepth                 = RegisterParameterDouble(Model, Land, "Max rate depth", Mm, 400.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their highest rate");
 	auto MinimalMoistureFactor        = RegisterParameterDouble(Model, Land, "Min moisture factor", Dimensionless, 0.05, 0.0, 1.0, "The rate factor from moisture on carbon processes when soil moisture is at its minimal");
 	
-	auto LitterFallRate                = RegisterParameterDouble(Model, Land, "Litter fall rate", GPerM2PerDay, 1.0);
+	auto LitterFallRate                = RegisterParameterDouble(Model, Land, "Litter fall rate", KgPerHaPerDay, 1.0);
 	auto LitterFallStartDay            = RegisterParameterUInt(  Model, Land, "Litter fall start day", JulianDay, 300, 1, 364);
 	auto LitterFallDuration            = RegisterParameterUInt(  Model, Land, "Litter fall duration", Days, 30, 0, 365);
 	
-	auto LitterFallTimeseries          = RegisterInput(Model, "Litterfall", GPerM2PerDay);
-	//auto RootBreakdownRate             = RegisterParameterDouble(Model, Land, "Root breakdown rate", GPerM2PerDay, 1.0);
+	auto LitterFallTimeseries          = RegisterInput(Model, "Litterfall", KgPerHaPerDay);
 	
 	auto FastPoolEquilibriumFractionOrganicLayer = RegisterParameterDouble(Model, Land, "SOC fast pool equilibrium fraction in the organic layer", Dimensionless, 0.5, 0.0, 1.0, "The relative size that the fast SOC pool tends towards.");
 	auto FastPoolEquilibriumFractionMineralLayer = RegisterParameterDouble(Model, Land, "SOC fast pool equilibrium fraction in the mineral layer", Dimensionless, 0.5, 0.0, 1.0, "The relative size that the fast SOC pool tends towards.");
 	auto FastPoolRateConstantOrganicLayer = RegisterParameterDouble(Model, Land, "SOC fast pool rate constant in the organic layer", Dimensionless, 50.0, 0.0, 5000.0, "Constant used to determine the rate of exchange between the fast and slow pools of SOC.");
 	auto FastPoolRateConstantMineralLayer = RegisterParameterDouble(Model, Land, "SOC fast pool rate constant in the mineral layer", Dimensionless, 50.0, 0.0, 5000.0, "Constant used to determine the rate of exchange between the fast and slow pools of SOC.");
 	
-	auto SoilTemperatureRateMultiplier = RegisterParameterDouble(Model, Land, "Soil temperature rate multiplier", Dimensionless, 1.0);
-	auto SoilTemperatureRateOffset     = RegisterParameterDouble(Model, Land, "Soil temperature rate offset", DegreesCelsius, 20.0);
+	auto SoilTemperatureRateMultiplier = RegisterParameterDouble(Model, Land, "Response to a 10° change in temperature", Dimensionless, 1.0);
+	auto SoilTemperatureRateOffset     = RegisterParameterDouble(Model, Land, "Temperature at which the response is 1", DegreesCelsius, 20.0);
 	
 	auto DICMassTransferVelocity               = RegisterParameterDouble(Model, Land, "DIC mass transfer velocity", MPerDay, 1.0);
 	auto DICSaturationConstant                 = RegisterParameterDouble(Model, Land, "DIC saturation constant", KgPerM3, 1.0);
@@ -292,7 +292,7 @@ AddINCACModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, TemperatureRateModifier,
-		return pow(PARAMETER(SoilTemperatureRateMultiplier), RESULT(SoilTemperature) - PARAMETER(SoilTemperatureRateOffset));
+		return pow(PARAMETER(SoilTemperatureRateMultiplier), (RESULT(SoilTemperature) - PARAMETER(SoilTemperatureRateOffset))/10.0);
 	)
 	
 	EQUATION(Model, MoistureRateModifier,
@@ -375,7 +375,7 @@ AddINCACModel(mobius_model *Model)
 	
 	EQUATION(Model, SOCMineralisationInMineralLayer,
 		return
-			  RESULT(RateModifierOrganicLayer)
+			  RESULT(RateModifierMineralLayer)
 			* PARAMETER(SOCMineralisationBaseRateMineralLayer)
 			* RESULT(SOCMassInMineralLayerFastPool);
 			//TODO: Also mineralisation in slow pool?
@@ -383,7 +383,7 @@ AddINCACModel(mobius_model *Model)
 	
 	EQUATION(Model, SOCDesorptionInMineralLayer,
 		return
-			  RESULT(RateModifierOrganicLayer)
+			  RESULT(RateModifierMineralLayer)
 			* (PARAMETER(SOCDesorptionBaseRateMineralLayer) + PARAMETER(LinearEffectOfSO4OnSolubilityMineralLayer)*pow(INPUT(SO4Deposition), PARAMETER(ExponentialEffectOfSO4OnSolubilityMineralLayer)))
 			* RESULT(SOCFastFractionInMineralLayer)
 			* RESULT(SOCMassInMineralLayerFastPool);
@@ -391,14 +391,14 @@ AddINCACModel(mobius_model *Model)
 	
 	EQUATION(Model, DOCSorptionInMineralLayer,
 		return
-			  RESULT(RateModifierOrganicLayer)
+			  RESULT(RateModifierMineralLayer)
 			* PARAMETER(DOCSorptionBaseRateMineralLayer)
 			* RESULT(DOCMassInMineralLayer);
 	)
 	
 	EQUATION(Model, DOCMineralisationInMineralLayer,
 		return
-			  RESULT(RateModifierOrganicLayer)
+			  RESULT(RateModifierMineralLayer)
 			* PARAMETER(DOCMineralisationBaseRateMineralLayer)
 			* RESULT(DOCMassInMineralLayer);
 	)
@@ -442,7 +442,7 @@ AddINCACModel(mobius_model *Model)
 	
 	EQUATION(Model, SOCMassInOrganicLayerFastPool,
 		return 
-			  1000.0 * RESULT(LitterFall) * RESULT(SOCFastFractionInOrganicLayer)
+			  100.0 * RESULT(LitterFall) * RESULT(SOCFastFractionInOrganicLayer)
 			+ RESULT(MassTransferFromSlowToFastInOrganicLayer)
 			+ RESULT(DOCSorptionInOrganicLayer)
 			- RESULT(SOCDesorptionInOrganicLayer)
@@ -451,7 +451,7 @@ AddINCACModel(mobius_model *Model)
 	
 	EQUATION(Model, SOCMassInOrganicLayerSlowPool,
 		return 
-			  1000.0 * RESULT(LitterFall) * (1.0 - RESULT(SOCFastFractionInOrganicLayer))
+			  100.0 * RESULT(LitterFall) * (1.0 - RESULT(SOCFastFractionInOrganicLayer))
 			  - RESULT(MassTransferFromSlowToFastInOrganicLayer);
 	)
 	
@@ -557,6 +557,27 @@ AddINCACModel(mobius_model *Model)
 		return PARAMETER(Percent) / 100.0 * PARAMETER(TerrestrialCatchmentArea) * dicout;
 	)
 	
+	
+	auto DirectRunoffDOCConcentration = RegisterEquation(Model, "Direct runoff DOC concentration", MgPerL);
+	auto OrganicLayerDOCConcentration = RegisterEquation(Model, "Organic layer DOC concentration", MgPerL);
+	auto MineralLayerDOCConcentration = RegisterEquation(Model, "Mineral layer DOC concentration", MgPerL);
+	auto GroundwaterDOCConcentration  = RegisterEquation(Model, "Groundwater DOC concentration", MgPerL);
+	
+	EQUATION(Model, DirectRunoffDOCConcentration,
+		return SafeDivide(RESULT(DOCMassInDirectRunoff), RESULT(WaterDepth, DirectRunoff));
+	)
+	
+	EQUATION(Model, OrganicLayerDOCConcentration,
+		return SafeDivide(RESULT(DOCMassInOrganicLayer), RESULT(WaterDepth, OrganicLayer));
+	)
+	
+	EQUATION(Model, MineralLayerDOCConcentration,
+		return SafeDivide(RESULT(DOCMassInMineralLayer), RESULT(WaterDepth, MineralLayer));
+	)
+	
+	EQUATION(Model, GroundwaterDOCConcentration,
+		return SafeDivide(RESULT(DOCMassInGroundwater), RESULT(WaterDepth, Groundwater));
+	)
 	
 	
 	auto ReachVolume = GetEquationHandle(Model, "Reach volume");

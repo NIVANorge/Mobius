@@ -316,9 +316,6 @@ CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index,
 // Indexes must be set up so that Indexes[I] is the index of the I'th index set that the entity one wishes to look up depends on.
 // IndexesCount is the number of index sets the entity depends on (and so the length of the array Indexes).
 // IndexCounts    must be set up so that for any index set with handle IndexSetHandle, IndexCounts[IndexSetHandle] is the index count of that index set. (Typically DataSet->IndexCounts)
-//
-// WARNING: There is no error checking at all to see if IndexesCount is the same as the number of index set dependencies. If this is wrong, the program could crash, though this access function is mostly used by wrappers that do such error checks themselves.
-// TODO: Maybe add in a compile-out-able error test that one could turn on during model development.
 inline size_t
 OffsetForHandle(storage_structure &Structure, const index_t *Indexes, size_t IndexesCount, const index_t *IndexCounts, entity_handle Handle)
 {
@@ -360,9 +357,6 @@ OffsetForHandle(storage_structure &Structure, const index_t *Indexes, size_t Ind
 // then this function returns the storage index of the parameter value corresponding to this Handle, and with indexes [0, 1, 5, 6]
 //
 // This function is designed to be used by the system for explicit indexing of lookup values, such as when one uses access macros like "PARAMETER(MyParameter, Index1, Index2)" etc. inside equations.
-//
-// WARNING: There is no error checking at all to see if OverrideCount is not larger than the number of index set dependencies, and in that case the program could crash.
-// TODO: Maybe add in a compile-out-able error test that one could turn on during model development.
 inline size_t
 OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, const index_t *IndexCounts, const index_t *OverrideIndexes, size_t OverrideCount, entity_handle Handle)
 {
