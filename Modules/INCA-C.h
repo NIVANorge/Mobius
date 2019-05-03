@@ -348,7 +348,6 @@ AddINCACModel(mobius_model *Model)
 			  RESULT(RateModifierOrganicLayer)
 			* PARAMETER(SOCMineralisationBaseRateOrganicLayer)
 			* RESULT(SOCMassInOrganicLayerFastPool);
-			//TODO: Also mineralisation in slow pool?
 	)
 	
 	EQUATION(Model, SOCDesorptionInOrganicLayer,
@@ -378,7 +377,6 @@ AddINCACModel(mobius_model *Model)
 			  RESULT(RateModifierMineralLayer)
 			* PARAMETER(SOCMineralisationBaseRateMineralLayer)
 			* RESULT(SOCMassInMineralLayerFastPool);
-			//TODO: Also mineralisation in slow pool?
 	)
 	
 	EQUATION(Model, SOCDesorptionInMineralLayer,
@@ -404,7 +402,8 @@ AddINCACModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DICMassTransferToAtmosphere,
-		double organiclayervolume = RESULT(WaterDepth, OrganicLayer) / 1000.0 * PARAMETER(TerrestrialCatchmentArea) * 1e6 * PARAMETER(Percent) * 1e-2;  //TODO: Check if unit conversion is correct
+		double organiclayervolume = RESULT(WaterDepth, OrganicLayer) / 1000.0 * PARAMETER(TerrestrialCatchmentArea) * 1e6 * PARAMETER(Percent) * 1e-2;
+		
 		return PARAMETER(DICMassTransferVelocity) * (SafeDivide(RESULT(DICMassInOrganicLayer), organiclayervolume) - PARAMETER(DICSaturationConstant)); //TODO: Check if we should allow this to be negative
 	)
 	
