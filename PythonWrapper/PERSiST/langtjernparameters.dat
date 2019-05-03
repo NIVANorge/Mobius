@@ -1,0 +1,150 @@
+# Parameter file generated for INCA-C V1.0 at 2019-03-22 14:36:03
+
+index_sets:
+"Landscape units" : {"Forest and wetland"}
+"Soils" : {"Direct runoff" "Organic layer" "Mineral layer" "Groundwater"}
+"Reaches" : {"Langtjern03"}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days) [0, 18446744073709551615]
+1825
+
+"Start date" :     # ["1000-01-01", "3000-12-31"]
+"2000-01-01"
+
+###################### "Landscape units" ######################
+"Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
+1
+
+"Snow melt temperature" :     #(°C) [-4, 4] The temperature at or above which snow can melt
+0
+
+"Degree day melt factor" :     #(mm/°C/day) [1, 4] Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature
+3
+
+"Rain multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling
+1
+
+"Initial snow depth" :     #(mm SWE) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
+0
+
+"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
+0.15
+
+"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
+1
+
+"Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
+0
+
+###################### "Landscape units" "Soils" "Soils" ######################
+"Percolation matrix" :     #(dimensionless) [0, 1]
+0.1 0.9 0   0
+1   0.4 0.6 0
+0   0   0.8 0.2
+0   0   0   1
+
+###################### "Soils" ######################
+"This is a quick box" :
+true false false false
+
+###################### "Soils" "Landscape units" ######################
+"Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
+0
+290
+290
+100
+
+"Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
+1
+1
+1
+1
+
+"Infiltration" :     #(mm/day) [0, 500] The maximum rate at which water can infiltrate into a box from overlying boxes
+100
+100
+100
+100
+
+"Retained water depth" :     #(mm) [0, 100000] The depth of water in a box which does not contribute to runoff but can contribute to evapotranspiration and to diluting nutrient inputs to the box. For the soil water box, this is similar to the field capacity
+0
+290
+290
+50
+
+"Drought runoff fraction" :     #(dimensionless) [0, 0.5] The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth
+0
+0.1
+0.1
+0
+
+"Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
+1
+2
+15
+70
+
+"Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
+1
+0
+0
+0
+
+"Relative evapotranspiration index" :     #(dimensionless) [0, 1] The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket
+1
+0
+0
+0
+
+"Maximum capacity" :     #(mm) [0, 9999] The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity
+150
+500
+500
+500
+
+###################### "Reaches" ######################
+"Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
+0.8
+
+"Reach length" :     #(m) [1, 999999] The length of the main stem of the stream / reach in a subcatchment
+800
+
+"Reach width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
+1
+
+"a" :     #(1/m2) [0.001, 1] The flow velocity 'a' parameter V=aQ^b
+0.05
+
+"b" :     #(dimensionless) [0.3, 0.5] The flow velocity 'b' parameter V=aQ^b
+0.5
+
+"Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
+0
+
+"Reach snow multiplier" :     #(dimensionless) [0.5, 2] The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+1
+
+"Reach rain multiplier" :     #(dimensionless) [0.5, 2] The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+1
+
+"Abstraction flow" :     #(m3/s) [0, 9999] The rate at which water is removed from a reach by human activities
+0
+
+"Effluent flow" :     #(m3/s) [0, 9999] The rate of liquid inputs to a reach from e.g. sewage treatment works
+0
+
+"Reach has abstraction" :
+false
+
+"Reach has effluent input" :
+true
+
+"Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
+2
+
+###################### "Reaches" "Landscape units" ######################
+"%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
+100
+
