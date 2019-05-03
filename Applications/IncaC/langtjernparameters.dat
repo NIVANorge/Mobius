@@ -147,38 +147,38 @@ parameters:
 1 1
 
 "Direct runoff initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+0.5 2
 
 "Direct runoff initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0
 
 "Organic soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+30 40
 
 "Organic soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+2 2
 
 "Organic soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+3500 3e3
 
 "Mineral soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+6 20
 
 "Mineral soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+1 1
 
 "Mineral soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0
+900 1e2
 
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]
 0.1 0.9 0   0
-1   0.8 0.2 0
+1   0.4 0.6 0
 0   0   0.6 0.4
 0   0   0   1
 
 0.1 0.9 0   0
-1   0.8 0.2 0
+1   0.4 0.6 0
 0   0   0.6 0.4
 0   0   0   1
 
@@ -188,9 +188,9 @@ true false false false
 
 ###################### "Soils" "Landscape units" ######################
 "Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
-10 10
-150 150
-150 150
+0 0
+290 290
+290 290
 100 100
 
 "Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
@@ -219,8 +219,8 @@ true false false false
 
 "Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
 1 1
-1 1
-65 65
+2 10
+35 35
 70 70
 
 "Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
