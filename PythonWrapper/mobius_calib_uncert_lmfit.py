@@ -103,6 +103,7 @@ def set_parameter_values(params, dataset):
             name = params[key].user_data['name']
             index =  params[key].user_data['index']
             val = params[key].value
+            #print('%s %s %s' % (name, index, val))
             dataset.set_parameter_double(name, index, val)
         
 def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0):
@@ -391,9 +392,13 @@ def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
         df.set_index('Date', inplace=True)
 
         unit = dataset.get_result_unit(simname) # Assumes that the unit is the same for obs and sim
-    
-        df.plot(ax=axes[idx], style=['o--', '-'])
-        axes[idx].set_ylabel('$%s$' % unit)
+		
+        if len(comparisons) > 1:
+            df.plot(ax=axes[idx], style=['o--', '-'])
+            axes[idx].set_ylabel('$%s$' % unit)
+        else :
+            df.plot(ax=axes, style=['o--', '-'])
+            axes.set_ylabel('$%s$' % unit)
 
     plt.tight_layout()
             
