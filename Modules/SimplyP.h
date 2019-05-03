@@ -318,7 +318,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		return upstreamarea;
 	)
 	
-	auto EffectiveReachLength  	 = RegisterParameterDouble(Model, ReachParams, "Effective reach length", M, 4000.); //Derived param	
+	auto EffectiveReachLength  	 = RegisterParameterDouble(Model, ReachParams, "Effective reach length", M, 4000.0); //Derived param	
 	auto ComputeEffectiveReachLength = RegisterEquationInitialValue(Model, "Effective reach length", M);
 	ParameterIsComputedBy(Model, EffectiveReachLength, ComputeEffectiveReachLength, true);
 	
@@ -328,7 +328,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		// of the sub-catchment length (for top reaches)
 		double f_US = PARAMETER(UpstreamArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
 		double f_R = PARAMETER(CatchmentArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
-		double effective_length = f_US*PARAMETER(ReachLength) + f_R*PARAMETER(ReachLength)/2;
+		double effective_length = f_US*PARAMETER(ReachLength) + f_R*PARAMETER(ReachLength)/2.0;
 		return effective_length;
 	)
 	
@@ -399,14 +399,14 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 							* pow(
 								RESULT(ReachVolume) * pow(PARAMETER(ReachSlope), 0.5)
 								/ (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)),
-								(3/2));
+								(1.5));
 			
 		return reachflow;
 	)
 	
 	EQUATION(Model, InitialReachVolume,
 		double reachvolume = (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)/pow(PARAMETER(ReachSlope),0.5))
-							 * pow((RESULT(ReachFlow)/(86400*0.28)), (2/3));
+							 * pow((RESULT(ReachFlow)/(86400*0.28)), (0.666666667));
 		return reachvolume;
 	)
 	
