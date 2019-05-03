@@ -28,7 +28,7 @@ Mobius can produce executables that can be run standalone or together with the g
 The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
  * "Simply" models (SimplyP, SimplyQ, SimplyC)
- * "INCA" models (INCA-N, INCA-C, INCA-Sed, INCA-Microplastics, PERSiST) 
+ * "INCA" models (INCA-N, INCA-C, INCA-P, INCA-Sed, INCA-Microplastics, PERSiST) 
  * HBV
  
 Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA
@@ -119,14 +119,14 @@ We will find a more reliable way to distribute this soon-ish.
 
 - You also have to download json.hpp from https://github.com/nlohmann/json/tree/develop/single_include/nlohmann and put it in Mobius/json (create a new folder). The json library does not need any separate compilation.
 
-- To compile models for INCAViewer, from the command line run the .bat file which refers to the .cpp file which is set up to produce INCAView-compatible exes. Often these .cpp files have the 'iv' suffix in their filename.
+- To compile models for INCAView, from the command line run the .bat file which refers to the .cpp file which is set up to produce INCAView-compatible exes. Often these .cpp files have the 'iv' suffix in their filename.
 
 ### Create a parameter database
 
 INCAView requires a parameter database to be supplied. To create a parameter database from a parameter .dat file, from the command line type `mymodelname.exe` and hit enter (substituting your model name in). A list of options will then be printed to the command line, including one to create a parameter database file from a .dat file:
 `mymodelname.exe convert_parameters myparameters.dat myparameters.db`
 
-### Quick start to running a model using INCAViewer
+### Quick start to running a model using INCAView
 
 - Double click on INCAView.exe (either compiled yourself, or supplied by us - see above)
 - Click 'Load parameter database' and navigate to and select the .db file you just created. The parameters should load and appear in the top left panel. Click on any of the parameter group names, and the associated parameter values should appear to the right. These values are editable, and changes are saved to the parameter database but not to the original .dat file. To export changes you make to the parameter values, click the 'Export parameters' button at the bottom or run the convert_parameters command from the command line as above with the file names in the opposite order.
