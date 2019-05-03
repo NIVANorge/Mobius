@@ -431,7 +431,7 @@ EndModelDefinition(mobius_model *Model)
 		for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
 		{
 			equation_spec &Spec = Model->EquationSpecs[EquationHandle];
-			u64 DependencyCount = Spec.IndexSetDependencies.size();
+			size_t DependencyCount = Spec.IndexSetDependencies.size();
 				
 			if(Spec.Type == EquationType_Cumulative)
 			{
