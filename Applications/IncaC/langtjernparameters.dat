@@ -174,12 +174,12 @@ parameters:
 "Percolation matrix" :     #(dimensionless) [0, 1]
 0.1 0.9 0   0
 1   0.4 0.6 0
-0   0   0.6 0.4
+0   0   0.8 0.2
 0   0   0   1
 
 0.1 0.9 0   0
 1   0.4 0.6 0
-0   0   0.6 0.4
+0   0   0.8 0.2
 0   0   0   1
 
 ###################### "Soils" ######################
@@ -218,9 +218,9 @@ true false false false
 0 0
 
 "Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
-1 1
-2 10
-35 35
+1   1
+2  10
+15 35
 70 70
 
 "Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
