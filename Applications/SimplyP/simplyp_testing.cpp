@@ -8,11 +8,11 @@
 
 #include "../../Modules/SimplyP.h"
 
-#define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
+#define READ_PARAMETER_FILE 0 //Read params from file? Or auto-generate using indexers defined below & defaults
 
 int main()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyP", "0.0");
+	mobius_model *Model = BeginModelDefinition("SimplyP", "0.3");
 	
 	auto Days 	        = RegisterUnit(Model, "days");
 	auto System = RegisterParameterGroup(Model, "System");
@@ -32,7 +32,7 @@ int main()
 
 #if READ_PARAMETER_FILE == 0
 	SetIndexes(DataSet, "Landscape units", {"Arable", "Improved grassland", "Semi-natural"});
-	SetBranchIndexes(DataSet, "Reaches", {  {"Tarland1", {}} }  );
+	SetBranchIndexes(DataSet, "Reaches", {  {"Coull", {}} }  );
 	
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "newparams.dat");
@@ -51,18 +51,18 @@ int main()
 	RunModel(DataSet);
 #endif
 
-	//PrintResultSeries(DataSet, "Agricultural soil water volume", {"Tarland1"}, 10); //Print just first 10 values
-	//PrintResultSeries(DataSet, "Agricultural soil water flow", {"Tarland1"}, 10);
+	//PrintResultSeries(DataSet, "Agricultural soil water volume", {"Coull"}, 10); //Print just first 10 values
+	//PrintResultSeries(DataSet, "Agricultural soil water flow", {"Coull"}, 10);
 
 	
-	//PrintResultSeries(DataSet, "Agricultural soil water EPC0", {"Tarland1"}, 1000);
-	//PrintResultSeries(DataSet, "Agricultural soil labile P mass", {"Tarland1"}, 1000);
-	//PrintResultSeries(DataSet, "Agricultural soil TDP mass", {"Tarland1"}, 1000);
+	//PrintResultSeries(DataSet, "Agricultural soil water EPC0", {"Coull"}, 1000);
+	//PrintResultSeries(DataSet, "Agricultural soil labile P mass", {"Coull"}, 1000);
+	//PrintResultSeries(DataSet, "Agricultural soil TDP mass", {"Coull"}, 1000);
 	
 	/*
 	DlmWriteResultSeriesToFile(DataSet, "results.dat",
 		{"Agricultural soil water volume", "Agricultural soil net P sorption", "Agricultural soil water EPC0", "Agricultural soil labile P mass", "Agricultural soil TDP mass"}, 
-		{{"Tarland1"},                     {"Tarland1"},                   {"Tarland1"},                      {"Tarland1"},                       {"Tarland1"}},
+		{{"Coull"},                     {"Coull"},                   {"Coull"},                      {"Coull"},                       {"Coull"}},
 		'\t'
 	);
 	*/

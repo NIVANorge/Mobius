@@ -39,11 +39,8 @@ parameters:
 "Minimum groundwater flow" :     #(mm/day) [0, 10]
 0.4
 
-"Gradient of reach velocity-discharge relationship" :     #(m^{-3}) [1e-05, 0.99] The a in V = aQ^b
-0.5
-
-"Exponent of reach velocity-discharge relationship" :     #(dimensionless) [0.1, 0.99] The b in V = aQ^b
-0.42
+"Manning coefficient" :     #(dimensionless) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
+0.04
 
 "Dynamic erodibility" :     # If true, simulate the change in erodibility on arable land through the year due to cropping and harvesting practices
 true
@@ -94,14 +91,14 @@ true
 "Catchment area" :     #(km^2) [0, 10000]
 51.7
 
-"Reach length" :     #(m) [0, 10000000]
+"Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
 10000
-
-"Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
-1
 
 "Reach slope" :     #(°) [0, 90]
 0.8
+
+"Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
+1
 
 "Proportion of spring grown crops" :     #(dimensionless) [0, 1] Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true
 0.65

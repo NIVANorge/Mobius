@@ -3,7 +3,7 @@
 //NOTE: This is an adaption of
 // https://github.com/LeahJB/SimplyP
 
-//NOTE: This version is ahead of the GitHub version.
+//NOTE: There are still a few quirks that causes this version to produce slightly (but not that significantly) different results.
 
 
 //NOTE: Only include these if you are going to use them (they cause long compile times):
@@ -88,7 +88,6 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto Km2               = RegisterUnit(Model, "km^2");
 	auto M                 = RegisterUnit(Model, "m");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
-	auto DegreesSlope      = RegisterUnit(Model, "°");
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
@@ -114,16 +113,14 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
-/* 	auto A                       = RegisterParameterDouble(Model, Hydrology, "Gradient of reach velocity-discharge relationship", PerM3, 0.5, 0.00001, 0.99, "The a in V = aQ^b");
-	auto B                       = RegisterParameterDouble(Model, Hydrology, "Exponent of reach velocity-discharge relationship", Dimensionless, 0.42, 0.1, 0.99, "The b in V = aQ^b"); */
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning coefficient", Dimensionless, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
+	auto A                       = RegisterParameterDouble(Model, Hydrology, "Gradient of reach velocity-discharge relationship", PerM3, 0.5, 0.00001, 0.99, "The a in V = aQ^b");
+	auto B                       = RegisterParameterDouble(Model, Hydrology, "Exponent of reach velocity-discharge relationship", Dimensionless, 0.42, 0.1, 0.99, "The b in V = aQ^b");
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
 	
 	auto CatchmentArea           = RegisterParameterDouble(Model, ReachParams, "Catchment area", Km2, 51.7, 0.0, 10000.0);
-	auto ReachLength             = RegisterParameterDouble(Model, ReachParams, "Reach length", M, 10000.0, 0.0, 10000000.0, "This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly");
-	auto ReachSlope    = RegisterParameterDouble(Model, ReachParams, "Reach slope", Degrees, 1.0, 0.0, 90.0);	
+	auto ReachLength             = RegisterParameterDouble(Model, ReachParams, "Reach length", M, 10000.0, 0.0, 10000000.0);
 	
 	// Instream hydrology parameters that vary by reach
 	auto HydrologyReach = RegisterParameterGroup(Model, "Hydrology reach", Reach);
@@ -302,46 +299,16 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	
 	// In-stream hydrology equations
 	
-	// Derived parameters used in instream hydrol equations
-	auto UpstreamArea 	= RegisterParameterDouble(Model, HydrologyReach, "Upstream land area", Km2, 0.0); //Derived param
-	
-	auto ComputedUpstreamArea = RegisterEquationInitialValue(Model, "Upstream area", Km2); //Excluding the current reach
-	ParameterIsComputedBy(Model, UpstreamArea, ComputedUpstreamArea, true);  //'true' says this parameter shouldn't be exposed in parameter files
-
-	EQUATION(Model, ComputedUpstreamArea,
-		double upstreamarea = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamarea += PARAMETER(CatchmentArea, *Input);
-			upstreamarea += PARAMETER(UpstreamArea, *Input);
-			);
-		
-		return upstreamarea;
-	)
-	
-	auto EffectiveReachLength  	 = RegisterParameterDouble(Model, ReachParams, "Effective reach length", M, 4000.); //Derived param	
-	auto ComputeEffectiveReachLength = RegisterEquationInitialValue(Model, "Effective reach length", M);
-	ParameterIsComputedBy(Model, EffectiveReachLength, ComputeEffectiveReachLength, true);
-	
-	EQUATION(Model, ComputeEffectiveReachLength,
-		// The reach length which an average water particle experiences in the sub-catchment. Assumes
-		// constant sinuosity and geometry throughout the sub-catchment, and that the reach extends most
-		// of the sub-catchment length (for top reaches)
-		double f_US = PARAMETER(UpstreamArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
-		double f_R = PARAMETER(CatchmentArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
-		double effective_length = f_US*PARAMETER(ReachLength) + f_R*PARAMETER(ReachLength)/2;
-		return effective_length;
-	)
-	
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MmPerDay);
 	SetSolver(Model, ReachFlowInput, SimplyPSolver);
-
-	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", Mm);	
+	
 	auto InitialReachVolume = RegisterEquationInitialValue(Model, "Initial reach volume", Mm); 
+	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", Mm);
 	SetInitialValue(Model, ReachVolume, InitialReachVolume);
 	SetSolver(Model, ReachVolume, SimplyPSolver);
 	
-	auto ReachFlow          = RegisterEquation(Model, "Reach flow (end-of-day)", MmPerDay);
 	auto InitialReachFlow   = RegisterEquationInitialValue(Model, "Initial reach flow", MmPerDay);
+	auto ReachFlow          = RegisterEquationODE(Model, "Reach flow (end-of-day)", MmPerDay);
 	SetInitialValue(Model, ReachFlow, InitialReachFlow);
 	SetSolver(Model, ReachFlow, SimplyPSolver);
 	
@@ -372,42 +339,26 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		else return upstreamflow;
 	)
 	
-	EQUATION(Model, ReachVolume,
-		return RESULT(ReachFlowInput) - RESULT(ReachFlow);
-	)
-	
-	/* EQUATION(Model, ReachFlow,
+	EQUATION(Model, ReachFlow,
+		//dQr_dt = ((Qq_i + (1-beta)*(f_A*QsA_i + f_S*QsS_i) + Qg_i + Qr_US_i - Qr_i) # Fluxes (mm/d)
+              //*a_Q*(Qr_i**b_Q)*(8.64*10**4)/((1-b_Q)*(L_reach)))
 		return
 			(RESULT(ReachFlowInput) - RESULT(ReachFlow))
-			* PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B))*86400.0 / ((1.0-PARAMETER(B))*PARAMETER(EffectiveReachLength));
+			* PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B))*86400.0 / ((1.0-PARAMETER(B))*PARAMETER(ReachLength));
 	)
 	
 	EQUATION(Model, InitialReachVolume,
 		//Tr0 = ((p_SC.ix['L_reach',SC])/
                    //(p['a_Q']*(Qr0**p['b_Q'])*(8.64*10**4))) # Reach time constant (days); T=L/aQ^b
         //Vr0 = Qr0*Tr0 # Reach volume (V=QT) (mm)
-		double initialreachtimeconstant = PARAMETER(EffectiveReachLength) / (PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B)) * 86400.0);
+		double initialreachtimeconstant = PARAMETER(ReachLength) / (PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B)) * 86400.0);
 		
 		return RESULT(ReachFlow) * initialreachtimeconstant;
-	) */
-	
-	EQUATION(Model, ReachFlow,
-		/* Derived from: Q=V/T, where T=L/u, so Q = Vu/L (where V is reach volume, u is reach velocity, L is reach length)
-		Then get an expression for u using the Manning equation, assuming a rectangular cross section and empirical power law relationships between stream depth and Q and stream width and Q. Then rearrange so all Qs are on the left hand side with exponent of 1. Factor 86400 as mannings and empirical equations assume Q in m3/s */
-		
-		double reachflow =	86400*0.28
-							* pow(
-								RESULT(ReachVolume) * pow(PARAMETER(ReachSlope), 0.5)
-								/ (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)),
-								(3/2));
-			
-		return reachflow;
 	)
 	
-	EQUATION(Model, InitialReachVolume,
-		double reachvolume = (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)/pow(PARAMETER(ReachSlope),0.5))
-							 * pow((RESULT(ReachFlow)/(86400*0.28)), (2/3));
-		return reachvolume;
+	EQUATION(Model, ReachVolume,
+		//dVr_dt = Qq_i + (1-beta)*(f_A*QsA_i + f_S*QsS_i) + Qg_i + Qr_US_i - Qr_i
+		return RESULT(ReachFlowInput) - RESULT(ReachFlow);
 	)
 	
 	EQUATION(Model, DailyMeanReachFlow,
@@ -442,7 +393,6 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	
 	// Params already defined
 	auto CatchmentArea = GetParameterDoubleHandle(Model, "Catchment area");
-	auto ReachSlope    = GetParameterDoubleHandle(Model, "Reach slope");	
 	
 	// Add to global system param group
 	auto System = GetParameterGroupHandle(Model, "System");
@@ -459,6 +409,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	// Add more params to the general reach parameter group created in hydrol module
 	auto ReachParams = GetParameterGroupHandle(Model, "General subcatchment and reach parameters");
 	
+	auto ReachSlope                              = RegisterParameterDouble(Model, ReachParams, "Reach slope", Degrees, 0.8, 0.0, 90.0);
 	auto ProportionOfSpringGrownCrops            = RegisterParameterDouble(Model, ReachParams, "Proportion of spring grown crops", Dimensionless, 0.65, 0.0, 1.0, "Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true");
 	
 	// Params that vary by land class and reach
@@ -679,8 +630,9 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	auto ReachSedimentInputCoefficient  = GetEquationHandle(Model, "Sediment input coefficient");
 	
 	
-/* 	// P sorption coefficient calculation
-	//Method 1: This method calculates the parameter or reads it from file, depending on calibration mode. The result is saved to the model dataset, so its value can be extracted e.g. via the python wrapper, but not output in INCAViewer
+/* 	//TODO: Leah should sort out what computation method for the sorption coefficient should be used!
+	
+	// This method calculates the parameter or reads it from file, depending on calibration mode. The result is saved to the model dataset, so its value can be extracted e.g. via the python wrapper, but not output in INCAViewer
 	
 	auto ComputedPhosphorousSorptionCoefficient = RegisterEquationInitialValue(Model, "Computed phosphorous sorption coefficient", MmPerKg);
 	ParameterIsComputedBy(Model, PhosphorousSorptionCoefficient, ComputedPhosphorousSorptionCoefficient, false);  //NOTE: The 'false' is there to say that this parameter SHOULD still be exposed in parameter files.
