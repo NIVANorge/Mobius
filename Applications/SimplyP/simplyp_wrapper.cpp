@@ -14,7 +14,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("SimplyP", "1.0");
+	mobius_model *Model = BeginModelDefinition("SimplyP", "0.3");
 	
 	auto Days 	      = RegisterUnit(Model, "days");
 	auto System       = RegisterParameterGroup(Model, "System");

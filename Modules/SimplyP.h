@@ -1,9 +1,9 @@
-
+//SimplyP version 0.3
 
 //NOTE: This is an adaption of
 // https://github.com/LeahJB/SimplyP
 
-//NOTE: This version is ahead of the GitHub version.
+//NOTE: This version is ahead of the Python version
 
 
 //NOTE: Only include these if you are going to use them (they cause long compile times):
@@ -49,6 +49,12 @@ ConvertMmToM3(double Mm, double CatchmentArea)
 }
 
 inline double
+ConvertM3ToMm(double M3, double CatchmentArea)
+{
+	return M3 / (1000 * CatchmentArea);
+}
+
+inline double
 ConvertMmToLitres(double Mm, double CatchmentArea)
 {
 	return Mm * 1e6 * CatchmentArea;
@@ -88,7 +94,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto Km2               = RegisterUnit(Model, "km^2");
 	auto M                 = RegisterUnit(Model, "m");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
-	auto DegreesSlope      = RegisterUnit(Model, "°");
+	auto MPerM			   = RegisterUnit(Model, "m/m");
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
@@ -105,7 +111,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
 	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
 	
-	// Hydrology parameters that don't vary by sub-catchment or reach
+	// Hydrology parameters that hopefully don't vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
 	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0);
@@ -114,21 +120,20 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
-/* 	auto A                       = RegisterParameterDouble(Model, Hydrology, "Gradient of reach velocity-discharge relationship", PerM3, 0.5, 0.00001, 0.99, "The a in V = aQ^b");
-	auto B                       = RegisterParameterDouble(Model, Hydrology, "Exponent of reach velocity-discharge relationship", Dimensionless, 0.42, 0.1, 0.99, "The b in V = aQ^b"); */
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning coefficient", Dimensionless, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
+	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", Dimensionless, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
 	
 	auto CatchmentArea           = RegisterParameterDouble(Model, ReachParams, "Catchment area", Km2, 51.7, 0.0, 10000.0);
 	auto ReachLength             = RegisterParameterDouble(Model, ReachParams, "Reach length", M, 10000.0, 0.0, 10000000.0, "This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly");
-	auto ReachSlope    = RegisterParameterDouble(Model, ReachParams, "Reach slope", Degrees, 1.0, 0.0, 90.0);	
+	auto ReachSlope    = RegisterParameterDouble(Model, ReachParams, "Reach slope", MPerM, 0.02, 0.00001, 3.0);	
 	
-	// Instream hydrology parameters that vary by reach
-	auto HydrologyReach = RegisterParameterGroup(Model, "Hydrology reach", Reach);
+	// Hydrology parameters that may vary by sub-catchment/reach
+	auto HydrologyReach = RegisterParameterGroup(Model, "Hydrology subcatchment/reach", Reach);
 	
 	auto InitialInStreamFlow     = RegisterParameterDouble(Model, HydrologyReach, "Initial in-stream flow", M3PerSecond, 1.0, 0.0, 1000000.0, "This parameter is only used by reaches that don't have other reaches as inputs.");
+
 	
 	// Terrestrial hydrology parameters that vary by land class
 	auto HydrologyLand = RegisterParameterGroup(Model, "Hydrology land", LandscapeUnits);
@@ -220,8 +225,6 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, AgriculturalSoilWaterVolume,
-		// mu = -np.log(0.01)/p['fc']
-		//P*(1-f_quick) - alpha*E*(1 - np.exp(-mu*VsA_i)) - QsA_i
 		return
 			  RESULT(Infiltration)
 			- PARAMETER(PETReductionFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(AgriculturalSoilWaterVolume) / PARAMETER(SoilFieldCapacity))) //NOTE: Should 0.01 be a parameter?
@@ -242,8 +245,6 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SeminaturalSoilWaterVolume,
-		// mu = -np.log(0.01)/p['fc']
-		//P*(1-f_quick) - alpha*E*(1 - np.exp(-mu*VsA_i)) - QsA_i
 		return
 			  RESULT(Infiltration)
 			- PARAMETER(PETReductionFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(AgriculturalSoilWaterVolume) / PARAMETER(SoilFieldCapacity))) //NOTE: Should 0.01 be a parameter?
@@ -274,16 +275,12 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		return (1.0 - t)*flowmin + t*flow0;
 	)
 	
-	EQUATION(Model, GroundwaterVolume,
-		// f_A = f_IG + f_Ar
-		// dVg_dt = beta*(f_A*QsA_i + f_S*QsS_i) - Qg_i
-		
+	EQUATION(Model, GroundwaterVolume,		
 		return PARAMETER(BaseflowIndex) * RESULT(TotalSoilWaterFlow)
 			- RESULT(GroundwaterFlow);
 	)
 	
 	EQUATION(Model, InitialGroundwaterVolume,
-		//Vg0 = Qg0 *p['T_g']     # Groundwater vol (mm)
 		double initialflow = PARAMETER(BaseflowIndex) * ConvertM3PerSecondToMmPerDay(PARAMETER(InitialInStreamFlow), PARAMETER(CatchmentArea));
 		return initialflow * PARAMETER(GroundwaterTimeConstant);
 	)
@@ -313,8 +310,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		FOREACH_INPUT(Reach,
 			upstreamarea += PARAMETER(CatchmentArea, *Input);
 			upstreamarea += PARAMETER(UpstreamArea, *Input);
-			);
-		
+			);		
 		return upstreamarea;
 	)
 	
@@ -328,8 +324,9 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		// of the sub-catchment length (for top reaches)
 		double f_US = PARAMETER(UpstreamArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
 		double f_R = PARAMETER(CatchmentArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
-		double effective_length = f_US*PARAMETER(ReachLength) + f_R*PARAMETER(ReachLength)/2.0;
+		double effective_length = f_US*PARAMETER(ReachLength) + f_R*PARAMETER(ReachLength)/2.0;		
 		return effective_length;
+		
 	)
 	
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MmPerDay);
@@ -376,38 +373,26 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		return RESULT(ReachFlowInput) - RESULT(ReachFlow);
 	)
 	
-	/* EQUATION(Model, ReachFlow,
-		return
-			(RESULT(ReachFlowInput) - RESULT(ReachFlow))
-			* PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B))*86400.0 / ((1.0-PARAMETER(B))*PARAMETER(EffectiveReachLength));
-	)
-	
-	EQUATION(Model, InitialReachVolume,
-		//Tr0 = ((p_SC.ix['L_reach',SC])/
-                   //(p['a_Q']*(Qr0**p['b_Q'])*(8.64*10**4))) # Reach time constant (days); T=L/aQ^b
-        //Vr0 = Qr0*Tr0 # Reach volume (V=QT) (mm)
-		double initialreachtimeconstant = PARAMETER(EffectiveReachLength) / (PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B)) * 86400.0);
-		
-		return RESULT(ReachFlow) * initialreachtimeconstant;
-	) */
-	
 	EQUATION(Model, ReachFlow,
 		/* Derived from: Q=V/T, where T=L/u, so Q = Vu/L (where V is reach volume, u is reach velocity, L is reach length)
-		Then get an expression for u using the Manning equation, assuming a rectangular cross section and empirical power law relationships between stream depth and Q and stream width and Q. Then rearrange so all Qs are on the left hand side with exponent of 1. Factor 86400 as mannings and empirical equations assume Q in m3/s */
+		Then get an expression for u using the Manning equation, assuming a rectangular cross section and empirical power law relationships between stream depth and Q and stream width and Q. Then rearrange so all Qs are on the left hand side with exponent of 1. Some unit conversions as Mannings and empirical equations assume Q in m3/s. See https://hal.archives-ouvertes.fr/hal-00296854/document */
 		
-		double reachflow =	86400*0.28
-							* pow(
-								RESULT(ReachVolume) * pow(PARAMETER(ReachSlope), 0.5)
-								/ (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)),
-								(1.5));
+		double reachvolume_m3 = ConvertMmToM3(RESULT(ReachVolume), PARAMETER(CatchmentArea));
+		double reachflow_m3perS = 0.28 * pow(
+								  reachvolume_m3 * pow(PARAMETER(ReachSlope), 0.5)
+								  / (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)),
+								  (1.5));
 			
-		return reachflow;
+		return ConvertM3PerSecondToMmPerDay(reachflow_m3perS, PARAMETER(CatchmentArea));
 	)
 	
 	EQUATION(Model, InitialReachVolume,
-		double reachvolume = (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)/pow(PARAMETER(ReachSlope),0.5))
-							 * pow((RESULT(ReachFlow)/(86400*0.28)), (0.666666667));
-		return reachvolume;
+	//Assumes rectangular cross section
+		double reachdepth = 0.349 * pow(PARAMETER(InitialInStreamFlow), 0.34);
+		double reachwidth = 2.71 * pow(PARAMETER(InitialInStreamFlow), 0.557);
+		double reachvolume_m3 = reachdepth * reachwidth * PARAMETER(ReachLength);
+		
+		return ConvertM3ToMm(reachvolume_m3, PARAMETER(CatchmentArea));
 	)
 	
 	EQUATION(Model, DailyMeanReachFlow,
@@ -470,7 +455,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	// Sediment params that vary by land class
 	auto SedimentLand = RegisterParameterGroup(Model, "Sediment land", LandscapeUnits);
 	auto VegetationCoverFactor                   = RegisterParameterDouble(Model, SedimentLand, "Vegetation cover factor", Dimensionless, 0.2, 0.0, 1.0, "Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.");
-	auto ReductionOfLoadInSediment               = RegisterParameterDouble(Model, SedimentLand, "Reduction of load in sediment", Dimensionless, 0.0, 0.0, 1.0, "Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc."); //Note: may be better indexing this by reach? TO DO	
+	auto ReductionOfLoadInSediment               = RegisterParameterDouble(Model, SedimentLand, "Reduction of load in sediment", Dimensionless, 0.0, 0.0, 1.0, "Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc."); //Note: may be better indexing this by reach? TO DO
 	
 	// Start equations
 	
@@ -558,7 +543,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
         //                      *C_cover
         //                      *(1-p_LU[LU]['C_measures']))
 		double Esus_i =
-			  PARAMETER(ReachSedimentInputScalingFactor)
+			  PARAMETER(ReachSedimentInputScalingFactor) * 1000.0 //1000 just for convenient range in input parameter
 			* PARAMETER(ReachSlope)
 			* PARAMETER(MeanSlopeOfLand)
 			* RESULT(TimeDependentVegetationCoverFactor)

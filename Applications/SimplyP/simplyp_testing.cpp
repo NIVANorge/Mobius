@@ -8,7 +8,7 @@
 
 #include "../../Modules/SimplyP.h"
 
-#define READ_PARAMETER_FILE 0 //Read params from file? Or auto-generate using indexers defined below & defaults
+#define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
 
 int main()
 {
@@ -37,7 +37,7 @@ int main()
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "newparams.dat");
 #else
-	ReadParametersFromFile(DataSet, "Tarland/TarlandParameters.dat");
+	ReadParametersFromFile(DataSet, "Tarland/TarlandParameters_v0-3_2ReachExample.dat");
 
 	ReadInputsFromFile(DataSet, "Tarland/TarlandInputs.dat");
 	
@@ -58,6 +58,11 @@ int main()
 	//PrintResultSeries(DataSet, "Agricultural soil water EPC0", {"Coull"}, 1000);
 	//PrintResultSeries(DataSet, "Agricultural soil labile P mass", {"Coull"}, 1000);
 	//PrintResultSeries(DataSet, "Agricultural soil TDP mass", {"Coull"}, 1000);
+	
+	//PrintResultSeries(Dataset, "Reach flow input", {Coull}, 10);
+	//PrintResultSeries(Dataset, "Reach flow (end-of-day)", {Coull}, 10);
+	//PrintResultSeries(Dataset, "Reach flow (daily mean, mm/day)", {Coull}, 10);
+	//PrintResultSeries(Dataset, "Reach volume", {Coull}, 10);
 	
 	/*
 	DlmWriteResultSeriesToFile(DataSet, "results.dat",

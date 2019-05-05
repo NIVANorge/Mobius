@@ -1,7 +1,9 @@
-# Parameter file generated for SimplyP V0.0 at 2019-03-26 09:53:08
+# Parameter file for SimplyP V0.3. Note, these parameters are merely to show how to set up the file
+# with more than one sub-catchment/reach. Parameters are manually calibrated for reach 1 (Coull), but not
+# for reach 2 (Aboyne).
 
 index_sets:
-"Reaches" : {"Coull"}
+"Reaches" : {"Coull" {"Aboyne" "Coull"}}
 "Landscape units" : {"Arable" "Improved grassland" "Semi-natural"}
 
 parameters:
@@ -89,34 +91,37 @@ true
 
 ###################### "Reaches" ######################
 "Catchment area" :     #(km^2) [0, 10000]
-51.7
+51.7	25
 
 "Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
-10000
+10000	2000
 
 "Reach slope" :     #(m/m) [0, 90]
-0.014
+0.014	0.014
 
 "Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
-1
+1 0
 
 "Proportion of spring grown crops" :     #(dimensionless) [0, 1] Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true
-0.65
+0.65	1
 
 "Reach effluent TDP inputs" :     #(kg/day) [0, 10]
-0.1
+0.1	0.1
 
 "Is input to water body" :     # Whether or not the flow and various fluxes from this reach should be summed up in the calculation of inputs to a water body or lake
-false
+false	false
 
 ###################### "Reaches" "Landscape units" ######################
 "Land use proportions" :     #(dimensionless) [0, 1]
 0.2 0.3 0.5
+0.2 0.3 0.5
 
 "Mean slope of land in the subcatchment" :     #(°) [0, 90]
 4 4 10
+4 4 10
 
 "Land use proportions from newly-converted" :     #(dimensionless) [0, 1]
+0 0 0
 0 0 0
 
 ###################### "Landscape units" ######################
