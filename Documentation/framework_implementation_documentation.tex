@@ -1,0 +1,201 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper, margin=1in]{geometry}
+
+\usepackage{bold-extra}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumerate}
+\usepackage{gensymb}
+\usepackage{fancyvrb}
+
+\usepackage{tabularx}
+
+\usepackage{amsthm, amsmath}
+
+\usepackage{array}
+
+\usepackage{natbib}
+
+\setlength\parindent{0pt}
+\setlength\parskip{5pt}
+
+\usepackage{listings}
+
+\lstdefinestyle{textstyle}{
+basicstyle=\small\ttfamily,
+columns=flexible,
+breaklines=true,
+stepnumber=1,
+}
+
+\definecolor{bulgarianrose}{rgb}{0.28, 0.02, 0.03}
+\definecolor{bluepigment}{rgb}{0.2, 0.2, 0.6}
+\definecolor{burgundy}{rgb}{0.5, 0.0, 0.13}
+\definecolor{silver}{gray}{0.9}
+
+\lstdefinestyle{mycpp}{
+language=C++,
+style=textstyle,
+keywordstyle=\color{bluepigment},
+stringstyle=\color{burgundy},
+commentstyle=\color{bulgarianrose},
+%morecomment=[l][\color{bulgarianrose}]{\#},
+directivestyle=\color{burgundy},
+}
+
+
+%\newcolumntype{y}{>{\vsize=.5\textwidth}l} % Did not work as expected :(
+\newcolumntype{y}{p{0.4\textwidth}}
+\newcolumntype{z}{p{0.9\textwidth}}
+
+\newcommand{\apipar}[2]{
+{\tt #1} & #2 \\
+}
+
+\newcommand{\apidesc}[1]{
+\hline
+\multicolumn{2}{|z|}{\bf Description:}\\
+\multicolumn{2}{|z|}{#1}\\
+}
+
+\newcommand{\apiret}[1]{
+\hline
+\multicolumn{2}{|z|}{\bf Returns:}\\
+\multicolumn{2}{|z|}{#1}\\
+}
+
+\newcommand{\apientry}[3]{
+\begin{table}[H]
+\begin{tabularx}{\textwidth}{|y X|}
+\hline
+\rule{0pt}{20pt}
+{\bf\tt\Large\color{bluepigment}#1} & \multicolumn{1}{r|}{#2} \\
+\hline
+\multicolumn{2}{|l|}{\bf Arguments:}\\
+#3
+\hline
+\end{tabularx}
+\end{table}}
+
+
+\theoremstyle{definition}
+
+\newsavebox\notebox
+\newtheorem{mynote}{Note}
+\newenvironment{note}%
+  {\begin{lrbox}{\notebox}%
+   \begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+   \begin{mynote}}%
+  {\end{mynote}%
+   \end{minipage}%
+   \end{lrbox}%
+   \begin{trivlist}
+     \item[]\colorbox{silver}{\usebox\notebox}
+   \end{trivlist}}
+
+\newsavebox\examplebox
+\newtheorem{myexample}{Example}
+\newenvironment{example}%
+  {\begin{lrbox}{\examplebox}%
+   \begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+   \begin{myexample}}%
+  {\end{myexample}%
+   \end{minipage}%
+   \end{lrbox}%
+   \begin{trivlist}
+     \item[]\colorbox{silver}{\usebox\examplebox}
+   \end{trivlist}}
+
+\title{Documentation of Mobius framework implementation}
+\author{Magnus Dahler Norling}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+THIS DOCUMENT IS A WORK IN PROGRESS!
+
+This document will attempt to explain some of the central concepts of the implementation of the Mobius framework. If you just want to develop or use models, you should not have to worry about this. This document will assume that the reader has understood the basics that are given in the model builder documentation, and will not re-explain concepts that are discussed there. You should also read the framework code since we will not repeat most of it here.
+
+\section{Introducing central concepts}
+
+\subsection{The most important files}
+
+Almost all data structures are declared in {\tt mobius\_model.h}, along with implementation of model registration. Algorithms for finalizing the model structure and running the model are in {\tt mobius\_model.cpp}. Algorithms for organizing the storage of data (parameter values, input and result timeseries) are in {mobius\_data\_set.cpp}. These encompass the main functionality of the framework, and are also the ones that may be the hardest to understand. We will not focus that much on additional functionality such as input reading from files etc. in this document.
+
+\subsection{Entity handles}
+
+An entity handle is in practice an unsigned integer. When you register a new entity of a certain type, such as a parameter or equation, the handle of this entity will be a number uniquely identifying it. In practice, the registration information that was provided about it will be stored in the Model in an array at the index that equals the numerical value of this handle. To make it easier to ensure correctness, entity handles are typically wrapped in handle structs that just contain the numerical value in order to allow the type system to differentiate between handles of different entity types.
+
+\begin{example}
+Let {\tt Model} be a {\tt mobius\_model} object. If you call
+\begin{lstlisting}[style=mycpp]
+auto MyParameter = RegisterParameterDouble(Model, Group, "My parameter", Dimensionless, 0.0);
+\end{lstlisting}
+{\tt MyParameter} is of type {\tt parameter\_double\_h}. {\tt parameter\_double\_h} has a single member, {\tt Handle}, which is an unsigned integer. When you call the function, it will push a new element onto the {\tt Model->ParameterSpecs} vector. This new element is a {\tt parameter\_spec}, which is a struct that among other things contains the name, type, group, default value etc. that was provided in the {\tt RegisterParameterDouble} call. The {\tt Handle} of the {\tt parameter\_double\_h} returned is the index of this new {\tt parameter\_spec} in the {\tt Model->ParameterSpecs} vector.
+\end{example}
+
+There is a separate {\tt Model->XSpecs} vector for each entity type {\tt X}. This is because the specs of different entity types have to store slightly different information. For each entity type the model also has a hash map {\tt Model->XNameToHandle} that allows you to retrieve the handle of an entity given the (string) name that it was registered with.
+
+The purpose of returning the handle of a registered entity is that you should be able to refer to it in future registrations. This is either in registration of other entitites that are related to this one or when you look up the value of a parameter, input or equation inside the body of an equation.
+
+\begin{example}
+Say that this was a very simplified model building system where each parameter only had a single value and did not index over index sets. Then you could organize your parameter values into a single array {\tt ParameterData} and put the value of a parameter with handle {\tt Handle} at location {\tt ParameterData[Handle]}. Then inside an {\tt EQUATION}, the value lookup {\tt PARAMETER(MyParameter)} could just be a macro that expands to {\tt ValueSet\_\_->ParameterData[MyParameter.Handle]}. Unfortunately things are not that simple, but this is still the basic idea that the value access system is built from, and so it is important to understand this idea. More about this later. What this achieves is that accessing the value of a parameter is just a very cheap array lookup.
+\end{example}
+
+\subsection{Equation bodies and the value set accessor}
+
+An equation body is a (C++11) lambda function that is tied to a registered equation. If evaluated, this lambda will give the value of this equation given the values of parameters, and other things the equation accesses to produce its value.
+
+\begin{example}
+If you during model registration provide the code
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, MyEquationHandle,
+<some code..>
+)
+\end{lstlisting}
+the {\tt EQUATION} macro will expand this to
+\begin{lstlisting}[style=mycpp]
+SetEquation(Model, MyEquationHandle,
+[=](value_set_accessor *ValueSet__)
+{
+<some code..>
+}
+);
+\end{lstlisting}
+\end{example}
+The {\tt SetEquation} function just stores this lambda in the {\tt Model->Equations} vector at the index {\tt MyEquationHandle.Handle}. This way the model knows what equation lambda is tied to what equation handle, and it can evaluate this lambda later during model run.
+
+The {\tt value\_set\_accessor *ValueSet\_\_} is an object that contains whatever information the equation needs to look up in order to find the values it needs (more on this below). The model has to set up this value set accessor with the right information when it wants to evaluate the equation lambda, and this will typically change when indexes or timesteps are changed.
+
+\begin{example}
+The code
+\begin{lstlisting}[style=mycpp]
+EQUATION(Model, MyEquationHandle,
+	return PARAMETER(MyParameter);
+)
+\end{lstlisting}
+expands to
+\begin{lstlisting}[style=mycpp]
+SetEquation(Model, MyEquationHandle,
+[=](value_set_accessor *ValueSet__)
+{
+	return (ValueSet__->Running ? GetParameterValue(ValueSet__, MyParameter) : RegisterParameterDependency(ValueSet__, MyParameter));
+}
+);
+\end{lstlisting}
+\end{example}
+We will get back to what {\tt ValueSet\_\_->Running} and {\tt RegisterParameterDependency} do later. What is important is that when the lambda is called, the model has set up the {\t t ValueSet\_\_} object so that {\tt GetParameterValue} returns the value associated to the {\tt MyParameter} handle given the status of the index sets that the equation is evaluated under.
+
+The reason why we use macros instead of just making the model builder type this code straight up is that we want to hide the value set accessor as an implementation detail. It is also easier  to make sure the values are accessed in a correct manner this way.
+
+Accessing values of {\tt RESULT} {\tt LAST\_RESULT} and {\tt INPUT} work in a similar way.
+
+This already showcases why we wanted to wrap the entity handles in typed structs. If you call {\tt GetParameterValue} on an input handle, this will make the type system of C++ give you an error, and so many mistakes can be prevented this way. Moreover, {\tt GetParameterValue} is overloaded to return a different type that matches the type of the parameter (double, uint, boolean).
+
+
+
+
+\end{document}
