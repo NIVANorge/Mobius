@@ -65,7 +65,11 @@ struct token_stream
 		FileData = (char *)malloc(FileDataLength + 1);
 		if(FileData)
 		{
-			fread(FileData, 1, FileDataLength, File);
+			size_t ReadSize = fread(FileData, 1, FileDataLength, File);
+			if(ReadSize != FileDataLength)
+			{
+				MOBIUS_FATAL_ERROR("ERROR: Was unable to read the entire file " << Filename);
+			}
 			FileData[FileDataLength] = '\0';
 		}
 		fclose(File);
