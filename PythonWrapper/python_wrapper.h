@@ -23,8 +23,11 @@ try {
 } catch(int Errcode) { \
 }
 
-
-#define DLLEXPORT extern "C" __declspec(dllexport)
+#if (defined(_WIN32) || defined(_WIN64))
+	#define DLLEXPORT extern "C" __declspec(dllexport)
+#elif (defined(__unix__) || defined(__linux__) || defined(__unix) || defined(unix))
+	#define DLLEXPORT extern "C" __attribute((visibility("default")))
+#endif
 
 DLLEXPORT int
 DllEncounteredError(char *ErrmsgOut)
