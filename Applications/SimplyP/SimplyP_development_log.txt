@@ -1,0 +1,91 @@
+SimplyP summary of development history
+
+-------------------------------------------------------------
+Initial model developed autumn-winter 2015. Released as v0.1 (alpha)
+
+Subsequent changes to v0.1A (also implemented in v0.2):
+
+- Bug fix: Flow into the current reach from upstream reaches had incorrect area scaling.
+- Bug fix: Fraction of newly converted land was missing from a number of ODEs, now added in. This bug would only have affected model setups with newly-converted land.
+
+#############################################################################
+Release v0.2 (alpha), 02/2019
+
+Model now also available in C++, coded using Mobius (https://github.com/NIVANorge/Mobius/tree/master/Applications/SimplyP)
+
+The main changes compared to v0.1A are summarised below.
+
+Changes to parameters:
+	- New parameter to specify relation between SRP and TDP
+	- change in definition of the parameters describing the land use in sub-catchment. See individual parameter descriptions. Will only affect setups which have newly-converted land
+	- Option to sum inputs from specified reaches to calculate the overall sum delivered to a receiving waterbody (e.g. lake, estuary)
+	- Option to set soil water TDP constant throughout the model run. Soil labile P phosphorus is then also constant, and a number of parameters are not required (see parameter descriptions in the mobius version)
+	
+	Python version only:
+		- Ability to simulate branched river networks, with associated parameters in a new sheet Reach_structure
+		- New parameter SC_Qr0 to ‘Constant’ sheet, a setup parameter which describes which reach the initial discharge value is provided for
+
+Changes to input and output files:
+
+	- Input file: PET is no longer a required input. If it is not specified, it is calculated by the model from air temperature
+	- Python version: rename column ‘Pptn’ to ‘Precipitation’						  
+
+General changes:
+
+	Python:
+	- Repackaged as a module with sub-modules, to split functions into different groups for ease of further development & debugging
+	- Added a text file describing input and output data
+	- Small changes in syntax throughout so runs in Python 3.6. Note, there are now a couple of issues with the plotting functions if you try to run with Python 2.7
+
+	Python & mobius versions:
+	- Created a log to keep track of model changes
+
+
+Changes to functions:
+
+- Added Thornthwaite PET calculation, using functions copied from the pyET0 Python package. If PET is not present in the input meteorology data file, then it is calculated. N.B. Thornthwaite requires whole years, so if calculating PET the model can only be run for whole calendar years.
+
+- Added in-stream SRP calculation as a simple function of simulated in-stream TDP: SRP = m * TDP, where m is a user-supplied parameter.
+
+- Define new function to sum inputs from selected reaches. Takes input reach structure from the parameter file, and sums discharge and masses from desired reaches to produce inputs to a receiving waterbody (e.g. lake, estuary). # Needs testing in mobius version
+
+- Added ability to keep the soil water TDP concentration constant. The TDP soil water mass is then constant but the concentration wouldn't be due to change in soil water volume, so replace mass/volume with a concentration parameter in the in-stream TDP equation. Concentration parameter is equal to initial soil water TDP concentration and EPC0 if user wants soil water TDP concentration to stay constant. Soil P content also then remains constant.
+
+- Soil labile P and soil water TDP were stiff equations, and made run times slow if dynamic soil processes were turned on. Remove them from the ODE solver and discretize the change with time (function ‘discretized_soilP’, called at the end of each time step). Use a Poincare map to estimate the gradient over the time step. Comparison with ode results shows insignificant changes over a 30 year test period (always less than 0.04% difference).
+
+- Define a control function (f_x) for limiting soil water flow below field capacity. This is a piecewise polynomial and replaces the sigmoid control function used previously. Removes issue of negative flows when soil water volume was close to field capacity.
+
+- Groundwater flow, Qg, also limited to the minimum user-specified parameter through use of a (differentiable) control function f_x.
+
+- Soil water and groundwater flow ODEs replaced with explicit calculations of Q: Qs = (Vs - fc) * f_x(Vs, fc, 0.01) / T_s. Produces exactly the same results as before, with similar run times, but is simpler.
+
+- Newly-converted land parameters re-defined so that f_Ar, f_IG and f_S are now the total areas of arable, improved grassland and semi-natural land in the catchment (including newly-converted land). And f_NC_Ar, f_NC_IG, f_NC_S is the proportion of Ar, IG or S land that is newly-converted.
+
+
+Python version:
+- Bug fix: initial conditions VsA0, VsS0, QsA0, QsS0, Qg0, Vg0 were only being set correctly for the first sub-catchment
+- Initial reach flow (Qr0) used to be calculated only for SC1, the topmost reach, and initial reach discharges for other reaches were set to the output for the previous day for up-stream reaches. Changed to: user specifies the reach an initial value is provided for (e.g. most data-rich). Then convert the units to mm/day and it then is applied to all reaches (area-scaling involved in converting units means this is ok if hydrology is similar). Qr0 definition has therefore been moved up to after QsS0.
+- Bug fix in the goodness-of-fit function, it wasn't correctly accounting for variables/reaches without data
+- No plotting of soil P results if dynamic EPC0 is turned off
+- Added PET to terrestrial compartment plot
+- plot_in_stream function: fixed bug in plotting multiple reaches
+- Added new function plot_instream_summed to plot the results from summing reach inputs to look at simulated total discharge and averaged concentrations to receiving waterbody.
+- goodness_of_fit_stats: don’t try to calculate if don’t have any observations (len(obs_dict)<=0).
+
+###############################################################################################
+08/05/2019	Release of version 0.3 (alpha)
+
+This version is only available in the mobius version. Further development of the Python version is not planned.
+
+Main updates compared to version 0.2 (see simply.h for details; https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h):
+
+- Reformulated the reach flow equation:
+	- Replaced the stream velocity equation, which previously was only a function of two parameters a_Q and b_Q (the gradient and exponent of the reach velocity-discharge relationship (v=aQ^b), with a version of Manning's equation. See SimplyP.h for more details. Reach slope is now taken into account when calculating the reach flow velocity.
+	- As a result, the parameter file no longer includes a_Q and b_Q, and instead has Manning's coefficient.
+	- Replaced the reach flow ODE with an explicit equation
+	
+- Converted the instream hydrology units from being based on mm (volume) or mm/day (for flows) to m3 and m3/day. This is conceptually simpler.
+
+- Redid the initial groundwater volume calculation so that it produces sensible results in branched river systems (see simplyp.h for details)
+
+- Bug fix in the reach suspended sediment calculation. This would only have affected applications with more than one sub-catchment/reach
