@@ -8,7 +8,7 @@
 
 #include "../../Modules/SimplyP.h"
 
-#define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
+#define READ_PARAMETER_FILE 0 //Read params from file? Or auto-generate using indexers defined below & defaults
 
 int main()
 {
@@ -32,7 +32,7 @@ int main()
 
 #if READ_PARAMETER_FILE == 0
 	SetIndexes(DataSet, "Landscape units", {"Arable", "Improved grassland", "Semi-natural"});
-	SetBranchIndexes(DataSet, "Reaches", {  {"Coull", {}} }  );
+	SetBranchIndexes(DataSet, "Reaches", {{"R1",{}}, {"R2", {"R1"}}}  );
 	
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "newparams.dat");

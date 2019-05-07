@@ -260,44 +260,8 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		return f_A * RESULT(AgriculturalSoilWaterFlow) + f_S * RESULT(SeminaturalSoilWaterFlow);
 	)
 	
-	auto InitialGroundwaterVolume = RegisterEquationInitialValue(Model, "Initial groundwater volume", Mm);
-	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm);
-	SetInitialValue(Model, GroundwaterVolume, InitialGroundwaterVolume);
-	SetSolver(Model, GroundwaterVolume, SimplyPSolver);
 	
-	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay);
-	SetSolver(Model, GroundwaterFlow, SimplyPSolver);
-	
-	EQUATION(Model, GroundwaterFlow,
-		double flow0   = RESULT(GroundwaterVolume) / PARAMETER(GroundwaterTimeConstant);
-		double flowmin = PARAMETER(MinimumGroundwaterFlow);
-		double t = ActivationControl(flow0, flowmin, 0.01);
-		return (1.0 - t)*flowmin + t*flow0;
-	)
-	
-	EQUATION(Model, GroundwaterVolume,		
-		return PARAMETER(BaseflowIndex) * RESULT(TotalSoilWaterFlow)
-			- RESULT(GroundwaterFlow);
-	)
-	
-	EQUATION(Model, InitialGroundwaterVolume,
-		double initialflow = PARAMETER(BaseflowIndex) * ConvertM3PerSecondToMmPerDay(PARAMETER(InitialInStreamFlow), PARAMETER(CatchmentArea));
-		return initialflow * PARAMETER(GroundwaterTimeConstant);
-	)
-	
-	auto Control = RegisterEquation(Model, "Control", Dimensionless);
-	
-	EQUATION(Model, Control,
-		//NOTE: We create this equation to put in the code that allow us to "hack" certain values.
-		// The return value of this equation does not mean anything.
-		
-		double volume = RESULT(GroundwaterFlow)*PARAMETER(GroundwaterTimeConstant);  //Wow, somehow this does not register index sets correctly if it is passed directly inside the macro below! May want to debug that.
-		SET_RESULT(GroundwaterVolume, volume);
-		
-		return 0.0;
-	)
-	
-	// In-stream hydrology equations
+	// Groundwater and In-stream hydrology equations (group together as one reach equation is used in a groundwater equation)
 	
 	// Derived parameters used in instream hydrol equations
 	auto UpstreamArea 	= RegisterParameterDouble(Model, HydrologyReach, "Upstream land area", Km2, 0.0); //Derived param
@@ -310,7 +274,8 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		FOREACH_INPUT(Reach,
 			upstreamarea += PARAMETER(CatchmentArea, *Input);
 			upstreamarea += PARAMETER(UpstreamArea, *Input);
-			);		
+			);
+		
 		return upstreamarea;
 	)
 	
@@ -325,9 +290,17 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 		double f_US = PARAMETER(UpstreamArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
 		double f_R = PARAMETER(CatchmentArea)/(PARAMETER(UpstreamArea)+PARAMETER(CatchmentArea));
 		double effective_length = f_US*PARAMETER(ReachLength) + f_R*PARAMETER(ReachLength)/2.0;		
-		return effective_length;
 		
+		return effective_length;
 	)
+
+	auto InitialGroundwaterVolume = RegisterEquationInitialValue(Model, "Initial groundwater volume", Mm);
+	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm);
+	SetInitialValue(Model, GroundwaterVolume, InitialGroundwaterVolume);
+	SetSolver(Model, GroundwaterVolume, SimplyPSolver);
+	
+	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay);
+	SetSolver(Model, GroundwaterFlow, SimplyPSolver);
 	
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MmPerDay);
 	SetSolver(Model, ReachFlowInput, SimplyPSolver);
@@ -348,6 +321,49 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	ResetEveryTimestep(Model, DailyMeanReachFlow);
 	
 	auto DailyMeanReachFlowCumecs = RegisterEquation(Model, "Reach flow (daily mean, cumecs)", M3PerSecond);
+	
+	// Groundwater equations
+	
+	EQUATION(Model, GroundwaterFlow,
+		double flow0   = RESULT(GroundwaterVolume) / PARAMETER(GroundwaterTimeConstant);
+		double flowmin = PARAMETER(MinimumGroundwaterFlow);
+		double t = ActivationControl(flow0, flowmin, 0.01);
+		return (1.0 - t)*flowmin + t*flow0;
+	)
+	
+	EQUATION(Model, GroundwaterVolume,		
+		return PARAMETER(BaseflowIndex) * RESULT(TotalSoilWaterFlow)
+			- RESULT(GroundwaterFlow);
+	)
+	
+/* 	EQUATION(Model, InitialGroundwaterVolume,
+		double initialflow = PARAMETER(BaseflowIndex) * RESULT(ReachFlow);
+		return initialflow * PARAMETER(GroundwaterTimeConstant);
+	) */
+	
+	EQUATION(Model, InitialGroundwaterVolume,
+		double upstreamflow = 0.0;
+		FOREACH_INPUT(Reach,
+			upstreamflow += RESULT(ReachFlow, *Input); //Should this be scaled by ratio of areas?
+			)
+		double terrestrial_flowinput = RESULT(ReachFlow) - upstreamflow;
+		double initialgroundwaterflow = PARAMETER(BaseflowIndex) * terrestrial_flowinput;
+		return initialgroundwaterflow * PARAMETER(GroundwaterTimeConstant);
+	)
+	
+	auto Control = RegisterEquation(Model, "Control", Dimensionless);
+	
+	EQUATION(Model, Control,
+		//NOTE: We create this equation to put in the code that allow us to "hack" certain values.
+		// The return value of this equation does not mean anything.
+		
+		double volume = RESULT(GroundwaterFlow)*PARAMETER(GroundwaterTimeConstant);  //Wow, somehow this does not register index sets correctly if it is passed directly inside the macro below! May want to debug that.
+		SET_RESULT(GroundwaterVolume, volume);
+		
+		return 0.0;
+	)
+	
+	// In-stream equations
 	
 	EQUATION(Model, ReachFlowInput,
 		double upstreamflow = 0.0;
@@ -490,10 +506,9 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	
 	EQUATION(Model, TimeDependentVegetationCoverFactor,
 		
-		/*
-			# If arable land, work out a dynamic crop cover factor, to account for the variation
-			# in erodibility through the year due to harvesting and planting practices.
-			*/
+		/*If arable land, work out a dynamic crop cover factor, to account for the variation
+		in erodibility through the year due to harvesting and planting practices.
+		*/
 			
 		double C_cover = PARAMETER(VegetationCoverFactor);
 		
@@ -538,10 +553,6 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachSedimentInputCoefficient,
 		//# Reach sed input coefficient per land use class (kg/mm). See documentation for rationale/source
-        //        Esus_i[LU] = (p['E_M'] * p_SC.ix['S_reach',SC]
-        //                      * slope_dict[LU]
-        //                      *C_cover
-        //                      *(1-p_LU[LU]['C_measures']))
 		double Esus_i =
 			  PARAMETER(ReachSedimentInputScalingFactor) * 1000.0 //1000 just for convenient range in input parameter
 			* PARAMETER(ReachSlope)
@@ -549,26 +560,21 @@ AddSimplyPSedimentModule(mobius_model *Model)
 			* RESULT(TimeDependentVegetationCoverFactor)
 			* (1.0 - PARAMETER(ReductionOfLoadInSediment));
 		
-		return Esus_i  
-			* PARAMETER(LandUseProportions); //NOTE: This is to make them sum up correctly for use later
-	)
-	
-	EQUATION(Model, SuspendedSedimentFlux,
-		//Qr_i*Msus_i/Vr_i  # Daily flux of SS
-		return RESULT(SuspendedSedimentMass) * RESULT(ReachFlow) / RESULT(ReachVolume);
-	)
-	
+		return Esus_i * PARAMETER(LandUseProportions); //NOTE: This is to make them sum up correctly for use later
+	)	
 	
 	EQUATION(Model, ReachSedimentInput,
-		// Msus_in_i = Esus_i * Qr_i**k_M
-		return RESULT(TotalReachSedimentInputCoefficient) * pow(RESULT(ReachFlow), PARAMETER(SedimentInputNonlinearCoefficient));
+		// Note need to remove upstream flow as equation applies to transport from the land to the reach. Otherwise get
+		// gradual increase downstream in sed input just because reach flow accumulates
+		double upstreamflow = 0.0;
+		FOREACH_INPUT(Reach,
+			upstreamflow += RESULT(ReachFlow, *Input); //Should this be scaled by ratio of areas?
+			)
+		double reachflow_excludingupstream = RESULT(ReachFlow) - upstreamflow;		
+		return RESULT(TotalReachSedimentInputCoefficient) * pow(reachflow_excludingupstream, PARAMETER(SedimentInputNonlinearCoefficient));
 	)
 	
-	EQUATION(Model, SuspendedSedimentMass,
-		//dMsus_dt = (f_Ar*Msus_in_i['A'] + f_IG*Msus_in_i['IG'] + f_S* Msus_in_i['S']  # External inputs (kg/day)
-        //        + Msus_US_i                                                       # Inputs from upstream
-        //        - (Msus_i/Vr_i)*Qr_i)                                             # Outflow from the reach;(kg/mm)*(mm/day)
-		
+	EQUATION(Model, SuspendedSedimentMass,	
 		double upstreamflux = 0.0;
 		FOREACH_INPUT(Reach,
 			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, *Input);
@@ -577,12 +583,16 @@ AddSimplyPSedimentModule(mobius_model *Model)
 		return RESULT(ReachSedimentInput) + upstreamflux - RESULT(SuspendedSedimentFlux);
 	)
 	
+	EQUATION(Model, SuspendedSedimentFlux,
+		return SafeDivide(RESULT(SuspendedSedimentMass) * RESULT(ReachFlow), RESULT(ReachVolume));
+	)
+	
 	EQUATION(Model, DailyMeanSuspendedSedimentFlux,
 		return RESULT(SuspendedSedimentFlux);
 	)
 	
 	EQUATION(Model, SuspendedSedimentConcentration,
-		return ConvertKgPerMmToMgPerL(RESULT(DailyMeanSuspendedSedimentFlux) / RESULT(DailyMeanReachFlow), PARAMETER(CatchmentArea));
+		return ConvertKgPerMmToMgPerL(SafeDivide(RESULT(DailyMeanSuspendedSedimentFlux), RESULT(DailyMeanReachFlow)), PARAMETER(CatchmentArea));
 	)
 }
 
@@ -1043,7 +1053,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	EQUATION(Model, StreamTDPFlux,
 		//dTDPr_out_dt = Qr_i*TDPr_i/Vr_i
-		return RESULT(StreamTDPMass) * RESULT(ReachFlow) / RESULT(ReachVolume);
+		return RESULT(StreamTDPMass) * SafeDivide(RESULT(ReachFlow), RESULT(ReachVolume));
 	)
 	
 	EQUATION(Model, DailyMeanStreamTDPFlux,
@@ -1051,7 +1061,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, StreamPPFlux,
-		return RESULT(StreamPPMass) * RESULT(ReachFlow) / RESULT(ReachVolume);
+		return RESULT(StreamPPMass) * SafeDivide(RESULT(ReachFlow),RESULT(ReachVolume));
 	)
 	
 	EQUATION(Model, DailyMeanStreamPPFlux,
@@ -1161,11 +1171,11 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	auto SRPConcentration = RegisterEquation(Model, "Reach SRP concentration", MgPerL); //Volume-weighted daily mean
 	
 	EQUATION(Model, TDPConcentration,
-		return ConvertKgPerMmToMgPerL(RESULT(DailyMeanStreamTDPFlux) / RESULT(DailyMeanReachFlow), PARAMETER(CatchmentArea));
+		return ConvertKgPerMmToMgPerL(SafeDivide(RESULT(DailyMeanStreamTDPFlux), RESULT(DailyMeanReachFlow)), PARAMETER(CatchmentArea));
 	)
 	
 	EQUATION(Model, PPConcentration,
-		return ConvertKgPerMmToMgPerL(RESULT(DailyMeanStreamPPFlux) / RESULT(DailyMeanReachFlow), PARAMETER(CatchmentArea));
+		return ConvertKgPerMmToMgPerL(SafeDivide(RESULT(DailyMeanStreamPPFlux), RESULT(DailyMeanReachFlow)), PARAMETER(CatchmentArea));
 	)
 	
 	EQUATION(Model, DailyMeanStreamTPFlux,

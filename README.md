@@ -27,7 +27,7 @@ Mobius can produce executables that can be run standalone or together with the g
 
 The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
- * "Simply" models (SimplyP, SimplyQ, SimplyC)
+ * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP/README.md), SimplyQ, SimplyC)
  * "INCA" models (INCA-N, INCA-C, INCA-P, INCA-Sed, INCA-Microplastics, PERSiST) 
  * HBV
  
@@ -133,7 +133,7 @@ INCAView requires a parameter database to be supplied. To create a parameter dat
 - Click 'Select input file' and navigate to the .dat file which contains your driving meteorological data and any other inputs you wish to read in (e.g. observations)
 - Click 'Run model'. Results and inputs should be listed in the top right hand panels.
 - Click through results and inputs to explore the output. Hold down the Shift or Ctrl keys to select multiple series at the same time, and do Ctrl click to deselect. When you have a simulated and an observed series selected, you can get goodness of fit statistics by selecting the 'Results info' tab at the bottom left of the window. Note that if your observations have lots of missing values, you need to check the 'Scatter plot for inputs' box for them to appear on the plot.
-- Click 'Export results' to save results in a csv format to a file.
+- To save results in a csv format, select the results series you wish to export and then click 'Export results'.
 
 
 ## Dependencies
