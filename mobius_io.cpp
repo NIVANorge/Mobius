@@ -423,7 +423,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				if(!AnySlashAtAll) LastSlash = -1;
 				
 				char NewPath[512]; //Umm, hope this is plenty???
-				sprintf(NewPath, "%.*s%.*s", LastSlash+1, ParentPath, Filename.Length, Filename.Data);
+				sprintf(NewPath, "%.*s%.*s", LastSlash+1, ParentPath, (int)Filename.Length, Filename.Data);
 				
 				token_stream SubStream(NewPath);
 				
