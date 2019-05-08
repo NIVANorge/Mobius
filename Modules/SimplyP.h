@@ -443,7 +443,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	auto Dimensionless = RegisterUnit(Model);
 	auto Kg            = RegisterUnit(Model, "kg");
 	auto KgPerDay      = RegisterUnit(Model, "kg/day");
-	auto KgPerMm       = RegisterUnit(Model, "kg/mm");
+	auto KgPerM3       = RegisterUnit(Model, "kg/m^3");
 	auto JulianDay     = RegisterUnit(Model, "Julian day");
 	auto Degrees       = RegisterUnit(Model, "°");
 	auto MgPerL        = RegisterUnit(Model, "mg/l");
@@ -467,7 +467,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	// Global sediment parameters (don't vary by land use/sub-catchment/reach
 	auto Sediment = RegisterParameterGroup(Model, "Sediment");
 	
-	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerMm, 1500.0, 0.0, 100000.0, "Calibrated parameter linking simulated sediment to simulated discharge");
+	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 150.0, 0.0, 1000.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land");
 	auto SedimentInputNonlinearCoefficient = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0); 
 	auto DayOfYearWhenSoilErodibilityIsMaxSpring = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for spring-grown crops", JulianDay, 60, 30, 335, "Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment");
 	auto DayOfYearWhenSoilErodibilityIsMaxAutumn = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for autumn-grown crops", JulianDay, 304, 30, 335, "Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment");
@@ -500,7 +500,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	
 	// Sediment equations
 	auto TimeDependentVegetationCoverFactor = RegisterEquation(Model, "Time dependent vegetation cover factor", Dimensionless);
-	auto ReachSedimentInputCoefficient         = RegisterEquation(Model, "Sediment input coefficient", KgPerMm);
+	auto ReachSedimentInputCoefficient         = RegisterEquation(Model, "Sediment input coefficient", KgPerM3);
 	auto TotalReachSedimentInputCoefficient    = RegisterEquationCumulative(Model, "Sediment input coefficient summed over land classes", ReachSedimentInputCoefficient, LandscapeUnits);
 	
 	auto SuspendedSedimentFlux = RegisterEquation(Model, "Reach suspended sediment flux", KgPerDay);
@@ -561,9 +561,9 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachSedimentInputCoefficient,
-		//# Reach sed input coefficient per land use class (kg/mm). See documentation for rationale/source
+		//# Reach sed input coefficient per land use class (kg/m3). This was recently changed from kg/mm which had a different rationalization.
 		double Esus_i =
-			  PARAMETER(ReachSedimentInputScalingFactor) * 1000.0 //1000 just for convenient range in input parameter
+			  PARAMETER(ReachSedimentInputScalingFactor) * 1e6 //1000 just for convenient range in input parameter
 			* PARAMETER(ReachSlope)
 			* PARAMETER(MeanSlopeOfLand)
 			* RESULT(TimeDependentVegetationCoverFactor)
@@ -575,8 +575,9 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	EQUATION(Model, ReachSedimentInput,
 		// This does not take into account the greater sediment mobilisation capacity of reaches which are further downstream in the catchment, and may need revisiting. May need to split sediment delivery into two (terrestrial versus instream), which would likely require two of these equations which we want to avoid as long as possible.
 		//Note: if this changes, also needs to change in the particulate P equations
-		double flowfromland = ConvertM3PerSecondToMmPerDay(RESULT(ReachFlowInputFromLand), PARAMETER(CatchmentArea));
-		return RESULT(TotalReachSedimentInputCoefficient) * pow(flowfromland, PARAMETER(SedimentInputNonlinearCoefficient));
+		double A_catch = PARAMETER(CatchmentArea);
+		double flowfromland = RESULT(ReachFlowInputFromLand);
+		return RESULT(TotalReachSedimentInputCoefficient) * A_catch * pow(flowfromland/A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
 	)
 	
 	EQUATION(Model, SuspendedSedimentMass,	
@@ -1020,8 +1021,9 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		
 		//NOTE: RESULT(ReachSedimentInputCoefficient, Arable) = Esus_i['A']*f_A   etc.
 		// Msus_in_i = Esus_i * Qr_i**k_M
-		double flowfromland = ConvertM3PerSecondToMmPerDay(RESULT(ReachFlowInputFromLand), PARAMETER(CatchmentArea));
-		double coeff = pow(flowfromland, PARAMETER(SedimentInputNonlinearCoefficient));
+		double flowfromland = RESULT(ReachFlowInputFromLand);
+		double A_catch      = PARAMETER(CatchmentArea);
+		double coeff = A_catch * pow(flowfromland/A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
 		double catchmentinput =
 			E_PP * (
 			  (Esus_in_Ar*(1.0 - f_NC_Ar) + Esus_in_IG*(1.0 - f_NC_IG))*AgriSoilP
