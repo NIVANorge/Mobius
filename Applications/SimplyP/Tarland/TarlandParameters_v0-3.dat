@@ -1,4 +1,4 @@
-# Parameter file generated for SimplyP V0.0 at 2019-03-26 09:53:08
+# Parameter file generated for SimplyP V0.3 at 2019-05-08 14:42:01
 
 index_sets:
 "Reaches" : {"Coull"}
@@ -10,7 +10,7 @@ parameters:
 485
 
 "Start date" :     # ["1000-01-01", "3000-12-31"]
-"2004-1-1"
+"2004-01-01"
 
 "Latitude" :     #(°) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
 59.6
@@ -39,17 +39,17 @@ parameters:
 "Minimum groundwater flow" :     #(mm/day) [0, 10]
 0.4
 
-"Manning's coefficient" :     #(dimensionless) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
+"Manning's coefficient" :     #(s/(m^1/3)) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
 0.04
 
 "Dynamic erodibility" :     # If true, simulate the change in erodibility on arable land through the year due to cropping and harvesting practices
 true
 
-"Reach sediment input scaling factor" :     #(kg/mm) [0, 100000] Calibrated parameter linking simulated sediment to simulated discharge
-86 #1500 in v0.2, multiplied by 57 to account for change in reach slope units from degrees (0.8) to m/m (0.0140), and factored out factor of 1000
+"Reach sediment input scaling factor" :     #(kg/m^3) [0, 1000] Calibrated parameter linking simulated sediment input from land to simulated flow from land
+180
 
 "Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5]
-2
+2.8
 
 "Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
 60
@@ -94,7 +94,7 @@ true
 "Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
 10000
 
-"Reach slope" :     #(m/m) [0, 90]
+"Reach slope" :     #(m/m) [1e-005, 3]
 0.014
 
 "Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
@@ -126,11 +126,11 @@ false
 "Vegetation cover factor" :     #(dimensionless) [0, 1] Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.
 0.2 0.09 0.021
 
-"Reduction of load in sediment" :     #(dimensionless) [0, 1] Proportional reduction in load of sediment delivered to the stream due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.
+"Reduction of load in sediment" :     #(dimensionless) [0, 1] Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.
 0 0 0
 
-"Initial soil water TDP concentration and EPC0" :     #(mg/l) [0, 10] Note: arable and improved grassland are grouped as 'agricultural' land and semi-natural initial EPC0 is assumed to be zero; so only the arable value is used
-0.1 0.1 0.0
+"Initial soil water TDP concentration and EPC0" :     #(mg/l) [0, 10] If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run. Note: arable and improved grassland are grouped as 'agricultural' and only the arable value is used; semi-natural initial EPC0 is assumed to be zero
+0.1 0.1 0
 
 "Initial total soil P content" :     #(mg/kg) [0, 10000] Note: arable and improved grassland are grouped as 'agricultural' land, so only the arable and semi-natural values are read in
 1458 1458 873
