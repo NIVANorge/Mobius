@@ -96,6 +96,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto M                 = RegisterUnit(Model, "m");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
 	auto MPerM			   = RegisterUnit(Model, "m/m");
+	auto SecondsPerCubeRouteM	= RegisterUnit(Model, "s/(m^1/3)");
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
@@ -121,7 +122,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", Dimensionless, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
+	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRouteM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
@@ -356,8 +357,9 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 			return initflow * tc; //So the initial volume is the initial flow times the time constant.
 		}
 		
-		// If we are not a headwater, we want the initial groundwater flow to be the same (per unit area) as in our upstream reach (if there is only one upstream reach). Assuming the groundwater time constant is the same across reaches, this is achieved by setting the initial volume to be the same as the upstream one.
-		// If there are multiple upstream reaches, we average over the upstream volumes instead. TODO: Time will tell if this is good practice.
+		// If we are not a headwater, we want the initial groundwater flow to be the same (per unit area) as in our upstream reach (if there is only one upstream reach). Assuming the groundwater time constant and baseflow index is the same across reaches, this is achieved by setting the initial volume to be the same as the upstream one.
+		// If there are multiple upstream reaches, we average over the upstream volumes instead.
+		// TODO: Time will tell if this is good practice. Future model versions will likely allow BFI and groundwater time constant to vary across sub-catchments, and then need to be able to take this into account.
 		double avgupstreamvol = upstreamvol / (double)upstreamcount;
 		
 		return avgupstreamvol;
@@ -378,7 +380,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	// In-stream equations
 	
 	EQUATION(Model, ReachFlowInputFromLand,
-		//Flow from land in mm/day
+		//Flow from land in mm/day, converted to m3/s
 		double fromland = RESULT(InfiltrationExcess) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
 		return ConvertMmPerDayToM3PerSecond(fromland, PARAMETER(CatchmentArea));
 	)
@@ -392,6 +394,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialReachFlow,
+		// TO DO: ability to add initial reach flow for any reach, and estimate it for others by e.g. area-scaling
 		double upstreamflow = 0.0;
 		FOREACH_INPUT(Reach,
 			upstreamflow += RESULT(ReachFlow, *Input);
@@ -408,23 +411,16 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachFlow,
 		/* Derived from: Q=V/T, where T=L/u, so Q = Vu/L (where V is reach volume, u is reach velocity, L is reach length)
-		Then get an expression for u using the Manning equation, assuming a rectangular cross section and empirical power law relationships between stream depth and Q and stream width and Q. Then rearrange so all Qs are on the left hand side with exponent of 1. Some unit conversions as Mannings and empirical equations assume Q in m3/s. See https://hal.archives-ouvertes.fr/hal-00296854/document */
+		Then get an expression for u using the Manning equation, assuming a rectangular cross section and empirical power law relationships between stream depth and Q and stream width and Q. Then rearrange so all Qs are on the left hand side with exponent of 1. See https://hal.archives-ouvertes.fr/hal-00296854/document */
 		
 		double val = RESULT(ReachVolume) * sqrt(PARAMETER(ReachSlope))
 							  / (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient));
 		
-		return 0.28 * val * sqrt(val); //NOTE: This is just an optimization.
-		
-		/*
-		return 0.28 * pow(
-						RESULT(ReachVolume) * sqrt(PARAMETER(ReachSlope))
-							  / (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient)),
-						1.5);
-		*/
+		return 0.28 * val * sqrt(val); //NOTE: This is just an optimization; equiv to val^1.5
 	)
 	
 	EQUATION(Model, InitialReachVolume,
-	//Assumes rectangular cross section
+	//Assumes rectangular cross section. See comment in ReachFlow equation for source
 		double reachdepth = 0.349 * pow(RESULT(ReachFlow), 0.34);
 		double reachwidth = 2.71 * pow(RESULT(ReachFlow), 0.557);
 		return reachdepth * reachwidth * PARAMETER(ReachLength);
@@ -502,7 +498,7 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	auto DailyMeanReachFlow = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
 	auto ReachVolume        = GetEquationHandle(Model, "Reach volume");
 	
-	// New equations
+	// Sediment equations
 	auto TimeDependentVegetationCoverFactor = RegisterEquation(Model, "Time dependent vegetation cover factor", Dimensionless);
 	auto ReachSedimentInputCoefficient         = RegisterEquation(Model, "Sediment input coefficient", KgPerMm);
 	auto TotalReachSedimentInputCoefficient    = RegisterEquationCumulative(Model, "Sediment input coefficient summed over land classes", ReachSedimentInputCoefficient, LandscapeUnits);
@@ -531,7 +527,6 @@ AddSimplyPSedimentModule(mobius_model *Model)
 		*/
 			
 		double C_cover = PARAMETER(VegetationCoverFactor);
-		
 		double d_maxE[2];
 		d_maxE[0] = (double)PARAMETER(DayOfYearWhenSoilErodibilityIsMaxSpring);
 		d_maxE[1] = (double)PARAMETER(DayOfYearWhenSoilErodibilityIsMaxAutumn);
@@ -544,16 +539,13 @@ AddSimplyPSedimentModule(mobius_model *Model)
 		if(PARAMETER(DynamicErodibility) && (CURRENT_INDEX(LandscapeUnits) == Arable))
 		{
 			double C_cov = 0.0;
-			
 			double E_risk_period = 60.0;
 			for(size_t Season = 0; Season < 2; ++Season)
 			{
 				double d_start = d_maxE[Season] - E_risk_period / 2.0;
 				double d_end   = d_maxE[Season] + E_risk_period / 2.0;
 				double d_mid   = d_maxE[Season];
-				
 				double dayNo = (double)CURRENT_DAY_OF_YEAR();
-				
 				double C_season;
 				if(dayNo >= d_start && dayNo <= d_end)
 				{
@@ -561,13 +553,10 @@ AddSimplyPSedimentModule(mobius_model *Model)
 					else              C_season = LinearInterpolate(dayNo, d_mid,   d_end, 1.0, C_cover);
 				}
 				else C_season = C_cover - E_risk_period*(1.0 - C_cover)/(2.0*(DAYS_THIS_YEAR()-E_risk_period));
-				
 				C_cov += C_season * coverproportion[Season];
 			}
-			
 			return C_cov;
 		}
-
 		return C_cover;
 	)
 	
@@ -584,6 +573,8 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	)	
 	
 	EQUATION(Model, ReachSedimentInput,
+		// This does not take into account the greater sediment mobilisation capacity of reaches which are further downstream in the catchment, and may need revisiting. May need to split sediment delivery into two (terrestrial versus instream), which would likely require two of these equations which we want to avoid as long as possible.
+		//Note: if this changes, also needs to change in the particulate P equations
 		double flowfromland = ConvertM3PerSecondToMmPerDay(RESULT(ReachFlowInputFromLand), PARAMETER(CatchmentArea));
 		return RESULT(TotalReachSedimentInputCoefficient) * pow(flowfromland, PARAMETER(SedimentInputNonlinearCoefficient));
 	)
@@ -654,7 +645,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	// Phorphorus parameters that vary by land class
 	auto PhosphorousLand = RegisterParameterGroup(Model, "Phosphorous land", LandscapeUnits);
-	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "Note: arable and improved grassland are grouped as 'agricultural' land and semi-natural initial EPC0 is assumed to be zero; so only the arable value is used");
+	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run. Note: arable and improved grassland are grouped as 'agricultural' and only the arable value is used; semi-natural initial EPC0 is assumed to be zero");
 	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0, "Note: arable and improved grassland are grouped as 'agricultural' land, so only the arable and semi-natural values are read in");
 	
 	// Params that vary by reach and land class (add to existing group)
@@ -682,6 +673,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	auto InfiltrationExcess          = GetEquationHandle(Model, "Infiltration excess");
 	auto AgriculturalSoilWaterFlow   = GetEquationHandle(Model, "Agricultural soil water flow");
 	auto SeminaturalSoilWaterFlow    = GetEquationHandle(Model, "Semi-natural soil water flow");
+	auto ReachFlowInputFromLand 	 = GetEquationHandle(Model, "Reach flow input from land");	
 	auto ReachVolume                 = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow                   = GetEquationHandle(Model, "Reach flow (end-of-day)");
 	auto DailyMeanReachFlow          = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
@@ -717,8 +709,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	SetInitialValue(Model, AgriculturalSoilWaterEPC0, InitialAgriculturalSoilWaterEPC0);
 	
 	EQUATION(Model, SoilPSorptionCoefficient,
-		/* # Assume SN has EPC0=0, PlabConc =0. Units: (kg/mg)(mg/kgSoil)(mm/kg)
-		Kf = 10**-6*(p_LU['A']['SoilPconc']-p_LU['S']['SoilPconc'])/p_LU['A']['EPC0_0'] */
+		/* # Assume SN has EPC0=0, PlabConc =0. Units: (kg/mg)(mg/kgSoil)(mm/kg)*/
 		auto InitialAgriculturalEPC0 = ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0, Arable), PARAMETER(CatchmentArea));
 		auto Kf = 1e-6 * (PARAMETER(InitialSoilPConcentration, Arable) -
 				  PARAMETER(InitialSoilPConcentration, Seminatural))
@@ -731,10 +722,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		return KfPar;
 	)
 				
-	
-#define DISCRETISE_SOIL_P 1
-	
-#if DISCRETISE_SOIL_P
+
 	auto InitialAgriculturalSoilTDPMass     = RegisterEquationInitialValue(Model, "Initial agricultural soil TDP mass", Kg);
 	auto AgriculturalSoilTDPMass            = RegisterEquation(Model, "Agricultural soil TDP mass", Kg);
 	SetInitialValue(Model, AgriculturalSoilTDPMass, InitialAgriculturalSoilTDPMass);
@@ -777,77 +765,11 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		return LAST_RESULT(AgriculturalSoilLabilePMass) + sorp;
 	)
 	
-#else
-	auto AgriculturalSoilNetPSorption = RegisterEquation(Model, "Agricultural soil net P sorption", KgPerDay);
-	SetSolver(Model, AgriculturalSoilNetPSorption, SimplyPSolver);
-	
-	auto AgriculturalSoilTDPFlux = RegisterEquation(Model, "Agricultural soil TDP flux", KgPerDay);
-	SetSolver(Model, AgriculturalSoilTDPFlux, SimplyPSolver);
-	
-	auto InitialAgriculturalSoilLabilePMass = RegisterEquationInitialValue(Model, "Initial agricultural soil labile P mass", Kg);
-	auto AgriculturalSoilLabilePMass = RegisterEquationODE(Model, "Agricultural soil labile P mass", Kg);
-	SetInitialValue(Model, AgriculturalSoilLabilePMass, InitialAgriculturalSoilLabilePMass);
-	SetSolver(Model, AgriculturalSoilLabilePMass, SimplyPSolver);
-	
-	auto InitialAgriculturalSoilTDPMass = RegisterEquationInitialValue(Model, "Initial agricultural soil TDP mass", Kg);
-	auto AgriculturalSoilTDPMass     = RegisterEquationODE(Model, "Agricultural soil TDP mass", Kg);
-	SetInitialValue(Model, AgriculturalSoilTDPMass, InitialAgriculturalSoilTDPMass);
-	SetSolver(Model, AgriculturalSoilTDPMass, SimplyPSolver);
-	
-	
-	EQUATION(Model, AgriculturalSoilNetPSorption,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		//dPlabA_dt = Kf*Msoil*((TDPsA_i/VsA_i)-EPC0_A)  # Net sorption
-		double sorption = RESULT(SoilPSorptionCoefficient) * Msoil * (RESULT(AgriculturalSoilTDPMass) / RESULT(AgriculturalSoilWaterVolume) - RESULT(AgriculturalSoilWaterEPC0) );
-		
-		return sorption;
-	)
-	
-	EQUATION(Model, InitialAgriculturalSoilLabilePMass,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		return 1e-6 * (PARAMETER(InitialSoilPConcentration, Arable) - PARAMETER(InitialSoilPConcentration, Seminatural)) * Msoil;
-	)
-	
-	EQUATION(Model, AgriculturalSoilLabilePMass,
-		return RESULT(AgriculturalSoilNetPSorption);
-		//return 0;
-	)
-	
-	EQUATION(Model, InitialAgriculturalSoilTDPMass,
-		return RESULT(AgriculturalSoilWaterEPC0) * RESULT(AgriculturalSoilWaterVolume);
-	)
-	
-	EQUATION(Model, AgriculturalSoilTDPFlux,
-		return
-			  RESULT(AgriculturalSoilTDPMass) 
-			  * (RESULT(AgriculturalSoilWaterFlow) + RESULT(InfiltrationExcess)) / RESULT(AgriculturalSoilWaterVolume);
-	)
-	
-	EQUATION(Model, AgriculturalSoilTDPMass,
-		//dTDPsA_dt = ((P_netInput['A']*100*A_catch/365)    # Net inputs (fert+manure-uptake) (kg/ha/yr)
-                 //- Kf*Msoil*((TDPsA_i/VsA_i)-EPC0_A)  # Net sorpn (kg/day) (could be alt above)
-                 //- (QsA_i*TDPsA_i/VsA_i)              # Outflow via soil water flow (kg/day)
-                 //- (Qq_i*TDPsA_i/VsA_i))              # Outflow via quick flow (kg/day)
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		return
-			  PARAMETER(NetAnnualPInputAgricultural) * 100.0 * PARAMETER(CatchmentArea) / 365.0
-			- RESULT(AgriculturalSoilNetPSorption)
-			- RESULT(AgriculturalSoilTDPFlux);
-	)
-#endif
-
 	EQUATION(Model, InitialAgriculturalSoilWaterEPC0,
-		 //p_LU.ix['EPC0_0',LU] = UC_Cinv(p_LU[LU]['EPC0_init_mgl'], p_SC.ix['A_catch',SC])
 		 return ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0, Arable), PARAMETER(CatchmentArea));
 	)
 	
 	EQUATION(Model, AgriculturalSoilWaterEPC0,
-		/*
-		if dynamic_options['Dynamic_EPC0'] == 'y':
-			EPC0_A_i = Plab0_A/(Kf*Msoil) # Agricultural EPC0; equals EPC0_0 on the 1st timestep
-		else:
-			EPC0_A_i = p_LU['A']['EPC0_0']
-		*/
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double Kf = RESULT(SoilPSorptionCoefficient);
 		double Plab_A = LAST_RESULT(AgriculturalSoilLabilePMass);
@@ -858,6 +780,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	)
 	
 	
+	// Soil hydrology and P equations for newly-converted land
 	
 	auto SoilFieldCapacity = GetParameterDoubleHandle(Model, "Soil field capacity");
 
@@ -872,7 +795,6 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	auto NewlyConvertedSoilWaterEPC0   = RegisterEquation(Model, "Newly-converted soil water EPC0", KgPerMm);
 	SetInitialValue(Model, NewlyConvertedSoilWaterEPC0, InitialNewlyConvertedSoilWaterEPC0);
 	
-#if DISCRETISE_SOIL_P
 	auto InitialNewlyConvertedSoilTDPMass     = RegisterEquationInitialValue(Model, "Initial newly-converted soil TDP mass", Kg);
 	auto NewlyConvertedSoilTDPMass            = RegisterEquation(Model, "Newly-converted soil TDP mass", Kg);
 	SetInitialValue(Model, NewlyConvertedSoilTDPMass, InitialNewlyConvertedSoilTDPMass);
@@ -915,62 +837,6 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 		return LAST_RESULT(NewlyConvertedSoilLabilePMass) + sorp;
 	)
-
-#else
-	
-	auto NewlyConvertedSoilNetPSorption = RegisterEquation(Model, "Newly-converted soil net P sorption", KgPerDay);
-	SetSolver(Model, NewlyConvertedSoilNetPSorption, SimplyPSolver);
-	
-	auto NewlyConvertedSoilTDPFlux = RegisterEquation(Model, "Newly-converted soil TDP flux", KgPerDay);
-	SetSolver(Model, NewlyConvertedSoilTDPFlux, SimplyPSolver);
-	
-	auto InitialNewlyConvertedSoilLabilePMass = RegisterEquationInitialValue(Model, "Initial newly-converted soil labile P mass", Kg);
-	auto NewlyConvertedSoilLabilePMass = RegisterEquationODE(Model, "Newly-converted soil labile P mass", Kg);
-	SetInitialValue(Model, NewlyConvertedSoilLabilePMass, InitialNewlyConvertedSoilLabilePMass);
-	SetSolver(Model, NewlyConvertedSoilLabilePMass, SimplyPSolver);
-	
-	auto InitialNewlyConvertedSoilTDPMass = RegisterEquationInitialValue(Model, "Initial newly-converted soil TDP mass", Kg);
-	auto NewlyConvertedSoilTDPMass     = RegisterEquationODE(Model, "Newly-converted soil TDP mass", Kg);
-	SetInitialValue(Model, NewlyConvertedSoilTDPMass, InitialNewlyConvertedSoilTDPMass);
-	SetSolver(Model, NewlyConvertedSoilTDPMass, SimplyPSolver);
-	
-	EQUATION(Model, NewlyConvertedSoilNetPSorption,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		//dPlabA_dt = Kf*Msoil*((TDPsA_i/VsA_i)-EPC0_A)  # Net sorption
-		double sorption = RESULT(SoilPSorptionCoefficient) * Msoil * (RESULT(NewlyConvertedSoilTDPMass) / RESULT(NewlyConvertedSoilWaterVolume) - RESULT(NewlyConvertedSoilWaterEPC0) );
-		
-		return sorption;
-	)
-	
-	EQUATION(Model, InitialNewlyConvertedSoilLabilePMass,
-		double ag = RESULT(AgriculturalSoilLabilePMass);
-		index_t nctype = INDEX_NUMBER(LandscapeUnits, PARAMETER(NCType));
-		if(nctype == Seminatural) return ag;
-		return 0.0;
-	)
-	
-	EQUATION(Model, NewlyConvertedSoilLabilePMass,
-		return RESULT(NewlyConvertedSoilNetPSorption);
-	)
-	
-	EQUATION(Model, InitialNewlyConvertedSoilTDPMass,
-		return RESULT(NewlyConvertedSoilWaterEPC0) * RESULT(NewlyConvertedSoilWaterVolume);
-	)
-	
-	EQUATION(Model, NewlyConvertedSoilTDPFlux,
-		return
-			  RESULT(NewlyConvertedSoilTDPMass) 
-			  * (RESULT(NewlyConvertedSoilWaterFlow) + RESULT(InfiltrationExcess)) / RESULT(NewlyConvertedSoilWaterVolume);
-	)
-	
-	EQUATION(Model, NewlyConvertedSoilTDPMass,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		return
-			  PARAMETER(NetAnnualPInputNewlyConverted) * 100.0 * PARAMETER(CatchmentArea) / 365.0
-			- RESULT(NewlyConvertedSoilNetPSorption)
-			- RESULT(NewlyConvertedSoilTDPFlux);
-	)
-#endif
 	
 	EQUATION(Model, NewlyConvertedSoilWaterVolume,
 		index_t nctype = INDEX_NUMBER(LandscapeUnits, PARAMETER(NCType));
@@ -1029,8 +895,6 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, AgriculturalSoilLabilePConcentration,
-/* 	df_TC['Plabile_A_mgkg'] = (10**6*df_TC['P_labile_A_kg']/
-								(p['Msoil_m2'] * 10**6 * p_SC.loc['A_catch',SC])) */
 		double labilePMassMg = 1e6 * RESULT(AgriculturalSoilLabilePMass);
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double constantLabilePConc = PARAMETER(InitialSoilPConcentration);
@@ -1067,7 +931,6 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	ResetEveryTimestep(Model, DailyMeanStreamPPFlux);
 	
 	EQUATION(Model, StreamTDPFlux,
-		//dTDPr_out_dt = Qr_i*TDPr_i/Vr_i
 		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(StreamTDPMass), RESULT(ReachVolume));
 	)
 	
@@ -1130,25 +993,25 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		dPPr_dt = (E_PP *
                (f_Ar*Msus_in_i['A']*(PlabA_i+P_inactive)/Msoil       # Old arable land
                 + f_IG*Msus_in_i['IG']*(PlabA_i+P_inactive)/Msoil    # Old improved grassland
-                + f_S*Msus_in_i['S']*P_inactive/Msoil)               # Semi-natural land
+                + f_S*Msus_in_i['S']*P_inactive/Msoil               # Semi-natural land
                + f_NC_Ar*Msus_in_i['A']*(PlabNC_i+P_inactive)/Msoil  # Newly-converted arable
                + f_NC_IG*Msus_in_i['IG']*(PlabNC_i+P_inactive)/Msoil # Newly-converted IG
-               + f_NC_S*Msus_in_i['S']*(PlabNC_i+P_inactive)/Msoil   # New semi-natural
+               + f_NC_S*Msus_in_i['S']*(PlabNC_i+P_inactive)/Msoil)   # New semi-natural
                + PPr_US_i                                            # Inputs from upstream 
                - Qr_i*(PPr_i/Vr_i))                                  # Reach outflow (mm/d)(kg/mm)
 		*/
-		//P_inactive = 10**-6*p_LU['S']['SoilPconc']*Msoil
+
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double P_inactive = 1e-6*PARAMETER(InitialSoilPConcentration, Seminatural)*Msoil;
 		double E_PP  = PARAMETER(PPEnrichmentFactor);
-		double Ag = (RESULT(AgriculturalSoilLabilePMass)+P_inactive) / Msoil;
+		
+		double AgriSoilP = (RESULT(AgriculturalSoilLabilePMass)+P_inactive) / Msoil;
 		double Sn = P_inactive / Msoil;
+		double Nc = (RESULT(NewlyConvertedSoilLabilePMass) + P_inactive) / Msoil;
 		
 		double f_NC_Ar = PARAMETER(LandUseProportionsNC, Arable);
 		double f_NC_IG = PARAMETER(LandUseProportionsNC, ImprovedGrassland);
 		double f_NC_S  = PARAMETER(LandUseProportionsNC, Seminatural);
-		
-		double Nc = (RESULT(NewlyConvertedSoilLabilePMass) + P_inactive) / Msoil;
 		
 		//NOTE: These are already multiplied with f_X. I.e. Esus_in_Ar is actually Esus_in_i['Ar']*f_Ar
 		double Esus_in_Ar = RESULT(ReachSedimentInputCoefficient, Arable);
@@ -1157,10 +1020,11 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		
 		//NOTE: RESULT(ReachSedimentInputCoefficient, Arable) = Esus_i['A']*f_A   etc.
 		// Msus_in_i = Esus_i * Qr_i**k_M
-		double coeff = pow(RESULT(ReachFlow), PARAMETER(SedimentInputNonlinearCoefficient));
-		double sedimentinput =
+		double flowfromland = ConvertM3PerSecondToMmPerDay(RESULT(ReachFlowInputFromLand), PARAMETER(CatchmentArea));
+		double coeff = pow(flowfromland, PARAMETER(SedimentInputNonlinearCoefficient));
+		double catchmentinput =
 			E_PP * (
-			  (Esus_in_Ar*(1.0 - f_NC_Ar) + Esus_in_IG*(1.0 - f_NC_IG))*Ag
+			  (Esus_in_Ar*(1.0 - f_NC_Ar) + Esus_in_IG*(1.0 - f_NC_IG))*AgriSoilP
 		     + Esus_in_S * (1.0 - f_NC_S) * Sn
 			 + (Esus_in_Ar * f_NC_Ar + Esus_in_IG * f_NC_IG + Esus_in_S * f_NC_S) * Nc
 			) * coeff;
@@ -1170,20 +1034,28 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 			upstreamflux += RESULT(DailyMeanStreamPPFlux, *Input);
 		)
 		return
-			  sedimentinput
+			  catchmentinput
 			+ upstreamflux
 			- RESULT(StreamPPFlux);
 	)
 	
 	
 	// Post-processing equations (mostly unit conversions)
-	
+
+	auto DailyMeanStreamTPFlux = RegisterEquation(Model, "Reach daily mean TP flux", KgPerDay);
+	auto DailyMeanStreamSRPFlux = RegisterEquation(Model, "Reach daily mean SRP flux", KgPerDay);
 	auto TDPConcentration = RegisterEquation(Model, "Reach TDP concentration", MgPerL); //Volume-weighted daily mean
 	auto PPConcentration  = RegisterEquation(Model, "Reach PP concentration", MgPerL); //Volume-weighted daily mean
-	auto DailyMeanStreamTPFlux = RegisterEquation(Model, "Reach daily mean TP flux", KgPerDay);
 	auto TPConcentration  = RegisterEquation(Model, "Reach TP concentration", MgPerL); //Volume-weighted daily mean
-	auto DailyMeanStreamSRPFlux = RegisterEquation(Model, "Reach daily mean SRP flux", KgPerDay);
 	auto SRPConcentration = RegisterEquation(Model, "Reach SRP concentration", MgPerL); //Volume-weighted daily mean
+
+	EQUATION(Model, DailyMeanStreamTPFlux,
+		return RESULT(DailyMeanStreamTDPFlux) + RESULT(DailyMeanStreamPPFlux);
+	)
+	
+	EQUATION(Model, DailyMeanStreamSRPFlux,
+		return RESULT(DailyMeanStreamTDPFlux) * PARAMETER(SRPFraction);
+	)
 	
 	EQUATION(Model, TDPConcentration,
 		//Converting flow m3/s->m3/day, and converting kg/m3 to mg/l. TODO: make conversion functions
@@ -1195,16 +1067,8 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		return 1e3 * SafeDivide(RESULT(DailyMeanStreamPPFlux), 86400.0 * RESULT(DailyMeanReachFlow));
 	)
 	
-	EQUATION(Model, DailyMeanStreamTPFlux,
-		return RESULT(DailyMeanStreamTDPFlux) + RESULT(DailyMeanStreamPPFlux);
-	)
-	
 	EQUATION(Model, TPConcentration,
 		return RESULT(TDPConcentration) + RESULT(PPConcentration);
-	)
-	
-	EQUATION(Model, DailyMeanStreamSRPFlux,
-		return RESULT(DailyMeanStreamTDPFlux) * PARAMETER(SRPFraction);
 	)
 	
 	EQUATION(Model, SRPConcentration,
