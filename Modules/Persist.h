@@ -254,9 +254,13 @@ AddPersistModel(mobius_model *Model)
 		for(index_t OtherSoil = CURRENT_INDEX(SoilBoxes) + 1; OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
 		{
 			double mpi = Min(PARAMETER(Infiltration, OtherSoil, LU), (PARAMETER(MaximumCapacity, OtherSoil, LU) - RESULT(WaterDepth3, OtherSoil))); //NOTE: RESULT(WaterDepth3, OtherSoil) has not been computed yet, and so will be 0. In fact, it depends on values computed in this equation (mainly RESULT(PercolationInput, OtherSoil), and so can not possibly be computed before this unless the model structure is rewritten. TODO: Do something else here, maybe use LAST_RESULT(WaterDepth, OtherSoil) or similar.
+			
 			double perc = Min(mpi * PARAMETER(RelativeAreaIndex, OtherSoil, LU) / relativeareaindex,
 				PARAMETER(PercolationMatrix, OtherSoil) * totalrunoff);
-			perc = Min(perc, RESULT(WaterDepth3));
+			
+			perc = Min(perc + percolationOut, RESULT(WaterDepth3));
+			perc = Max(perc - percolationOut, 0.0);
+			
 			percolationOut += perc;
 			
 			//TODO: Setting the result of another equation from this equation is a bad way to do it.... It obfuscates the execution order of equations.
