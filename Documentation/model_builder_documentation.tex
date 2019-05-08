@@ -731,6 +731,21 @@ There are a couple of things to be aware of when referencing {\tt RESULT}s insid
 \item You can not reference the {\tt RESULT} of an equation that is in a later batch. You can also not reference the {\tt RESULT} of an equation that comes in a previous batch \emph{unless} you use explicit indexing. This is an implementation limitation. If this is something that causes big problems for users, this is something we could try to improve. Note that this is again something you just have to be aware of while building the model, since the batch structure may not be apparent until a large part of the model has come together. You will usually not get error messages if you reference results that are not "available", but you may get a 0 or a result that is misindexed.
 \end{enumerate}
 
+\subsubsection{Computed parameters (experimental feature)}
+
+If you have a value in the model that you know can be computed based on other parameters and will not change during model run, you can have this value as a computed parameter. Register it as a parameter in the usual way, then call {\tt ParameterIsComputedBy}.
+
+\begin{example}
+\begin{lstlisting}[style=mycpp]
+auto SoilMass = RegisterParameterDouble(Model, Land, "Soil mass", KgPerKm2, 1e6);
+ParameterIsComputedBy(Model, SoilMass, SoilMassComputation, true);
+\end{lstlisting}
+\end{example}
+
+In the above example {\tt SoilMassComputation} is an initial value equation. This initial value equation can only refer to the value of other parameters in its equation body, never the value of other equations or inputs. The last boolean argument to the {\tt ParameterIsComputedBy} call, if {\tt true}, says that this parameter should never be exposed in parameter files (or be editable in GUIs).
+
+The step to compute parameters is executed right before the step that initializes the initial values of all equations. The initial value equation for the parameter is evaluated once for each instance of the parameter regardless of what index set dependencies the equation itself has. Right now it is not safe for this equation to depend on the value of other computed parameters since we don't sort the computations in order of dependencies for these.
+
 \subsection{Advanced value accesses}\label{sec:advancedaccess}
 
 \subsubsection{Special state values}
@@ -763,7 +778,8 @@ EQUATION(Model, PercolationOut,
 	{
 		double mpi = PARAMETER(Infiltration, OtherSoil);
 		double perc = Min(mpi, PARAMETER(PercolationMatrix, OtherSoil) * RESULT(TotalRunoff));
-		percolationOut += Min(perc, RESULT(WaterDepth3));
+		
+		percolationOut = Min(perc + percolationOut, RESULT(WaterDepth3));
 	}
 	return percolationOut;
 )

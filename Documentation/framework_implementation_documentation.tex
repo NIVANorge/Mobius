@@ -147,7 +147,7 @@ Say that this was a very simplified model building system where each parameter o
 
 \subsection{Equation bodies and the value set accessor}
 
-An equation body is a (C++11) lambda function that is tied to a registered equation. If evaluated, this lambda will give the value of this equation given the values of parameters, and other things the equation accesses to produce its value.
+An equation body is a (C++11) lambda function that is tied to a registered equation (i.e. to an equation handle). If evaluated, this lambda will give the value of this equation given the values of parameters, and other things the equation accesses to produce its value.
 
 \begin{example}
 If you during model registration provide the code
@@ -166,7 +166,7 @@ SetEquation(Model, MyEquationHandle,
 );
 \end{lstlisting}
 \end{example}
-The {\tt SetEquation} function just stores this lambda in the {\tt Model->Equations} vector at the index {\tt MyEquationHandle.Handle}. This way the model knows what equation lambda is tied to what equation handle, and it can evaluate this lambda later during model run.
+The {\tt SetEquation} function just stores the lambda in {\tt Model->Equations[MyEquationHandle.Handle]}. This way the model knows what equation lambda is tied to what equation handle, and it can evaluate this lambda later during the model run.
 
 The {\tt value\_set\_accessor *ValueSet\_\_} is an object that contains whatever information the equation needs to look up in order to find the values it needs (more on this below). The model has to set up this value set accessor with the right information when it wants to evaluate the equation lambda, and this will typically change when indexes or timesteps are changed.
 
@@ -182,18 +182,46 @@ expands to
 SetEquation(Model, MyEquationHandle,
 [=](value_set_accessor *ValueSet__)
 {
-	return (ValueSet__->Running ? GetParameterValue(ValueSet__, MyParameter) : RegisterParameterDependency(ValueSet__, MyParameter));
+	return (ValueSet__->Running ? GetCurrentParameter(ValueSet__, MyParameter) : RegisterParameterDependency(ValueSet__, MyParameter));
 }
 );
 \end{lstlisting}
 \end{example}
-We will get back to what {\tt ValueSet\_\_->Running} and {\tt RegisterParameterDependency} do later. What is important is that when the lambda is called, the model has set up the {\t t ValueSet\_\_} object so that {\tt GetParameterValue} returns the value associated to the {\tt MyParameter} handle given the status of the index sets that the equation is evaluated under.
+We will get back to what {\tt ValueSet\_\_->Running} and {\tt RegisterParameterDependency} do later. What is important is that when the lambda is called, the model has set up the {\tt ValueSet\_\_} object so that {\tt GetCurrentParameter} returns the value associated to the {\tt MyParameter} handle given the status of the index sets that the equation is evaluated under.
 
 The reason why we use macros instead of just making the model builder type this code straight up is that we want to hide the value set accessor as an implementation detail. It is also easier  to make sure the values are accessed in a correct manner this way.
 
-Accessing values of {\tt RESULT} {\tt LAST\_RESULT} and {\tt INPUT} work in a similar way.
+Accessing values using {\tt RESULT} {\tt LAST\_RESULT} and {\tt INPUT} work in a similar way.
 
-This already showcases why we wanted to wrap the entity handles in typed structs. If you call {\tt GetParameterValue} on an input handle, this will make the type system of C++ give you an error, and so many mistakes can be prevented this way. Moreover, {\tt GetParameterValue} is overloaded to return a different type that matches the type of the parameter (double, uint, boolean).
+This already showcases why we wanted to wrap the entity handles in typed structs. If you call {\tt GetCurrentParameter} on an input handle, this will make the type system of C++ give you an error, and so many mistakes can be prevented this way. Moreover, {\tt GetCurrentParameter} is overloaded to return a different type that matches the type of the parameter (double, uint, boolean).
+
+\subsection{Dependency registration and model structure}
+
+This section is about what happens when you call {\tt EndModelDefinition} on a model.
+
+First it sets up a {\tt value\_set\_accessor *ValueSet} with {\tt ValueSet->Running = false}. For each equation handle {\tt Handle} it will then call the lambda tied to this handle using
+\begin{lstlisting}[style=mycpp]
+Model->Equations[Handle](ValueSet)
+\end{lstlisting}
+Since {\tt ValueSet->Running == false} we are in registration mode, and all the accesses the equation body does using e.g. {\tt PARAMETER}, {\tt INPUT} or {\tt RESULT} will instead of extracting those values for use in the evaluation of the equation, call a registration function such as {\tt RegisterParameterDependency}. The registration functions store information in the ValueSet about what accesses were made. This means that the {\tt ValueSet} now contains information about what parameters, results and inputs etc. this equation accessed, and how it accessed them (implicit or explicit indexing and with what explicit indexes). This will then be used to set up the batch structure of the model.
+
+After storing such information for every equation, we can now figure out the dependencies of every equation. First one can let each equation inherit the index set dependencies of the parameters and inputs it accesses. Then they have to inherit dependencies from other equations. This step has to be run potentially many times since index set dependencies could be inherited down many steps of equations depending on each other.
+
+Finally the model batch structure is determined. This is a complex many-step process. What it tries to do is explained in the section "Determining the batch structure of advanced models" in the model builder documentation. That section does however not explain the implementation of the algorithm.
+
+TODO: Give a short description of the chosen algorithm here.
+
+Finally, {\tt EndModelDefinition} stores some data with the batch structure that allows {\tt RunModel} to be more efficient with how it updates the {\tt ValueSet} during the main model run. More about that later.
+
+\subsection{The main value storage in the dataset}
+
+The {\tt mobius\_data\_set} has a buffer that stores all the parameter data in contiguous memory. This is the {\tt DataSet->ParameterData} array. Similarly there is a {\tt DataSet->InputData} array and a {\tt DataSet->ResultData} array that store all input data and result data respectively. The reason why we choose to store them in contiguous memory instead of for instance having one array for each input where we store the timeseries for that input is that we try to have a storage strategy where we avoid cache misses as much as possible.
+
+To summarize briefly, most modern processors have 2-3 levels of memory caches (L1, L2 and L3). The L1 cache is fairly small but is extremely fast to access. When the processor wants to access something from memory it brings it from main memory to the L1 cache, but not only that, it also brings a segment of memory around what you accessed down to the cache. The next time the processor wants to access something from that segment, it can just look to the L1 cache. It is important to know that on modern machines, access from main memory (often called a cache miss if it can't find it in one of the caches), can be 100 times slower than an access from the L1 cache. Since the L1 cache is small, it will replace what is there by new things it brings in, and so you can get more cache misses if your accesses jump around a lot in memory. When a segment is brought to the L1 cache, a larger segment is also brought to the L2 cache (which is larger but a little slower), so even if you get a L1 cache miss, you may be lucky and find it in the L2 cache and not lose that much time any way. Similarly, there is sometimes an even larger but slightly slower L3 cache.
+
+This means that if you can place things that you know are going to be accessed close together in time also close together in memory, your program can potentially get a lot faster. This is a very important optimization technique in time-critical programs. TODO: Find a good reference for this.
+
+\subsection{More on the value set accessor system}
 
 
 
