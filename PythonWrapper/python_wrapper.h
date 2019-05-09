@@ -510,6 +510,110 @@ DllGetInputIndexSets(void *DataSetPtr, char *InputName, const char **NamesOut)
 }
 
 DLLEXPORT u64
+DllGetParameterGroupIndexSetsCount(void *DataSetPtr, char *ParameterGroupName)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	parameter_group_h ParameterGroup = GetParameterGroupHandle(DataSet->Model, ParameterGroupName);
+	u64 Count = 0;
+	
+	while(IsValid(ParameterGroup))
+	{
+		const parameter_group_spec &Spec = DataSet->Model->ParameterGroupSpecs[ParameterGroup.Handle];
+		if(IsValid(Spec.IndexSet)) ++Count;
+		ParameterGroup = Spec.ParentGroup;
+	}
+	
+	return Count;
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
+DLLEXPORT void
+DllGetParameterGroupIndexSets(void *DataSetPtr, char *ParameterGroupName, const char **NamesOut)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	parameter_group_h ParameterGroup = GetParameterGroupHandle(DataSet->Model, ParameterGroupName);
+	
+	size_t Idx = 0;
+	while(IsValid(ParameterGroup))
+	{
+		const parameter_group_spec &Spec = DataSet->Model->ParameterGroupSpecs[ParameterGroup.Handle];
+		if(IsValid(Spec.IndexSet))
+		{
+			NamesOut[Idx] = GetName(DataSet->Model, Spec.IndexSet);
+			++Idx;
+		}
+		ParameterGroup = Spec.ParentGroup;
+	}
+	
+	CHECK_ERROR_END
+}
+
+DLLEXPORT u64
+DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ParentGroupName)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	const mobius_model *Model = DataSet->Model;
+	
+	parameter_group_h ParentGroup = {0};
+	if(ParentGroupName && strlen(ParentGroupName) > 0)
+	{
+		ParentGroup = GetParameterGroupHandle(Model, ParentGroupName);
+	}
+	
+	u64 Count = 0;
+	
+	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->FirstUnusedParameterGroupHandle; ++ParameterGroupHandle)
+	{
+		const parameter_group_spec &Spec = Model->ParameterGroupSpecs[ParameterGroupHandle];
+		if(!IsValid(ParentGroup) || ParentGroup == Spec.ParentGroup) ++Count;
+	}
+	
+	return Count;
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
+DLLEXPORT void
+DllGetAllParameterGroups(void *DataSetPtr, const char **NamesOut, const char *ParentGroupName)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	const mobius_model *Model = DataSet->Model;
+	
+	parameter_group_h ParentGroup = {0};
+	if(ParentGroupName && strlen(ParentGroupName) > 0)
+	{
+		ParentGroup = GetParameterGroupHandle(Model, ParentGroupName);
+	}
+	
+	size_t Idx = 0;
+	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->FirstUnusedParameterGroupHandle; ++ParameterGroupHandle)
+	{
+		const parameter_group_spec &Spec = Model->ParameterGroupSpecs[ParameterGroupHandle];
+		if(!IsValid(ParentGroup) || ParentGroup == Spec.ParentGroup)
+		{
+			NamesOut[Idx] = Spec.Name;
+			++Idx;
+		}
+	}
+	
+	CHECK_ERROR_END
+
+}
+
+DLLEXPORT u64
 DllGetAllParametersCount(void *DataSetPtr, const char *GroupName)
 {
 	CHECK_ERROR_BEGIN
