@@ -46,10 +46,10 @@ parameters:
 false
 
 "Reach sediment input scaling factor" :     #(kg/mm) [0, 100000] Calibrated parameter linking simulated sediment to simulated discharge
-630
+16 # Uncalibrated
 
 "Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5]
-2
+2 # Uncalibrated
 
 "Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
 60
