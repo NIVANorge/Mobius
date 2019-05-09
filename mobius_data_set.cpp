@@ -15,7 +15,7 @@ GenerateDataSet(mobius_model *Model)
 	DataSet->IndexCounts = AllocClearedArray(index_t, Model->FirstUnusedIndexSetHandle);
 	DataSet->IndexCounts[0] = index_t({0}, 1);
 	DataSet->IndexNames = AllocClearedArray(const char **, Model->FirstUnusedIndexSetHandle);
-	DataSet->IndexNamesToHandle.resize(Model->FirstUnusedIndexSetHandle, {});
+	DataSet->IndexNamesToHandle.resize(Model->FirstUnusedIndexSetHandle);
 	
 	DataSet->BranchInputs = AllocClearedArray(branch_inputs *, Model->FirstUnusedIndexSetHandle);
 	
