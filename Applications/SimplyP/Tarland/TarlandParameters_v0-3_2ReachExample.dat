@@ -48,7 +48,7 @@ parameters:
 true
 
 "Reach sediment input scaling factor" :     #(kg/mm) [0, 100000] Calibrated parameter linking simulated sediment to simulated discharge
-86 #1500 in v0.2, multiplied by 57 to account for change in reach slope units from degrees (0.8) to m/m (0.0140), and factored out factor of 1000
+16 #Changed lots compared to v0.2
 
 "Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5]
 2

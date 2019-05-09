@@ -1,12 +1,24 @@
 SimplyP summary of development history
 
--------------------------------------------------------------
-Initial model developed autumn-winter 2015. Released as v0.1 (alpha)
+###############################################################################################
+08/05/2019	Release of version 0.3 (alpha)
 
-Subsequent changes to v0.1A (also implemented in v0.2):
+This version is only available in the mobius version. Further development of the Python version is not planned.
 
-- Bug fix: Flow into the current reach from upstream reaches had incorrect area scaling.
-- Bug fix: Fraction of newly converted land was missing from a number of ODEs, now added in. This bug would only have affected model setups with newly-converted land.
+Main updates compared to version 0.2 (see simply.h for details; https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h):
+
+- Reformulated the reach flow equation:
+	- Replaced the stream velocity equation, which previously was only a function of two parameters a_Q and b_Q (the gradient and exponent of the reach velocity-discharge relationship (v=aQ^b), with a version of Manning's equation. See SimplyP.h for more details. Reach slope is now taken into account when calculating the reach flow velocity.
+	- As a result, the parameter file no longer includes a_Q and b_Q, and instead has Manning's coefficient.
+	- Replaced the reach flow ODE with an explicit equation
+	
+- Converted the instream hydrology units from being based on mm (volume) or mm/day (for flows) to m3 and m3/day. This is conceptually simpler.
+
+- Redid the initial groundwater volume calculation so that it produces sensible results in branched river systems (see simplyp.h for details)
+
+- Changed the reach sediment input equation (ReachSedimentInput) so that it is a power law with the flow to the reach from land, rather than the total reach flow (i.e. doesn't take into account upstream flow). This is to prevent a steady increase down the catchment as discharge increases (given the decision to use global variables to define the rating curve between flow and suspended sediment concentration). Will likely need revisiting in the future, but for now performs as well as the previous formulation. Needs testing in a catchment with good sub-catchment suspended sediment data.
+ 
+- NOTE: because of the change in this equation, and the change in the reach flow units, the Reach sediment input scaling factor needs recalibrating.
 
 #############################################################################
 Release v0.2 (alpha), 02/2019
@@ -72,20 +84,11 @@ Python version:
 - Added new function plot_instream_summed to plot the results from summing reach inputs to look at simulated total discharge and averaged concentrations to receiving waterbody.
 - goodness_of_fit_stats: don’t try to calculate if don’t have any observations (len(obs_dict)<=0).
 
+
 ###############################################################################################
-08/05/2019	Release of version 0.3 (alpha)
+Initial model developed autumn-winter 2015. Released as v0.1 (alpha)
 
-This version is only available in the mobius version. Further development of the Python version is not planned.
+Subsequent changes to v0.1A (also implemented in v0.2):
 
-Main updates compared to version 0.2 (see simply.h for details; https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h):
-
-- Reformulated the reach flow equation:
-	- Replaced the stream velocity equation, which previously was only a function of two parameters a_Q and b_Q (the gradient and exponent of the reach velocity-discharge relationship (v=aQ^b), with a version of Manning's equation. See SimplyP.h for more details. Reach slope is now taken into account when calculating the reach flow velocity.
-	- As a result, the parameter file no longer includes a_Q and b_Q, and instead has Manning's coefficient.
-	- Replaced the reach flow ODE with an explicit equation
-	
-- Converted the instream hydrology units from being based on mm (volume) or mm/day (for flows) to m3 and m3/day. This is conceptually simpler.
-
-- Redid the initial groundwater volume calculation so that it produces sensible results in branched river systems (see simplyp.h for details)
-
-- Bug fix in the reach suspended sediment calculation. This would only have affected applications with more than one sub-catchment/reach
+- Bug fix: Flow into the current reach from upstream reaches had incorrect area scaling.
+- Bug fix: Fraction of newly converted land was missing from a number of ODEs, now added in. This bug would only have affected model setups with newly-converted land.
