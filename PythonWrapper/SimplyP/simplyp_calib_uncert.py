@@ -4,9 +4,9 @@ import pickle
 from scipy.stats import norm
 
 # Initialise wrapper
-wrapper_fpath = (r"..\mobius.py")
+wrapper_fpath = (r"../mobius.py")
 wr = imp.load_source('mobius', wrapper_fpath)
-wr.initialize('simplyp.dll')
+wr.initialize('../../Applications/SimplyP/simplyp.dll')
 
 # Calibration functions
 calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
@@ -59,13 +59,13 @@ def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
 
 ###################################################################################################################
 
-dataset = wr.DataSet.setup_from_parameter_and_input_files('../../Applications/SimplyP/Morsa/MorsaParameters.dat', 
-                                                          '../../Applications/SimplyP/Morsa/MorsaInputs.dat')
+dataset = wr.DataSet.setup_from_parameter_and_input_files('../../Applications/SimplyP/Tarland/TarlandParameters_v0-3.dat', 
+                                                          '../../Applications/SimplyP/Tarland/TarlandInputs.dat')
 
 if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
     
     # Unpack options from pickled file
-    with open('pickled\\mcmc_settings.pkl', 'rb') as handle:
+    with open('pickled/mcmc_settings.pkl', 'rb') as handle:
         settings_dict = pickle.load(handle)
 
     params = settings_dict['params']
