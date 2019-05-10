@@ -204,6 +204,10 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		
 		double fromotherclasses = 0.0;
 		
+		//MNF20190510 Consider the following change for bi-directional mass transfer, if I am correct, it will allow for all
+		//off-diagonal possibilities, it does not contain any error or logic checking so the user would still have to make sensible choices 
+		//about values to include in the matrix
+		//for(index_t OtherClass = FIRST_INDEX(Class); OtherClass != INDEX_COUNT(Class); ++OtherClass)
 		for(index_t OtherClass = FIRST_INDEX(Class); OtherClass < INDEX_COUNT(Class); ++OtherClass)
 		{
 			double otherclassmass = RESULT(SurfaceGrainStoreAfterAllTransport, OtherClass);
@@ -212,6 +216,9 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		
 		double tootherclasses = 0.0;
 		
+		//MNF20190510 Consider the following change for bi-directional mass transfer, if I am correct, it will allow for all
+		//off-diagonal possibilities
+		//for(index_t OtherClass = FIRST_INDEX(Class); OtherClass != INDEX_COUNT(Class); ++OtherClass)
 		for(index_t OtherClass = FIRST_INDEX(Class); OtherClass < INDEX_COUNT(Class); ++OtherClass)
 		{
 			tootherclasses += PARAMETER(LandMassTransferRateBetweenClasses, CURRENT_INDEX(Class), OtherClass) * aftertransport;
@@ -269,6 +276,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto InitialMassOfBedGrainPerUnitArea = RegisterParameterDouble(Model, SedimentReach, "Initial mass of bed grain per unit area", KgPerM2, 10);
 	auto InitialSuspendedGrainMass        = RegisterParameterDouble(Model, SedimentReach, "Initial suspended grain mass", Kg, 1e2);
 	
+	//MNF20190510 - I like the idea of not implementing bank erosion as it only makes sense under some circumstances and introduces 
+	//unnecessary complexity into the model
 	//auto BankErosionScalingFactor        = RegisterParameterDouble(Model, Reaches, "Bank erosion scaling factor", KgPerM2PerM3SPerDay, 1.0);
 	//auto BankErosionNonlinearCoefficient = RegisterParameterDouble(Model, Reaches, "Bank erosion non-linear coefficient", Dimensionless, 1.0);
 	auto ShearVelocityCoefficient        = RegisterParameterDouble(Model, Reaches, "Shear velocity coefficient", Dimensionless, 1.0);
@@ -332,6 +341,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		return 86400.0 * RESULT(SuspendedGrainMass) * SafeDivide(RESULT(ReachFlow), RESULT(ReachVolume));
 	)
 	
+        //MNF02190510 - not implementing this seems like the most sensible way to go
 	/*
 	EQUATION(Model, ClayReleaseFromChannelBanks,
 		return PARAMETER(BankErosionScalingFactor) * pow(RESULT(ReachFlow), PARAMETER(BankErosionNonlinearCoefficient));
