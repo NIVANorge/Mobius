@@ -9,7 +9,7 @@ wr = imp.load_source('mobius', wrapper_fpath)
 wr.initialize('../../Applications/SimplyP/simplyp.dll')
 
 # Calibration functions
-calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
+calib_fpath = (r"../mobius_calib_uncert_lmfit.py")
 cu = imp.load_source('mobius_calib_uncert_lmfit', calib_fpath)
 
 def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
