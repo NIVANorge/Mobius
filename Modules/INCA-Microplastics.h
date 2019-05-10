@@ -42,6 +42,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	//TODO : Find default/min/max/description for these
 	
 	//TODO: Some of these should probably also be per grain class
+	//MNF20190510 - yes, "per grain class" would make sense
 	auto FlowErosionScalingFactor               = RegisterParameterDouble(Model, Reaches, "Flow erosion scaling factor", SPerM2, 1.0);
 	auto FlowErosionDirectRunoffThreshold       = RegisterParameterDouble(Model, Reaches, "Flow erosion direct runoff threshold", M3PerSPerKm2, 0.001);
 	auto FlowErosionNonlinearCoefficient        = RegisterParameterDouble(Model, Reaches, "Flow erosion non-linear coefficient", Dimensionless, 1.0);
@@ -63,6 +64,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto SmallestDiameterOfClass        = RegisterParameterDouble(Model, GrainClass, "Smallest diameter of grain in class", Metres, 0.0, 0.0, 2e3);
 	auto LargestDiameterOfClass         = RegisterParameterDouble(Model, GrainClass, "Largest diameter of grain in class", Metres, 2e-6);
 	auto DensityOfClass                 = RegisterParameterDouble(Model, GrainClass, "Density of grain class", KgPerM3, 1000.0);
+	//MNF2090510
+	auto ImmobileToProtected            = RegisterParameterDouble(Model, GrainClass, "Rate at which particles become unavailable for erosion", Dimensionless, 0.0, 0.0, 1.0);
 	
 	auto Land = GetParameterGroupHandle(Model, "Landscape units");
 	auto VegetationIndex                        = RegisterParameterDouble(Model, Land, "Vegetation index", Dimensionless, 1.0); //Could this be the same as the canopy interception though?
@@ -74,6 +77,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto SplashDetachmentSoilErodibility        = RegisterParameterDouble(Model, SedimentLand, "Splash detachment soil erodibility", KgPerM2PerS, 1.0);
 	auto InitialSurfaceStore                    = RegisterParameterDouble(Model, SedimentLand, "Initial surface grain store", KgPerKm2, 100.0);
 	auto InitialImmobileStore                   = RegisterParameterDouble(Model, SedimentLand, "Initial immobile grain store", KgPerKm2, 100.0);
+	//MNF20190510
+	auto InitialProtectedStore                  = RegisterParameterDOuble(Model, SedimentLand, "Initial protected grain store", KgPerKm2, 100.0);
 	auto GrainInput                             = RegisterParameterDouble(Model, SedimentLand, "Grain input to land", KgPerKm2PerDay, 0.0);
 	
 	
@@ -93,6 +98,10 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto TransportBeforeFlowErosion   = RegisterEquation(Model, "Transport before flow erosion", KgPerKm2PerDay);
 	auto PotentiallyMobilisedViaFlowErosion = RegisterEquation(Model, "Grain mass potentially mobilised via flow erosion", KgPerKm2PerDay);
 	auto MobilisedViaFlowErosion      = RegisterEquation(Model, "Grain mass mobilised via flow erosion", KgPerKm2PerDay);
+	
+	//MNF20190510
+	auto ProtectedGrainStore = RegisterEquation(Model, "Immobile Grain Store rendered premanently inaccessible", KgPerKm2PerDay);
+	SetInitialValue(Model, ProtectedGrainStore, InitialProtectedGrainStore);
 	
 	auto SurfaceGrainStoreAfterAllTransport = RegisterEquation(Model, "Surface grain store after transport", KgPerKm2);
 	auto SurfaceGrainStoreMassTransferFromOtherClasses = RegisterEquation(Model, "Mass transfer to and from other classes in the surface grain store", KgPerKm2PerDay);
@@ -124,6 +133,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	)
 	
 	//TODO: Documentation says this should use Reffq = "effective precipitation". Is that the same as rainfall? Or rainfall + snowmelt?
+	//MNF20190510 This is a little tricky as splash detachment should probably only be driven by actual rainfall. Snowmelt does not have the 
+	//gravitaitonal energy to induce splash detachment
 	EQUATION(Model, MobilisedViaSplashDetachment,
 		double Reffq = RESULT(Rainfall) / 86.4;
 		double SSD = 86400.0 * PARAMETER(SplashDetachmentScalingFactor) * Reffq * pow(PARAMETER(SplashDetachmentSoilErodibility), 10.0 / (10.0 - PARAMETER(VegetationIndex)));
@@ -132,6 +143,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	
 	EQUATION(Model, SurfaceGrainStoreBeforeTransport,
 		//TODO: Should we also allow inputs to the surface store?
+		//MNF20190510 - we could go either way on this as we have a way of getting mucroplastics into the system. Having a way to 
+		//add material to the surface store could be useful if, e.g., we wanted to add atmospheric deposition of microplastics
 		return LAST_RESULT(SurfaceGrainStore) + RESULT(MobilisedViaSplashDetachment);
 	)
 	
