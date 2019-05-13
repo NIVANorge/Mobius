@@ -1656,6 +1656,7 @@ RunModel(mobius_data_set *DataSet)
 	
 	DataSet->HasBeenRun = true;
 	DataSet->TimestepsLastRun = Timesteps;
+	DataSet->StartDateLastRun = ModelStartTime;
 }
 
 static void

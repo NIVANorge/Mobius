@@ -81,11 +81,25 @@ DllGetTimesteps(void *DataSetPtr)
 {
 	CHECK_ERROR_BEGIN
 	
-	return GetTimesteps((mobius_data_set *)DataSetPtr);
+	return ((mobius_data_set *)DataSetPtr)->TimestepsLastRun;
 	
 	CHECK_ERROR_END
 	
 	return 0;
+}
+
+DLLEXPORT void
+DllGetStartDate(void *DataSetPtr, char *WriteTo)
+{
+	CHECK_ERROR_BEGIN
+	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 11-12-ish bytes)
+	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	char *TimeStr = DataSet->StartDateLastRun.ToString();
+	strcpy(WriteTo, TimeStr);
+	
+	CHECK_ERROR_END
 }
 
 DLLEXPORT u64
@@ -449,6 +463,9 @@ DllGetResultIndexSetsCount(void *DataSetPtr, char *ResultName)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->ResultStorageStructure.HasBeenSetUp) return 0;
+	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
 	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
 	return DataSet->ResultStorageStructure.Units[UnitIndex].IndexSets.size();
@@ -464,6 +481,9 @@ DllGetResultIndexSets(void *DataSetPtr, char *ResultName, const char **NamesOut)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->ResultStorageStructure.HasBeenSetUp) return;
+	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
 	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
 	size_t Idx = 0;

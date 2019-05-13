@@ -448,6 +448,7 @@ struct mobius_data_set
 
 	bool HasBeenRun;
 	u64 TimestepsLastRun;
+	datetime StartDateLastRun;
 	
 	
 	~mobius_data_set();

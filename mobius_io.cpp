@@ -115,7 +115,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	fprintf(File, "# Parameter file generated for %s V%s", Model->Name, Model->Version);
 	
 	//NOTE: put_time is not implemented before gcc version 5
-#if defined(GCC_VERSION) && GCC_VERSION >= 5
+#if defined(GCC_VERSION) && GCC_VERSION >= 50000
 	{
 		auto T = std::time(nullptr);
 		auto TM = *std::localtime(&T);

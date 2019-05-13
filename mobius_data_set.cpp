@@ -33,6 +33,8 @@ GenerateDataSet(mobius_model *Model)
 	DataSet->ResultStorageStructure.Model    = Model;
 	DataSet->ResultStorageStructure.Type     = EntityType_Equation;
 	
+	DataSet->TimestepsLastRun = 0;
+	
 	return DataSet;
 }
 
