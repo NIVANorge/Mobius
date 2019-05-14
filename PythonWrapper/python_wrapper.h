@@ -116,6 +116,20 @@ DllGetInputTimesteps(void *DataSetPtr)
 }
 
 DLLEXPORT void
+DllGetInputStartDate(void *DataSetPtr, char *WriteTo)
+{
+	CHECK_ERROR_BEGIN
+	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 11-12-ish bytes)
+	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	char *TimeStr = GetInputStartDate(DataSet).ToString();
+	strcpy(WriteTo, TimeStr);
+	
+	CHECK_ERROR_END
+}
+
+DLLEXPORT void
 DllGetResultSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCount, double *WriteTo)
 {
 	CHECK_ERROR_BEGIN
@@ -337,20 +351,6 @@ DllGetResultUnit(void *DataSetPtr, char *Name)
 }
 
 DLLEXPORT void
-DllGetInputStartDate(void *DataSetPtr, char *WriteTo)
-{
-	CHECK_ERROR_BEGIN
-	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 11-12-ish bytes)
-	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
-	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	
-	char *TimeStr = GetInputStartDate(DataSet).ToString();
-	strcpy(WriteTo, TimeStr);
-	
-	CHECK_ERROR_END
-}
-
-DLLEXPORT void
 DllWriteParametersToFile(void *DataSetPtr, char *Filename)
 {
 	CHECK_ERROR_BEGIN
@@ -502,8 +502,11 @@ DllGetInputIndexSetsCount(void *DataSetPtr, char *InputName)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->InputStorageStructure.HasBeenSetUp) return 0;
+	
 	input_h Input = GetInputHandle(DataSet->Model, InputName);
-	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Input.Handle];
+	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
 	return DataSet->InputStorageStructure.Units[UnitIndex].IndexSets.size();
 	
 	CHECK_ERROR_END
@@ -517,8 +520,11 @@ DllGetInputIndexSets(void *DataSetPtr, char *InputName, const char **NamesOut)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->InputStorageStructure.HasBeenSetUp) return;
+	
 	input_h Input = GetInputHandle(DataSet->Model, InputName);
-	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Input.Handle];
+	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
 	size_t Idx = 0;
 	for(index_set_h IndexSet : DataSet->InputStorageStructure.Units[UnitIndex].IndexSets)
 	{
