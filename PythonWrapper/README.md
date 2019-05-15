@@ -34,15 +34,15 @@ After downloading Anaconda, open up the Anaconda prompt (an enhanced command lin
 
 1. create a new environment (you can replace 'mobius' with the name environment name of your choice)
 
-    conda create -n mobius python=3.6
+    `conda create -n mobius python=3.6`
     
 2. Activate the new environment
 
-    activate mobius
+    `activate mobius`
     
 3. Install the required packages in the new environment
 
-    conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3
+    `conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3`
 
 ### Run an example Jupyter notebook   
 
@@ -52,7 +52,7 @@ To test your installation, or whenever you want to start working with mobius thr
 
 1. Open up the Anaconda prompt and `'cd'` into the top level of your local copy of the Mobius repository and run
 
-    jupyter lab
+    `jupyter lab`
     
 2. Using the JupyterLab file browser in the left hand panel, navigate to `'PythonWrapper\SimplyP'` and then double click on `'simplyp_calibration.ipynb'` to open up the notebook. You can then work through it interactively, running cells one at a time and seeing the output they produce.
 
