@@ -28,7 +28,9 @@ Additonally, we recommend using the wrapper via JupyterLab, in which case you wi
 
 ### Installation
 
-If you don't have an up-to-date Python installation, a good option is the [Anaconda Python distribution](https://www.anaconda.com/distribution/) and the `'conda'` package manager, which allows for easy management of Python package dependencies. After downloading Anaconda, open up the Anaconda prompt (an enhanced command line window), and then:
+If you don't have an up-to-date Python installation, a good option is the [Anaconda Python distribution](https://www.anaconda.com/distribution/) and the `'conda'` package manager, which allows for easy management of Python package dependencies. It is often a good idea to download Anaconda into somewhere where there won't be any Administrator rights issues, e.g. something like C:\Data, rather than into your Program Files folder.
+
+After downloading Anaconda, open up the Anaconda prompt (an enhanced command line window), and then:
 
 1. create a new environment (you can replace 'mobius' with the name environment name of your choice)
 
