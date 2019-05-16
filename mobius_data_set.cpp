@@ -107,7 +107,7 @@ CopyStorageStructure(storage_structure &Source, storage_structure &Dest, size_t 
 }
 
 static mobius_data_set *
-CopyDataSet(mobius_data_set *DataSet)
+CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 {
 	const mobius_model *Model = DataSet->Model;
 	
@@ -126,9 +126,18 @@ CopyDataSet(mobius_data_set *DataSet)
 	
 	if(DataSet->InputTimeseriesWasProvided) Copy->InputTimeseriesWasProvided = CopyArray(bool, DataSet->InputStorageStructure.TotalCount, DataSet->InputTimeseriesWasProvided);
 	
-	//NOTE: We probably don't want to copy result data. This is copy function is meant to be used for copying a index/parameter/input set.
-	//if(DataSet->ResultData) Copy->ResultData = CopyArray(double, DataSet->ResultStorageStructure.TotalCount * (DataSet->TimestepsLastRun + 1), DataSet->ResultData);
-	//CopyStorageStructure(DataSet->ResultStorageStructure, Copy->ResultStorageStructure, Model->FirstUnusedEquationHandle);
+	if(CopyResults)
+	{
+		if(DataSet->ResultData) Copy->ResultData = CopyArray(double, DataSet->ResultStorageStructure.TotalCount * (DataSet->TimestepsLastRun + 1), DataSet->ResultData);
+		CopyStorageStructure(DataSet->ResultStorageStructure, Copy->ResultStorageStructure, Model->FirstUnusedEquationHandle);
+		Copy->TimestepsLastRun = DataSet->TimestepsLastRun;
+		Copy->StartDateLastRun = DataSet->StartDateLastRun;
+		Copy->HasBeenRun = DataSet->HasBeenRun;
+	}
+	else
+	{
+		Copy->HasBeenRun = false;
+	}
 	
 	if(DataSet->IndexCounts) Copy->IndexCounts = CopyArray(index_t, Model->FirstUnusedIndexSetHandle, DataSet->IndexCounts);
 	//TODO: This could probably be a std::vector<std::vector<std::string>>
@@ -177,8 +186,6 @@ CopyDataSet(mobius_data_set *DataSet)
 	//std::vector<size_t> FastLastResultLookup;
 	//double *x0; //NOTE: Temporary storage for use by solvers
 	//double *wk; //NOTE: Temporary storage for use by solvers
-
-	Copy->HasBeenRun = false;
 	//u64 TimestepsLastRun;
 	
 	return Copy;

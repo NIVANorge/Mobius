@@ -16,7 +16,7 @@ def initialize(dllname) :
 
 	mobiusdll.DllRunModel.argtypes = [ctypes.c_void_p]
 
-	mobiusdll.DllCopyDataSet.argtypes = [ctypes.c_void_p]
+	mobiusdll.DllCopyDataSet.argtypes = [ctypes.c_void_p, ctypes.c_bool]
 	mobiusdll.DllCopyDataSet.restype  = ctypes.c_void_p
 
 	mobiusdll.DllDeleteDataSet.argtypes = [ctypes.c_void_p]
@@ -148,17 +148,17 @@ class DataSet :
 		mobiusdll.DllRunModel(self.datasetptr)
 		check_dll_error()
 	
-	def copy(self) :
+	def copy(self, copyresults=False) :
 		'''
 		Create a copy of the dataset that contains all the same parameter values and input series. Result series will not be copied.
 		'''
-		cp = DataSet(mobiusdll.DllCopyDataSet(self.datasetptr))
+		cp = DataSet(mobiusdll.DllCopyDataSet(self.datasetptr, copyresults))
 		check_dll_error()
 		return cp
 		
 	def delete(self) :
 		'''
-		Delete all data that was allocated by the C++ code for this dataset. Interaction with the dataset after it was deleted is not recommended. Note that this will not delete the model itself, only the parameter, input and result data. This is because typically you can have multiple datasets sharing the same model (such as if you created dataset copies using dataste.copy()). There is currently no way to delete the model.
+		Delete all data that was allocated by the C++ code for this dataset. Interaction with the dataset after it was deleted is not recommended. Note that this will not delete the model itself, only the parameter, input and result data. This is because typically you can have multiple datasets sharing the same model (such as if you created dataset copies using dataset.copy()). There is currently no way to delete the model.
 		'''
 		mobiusdll.DllDeleteDataSet(self.datasetptr)
 		check_dll_error()

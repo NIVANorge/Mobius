@@ -55,11 +55,11 @@ DllRunModel(void *DataSetPtr)
 }
 
 DLLEXPORT void *
-DllCopyDataSet(void *DataSetPtr)
+DllCopyDataSet(void *DataSetPtr, bool CopyResults)
 {
 	CHECK_ERROR_BEGIN
 	
-	return (void *)CopyDataSet((mobius_data_set *)DataSetPtr);
+	return (void *)CopyDataSet((mobius_data_set *)DataSetPtr, CopyResults);
 	
 	CHECK_ERROR_END
 	
