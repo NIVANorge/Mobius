@@ -55,6 +55,8 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 
 **If the idea of compiling is offputting, and you want to just have a go with one of the pre-existing models, please get in touch and we can supply a pre-compiled executable.** Email: [magnus.norling@niva.no*]
 
+**Note**: We know getting set up is cumbersome at the moment. We plan on creating a build and install system very soon which will make things much easier.
+
 ### First download a compiler
 
 Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
@@ -104,9 +106,9 @@ INCAView is a GUI designed to provide a quick way of running models, manually ca
 
 ### Getting INCAView
 
-INCAView code is located in its own GitHub repository [here](https://github.com/Lecheps/INCAView). However, compiling INCAView is not trivial as you need to install QtCreator and also get a hold of some libssh-related .dll's. Instead of doing this yourself you should probably **ask us to get a compiled version of INCAView**: email [magnus.norling@niva.no].
+INCAView code is located in its own GitHub repository [here](https://github.com/Lecheps/INCAView). For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of INCAView. If you want to compile it yourself feel free, you need to install QtCreator and also get some libssh-related .dlls.
 
-We will find a more reliable way to distribute this soon-ish.
+**We are currently working on a new GUI, which will hopefully be ready pretty soon. Once this is available we will find a more reliable way of distributing it**
 
 ### Creating INCAView compatible .exes
 
@@ -125,6 +127,8 @@ We will find a more reliable way to distribute this soon-ish.
 
 INCAView requires a parameter database to be supplied. To create a parameter database from a parameter .dat file, from the command line type `mymodelname.exe` and hit enter (substituting your model name in). A list of options will then be printed to the command line, including one to create a parameter database file from a .dat file:
 `mymodelname.exe convert_parameters myparameters.dat myparameters.db`
+
+**Note**: The new GUI which is under development won't require this step, which will be nice. It will work directly from the parameter.dat files.
 
 ### Quick start to running a model using INCAView
 
