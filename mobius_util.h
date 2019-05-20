@@ -53,8 +53,8 @@ inline u64
 GetTimerMilliseconds(timer *Timer)
 {
 	auto End = std::chrono::high_resolution_clock::now();
-	double u64 = std::chrono::duration_cast<std::chrono::milliseconds>(End - Timer->Begin).count();
-	return u64;
+	double Ms = std::chrono::duration_cast<std::chrono::milliseconds>(End - Timer->Begin).count();
+	return (u64)Ms;
 }
 
 #define MOBIUS_UTIL_H
