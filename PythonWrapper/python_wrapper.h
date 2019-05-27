@@ -350,6 +350,28 @@ DllGetResultUnit(void *DataSetPtr, char *Name)
 	return 0;
 }
 
+DLLEXPORT const char *
+DllGetInputUnit(void *DataSetPtr, char *Name)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	input_h Input = GetInputHandle(DataSet->Model, Name);
+	const input_spec &Spec = DataSet->Model->InputSpecs[Input.Handle];
+	if(IsValid(Spec.Unit))
+	{
+		return GetName(DataSet->Model, Spec.Unit);
+	}
+	else
+	{
+		return "";
+	}
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
 DLLEXPORT void
 DllWriteParametersToFile(void *DataSetPtr, char *Filename)
 {
