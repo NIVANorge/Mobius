@@ -639,6 +639,14 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	auto PPEnrichmentFactor             = RegisterParameterDouble(Model, Phosphorous, "Particulate P enrichment factor", Dimensionless, 1.6, 1.0, 5.0, "P content of eroded material compared to P content of bulk soils");
 	auto SRPFraction                    = RegisterParameterDouble(Model, Phosphorous, "SRP fraction", Dimensionless, 0.7, 0.0, 1.0, "Factor to multiply TDP by to estimate instream SRP concentration");
 	
+	
+	// Optional timeseries that the user can use instead of the corresponding parameters.
+	auto NetAnnualPInputAgriculturalTimeseries = RegisterInput(Model, "Net annual P input to agricultural soil", KgPerHaPerYear);
+	auto NetAnnualPInputNewlyConvertedTimeseries = RegisterInput(Model, "Net annual P input to newly-converted soil", KgPerHaPerYear);
+	auto EffluentTDPTimeseries = RegisterInput(Model, "Effluent TDP inputs", KgPerDay);
+	
+	
+	
 	// Phosphorus parameters that vary by sub-catchment/reach
 	auto PhosphorousReach = RegisterParameterGroup(Model, "Phosphorous reach", Reach);
 	auto EffluentTDP                    = RegisterParameterDouble(Model, PhosphorousReach, "Reach effluent TDP inputs", KgPerDay, 0.1, 0.0, 10.0);
@@ -739,7 +747,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	EQUATION(Model, AgriculturalSoilTDPMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double b = (RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(AgriculturalSoilWaterFlow) + RESULT(InfiltrationExcess)) / LAST_RESULT(AgriculturalSoilWaterVolume);
-		double a = PARAMETER(NetAnnualPInputAgricultural) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(AgriculturalSoilWaterEPC0);
+		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputAgriculturalTimeseries, NetAnnualPInputAgricultural) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(AgriculturalSoilWaterEPC0);
 		double value = a / b + (LAST_RESULT(AgriculturalSoilTDPMass) - a / b) * exp(-b);
 		
 		if(!PARAMETER(DynamicEPC0)) return LAST_RESULT(AgriculturalSoilTDPMass);
@@ -756,7 +764,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double b0 = RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(AgriculturalSoilWaterFlow) + RESULT(InfiltrationExcess);
 		double b = b0 / LAST_RESULT(AgriculturalSoilWaterVolume);
-		double a = PARAMETER(NetAnnualPInputAgricultural) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(AgriculturalSoilWaterEPC0);
+		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputAgriculturalTimeseries, NetAnnualPInputAgricultural) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(AgriculturalSoilWaterEPC0);
 		//TODO: factor out calculations of b0, a? Would probably not matter that much to speed though.
 	
 		double sorp = RESULT(SoilPSorptionCoefficient) * Msoil * (a / b0 - RESULT(AgriculturalSoilWaterEPC0) + (LAST_RESULT(AgriculturalSoilTDPMass)/LAST_RESULT(AgriculturalSoilWaterVolume) - a/b0)*(1.0 - exp(-b))/b);
@@ -811,7 +819,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	EQUATION(Model, NewlyConvertedSoilTDPMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double b = (RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(NewlyConvertedSoilWaterFlow) + RESULT(InfiltrationExcess)) / LAST_RESULT(NewlyConvertedSoilWaterVolume);
-		double a = PARAMETER(NetAnnualPInputNewlyConverted) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(NewlyConvertedSoilWaterEPC0);
+		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputNewlyConvertedTimeseries, NetAnnualPInputNewlyConverted) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(NewlyConvertedSoilWaterEPC0);
 		
 		if(!PARAMETER(DynamicEPC0)) return LAST_RESULT(NewlyConvertedSoilTDPMass);
 		
@@ -829,7 +837,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double b0 = RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(NewlyConvertedSoilWaterFlow) + RESULT(InfiltrationExcess);
 		double b = b0 / LAST_RESULT(NewlyConvertedSoilWaterVolume);
-		double a = PARAMETER(NetAnnualPInputNewlyConverted) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(NewlyConvertedSoilWaterEPC0);
+		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputNewlyConvertedTimeseries, NetAnnualPInputNewlyConverted) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(NewlyConvertedSoilWaterEPC0);
 		//TODO: factor out calculations of b0, a? Would probably not matter that much to speed though.
 	
 		double sorp = RESULT(SoilPSorptionCoefficient) * Msoil * (a / b0 - RESULT(NewlyConvertedSoilWaterEPC0) + (LAST_RESULT(NewlyConvertedSoilTDPMass)/LAST_RESULT(NewlyConvertedSoilWaterVolume) - a/b0)*(1.0 - exp(-b))/b);
@@ -984,7 +992,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 			  fromAgriculturalSoil
 			+ fromNewlyConvertedSoil
 			+ RESULT(GroundwaterFlow) * ConvertMgPerLToKgPerMm(PARAMETER(GroundwaterTDPConcentration), PARAMETER(CatchmentArea))
-			+ PARAMETER(EffluentTDP)
+			+ IF_INPUT_ELSE_PARAMETER(EffluentTDPTimeseries, EffluentTDP)
 			+ upstreamflux
 			- RESULT(StreamTDPFlux);
 	)
