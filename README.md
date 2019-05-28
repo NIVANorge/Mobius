@@ -158,6 +158,6 @@ See the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/P
 
 Mobius is a reimplementation and extension of the functionality that was provided by the INCA Core Framework ( https://github.com/biogeochemistry/INCA ), developed by Dan Butterfield, but with a higher emphasis on run-time performance. Since then we have also started to add new models, ODE solvers, calibration systems and a new GUI.
 
-This project acknowledge funding by Nordforsk “Nordic eScience Globalisation Initiative (NeGI)” via the project [An open access, generic ePlatform for environmental model-building at the river-basin scale (Machu-Picchu)](https://www.nordforsk.org/en/programmes-and-projects/projects/an-open-access-generic-eplatform-for-environmental-model-building-at-the-river-basin-scale-machu-picchu).
+This project was partially funded by Nordforsk “Nordic eScience Globalisation Initiative (NeGI)” via the project [An open access, generic ePlatform for environmental model-building at the river-basin scale (Machu-Picchu)](https://www.nordforsk.org/en/programmes-and-projects/projects/an-open-access-generic-eplatform-for-environmental-model-building-at-the-river-basin-scale-machu-picchu).
 
 Developed by by Magnus Dahler Norling for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
