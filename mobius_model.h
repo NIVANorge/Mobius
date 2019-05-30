@@ -6,6 +6,7 @@
 
 typedef u32 entity_handle;
 
+
 #define MODEL_ENTITY_HANDLE(Type) struct Type \
 { \
 	entity_handle Handle; \
@@ -32,12 +33,62 @@ MODEL_ENTITY_HANDLE(parameter_group_h)
 
 #undef MODEL_ENTITY_HANDLE
 
+
 enum entity_type   //NOTE: Is currently only used so that the storage_structure knows what it is storing and can ask the Model for the name associated to a handle if an error occurs.
 {
 	EntityType_Parameter,
 	EntityType_Input,
 	EntityType_Equation,
 };
+
+
+/*
+//NOTE: This alternative code (which complies more to certain standards of C++) produces the same result and is about as fast to compile, but it produces less legible error messages when the user makes a mistake.
+
+enum entity_type
+{
+	EntityType_Parameter,
+	EntityType_Input,
+	EntityType_Equation,
+	EntityType_ParameterDouble,
+	EntityType_ParameterBool,
+	EntityType_ParameterUInt,
+	EntityType_ParameterTime,
+	EntityType_Solver,
+	EntityType_Unit,
+	EntityType_IndexSet,
+	EntityType_ParameterGroup,
+};
+
+template <entity_type Type>
+struct handle_type
+{
+	entity_handle Handle;
+};
+
+template <entity_type Type>
+bool operator==(const handle_type<Type> &A, const handle_type<Type> &B) {return A.Handle == B.Handle;}
+
+template <entity_type Type>
+bool operator!=(const handle_type<Type> &A, const handle_type<Type> &B) {return A.Handle != B.Handle;}
+
+template <entity_type Type>
+bool operator<(const handle_type<Type> &A, const handle_type<Type> &B) {return A.Handle < B.Handle;}
+
+template <entity_type Type>
+IsValid(handle_type<Type> H) { return H.Handle != 0; }
+
+typedef handle_type<EntityType_Input> input_h;
+typedef handle_type<EntityType_Equation> equation_h;
+typedef handle_type<EntityType_ParameterDouble> parameter_double_h;
+typedef handle_type<EntityType_ParameterBool> parameter_bool_h;
+typedef handle_type<EntityType_ParameterUInt> parameter_uint_h;
+typedef handle_type<EntityType_ParameterTime> parameter_time_h;
+typedef handle_type<EntityType_Solver> solver_h;
+typedef handle_type<EntityType_Unit> unit_h;
+typedef handle_type<EntityType_IndexSet> index_set_h;
+typedef handle_type<EntityType_ParameterGroup> parameter_group_h;
+*/
 
 inline const char *
 GetEntityTypeName(entity_type Type)
