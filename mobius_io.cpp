@@ -532,7 +532,15 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		{
 			for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
 			{
-				double Value = Stream.ExpectDouble();
+				//double Value = Stream.ExpectDouble();
+				Token = Stream.ReadToken();
+				if(Token.Type != TokenType_Numeric)
+				{
+					Stream.PrintErrorHeader();
+					MOBIUS_FATAL_ERROR("Only got " << Timestep << " values for series. Expected " << Timesteps << std::endl);
+				}
+				double Value = Token.DoubleValue;
+				
 				for(size_t Offset : Offsets)
 				{
 					double *WriteTo = DataSet->InputData + Offset + Timestep*DataSet->InputStorageStructure.TotalCount;
@@ -578,7 +586,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				Token = Stream.PeekToken();
 				if(Token.Type == TokenType_UnquotedString)
 				{
-					Stream.ReadToken();
+					Stream.ReadToken(); //TODO: Check that the token actually says "to"?
 					datetime EndDateRange = Stream.ExpectDate();
 					s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
 					

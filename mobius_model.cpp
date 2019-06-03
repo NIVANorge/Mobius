@@ -23,6 +23,15 @@ BeginModelDefinition(const char *Name = "(unnamed model)", const char *Version =
 	
 	Model->FirstUnusedUnitHandle = 1;
 	
+	
+	/*     TODO: Probably it is a good idea to just do this here so that model applications don't have to worry about it.
+	auto Days 	      = RegisterUnit(Model, "days");
+	auto System       = RegisterParameterGroup(Model, "System");
+	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
+	RegisterParameterDate(Model, System, "Start date", "1999-1-1");
+	*/
+	
+	
 	return Model;
 }
 
