@@ -679,7 +679,7 @@ DllGetAllParametersCount(void *DataSetPtr, const char *GroupName)
 	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->FirstUnusedParameterHandle; ++ParameterHandle)
 	{
 		const parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
-		if(!IsValid(Group) || Group == Spec.Group) ++Count;
+		if(!Spec.ShouldNotBeExposed && (!IsValid(Group) || Group == Spec.Group)) ++Count;
 	}
 	
 	return Count;
@@ -707,7 +707,7 @@ DllGetAllParameters(void *DataSetPtr, const char **NamesOut, const char **TypesO
 	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->FirstUnusedParameterHandle; ++ParameterHandle)
 	{
 		const parameter_spec &Spec = DataSet->Model->ParameterSpecs[ParameterHandle];
-		if(!IsValid(Group) || Group == Spec.Group)
+		if(!Spec.ShouldNotBeExposed && (!IsValid(Group) || Group == Spec.Group))
 		{
 			NamesOut[Idx] = Spec.Name;
 			TypesOut[Idx] = GetParameterTypeName(Spec.Type);
