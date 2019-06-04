@@ -719,14 +719,17 @@ EndModelDefinition(mobius_model *Model)
 							}
 							
 							bool BatchDependsOnUs = false;
-							FOR_ALL_BATCH_EQUATIONS(NextBatch,
+							ForAllBatchEquations(NextBatch,
+							[Model, ThisEquation, &BatchDependsOnUs](equation_h Equation)
+							{
 								equation_spec &CheckSpec = Model->Equations.Specs[Equation.Handle];
 								if(std::find(CheckSpec.DirectResultDependencies.begin(), CheckSpec.DirectResultDependencies.end(), ThisEquation) != CheckSpec.DirectResultDependencies.end())
 								{
 									BatchDependsOnUs = true;
-									break; //UGH, since this is a loop macro that loops over two things, this break will not break out of the second loop if it happens in the first...
+									return true;
 								}
-							)
+								return false;
+							});
 
 							if(BatchBehind == BatchBuild.size() - 1 || BatchDependsOnUs)
 							{
@@ -817,20 +820,28 @@ EndModelDefinition(mobius_model *Model)
 					Batch.EquationsODE = BatchTemplate.EquationsODE;
 					Batch.Solver = BatchTemplate.Solver;
 				}
-				FOR_ALL_BATCH_EQUATIONS(Batch,
+				
+				ForAllBatchEquations(Batch,
+				[&EquationBelongsToBatchGroup, BatchGroupIdx](equation_h Equation)
+				{
 					EquationBelongsToBatchGroup[Equation.Handle] = BatchGroupIdx;
-				)
+					return false;
+				});
+
 				
 				//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch A depends on the (initial) value of an equation in batch B and batch A is before batch B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
 				//TODO: We should report an error if that happens!
 				//NOTE: Currently we only allow for initial value equations to be sorted differently than their parent equations within the same batch (this was needed in some of the example models).
-				FOR_ALL_BATCH_EQUATIONS(Batch,
+				ForAllBatchEquations(Batch,
+				[Model, &Batch](equation_h Equation)
+				{
 					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the visit)
 					{
 						TopologicalSortEquationsInitialValueVisit(Model, Equation, Batch.InitialValueOrder);
 					}
-				)
+					return false;
+				});
 				
 				++BatchIdx;
 			}
@@ -857,7 +868,10 @@ EndModelDefinition(mobius_model *Model)
 			for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 			{
 				equation_batch &Batch = Model->EquationBatches[BatchIdx];
-				FOR_ALL_BATCH_EQUATIONS(Batch,
+				
+				ForAllBatchEquations(Batch,
+				[Model, &AllParameterDependenciesForBatchGroup, &AllInputDependenciesForBatchGroup, &AllResultDependenciesForBatchGroup, &AllLastResultDependenciesForBatchGroup](equation_h Equation)
+				{
 					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(Spec.Type != EquationType_Cumulative) //NOTE: We don't have to load in dependencies for cumulative equations since these get their data directly from the DataSet.
 					{
@@ -872,7 +886,8 @@ EndModelDefinition(mobius_model *Model)
 							AllParameterDependenciesForBatchGroup.insert(InitSpec.ParameterDependencies.begin(), InitSpec.ParameterDependencies.end());
 						}
 					}
-				)
+					return false;
+				});
 			}
 			
 			BatchGroup.IterationData.resize(BatchGroup.IndexSets.size(), {});
@@ -1142,11 +1157,16 @@ INNER_LOOP_BODY(RunInnerLoop)
 		{
 			//NOTE: Write LastResult values into the ValueSet for fast lookup.
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-			FOR_ALL_BATCH_EQUATIONS(Batch,
+			
+			//TODO: We should maybe watch this and see if it causes performance problems and in that case expand the for loops.
+			ForAllBatchEquations(Batch,
+			[ValueSet](equation_h Equation)
+			{
 				double LastResultValue = *ValueSet->AtLastResult;
 				++ValueSet->AtLastResult;
 				ValueSet->LastResults[Equation.Handle] = LastResultValue;
-			)
+				return false;
+			});
 		}
 		
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
@@ -1443,7 +1463,7 @@ RunModel(mobius_data_set *DataSet)
 	const mobius_model *Model = DataSet->Model;
 	
 	//NOTE: Check that all the index sets have at least one index.
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->Parameters.Count(); ++IndexSetHandle)
+	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{
 		if(DataSet->IndexCounts[IndexSetHandle] == 0)
 		{
@@ -1695,12 +1715,15 @@ PrintResultStructure(mobius_model *Model)
 			std::cout << "\n\t-----";
 			if(Batch.Type == BatchType_Solver) std::cout << " (SOLVER: " << GetName(Model, Batch.Solver) << ")";
 			
-			FOR_ALL_BATCH_EQUATIONS(Batch,
+			ForAllBatchEquations(Batch,
+			[Model](equation_h Equation)
+			{
 				std::cout << "\n\t";
 				if(Model->Equations.Specs[Equation.Handle].Type == EquationType_Cumulative) std::cout << "(Cumulative) ";
 				else if(Model->Equations.Specs[Equation.Handle].Type == EquationType_ODE) std::cout << "(ODE) ";
 				std::cout << GetName(Model, Equation);
-			)
+				return false;
+			});
 			if(BatchIdx == BatchGroup.LastBatch) std::cout << "\n\t-----\n";
 		}
 		

@@ -430,6 +430,7 @@ struct entity_registry
 			entity_handle Handle = (entity_handle)Specs.size();
 			Specs.push_back({});
 			Specs[Handle].Name = Name;
+			NameToHandle[Name] = Handle;
 			return Handle;
 		}
 	}
@@ -471,10 +472,31 @@ struct mobius_model
 	bool Finalized;
 };
 
-//Change to function taking a std::function<bool(equation_h)> as argument
-#define FOR_ALL_BATCH_EQUATIONS(Batch, Do) \
-for(equation_h Equation : Batch.Equations) { Do } \
-if(Batch.Type == BatchType_Solver) { for(equation_h Equation : Batch.EquationsODE) { Do } }
+//#define FOR_ALL_BATCH_EQUATIONS(Batch, Do) \
+//for(equation_h Equation : Batch.Equations) { Do } \
+//if(Batch.Type == BatchType_Solver) { for(equation_h Equation : Batch.EquationsODE) { Do } }
+
+template<typename batch_like>
+inline void
+ForAllBatchEquations(const batch_like &Batch, std::function<bool(equation_h)> Do)
+{
+	bool ShouldBreak = false;
+	for(equation_h Equation : Batch.Equations)
+	{
+		ShouldBreak = Do(Equation);
+		if(ShouldBreak) break;
+	}
+	if(!ShouldBreak && Batch.Type == BatchType_Solver)
+	{
+		for(equation_h Equation : Batch.EquationsODE)
+		{
+			ShouldBreak = Do(Equation);
+			if(ShouldBreak) break;
+		}
+	}
+}
+
+
 
 #if !defined(MOBIUS_EQUATION_PROFILING)
 #define MOBIUS_EQUATION_PROFILING 0

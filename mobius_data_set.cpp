@@ -802,13 +802,22 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 		for(size_t UnitIndex = 0; UnitIndex < ResultStorageUnitCount; ++UnitIndex)
 		{
 			const equation_batch_group &BatchGroup = Model->BatchGroups[UnitIndex];
-			Units[UnitIndex].IndexSets = BatchGroup.IndexSets;
+			storage_unit_specifier &Unit = Units[UnitIndex];
+			Unit.IndexSets = BatchGroup.IndexSets;
 			for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 			{
 				const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-				FOR_ALL_BATCH_EQUATIONS(Batch,
-					Units[UnitIndex].Handles.push_back(Equation.Handle);
-				)
+				
+				ForAllBatchEquations(Batch,
+				[&Unit](equation_h Equation)
+				{
+					Unit.Handles.push_back(Equation.Handle);
+					return false;
+				});
+				
+				//FOR_ALL_BATCH_EQUATIONS(Batch,
+				//	Units[UnitIndex].Handles.push_back(Equation.Handle);
+				//)
 			}
 		}
 		
