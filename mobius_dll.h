@@ -13,7 +13,7 @@ std::stringstream Dll_GlobalErrstream;
 	throw 0;}
 
 
-#include "../mobius.h"
+#include "mobius.h"
 
 
 #define CHECK_ERROR_BEGIN \

@@ -1,7 +1,0 @@
-COMPILE:
-
-(depends on sqlite3: Download from https://www.sqlite.org/download.html)
-gcc -c sqlite3.c -O2
-
-WINDOWS: g++ persist.cpp -O2 -fno-exceptions -o persist.exe sqlite3.o
-LINUX:   g++ persist.cpp -O2 -fno-exceptions -o persist.exe sqlite3.o -lpthread -ldl
