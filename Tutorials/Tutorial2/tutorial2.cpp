@@ -5,13 +5,6 @@ int main()
 {
 	mobius_model *Model = BeginModelDefinition();
 	
-	auto System = RegisterParameterGroup(Model, "System");
-
-	auto Days = RegisterUnit(Model, "days");
-
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1980-1-1");
-	
 	AddTutorial2Model(Model); //NOTE: We have put all of the model definition in the file tutorial2model.h
 	
 	EndModelDefinition(Model);

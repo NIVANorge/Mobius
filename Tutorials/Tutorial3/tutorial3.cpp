@@ -5,13 +5,6 @@ int main()
 {
 	mobius_model *Model = BeginModelDefinition();
 	
-	auto System = RegisterParameterGroup(Model, "System");
-
-	auto Days = RegisterUnit(Model, "days");
-
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1980-1-1");
-	
 	AddGibletThrasherModel(Model);
 	
 	//NOTE: Check the input file to see what index sets the input series depend on.

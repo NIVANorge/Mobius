@@ -472,9 +472,6 @@ struct mobius_model
 	bool Finalized;
 };
 
-//#define FOR_ALL_BATCH_EQUATIONS(Batch, Do) \
-//for(equation_h Equation : Batch.Equations) { Do } \
-//if(Batch.Type == BatchType_Solver) { for(equation_h Equation : Batch.EquationsODE) { Do } }
 
 template<typename batch_like>
 inline void

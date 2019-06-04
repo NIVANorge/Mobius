@@ -12,6 +12,8 @@ int main()
 	//There are two special parameters "Timesteps" and "Start date" that all models should have.
 	//We will eventually add timestep size, but for now that is hard coded to a day.
 	
+	//NOTE: You don't have to register "Timesteps" and "Start date" yourself, as the framework will do it for you. We just do it here to illustrate.
+	
 	auto Days = RegisterUnit(Model, "days"); //NOTE: Units have no effect on how the model runs, but they are displayed for instance in the INCAView gui. They are just a note that lets you remember the unit of a parameters or equation when calibrating the model.
 	auto Dimensionless = RegisterUnit(Model);
 	

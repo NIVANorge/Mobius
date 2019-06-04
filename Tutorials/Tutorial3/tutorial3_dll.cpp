@@ -19,11 +19,6 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	mobius_model *Model = BeginModelDefinition("Giblet-thrasher model", "1.0");
 	
-	auto Days 	      = RegisterUnit(Model, "days");
-	auto System       = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1999-1-1");
-	
 	AddGibletThrasherModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
