@@ -450,7 +450,7 @@ def print_goodness_of_fit(dataset, comparisons, skip_timesteps=0):
         bias = np.nansum(residuals) / nonnan
         meanabs = np.nansum(np.abs(residuals)) / nonnan
         sumsquare = np.nansum(np.square(residuals))
-        meansquare = sumsquare / nonnan
+        rootmeansquare = np.sqrt(sumsquare / nonnan)
         
         meanob = np.nansum(obs) / nonnan
         
@@ -460,6 +460,6 @@ def print_goodness_of_fit(dataset, comparisons, skip_timesteps=0):
                                                              obsname, ', '.join(obsindexes)))
         print('Mean error (bias): %f' % bias)
         print('Mean absolute error: %f' % meanabs)
-        print('Mean square error: %f' % meansquare)
+        print('Root mean square error: %f' % rootmeansquare)
         print('Nash-Sutcliffe coefficient: %f' % nashsutcliffe)
         print('Number of observations: %s\n' % nonnan)
