@@ -98,7 +98,21 @@ After understanding basic model building we recommended you explore the python w
 - The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders typically also have a few example parameter and input files.
 - For now all the source code of the main Mobius functionality is in the base folder. The models rely on this base functionality to organize data in memory and executie the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier. Beware however that you should make sure not to include mobius.h into several different compilation units in your project if you need to have more than one compilation unit.
 
+## The MobiView graphical user interface
+
+MobiView is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with INCAView.
+
+![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
+
+### Creating MobiView compatible .dlls
+
+MobiView can load the same .dlls as the python wrapper. We will soon have application .cpps and compilation scripts set up for all of the models.
+
+
+
 ## The INCAView graphical user interface
+
+NOTE: INCAView is soon to be phased out in favour of the new GUI MobiView.
 
 INCAView is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with INCAView.
 
