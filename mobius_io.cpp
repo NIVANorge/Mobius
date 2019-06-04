@@ -127,9 +127,9 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	fprintf(File, "\n\n");
 	
 	fprintf(File, "index_sets:\n");
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->FirstUnusedIndexSetHandle; ++IndexSetHandle)
+	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{
-		const index_set_spec &Spec = Model->IndexSetSpecs[IndexSetHandle];
+		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
 		fprintf(File, "\"%s\" : {", Spec.Name);
 		for(index_t IndexIndex = {IndexSetHandle, 0}; IndexIndex < DataSet->IndexCounts[IndexSetHandle]; ++IndexIndex)
 		{
@@ -173,7 +173,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 		
 		for(entity_handle ParameterHandle: DataSet->ParameterStorageStructure.Units[UnitIndex].Handles)
 		{
-			const parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
+			const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 			
 			if(Spec.ShouldNotBeExposed) continue;
 			
@@ -257,13 +257,13 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				token_string IndexSetName = Stream.ExpectQuotedString();
 				index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName);
 				Stream.ExpectToken(TokenType_Colon);
-				if(Model->IndexSetSpecs[IndexSet.Handle].Type == IndexSetType_Basic)
+				if(Model->IndexSets.Specs[IndexSet.Handle].Type == IndexSetType_Basic)
 				{
 					std::vector<token_string> Indexes;
 					Stream.ReadQuotedStringList(Indexes);
 					SetIndexes(DataSet, IndexSetName, Indexes);
 				}
-				else if(Model->IndexSetSpecs[IndexSet.Handle].Type == IndexSetType_Branched)
+				else if(Model->IndexSets.Specs[IndexSet.Handle].Type == IndexSetType_Branched)
 				{
 					//TODO: Make a helper function for this too!
 					std::vector<std::pair<token_string, std::vector<token_string>>> Indexes;
@@ -343,7 +343,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				
 				entity_handle ParameterHandle = GetParameterHandle(Model, ParameterName);
 				
-				const parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
+				const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 				
 				if(Spec.ShouldNotBeExposed)
 				{
@@ -460,7 +460,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				
 				Stream.ReadQuotedStringList(IndexNames);
 				
-				const std::vector<index_set_h> &IndexSets = Model->InputSpecs[Input.Handle].IndexSetDependencies;
+				const std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 				if(IndexNames.size() != IndexSets.size())
 				{
 					Stream.PrintErrorHeader();
@@ -732,7 +732,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 					Token = Stream.ReadToken();
 					token_string InputName = Token.StringValue;
 					input_h Input = GetInputHandle(Model, InputName);
-					std::vector<index_set_h> &IndexSets = Model->InputSpecs[Input.Handle].IndexSetDependencies;
+					std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 					if(!IndexSets.empty()) //TODO: OR we could just clear it and give a warning..
 					{
 						Stream.PrintErrorHeader();

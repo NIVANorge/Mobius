@@ -13,13 +13,13 @@ WriteInputsToJson(mobius_data_set *DataSet, const char *Filename)
 	std::vector<std::string> AdditionalTimeseries;
 	std::map<std::string, std::vector<std::string>> IndexSetDependencies;
 	
-	for(entity_handle InputHandle = 1; InputHandle < Model->FirstUnusedInputHandle; ++InputHandle)
+	for(entity_handle InputHandle = 1; InputHandle < Model->Inputs.Count(); ++InputHandle)
 	{
-		const input_spec &Spec = Model->InputSpecs[InputHandle];
+		const input_spec &Spec = Model->Inputs.Specs[InputHandle];
 		
 		if(Spec.IsAdditional)
 		{
-			AdditionalTimeseries.push_back(GetName(Model, input_h {InputHandle}));
+			AdditionalTimeseries.push_back(Spec.Name);
 		}
 		
 		std::vector<std::string> Dep;
@@ -54,7 +54,7 @@ WriteInputsToJson(mobius_data_set *DataSet, const char *Filename)
 	
 	
 	//index_t CurrentIndexes[256];
-	for(entity_handle InputHandle = 1; InputHandle < Model->FirstUnusedInputHandle; ++InputHandle)
+	for(entity_handle InputHandle = 1; InputHandle < Model->Inputs.Count(); ++InputHandle)
 	{
 		const char *InputName = GetName(Model, input_h {InputHandle});
 		
@@ -93,9 +93,9 @@ WriteResultsToJson(mobius_data_set *DataSet, const char *Filename)
 	
 	std::map<std::string, std::vector<std::string>> IndexSetDependencies;
 	
-	for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
-		const equation_spec &Spec = Model->EquationSpecs[EquationHandle];
+		const equation_spec &Spec = Model->Equations.Specs[EquationHandle];
 		
 		if(Spec.Type == EquationType_InitialValue) continue;
 		
@@ -133,9 +133,9 @@ WriteResultsToJson(mobius_data_set *DataSet, const char *Filename)
 			};
    
 	//index_t CurrentIndexes[256];
-	for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
-		const equation_spec &Spec = Model->EquationSpecs[EquationHandle];
+		const equation_spec &Spec = Model->Equations.Specs[EquationHandle];
 		
 		if(Spec.Type == EquationType_InitialValue) continue;
 		
@@ -289,9 +289,9 @@ WriteParametersToJson(mobius_data_set *DataSet, const char *Filename)
 		{"parameters", nullptr},
 	};
 	
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->FirstUnusedIndexSetHandle; ++IndexSetHandle)
+	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{
-		const index_set_spec &Spec = Model->IndexSetSpecs[IndexSetHandle];
+		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
 		if(Spec.Type == IndexSetType_Basic)
 		{
 			for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
@@ -321,9 +321,9 @@ WriteParametersToJson(mobius_data_set *DataSet, const char *Filename)
 		}
 	}
 	
-	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->FirstUnusedParameterHandle; ++ParameterHandle)
+	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
 	{
-		const parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
+		const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 		const char *ParameterName = Spec.Name;
 		
 		if(Spec.ShouldNotBeExposed) continue;
@@ -385,7 +385,7 @@ ReadParametersFromJson(mobius_data_set *DataSet, const char *Filename)
 			std::string IndexSetName = It.key();
 			
 			index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName.c_str());
-			const index_set_spec &Spec = Model->IndexSetSpecs[IndexSet.Handle];
+			const index_set_spec &Spec = Model->IndexSets.Specs[IndexSet.Handle];
 			
 			if(Spec.Type == IndexSetType_Basic)
 			{
@@ -426,7 +426,7 @@ ReadParametersFromJson(mobius_data_set *DataSet, const char *Filename)
 			std::string ParameterName = It.key();
 			entity_handle ParameterHandle = GetParameterHandle(Model, ParameterName.c_str());
 			std::vector<parameter_value> Values;
-			const parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
+			const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 			
 			if(Spec.ShouldNotBeExposed)
 			{

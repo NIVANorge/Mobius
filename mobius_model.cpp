@@ -9,20 +9,6 @@ BeginModelDefinition(const char *Name = "(unnamed model)", const char *Version =
 	Model->Name = Name;
 	Model->Version = Version;
 	
-	//NOTE: Reserve Handle 0 as an error / unused value.
-	Model->FirstUnusedInputHandle = 1;
-	Model->FirstUnusedParameterHandle = 1;
-	Model->FirstUnusedEquationHandle = 1;
-	
-	Model->FirstUnusedIndexSetHandle = 1; //NOTE: IndexSet 0 is the "global"/"system" index set, for parameters that don't have any other index sets.
-	Model->IndexSetSpecs.push_back({});
-	
-	Model->FirstUnusedParameterGroupHandle = 1;
-	
-	Model->FirstUnusedSolverHandle = 1;
-	
-	Model->FirstUnusedUnitHandle = 1;
-	
 	
 	/*     TODO: Probably it is a good idea to just do this here so that model applications don't have to worry about it.
 	auto Days 	      = RegisterUnit(Model, "days");
@@ -48,7 +34,7 @@ PrintPartialDependencyTrace(mobius_model *Model, equation_h Equation, bool First
 		MOBIUS_PARTIAL_ERROR("   ");
 	}
 	
-	equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	if(IsValid(Spec.Solver))
 	{
 		MOBIUS_PARTIAL_ERROR("\"" << GetName(Model, Spec.Solver) << "\" (");
@@ -64,8 +50,8 @@ PrintPartialDependencyTrace(mobius_model *Model, equation_h Equation, bool First
 static bool
 TopologicalSortEquationsVisit(mobius_model *Model, equation_h Equation, std::vector<equation_h>& PushTo)
 {
-	equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
-	solver_spec &SolverSpec = Model->SolverSpecs[Spec.Solver.Handle];
+	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+	solver_spec &SolverSpec = Model->Solvers.Specs[Spec.Solver.Handle];
 	
 	//NOTE: We have to short-circuit out all equations that belong to a particular solver since they always have to be grouped together in a batch, and ODE equations within a batch are allowed to have circular references since they work differently. They have to be sorted as a block later.
 	bool &Visited = IsValid(Spec.Solver) ? SolverSpec.Visited : Spec.Visited;
@@ -82,7 +68,7 @@ TopologicalSortEquationsVisit(mobius_model *Model, equation_h Equation, std::vec
 	std::set<equation_h> &DirectResultDependencies = IsValid(Spec.Solver) ? SolverSpec.DirectResultDependencies : Spec.DirectResultDependencies;
 	for(equation_h Dependency : DirectResultDependencies)
 	{
-		equation_spec &DepSpec = Model->EquationSpecs[Dependency.Handle];
+		equation_spec &DepSpec = Model->Equations.Specs[Dependency.Handle];
 		if(IsValid(Spec.Solver) && IsValid(DepSpec.Solver) && Spec.Solver == DepSpec.Solver) continue; //NOTE: We ignore dependencies of the solver on itself for now.
 		bool Success = TopologicalSortEquationsVisit(Model, Dependency, PushTo);
 		if(!Success)
@@ -99,7 +85,7 @@ TopologicalSortEquationsVisit(mobius_model *Model, equation_h Equation, std::vec
 static bool
 TopologicalSortEquationsInSolverVisit(mobius_model *Model, equation_h Equation, std::vector<equation_h>& PushTo)
 {
-	equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	
 	if(Spec.Visited) return true;
 	if(Spec.TempVisited)
@@ -111,7 +97,7 @@ TopologicalSortEquationsInSolverVisit(mobius_model *Model, equation_h Equation, 
 	Spec.TempVisited = true;
 	for(equation_h Dependency : Spec.DirectResultDependencies)
 	{
-		equation_spec &DepSpec = Model->EquationSpecs[Dependency.Handle];
+		equation_spec &DepSpec = Model->Equations.Specs[Dependency.Handle];
 		if(DepSpec.Type == EquationType_ODE || DepSpec.Solver != Spec.Solver) continue; //NOTE: We are only interested sorting non-ode equations belonging to this solver.
 		bool Success = TopologicalSortEquationsInSolverVisit(Model, Dependency, PushTo);
 		if(!Success)
@@ -129,14 +115,14 @@ static bool
 TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equation, std::vector<equation_h>& PushTo)
 {	
 	equation_h EquationToLookUp = Equation;
-	equation_spec &OriginalSpec = Model->EquationSpecs[Equation.Handle];
+	equation_spec &OriginalSpec = Model->Equations.Specs[Equation.Handle];
 	equation_h InitialValueEq = OriginalSpec.InitialValueEquation;
 	if(IsValid(InitialValueEq))
 	{
 		EquationToLookUp = InitialValueEq;
 	}
 	
-	equation_spec &Spec = Model->EquationSpecs[EquationToLookUp.Handle];
+	equation_spec &Spec = Model->Equations.Specs[EquationToLookUp.Handle];
 	
 	if(Spec.Visited) return true;
 	if(Spec.TempVisited)
@@ -269,14 +255,14 @@ EndModelDefinition(mobius_model *Model)
 	
 	///////////// Find out what index sets each parameter depends on /////////////
 	
-	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->FirstUnusedParameterHandle; ++ParameterHandle)
+	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
 	{
-		const parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
+		const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 		parameter_group_h CurrentGroup = Spec.Group;
-		std::vector<index_set_h>& Dependencies = Model->ParameterSpecs[ParameterHandle].IndexSetDependencies;
+		std::vector<index_set_h>& Dependencies = Model->Parameters.Specs[ParameterHandle].IndexSetDependencies;
 		while(IsValid(CurrentGroup))
 		{
-			parameter_group_spec *GroupSpec = &Model->ParameterGroupSpecs[CurrentGroup.Handle];
+			parameter_group_spec *GroupSpec = &Model->ParameterGroups.Specs[CurrentGroup.Handle];
 			if(IsValid(GroupSpec->IndexSet)) //NOTE: We never insert index set 0 as a dependency. If this is a global parameter, we want to register it as having no dependencies.
 			{
 				Dependencies.insert(Dependencies.begin(), GroupSpec->IndexSet); 
@@ -289,9 +275,9 @@ EndModelDefinition(mobius_model *Model)
 	/////////////////////// Find all dependencies of equations on parameters, inputs and other results /////////////////////
 	
 	value_set_accessor ValueSet(Model);
-	for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
-		equation_spec &Spec = Model->EquationSpecs[EquationHandle];
+		equation_spec &Spec = Model->Equations.Specs[EquationHandle];
 		
 		if(Spec.Type == EquationType_Cumulative)
 		{
@@ -300,7 +286,7 @@ EndModelDefinition(mobius_model *Model)
 			continue;
 		}
 		
-		if(!Model->EquationSpecs[EquationHandle].EquationIsSet)
+		if(!Model->Equations.Specs[EquationHandle].EquationIsSet)
 		{
 			MOBIUS_FATAL_ERROR("ERROR: The equation body for the registered equation " << GetName(Model, equation_h {EquationHandle}) << " has not been defined." << std::endl);
 		}
@@ -309,7 +295,7 @@ EndModelDefinition(mobius_model *Model)
 		ValueSet.Clear();
 		
 		//Call the equation. Since we are in ValueSet.Running==false mode, the equation will register which values it tried to access.
-		Model->Equations[EquationHandle](&ValueSet);
+		Model->EquationBodies[EquationHandle](&ValueSet);
 		
 		//std::cout << GetName(Model, equation {EquationHandle}) << std::endl;
 		
@@ -319,7 +305,7 @@ EndModelDefinition(mobius_model *Model)
 		{
 			entity_handle ParameterHandle = ParameterDependency.Handle;
 			
-			parameter_spec &ParSpec = Model->ParameterSpecs[ParameterHandle];
+			parameter_spec &ParSpec = Model->Parameters.Specs[ParameterHandle];
 			std::vector<index_set_h>& IndexSetDependencies = ParSpec.IndexSetDependencies;
 			if(ParameterDependency.NumExplicitIndexes > IndexSetDependencies.size())
 			{
@@ -344,7 +330,7 @@ EndModelDefinition(mobius_model *Model)
 		{
 			//TODO: This block has to be updated to match the parameter registration above if we later allow for explicitly indexed inputs.
 			entity_handle InputHandle = InputDependency.Handle;
-			std::vector<index_set_h>& IndexSetDependencies = Model->InputSpecs[InputHandle].IndexSetDependencies;
+			std::vector<index_set_h>& IndexSetDependencies = Model->Inputs.Specs[InputHandle].IndexSetDependencies;
 			Spec.IndexSetDependencies.insert(IndexSetDependencies.begin(), IndexSetDependencies.end());
 			Spec.InputDependencies.insert(input_h {InputHandle});
 		}
@@ -353,7 +339,7 @@ EndModelDefinition(mobius_model *Model)
 		//TODO: We should have a specialized system for this, because this currently causes the initial value parameter to be loaded into the CurParameters buffer at each step (instead of just during the initial value step), which is unnecessary.
 		if(IsValid(Spec.InitialValue))
 		{
-			std::vector<index_set_h>& IndexSetDependencies = Model->ParameterSpecs[Spec.InitialValue.Handle].IndexSetDependencies;
+			std::vector<index_set_h>& IndexSetDependencies = Model->Parameters.Specs[Spec.InitialValue.Handle].IndexSetDependencies;
 			Spec.IndexSetDependencies.insert(IndexSetDependencies.begin(), IndexSetDependencies.end());
 			Spec.ParameterDependencies.insert(Spec.InitialValue.Handle);
 		}
@@ -362,7 +348,7 @@ EndModelDefinition(mobius_model *Model)
 		{
 			entity_handle DepResultHandle = ResultDependency.Handle;
 			
-			if(Model->EquationSpecs[DepResultHandle].Type == EquationType_InitialValue)
+			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
 			{
 				std::cout << "ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl;
 			}
@@ -381,7 +367,7 @@ EndModelDefinition(mobius_model *Model)
 		for(const result_dependency_registration &ResultDependency : ValueSet.LastResultDependencies)
 		{
 			entity_handle DepResultHandle = ResultDependency.Handle;
-			if(Model->EquationSpecs[DepResultHandle].Type == EquationType_InitialValue)
+			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
 			{
 				std::cout << "ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl;
 			}
@@ -399,7 +385,7 @@ EndModelDefinition(mobius_model *Model)
 		//NOTE: Every equation always depends on its initial value equation if it has one.
 		//TODO: Right now we register it as a LastResultDependency, which is not technically correct, but it should give the desired result.
 		//TODO: Figure out if this may break somehting, and if we need a specialized system for this?
-		equation_h EqInitialValue = Model->EquationSpecs[EquationHandle].InitialValueEquation;
+		equation_h EqInitialValue = Model->Equations.Specs[EquationHandle].InitialValueEquation;
 		if(IsValid(EqInitialValue))
 		{
 			Spec.DirectLastResultDependencies.insert(EqInitialValue);
@@ -408,13 +394,13 @@ EndModelDefinition(mobius_model *Model)
 	
 	{
 		//NOTE: Check for computed parameters if their equation satisfies the requirements:
-		for(entity_handle ParameterHandle = 1; ParameterHandle < Model->FirstUnusedParameterHandle; ++ParameterHandle)
+		for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
 		{
-			parameter_spec &Spec = Model->ParameterSpecs[ParameterHandle];
+			parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 			equation_h Equation = Spec.IsComputedBy;
 			if(IsValid(Equation))
 			{
-				equation_spec &EqSpec = Model->EquationSpecs[Equation.Handle];
+				equation_spec &EqSpec = Model->Equations.Specs[Equation.Handle];
 				
 				if(
 					   !EqSpec.DirectResultDependencies.empty()
@@ -437,19 +423,19 @@ EndModelDefinition(mobius_model *Model)
 	for(size_t It = 0; It < 1000; ++It)
 	{
 		bool Changed = false;
-		for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+		for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 		{
-			equation_spec &Spec = Model->EquationSpecs[EquationHandle];
+			equation_spec &Spec = Model->Equations.Specs[EquationHandle];
 			size_t DependencyCount = Spec.IndexSetDependencies.size();
 				
 			if(Spec.Type == EquationType_Cumulative)
 			{
-				equation_spec &DepSpec = Model->EquationSpecs[Spec.Cumulates.Handle];
+				equation_spec &DepSpec = Model->Equations.Specs[Spec.Cumulates.Handle];
 				for(index_set_h IndexSet : DepSpec.IndexSetDependencies)
 				{
 					if(IndexSet != Spec.CumulatesOverIndexSet) Spec.IndexSetDependencies.insert(IndexSet); 
 				}
-				parameter_spec &WeightSpec = Model->ParameterSpecs[Spec.CumulationWeight.Handle];
+				parameter_spec &WeightSpec = Model->Parameters.Specs[Spec.CumulationWeight.Handle];
 				for(index_set_h IndexSet : WeightSpec.IndexSetDependencies)
 				{
 					if(IndexSet != Spec.CumulatesOverIndexSet) Spec.IndexSetDependencies.insert(IndexSet); 
@@ -459,17 +445,17 @@ EndModelDefinition(mobius_model *Model)
 			{
 				for(equation_h ResultDependency : Spec.DirectResultDependencies)
 				{
-					equation_spec &DepSpec = Model->EquationSpecs[ResultDependency.Handle];
+					equation_spec &DepSpec = Model->Equations.Specs[ResultDependency.Handle];
 					Spec.IndexSetDependencies.insert(DepSpec.IndexSetDependencies.begin(), DepSpec.IndexSetDependencies.end());
 				}
 				for(equation_h ResultDependency : Spec.DirectLastResultDependencies)
 				{
-					equation_spec &DepSpec = Model->EquationSpecs[ResultDependency.Handle];
+					equation_spec &DepSpec = Model->Equations.Specs[ResultDependency.Handle];
 					Spec.IndexSetDependencies.insert(DepSpec.IndexSetDependencies.begin(), DepSpec.IndexSetDependencies.end());
 				}
 				for(const result_dependency_registration &ResultDependency : Spec.IndexedResultAndLastResultDependencies)
 				{
-					equation_spec &DepSpec = Model->EquationSpecs[ResultDependency.Handle];
+					equation_spec &DepSpec = Model->Equations.Specs[ResultDependency.Handle];
 					const std::set<index_set_h> &IndexSetDependencies = DepSpec.IndexSetDependencies;
 					for(index_set_h IndexSet : IndexSetDependencies)
 					{
@@ -506,18 +492,18 @@ EndModelDefinition(mobius_model *Model)
 	
 	std::vector<equation_h> EquationsToSort;
 	
-	bool *SolverHasBeenHitOnce = AllocClearedArray(bool, Model->FirstUnusedSolverHandle);
+	bool *SolverHasBeenHitOnce = AllocClearedArray(bool, Model->Solvers.Count());
 	
-	for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
-		equation_spec &Spec = Model->EquationSpecs[EquationHandle];
+		equation_spec &Spec = Model->Equations.Specs[EquationHandle];
 		solver_h Solver = Spec.Solver;
 		
 		if(Spec.Type == EquationType_InitialValue) continue; //NOTE: initial value equations should not be a part of the result structure.
 		
 		if(IsValid(Solver))
 		{			
-			solver_spec &SolverSpec = Model->SolverSpecs[Solver.Handle];
+			solver_spec &SolverSpec = Model->Solvers.Specs[Solver.Handle];
 			SolverSpec.IndexSetDependencies.insert(Spec.IndexSetDependencies.begin(), Spec.IndexSetDependencies.end());
 			SolverSpec.DirectResultDependencies.insert(Spec.DirectResultDependencies.begin(), Spec.DirectResultDependencies.end());
 			SolverSpec.CrossIndexResultDependencies.insert(Spec.CrossIndexResultDependencies.begin(), Spec.CrossIndexResultDependencies.end());
@@ -548,13 +534,13 @@ EndModelDefinition(mobius_model *Model)
 	
 	for(equation_h Equation : EquationsToSort)
 	{
-		equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+		equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 		
 		if(IsValid(Spec.Solver))
 		{
 			//TODO: Instead of always pushing this at the end, could we try to insert it earlier if it is possible to place it next to another batch with the same index set dependencies?
 			
-			solver_spec &SolverSpec = Model->SolverSpecs[Spec.Solver.Handle];
+			solver_spec &SolverSpec = Model->Solvers.Specs[Spec.Solver.Handle];
 			//NOTE: There is only one stand-in equation for the whole solver in the EquationsToSort vector. We create a new batch containing all of the equations and put it at the end of the batch build list.
 			equation_batch_template Batch = {};
 			Batch.Type = BatchType_Solver;
@@ -564,7 +550,7 @@ EndModelDefinition(mobius_model *Model)
 			//NOTE: We don't sort the ODE equations since they ARE allowed to have circular dependencies on each other.
 			for(equation_h SolverEquation : SolverSpec.EquationsToSolve)
 			{
-				equation_spec &SolverResultSpec = Model->EquationSpecs[SolverEquation.Handle];
+				equation_spec &SolverResultSpec = Model->Equations.Specs[SolverEquation.Handle];
 				if(SolverResultSpec.Type == EquationType_Basic) Batch.Equations.push_back(SolverEquation);
 				else if(SolverResultSpec.Type == EquationType_ODE) Batch.EquationsODE.push_back(SolverEquation);
 				else assert(0);
@@ -703,13 +689,13 @@ EndModelDefinition(mobius_model *Model)
 					while(EquationIdx >= 0)
 					{
 						equation_h ThisEquation = Batch.Equations[EquationIdx];
-						equation_spec &Spec = Model->EquationSpecs[ThisEquation.Handle];
+						equation_spec &Spec = Model->Equations.Specs[ThisEquation.Handle];
 						
 						bool Continue = false;
 						for(size_t EquationBehind = EquationIdx + 1; EquationBehind < Batch.Equations.size(); ++EquationBehind)
 						{
 							equation_h ResultBehind = Batch.Equations[EquationBehind];
-							equation_spec &SpecBehind = Model->EquationSpecs[ResultBehind.Handle];
+							equation_spec &SpecBehind = Model->Equations.Specs[ResultBehind.Handle];
 							//If somebody behind us in this batch depend on us, we are not allowed to move.
 							if(std::find(SpecBehind.DirectResultDependencies.begin(), SpecBehind.DirectResultDependencies.end(), ThisEquation) != SpecBehind.DirectResultDependencies.end())
 							{
@@ -734,7 +720,7 @@ EndModelDefinition(mobius_model *Model)
 							
 							bool BatchDependsOnUs = false;
 							FOR_ALL_BATCH_EQUATIONS(NextBatch,
-								equation_spec &CheckSpec = Model->EquationSpecs[Equation.Handle];
+								equation_spec &CheckSpec = Model->Equations.Specs[Equation.Handle];
 								if(std::find(CheckSpec.DirectResultDependencies.begin(), CheckSpec.DirectResultDependencies.end(), ThisEquation) != CheckSpec.DirectResultDependencies.end())
 								{
 									BatchDependsOnUs = true;
@@ -781,17 +767,17 @@ EndModelDefinition(mobius_model *Model)
 	
 	/////////////// Process the batches into a finished result structure ////////////////////////
 	
-	size_t *EquationBelongsToBatchGroup = AllocClearedArray(size_t, Model->FirstUnusedEquationHandle);
+	size_t *EquationBelongsToBatchGroup = AllocClearedArray(size_t, Model->Equations.Count());
 	
 	{
 		//NOTE: We have to clear sorting flags from previous sortings since we have to do a new sorting for the initial value equations.
-		for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+		for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 		{
-			Model->EquationSpecs[EquationHandle].TempVisited = false;
-			Model->EquationSpecs[EquationHandle].Visited = false;
+			Model->Equations.Specs[EquationHandle].TempVisited = false;
+			Model->Equations.Specs[EquationHandle].Visited = false;
 		}
 		
-		size_t *Counts = AllocClearedArray(size_t, Model->FirstUnusedIndexSetHandle);
+		size_t *Counts = AllocClearedArray(size_t, Model->IndexSets.Count());
 		for(auto& BatchTemplate : BatchBuild)
 		{
 			for(index_set_h IndexSet : BatchTemplate.IndexSetDependencies)
@@ -839,7 +825,7 @@ EndModelDefinition(mobius_model *Model)
 				//TODO: We should report an error if that happens!
 				//NOTE: Currently we only allow for initial value equations to be sorted differently than their parent equations within the same batch (this was needed in some of the example models).
 				FOR_ALL_BATCH_EQUATIONS(Batch,
-					equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the visit)
 					{
 						TopologicalSortEquationsInitialValueVisit(Model, Equation, Batch.InitialValueOrder);
@@ -872,7 +858,7 @@ EndModelDefinition(mobius_model *Model)
 			{
 				equation_batch &Batch = Model->EquationBatches[BatchIdx];
 				FOR_ALL_BATCH_EQUATIONS(Batch,
-					equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(Spec.Type != EquationType_Cumulative) //NOTE: We don't have to load in dependencies for cumulative equations since these get their data directly from the DataSet.
 					{
 						AllParameterDependenciesForBatchGroup.insert(Spec.ParameterDependencies.begin(), Spec.ParameterDependencies.end());
@@ -882,7 +868,7 @@ EndModelDefinition(mobius_model *Model)
 						//TODO: The following is a quick fix so that initial value equations get their parameters set correctly. However it causes unneeded parameters to be loaded at each step for the main execution. We should make a separate system for initial value equations.
 						if(IsValid(Spec.InitialValueEquation))
 						{
-							equation_spec &InitSpec = Model->EquationSpecs[Spec.InitialValueEquation.Handle];
+							equation_spec &InitSpec = Model->Equations.Specs[Spec.InitialValueEquation.Handle];
 							AllParameterDependenciesForBatchGroup.insert(InitSpec.ParameterDependencies.begin(), InitSpec.ParameterDependencies.end());
 						}
 					}
@@ -897,7 +883,7 @@ EndModelDefinition(mobius_model *Model)
 				//TODO: We do a lot of redundant checks here. We could store temporary information to speed this up.
 				for(entity_handle ParameterHandle : AllParameterDependenciesForBatchGroup)
 				{
-					std::vector<index_set_h> &ThisParDependsOn = Model->ParameterSpecs[ParameterHandle].IndexSetDependencies;
+					std::vector<index_set_h> &ThisParDependsOn = Model->Parameters.Specs[ParameterHandle].IndexSetDependencies;
 					if(IsTopIndexSetForThisDependency(ThisParDependsOn, BatchGroup.IndexSets, IndexSetLevel))
 					{
 						BatchGroup.IterationData[IndexSetLevel].ParametersToRead.push_back(ParameterHandle);
@@ -906,7 +892,7 @@ EndModelDefinition(mobius_model *Model)
 				
 				for(input_h Input : AllInputDependenciesForBatchGroup)
 				{
-					std::vector<index_set_h> &ThisInputDependsOn = Model->InputSpecs[Input.Handle].IndexSetDependencies;
+					std::vector<index_set_h> &ThisInputDependsOn = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 					if(IsTopIndexSetForThisDependency(ThisInputDependsOn, BatchGroup.IndexSets, IndexSetLevel))
 					{
 						BatchGroup.IterationData[IndexSetLevel].InputsToRead.push_back(Input);
@@ -915,7 +901,7 @@ EndModelDefinition(mobius_model *Model)
 				
 				for(equation_h Equation : AllResultDependenciesForBatchGroup)
 				{
-					equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(Spec.Type != EquationType_InitialValue) //NOTE: Initial values are handled separately in an initial setup run.
 					{
 						size_t ResultBatchGroupIndex = EquationBelongsToBatchGroup[Equation.Handle];
@@ -933,7 +919,7 @@ EndModelDefinition(mobius_model *Model)
 				
 				for(equation_h Equation : AllLastResultDependenciesForBatchGroup)
 				{
-					equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(Spec.Type != EquationType_InitialValue) //NOTE: Initial values are handled separately in an initial setup run.
 					{
 						size_t ResultBatchGroupIndex = EquationBelongsToBatchGroup[Equation.Handle];
@@ -952,7 +938,7 @@ EndModelDefinition(mobius_model *Model)
 			
 			for(equation_h Equation : AllLastResultDependenciesForBatchGroup)    //NOTE: We need a separate system for last_results with no index set dependencies, unfortunately.
 			{
-				equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+				equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 				if(Spec.Type != EquationType_InitialValue) //NOTE: Initial values are handled separately in an initial setup run.
 				{
 					size_t ResultBatchGroupIndex = EquationBelongsToBatchGroup[Equation.Handle];
@@ -1056,7 +1042,7 @@ NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultVa
 	{
 		//TODO: We should be able to report the timestep here.
 		MOBIUS_PARTIAL_ERROR("ERROR: Got a NaN or Inf value as the result of the equation " << GetName(Model, Equation) << " at timestep " << ValueSet->Timestep << std::endl);
-		const equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+		const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 		MOBIUS_PARTIAL_ERROR("Indexes:" << std::endl);
 		for(index_set_h IndexSet : Spec.IndexSetDependencies)
 		{
@@ -1066,7 +1052,7 @@ NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultVa
 		for(entity_handle Par : Spec.ParameterDependencies )
 		{
 			//Ugh, it is cumbersome to print parameter values when we don't know the type a priori....
-			const parameter_spec &ParSpec = Model->ParameterSpecs[Par];
+			const parameter_spec &ParSpec = Model->Parameters.Specs[Par];
 			if(ParSpec.Type == ParameterType_Double)
 			{
 				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << ValueSet->CurParameters[Par].ValDouble << std::endl);
@@ -1191,8 +1177,8 @@ INNER_LOOP_BODY(RunInnerLoop)
 				size_t EquationIdx = 0;
 				for(equation_h Equation : Batch.EquationsODE)
 				{
-					//NOTE: Reading the EquationSpecs vector here may be slightly inefficient since each element of the vector is large. We could copy out an array of the ResetEveryTimestep bools instead beforehand.
-					if(Model->EquationSpecs[Equation.Handle].ResetEveryTimestep)
+					//NOTE: Reading the Equations.Specs vector here may be slightly inefficient since each element of the vector is large. We could copy out an array of the ResetEveryTimestep bools instead beforehand.
+					if(Model->Equations.Specs[Equation.Handle].ResetEveryTimestep)
 					{
 						DataSet->x0[EquationIdx] = 0;
 					}
@@ -1204,7 +1190,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				}
 				// NOTE: Do we need to clear DataSet->wk to 0? (Has not been needed in the solvers we have used so far...)
 				
-				const solver_spec &SolverSpec = Model->SolverSpecs[Batch.Solver.Handle];
+				const solver_spec &SolverSpec = Model->Solvers.Specs[Batch.Solver.Handle];
 				
 				//NOTE: This lambda is the "equation function" of the solver. It solves the set of equations once given the values in the working sets x0 and wk. It can be run by the SolverFunction many times.
 				auto EquationFunction =
@@ -1333,7 +1319,7 @@ SetupInitialValue(mobius_data_set *DataSet, value_set_accessor *ValueSet, equati
 {
 	
 	const mobius_model *Model = DataSet->Model;
-	const equation_spec &Spec = Model->EquationSpecs[Equation.Handle];
+	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	
 	double Initial = 0.0;
 	if(IsValid(Spec.InitialValue))
@@ -1348,12 +1334,12 @@ SetupInitialValue(mobius_data_set *DataSet, value_set_accessor *ValueSet, equati
 	}
 	else if(IsValid(Spec.InitialValueEquation))
 	{
-		Initial = Model->Equations[Spec.InitialValueEquation.Handle](ValueSet);
+		Initial = Model->EquationBodies[Spec.InitialValueEquation.Handle](ValueSet);
 	}
 	else
 	{
 		//NOTE: Equations without any type of initial value act as their own initial value equation
-		Initial = Model->Equations[Equation.Handle](ValueSet);
+		Initial = Model->EquationBodies[Equation.Handle](ValueSet);
 	}
 	
 	//std::cout << "Initial value of " << GetName(Model, Equation) << " is " << Initial << std::endl;
@@ -1404,13 +1390,13 @@ static void
 ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 {
 	//NOTE: Preprocessing of computed parameters.
-	for(entity_handle ParameterHandle = 1; ParameterHandle < DataSet->Model->FirstUnusedParameterHandle; ++ParameterHandle)
+	for(entity_handle ParameterHandle = 1; ParameterHandle < DataSet->Model->Parameters.Count(); ++ParameterHandle)
 	{
-		const parameter_spec &Spec = DataSet->Model->ParameterSpecs[ParameterHandle];
+		const parameter_spec &Spec = DataSet->Model->Parameters.Specs[ParameterHandle];
 		equation_h Equation = Spec.IsComputedBy;
 		if(IsValid(Spec.IsComputedBy))
 		{
-			const equation_spec &EqSpec = DataSet->Model->EquationSpecs[Equation.Handle];
+			const equation_spec &EqSpec = DataSet->Model->Equations.Specs[Equation.Handle];
 			
 			ForeachParameterInstance(DataSet, ParameterHandle,
 				[DataSet, ParameterHandle, Equation, &EqSpec, &Spec, ValueSet](index_t *Indexes, size_t IndexesCount)
@@ -1430,7 +1416,7 @@ ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet
 					}
 					
 					size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, ParameterHandle);
-					double ValD = DataSet->Model->Equations[Equation.Handle](ValueSet);
+					double ValD = DataSet->Model->EquationBodies[Equation.Handle](ValueSet);
 					parameter_value Value;
 					if(Spec.Type == ParameterType_Double)
 					{
@@ -1457,7 +1443,7 @@ RunModel(mobius_data_set *DataSet)
 	const mobius_model *Model = DataSet->Model;
 	
 	//NOTE: Check that all the index sets have at least one index.
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->FirstUnusedIndexSetHandle; ++IndexSetHandle)
+	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->Parameters.Count(); ++IndexSetHandle)
 	{
 		if(DataSet->IndexCounts[IndexSetHandle] == 0)
 		{
@@ -1674,10 +1660,10 @@ PrintEquationDependencies(mobius_model *Model)
 	std::cout << std::endl << "**** Equation Dependencies ****" << std::endl;
 	if(Model->Finalized)
 	{	
-		for(entity_handle EquationHandle = 1; EquationHandle < Model->FirstUnusedEquationHandle; ++EquationHandle)
+		for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 		{
 			std::cout << GetName(Model, equation_h {EquationHandle}) << "\n\t";
-			for(index_set_h IndexSet : Model->EquationSpecs[EquationHandle].IndexSetDependencies)
+			for(index_set_h IndexSet : Model->Equations.Specs[EquationHandle].IndexSetDependencies)
 			{
 				std::cout << "[" << GetName(Model, IndexSet) << "]";
 			}
@@ -1711,8 +1697,8 @@ PrintResultStructure(mobius_model *Model)
 			
 			FOR_ALL_BATCH_EQUATIONS(Batch,
 				std::cout << "\n\t";
-				if(Model->EquationSpecs[Equation.Handle].Type == EquationType_Cumulative) std::cout << "(Cumulative) ";
-				else if(Model->EquationSpecs[Equation.Handle].Type == EquationType_ODE) std::cout << "(ODE) ";
+				if(Model->Equations.Specs[Equation.Handle].Type == EquationType_Cumulative) std::cout << "(Cumulative) ";
+				else if(Model->Equations.Specs[Equation.Handle].Type == EquationType_ODE) std::cout << "(ODE) ";
 				std::cout << GetName(Model, Equation);
 			)
 			if(BatchIdx == BatchGroup.LastBatch) std::cout << "\n\t-----\n";

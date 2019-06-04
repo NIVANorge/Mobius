@@ -83,10 +83,10 @@ static void
 WriteParametersForParameterGroupToDatabase(mobius_data_set *DataSet, entity_handle ParameterGroupHandle, sqlite3 *Db, int &RunningID, int& RunningLft, int Dpt, index_t *Indexes, size_t IndexCount)
 {
 	const mobius_model *Model = DataSet->Model;
-	const parameter_group_spec &Spec = Model->ParameterGroupSpecs[ParameterGroupHandle];
+	const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
 	for(entity_handle ParameterHandle : Spec.Parameters)
 	{
-		const parameter_spec &ParSpec = Model->ParameterSpecs[ParameterHandle];
+		const parameter_spec &ParSpec = Model->Parameters.Specs[ParameterHandle];
 		
 		if(ParSpec.ShouldNotBeExposed) continue;
 		
@@ -124,7 +124,7 @@ static void
 ExportParameterGroupRecursivelyToDatabase(mobius_data_set *DataSet, entity_handle ParameterGroupHandle, sqlite3 *Db, int &RunningID, int& RunningLft, int Dpt, index_t *Indexes)
 {
 	const mobius_model *Model = DataSet->Model;
-	const parameter_group_spec &Spec = Model->ParameterGroupSpecs[ParameterGroupHandle];
+	const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
 	
 	int IDOfGroup = RunningID++;
 	int LftOfGroup = RunningLft++;
@@ -304,9 +304,9 @@ WriteParametersToDatabase(mobius_data_set *DataSet, const char *Dbname, const ch
 	int RunningID = 2;
 	int RunningLft = 1;
 	index_t Indexes[256]; //NOTE: Probably no parameter will have more index set dependencies than 256???
-	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->FirstUnusedParameterGroupHandle; ++ParameterGroupHandle)
+	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
 	{
-		const parameter_group_spec &GroupSpec = Model->ParameterGroupSpecs[ParameterGroupHandle];
+		const parameter_group_spec &GroupSpec = Model->ParameterGroups.Specs[ParameterGroupHandle];
 		if(!IsValid(GroupSpec.ParentGroup))
 		{
 			ExportParameterGroupRecursivelyToDatabase(DataSet, ParameterGroupHandle, Db, RunningID, RunningLft, 1, Indexes);
@@ -328,9 +328,9 @@ WriteParametersToDatabase(mobius_data_set *DataSet, const char *Dbname, const ch
 	rc = sqlite3_prepare_v2(Db, InsertInputData, -1, &Statement, 0);
 	
 	
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->FirstUnusedIndexSetHandle; ++IndexSetHandle)
+	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{
-		const index_set_spec &IndexSetSpec = Model->IndexSetSpecs[IndexSetHandle];
+		const index_set_spec &IndexSetSpec = Model->IndexSets.Specs[IndexSetHandle];
 		if(IndexSetSpec.Type == IndexSetType_Branched)
 		{
 			rc = sqlite3_bind_text(Statement, 3, IndexSetSpec.Name, -1, SQLITE_STATIC);
@@ -498,7 +498,7 @@ ReadParametersFromDatabase(mobius_data_set *DataSet, const char *Dbname)
 	const mobius_model *Model = DataSet->Model;
 	std::map<int, index_set_h> IDToIndexSet;
 	std::vector<std::vector<token_string>> IndexNames;
-	IndexNames.resize(Model->FirstUnusedIndexSetHandle);
+	IndexNames.resize(Model->IndexSets.Count());
 	
 	//NOTE: This routine assumes that the database entries are in the same order as when created by the CreateParameterDatabase routine.
 	
@@ -508,7 +508,7 @@ ReadParametersFromDatabase(mobius_data_set *DataSet, const char *Dbname)
 		if(Entry.IsIndexer)
 		{
 			parameter_group_h Group = GetParameterGroupHandle(Model, Entry.Name.data());
-			const parameter_group_spec &Spec = Model->ParameterGroupSpecs[Group.Handle];
+			const parameter_group_spec &Spec = Model->ParameterGroups.Specs[Group.Handle];
 			IDToIndexSet[Entry.ID] = Spec.IndexSet;
 		}
 		else if(Entry.IsIndex)
@@ -534,9 +534,9 @@ ReadParametersFromDatabase(mobius_data_set *DataSet, const char *Dbname)
 	const char *GetInputsCommand = "SELECT InputOf, Input FROM BranchInputs WHERE IndexSet = ?";
 	rc = sqlite3_prepare_v2(Db, GetInputsCommand, -1, &Statement, 0);
 	
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->FirstUnusedIndexSetHandle; ++IndexSetHandle)
+	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{	
-		const index_set_spec &Spec = Model->IndexSetSpecs[IndexSetHandle];
+		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
 		if(Spec.Type == IndexSetType_Basic)
 		{
 			SetIndexes(DataSet, Spec.Name, IndexNames[IndexSetHandle]);
@@ -597,7 +597,7 @@ ReadParametersFromDatabase(mobius_data_set *DataSet, const char *Dbname)
 		{
 			entity_handle ParameterHandle = GetParameterHandle(Model, Entry.Name.data());
 			
-			if(Model->ParameterSpecs[ParameterHandle].ShouldNotBeExposed)
+			if(Model->Parameters.Specs[ParameterHandle].ShouldNotBeExposed)
 			{
 				MOBIUS_FATAL_ERROR("ERROR: In file " << Dbname << ". The parameter " << Entry.Name << " is computed by the model, and should not be provided in a parameter file." << std::endl);
 			}
@@ -793,12 +793,12 @@ WriteStructureToDatabaseRecursively(mobius_data_set *DataSet, storage_structure 
 					if(Mode == 0)
 					{
 						Name = GetName(Model, equation_h {Handle});
-						UnitH = Model->EquationSpecs[Handle].Unit;
+						UnitH = Model->Equations.Specs[Handle].Unit;
 					}
 					else
 					{
 						Name = GetName(Model, input_h {Handle});
-						UnitH = Model->InputSpecs[Handle].Unit;
+						UnitH = Model->Inputs.Specs[Handle].Unit;
 					}
 					const char *Unit = 0;
 					if(IsValid(UnitH)) Unit = GetName(Model, UnitH);
@@ -836,12 +836,12 @@ WriteStructureToDatabaseRecursively(mobius_data_set *DataSet, storage_structure 
 				if(Mode == 0)
 				{
 					Name = GetName(Model, equation_h {Handle});
-					UnitH = Model->EquationSpecs[Handle].Unit;
+					UnitH = Model->Equations.Specs[Handle].Unit;
 				}
 				else
 				{
 					Name = GetName(Model, input_h {Handle});
-					UnitH = Model->InputSpecs[Handle].Unit;
+					UnitH = Model->Inputs.Specs[Handle].Unit;
 				}
 				const char *Unit = 0;
 				if(IsValid(UnitH)) Unit = GetName(Model, UnitH);
