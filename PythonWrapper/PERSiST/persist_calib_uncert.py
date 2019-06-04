@@ -6,7 +6,7 @@ from scipy.stats import norm
 # Initialise wrapper
 wrapper_fpath = (r"..\mobius.py")
 wr = imp.load_source('mobius', wrapper_fpath)
-wr.initialize('persist.dll')
+wr.initialize('..\..\Applications\Persist\persist.dll')
 
 # Calibration functions
 calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
