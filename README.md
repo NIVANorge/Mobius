@@ -104,9 +104,13 @@ After understanding basic model building we recommended you explore the python w
 
 ![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
 
+### Getting MobiView
+
+For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to compile it yourself feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing this.
+
 ### Creating MobiView compatible .dlls
 
-MobiView can load the same .dlls as the python wrapper. We will soon have application .cpps and compilation scripts set up for all of the models.
+MobiView can load the same .dlls as the python wrapper. We will soon have application .cpps and compilation scripts set up for all of the models. ***More on this soon***
 
 
 
@@ -121,8 +125,6 @@ INCAView is a GUI designed to provide a quick way of running models, manually ca
 ### Getting INCAView
 
 INCAView code is located in its own GitHub repository [here](https://github.com/Lecheps/INCAView). For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of INCAView. If you want to compile it yourself feel free, you need to install QtCreator and also get some libssh-related .dlls.
-
-**We are currently working on a new GUI, which will hopefully be ready pretty soon. Once this is available we will find a more reliable way of distributing it**
 
 ### Creating INCAView compatible .exes
 
