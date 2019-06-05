@@ -4,11 +4,10 @@
 #define MOBIUS_TEST_FOR_NAN 0
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
-#define MOBIUS_INDEX_BOUNDS_TESTS 0
 
-#include "../../mobius_dll.h"
+#include "../python_wrapper.h"
 
-#include "../../Modules/Persist.h"
+#include "../../Modules/HBV.h"
 
 
 
@@ -17,9 +16,9 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("PERSiST", "1.0");
+	mobius_model *Model = BeginModelDefinition("HBV", "1.0");
 	
-	AddPersistModel(Model);
+	AddHBVModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	

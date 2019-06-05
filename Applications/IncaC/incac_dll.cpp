@@ -9,6 +9,10 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/Persist.h"
+#include "../../Modules/SoilTemperature.h"
+//#include "../../Modules/WaterTemperature.h"
+#include "../../Modules/SolarRadiation.h"
+#include "../../Modules/INCA-C.h"
 
 
 
@@ -17,9 +21,12 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("PERSiST", "1.0");
+	mobius_model *Model = BeginModelDefinition("INCA-C", "0.0");
 	
 	AddPersistModel(Model);
+	AddSoilTemperatureModel(Model);
+	AddSolarRadiationModule(Model);
+	AddINCACModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	

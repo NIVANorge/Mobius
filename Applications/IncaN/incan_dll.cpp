@@ -4,10 +4,14 @@
 #define MOBIUS_TEST_FOR_NAN 0
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
+#define MOBIUS_INDEX_BOUNDS_TESTS 0
 
-#include "../python_wrapper.h"
+#include "../../mobius_dll.h"
 
-#include "../../Modules/HBV.h"
+#include "../../Modules/Persist.h"
+#include "../../Modules/SoilTemperature.h"
+#include "../../Modules/WaterTemperature.h"
+#include "../../Modules/INCA-N.h"
 
 
 
@@ -16,14 +20,12 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("HBV", "1.0");
+	mobius_model *Model = BeginModelDefinition("INCA-N", "1.0");
 	
-	auto Days 	      = RegisterUnit(Model, "days");
-	auto System       = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1999-1-1");
-	
-	AddHBVModel(Model);
+	AddPersistModel(Model);
+	AddSoilTemperatureModel(Model);
+	AddWaterTemperatureModel(Model);
+	AddIncaNModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	

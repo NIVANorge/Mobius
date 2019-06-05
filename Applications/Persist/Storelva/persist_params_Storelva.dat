@@ -18,10 +18,10 @@ parameters:
 1
 
 "Snow melt temperature" :     #(°C) [-4, 4] The temperature at or above which snow can melt
-0.058533335713653
+0.266117394039441
 
 "Degree day melt factor" :     #(mm/°C/day) [1, 4] Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature
-1.24440212866056
+1.05896518823451
 
 "Rain multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling
 1
@@ -30,7 +30,7 @@ parameters:
 0
 
 "Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
-0.161295553611079
+0.175221889199905
 
 "Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
 -1
@@ -40,8 +40,8 @@ parameters:
 
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]
-0.242246134981977 0.757753865018024 0
-1 0.6823372796741 0.3176627203259
+0.00252778415733051 0.997472215842669 0
+1 0.79636114457375 0.20363885542625
 1 0 1
 
 ###################### "Soils" ######################
@@ -76,8 +76,8 @@ true false false
 
 "Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
 1
-1.9946968219179
-115.308818754119
+1.9306404027402
+116.825898686382
 
 "Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
 0
@@ -105,10 +105,10 @@ true false false
 4 7 12
 
 "a" :     #(1/m2) [0.001, 1] The flow velocity 'a' parameter V=aQ^b
-0.0481726201216464 0.0116135958581405 0.00452884506358555
+0.0145449802533446 0.0145449802533446 0.0145449802533446
 
 "b" :     #(dimensionless) [0.3, 0.5] The flow velocity 'b' parameter V=aQ^b
-0.328607121550723 0.551377986183216 0.46779578416239
+0.4 0.4 0.4
 
 "Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
 0 0 0

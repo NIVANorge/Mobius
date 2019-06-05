@@ -9,6 +9,7 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/Persist.h"
+#include "../../Modules/INCA-Microplastics.h"
 
 
 
@@ -17,9 +18,10 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("PERSiST", "1.0");
+	mobius_model *Model = BeginModelDefinition("INCA-Microplastics", "1.0");
 	
 	AddPersistModel(Model);
+	AddINCAMicroplasticsModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	

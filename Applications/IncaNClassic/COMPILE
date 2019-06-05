@@ -1,7 +1,0 @@
-COMPILE:
-
-(depends on sqlite3: Download from https://www.sqlite.org/download.html)
-gcc -c sqlite3.c -O2
-
-WINDOWS: g++ IncaNClassic.cpp -O2 -fno-exceptions -o IncaNClassic.exe sqlite3.o
-LINUX:   g++ IncaNClassic.cpp -O2 -fno-exceptions -o IncaNClassic.exe sqlite3.o -lpthread -ldl
