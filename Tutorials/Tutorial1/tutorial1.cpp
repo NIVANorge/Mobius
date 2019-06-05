@@ -14,7 +14,7 @@ int main()
 	
 	//NOTE: You don't have to register "Timesteps" and "Start date" yourself, as the framework will do it for you. We just do it here to illustrate.
 	
-	auto Days = RegisterUnit(Model, "days"); //NOTE: Units have no effect on how the model runs, but they are displayed for instance in the INCAView gui. They are just a note that lets you remember the unit of a parameters or equation when calibrating the model.
+	auto Days = RegisterUnit(Model, "days"); //NOTE: Units have no effect on how the model runs, but they are displayed for instance in the MobiView gui. They are just a note that lets you remember the unit of a parameters or equation when calibrating the model.
 	auto Dimensionless = RegisterUnit(Model);
 	
 	//ParameterUInt is of type (64 bit) unsigned integer, i.e {0, 1, 2, ..., 2^64-1}.

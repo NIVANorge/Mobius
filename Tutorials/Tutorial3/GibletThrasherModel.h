@@ -7,19 +7,21 @@ AddGibletThrasherModel(mobius_model *Model)
 {
 	auto Dimensionless = RegisterUnit(Model, "dimensionless");
 	auto Days = RegisterUnit(Model, "days");
+	auto Individuals = RegisterUnit(Model, "individuals");
+	auto IndividualsPerDay = RegisterUnit(Model, "ind./day");
 	
 	auto GeographicalLocation = RegisterIndexSet(Model, "Geographical location");
 	
 	auto Population = RegisterParameterGroup(Model, "Population", GeographicalLocation);
 	
-	auto InitialThrasherPopulation = RegisterParameterDouble(Model, Population, "Initial thrasher population", Dimensionless, 20.0);
+	auto InitialThrasherPopulation = RegisterParameterDouble(Model, Population, "Initial thrasher population", Individuals, 20.0);
 	
 	auto GibletBirthRate = RegisterParameterDouble(Model, Population, "Giblet birth rate", Dimensionless, 0.2);
 	auto PredationRate = RegisterParameterDouble(Model, Population, "Predation rate", Dimensionless, 0.0002);
 	auto ThrasherDeathRate = RegisterParameterDouble(Model, Population, "Thrasher death rate", Dimensionless, 0.01);
 	
-	auto GibletCarryingCapacity = RegisterParameterDouble(Model, Population, "Giblet carrying capacity", Dimensionless, 100.0);
-	auto FearFactor = RegisterParameterDouble(Model, Population, "Thrasher fear factor", Dimensionless, 0.2, 0.0, 1.0, "How much a thrasher fears a location"); //We can put min, max values and comments on a parameter. These will for instance be displayed in the graphical user interface INCAView.
+	auto GibletCarryingCapacity = RegisterParameterDouble(Model, Population, "Giblet carrying capacity", Individuals, 100.0);
+	auto FearFactor = RegisterParameterDouble(Model, Population, "Thrasher fear factor", Dimensionless, 0.2, 0.0, 1.0, "How much a thrasher fears a location"); //We can put min, max values and comments on a parameter. These will for instance be displayed in the graphical user interface MobiView.
 	
 	
 	auto All = RegisterParameterGroup(Model, "All");
@@ -43,27 +45,27 @@ AddGibletThrasherModel(mobius_model *Model)
 	auto MigrationMatrix = RegisterParameterDouble(Model, MigrationMatrixColumn, "Migration matrix", Dimensionless, 1.0, 0.0, 1.0);
 	
 	
-	auto GibletMigration = RegisterEquation(Model, "Giblet migration rate", Dimensionless);
-	auto ThrasherMigration = RegisterEquation(Model, "Thrasher migration rate", Dimensionless);
+	auto GibletMigration = RegisterEquation(Model, "Giblet migration rate", IndividualsPerDay);
+	auto ThrasherMigration = RegisterEquation(Model, "Thrasher migration rate", IndividualsPerDay);
 	auto GibletTemporalBirthRate = RegisterEquation(Model, "Giblet temporal birth rate", Dimensionless);
 	
 	//NOTE: Create a solver 
 	auto Solver = RegisterSolver(Model, "Population solver", 0.1, IncaDascru);
 	
 	//NOTE: An EquationInitialValue is only evaluated once at the start of the model and sets the initial value for another equation, most often an ODE equation.
-	auto InitialGibletPopulation = RegisterEquationInitialValue(Model, "Initial giblet population", Dimensionless);
+	auto InitialGibletPopulation = RegisterEquationInitialValue(Model, "Initial giblet population", Individuals);
 	
 	//NOTE: An EquationODE returns the d/dt of its associated result value rather than returning that result value directly. The solver then integrates it to obtain the result value.
-	auto GibletPopulation = RegisterEquationODE(Model, "Giblet population", Dimensionless);
+	auto GibletPopulation = RegisterEquationODE(Model, "Giblet population", Individuals);
 	SetSolver(Model, GibletPopulation, Solver);
 	SetInitialValue(Model, GibletPopulation, InitialGibletPopulation);
 	
-	auto ThrasherPopulation = RegisterEquationODE(Model, "Thrasher population", Dimensionless);
+	auto ThrasherPopulation = RegisterEquationODE(Model, "Thrasher population", Individuals);
 	SetSolver(Model, ThrasherPopulation, Solver);
 	SetInitialValue(Model, ThrasherPopulation, InitialThrasherPopulation); //The Thrasher population has its initial value set from a parameter.
 	
 	//NOTE: We add giblet birth to the solver even though it is not an ODE equation. This is because we want its value computed at every sub-timestep of the solver for use in the ODE equations.
-	auto GibletBirth = RegisterEquation(Model, "Giblet birth", Dimensionless);
+	auto GibletBirth = RegisterEquation(Model, "Giblet birth", IndividualsPerDay);
 	SetSolver(Model, GibletBirth, Solver);
 	
 	//NOTE: The EquationCumulative sums up all the values for this equation over an index set. In this case we just want to test that the migration sums to 0 so that no giblets are created or destroyed by migration.
