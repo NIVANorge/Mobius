@@ -7,7 +7,7 @@ Primarily Mobius was developed to model catchments (routing of precipitation thr
 
 The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written directly in Matlab or python.
 
-Mobius can produce executables that can be run standalone or together with the graphical user interface [INCAView](https://github.com/Lecheps/INCAView). There is also the option to compile the models to .dll's that can be called and interacted with from python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots.
+Mobius can produce executables that can be run standalone or together with the graphical user interface [MobiView](https://github.com/NIVANorge/MobiView). There is also the option to compile the models to .dll's that can be called and interacted with from python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots.
 
 ![Alt text](Documentation/img/optimizer_MAP.png?raw=true "Example of a plot made using the framework and the python wrapper.")
 
@@ -19,7 +19,7 @@ Mobius can produce executables that can be run standalone or together with the g
   - [Compile a model, run it, and make some changes](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes)
   - [Python wrapper](https://github.com/NIVANorge/Mobius#python-wrapper)
   - [Navigating around the repository](https://github.com/NIVANorge/Mobius#navigating-around-the-repository)
-  - [The INCAView graphical user interface](https://github.com/NIVANorge/Mobius#the-incaview-graphical-user-interface)
+  - [The MobiView graphical user interface](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)
 * [Dependencies](https://github.com/NIVANorge/Mobius#dependencies)
 * [Authors and acknowledgements](https://github.com/NIVANorge/Mobius#authors-and-acknowledgements)
 
@@ -110,50 +110,15 @@ For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compi
 
 ### Creating MobiView compatible .dlls
 
-MobiView can load the same .dlls as the python wrapper. We will soon have application .cpps and compilation scripts set up for all of the models. ***More on this soon***
+MobiView can load the same .dlls as the python wrapper. Most models now have applications set up to compile such dlls. The bat script that compiles them is usually called compile.bat or compile_wrapper.bat. If you want to set up your own model for use with MobiView or the python wrapper, try to follow one of the existing examples.
 
+### Load a model and run it
 
-
-## The INCAView graphical user interface
-
-NOTE: INCAView is soon to be phased out in favour of the new GUI MobiView.
-
-INCAView is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with INCAView.
-
-![Alt text](Documentation/img/incaviewpersist.png?raw=true "Example of running the PERSiST model in INCAView.")
-
-### Getting INCAView
-
-INCAView code is located in its own GitHub repository [here](https://github.com/Lecheps/INCAView). For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of INCAView. If you want to compile it yourself feel free, you need to install QtCreator and also get some libssh-related .dlls.
-
-### Creating INCAView compatible .exes
-
-- Create/use a .cpp for compiling which is set up to produce INCAView-compatible exes. Most of our models already have these .cpp files. See e.g Applications/INCA-N/incan.cpp. To set up your own .cpp files like these, try to follow the example from one of those files.
-
-- Install the sqlite3 library:
-    - Download the source code for sqlite3 from https://www.sqlite.org/download.html
-    - Put the sqlite3 files in Mobius/sqlite3 (create a new folder)
-    - Compile sqlite3 into a linkable object file by typing, from the command line: `gcc -c sqlite3.c -O2`
-
-- You also have to download json.hpp from https://github.com/nlohmann/json/tree/develop/single_include/nlohmann and put it in Mobius/json (create a new folder). The json library does not need any separate compilation.
-
-- To compile models for INCAView, from the command line run the .bat file which refers to the .cpp file which is set up to produce INCAView-compatible exes. Often these .cpp files have the 'iv' suffix in their filename.
-
-### Create a parameter database
-
-INCAView requires a parameter database to be supplied. To create a parameter database from a parameter .dat file, from the command line type `mymodelname.exe` and hit enter (substituting your model name in). A list of options will then be printed to the command line, including one to create a parameter database file from a .dat file:
-`mymodelname.exe convert_parameters myparameters.dat myparameters.db`
-
-**Note**: The new GUI which is under development won't require this step, which will be nice. It will work directly from the parameter.dat files.
-
-### Quick start to running a model using INCAView
-
-- Double click on INCAView.exe (either compiled yourself, or supplied by us - see above)
-- Click 'Load parameter database' and navigate to and select the .db file you just created. The parameters should load and appear in the top left panel. Click on any of the parameter group names, and the associated parameter values should appear to the right. These values are editable, and changes are saved to the parameter database but not to the original .dat file. To export changes you make to the parameter values, click the 'Export parameters' button at the bottom or run the convert_parameters command from the command line as above with the file names in the opposite order.
-- Click 'Select input file' and navigate to the .dat file which contains your driving meteorological data and any other inputs you wish to read in (e.g. observations)
-- Click 'Run model'. Results and inputs should be listed in the top right hand panels.
-- Click through results and inputs to explore the output. Hold down the Shift or Ctrl keys to select multiple series at the same time, and do Ctrl click to deselect. When you have a simulated and an observed series selected, you can get goodness of fit statistics by selecting the 'Results info' tab at the bottom left of the window. Note that if your observations have lots of missing values, you need to check the 'Scatter plot for inputs' box for them to appear on the plot.
-- To save results in a csv format, select the results series you wish to export and then click 'Export results'.
+- Double click MobiView.exe
+- Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in the .dat formats).
+- Click the little runner or (F7) to run the model.
+- Click result or input series to plot them. There are a lot of different (combinations) of plot modes to select between.
+- More in-depth documentation will follow later.
 
 
 ## Dependencies
