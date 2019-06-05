@@ -17,11 +17,6 @@ int main(int argc, char **argv)
 	
 	mobius_model *Model = BeginModelDefinition("SimplyP", "0.3");
 	
-	auto Days 	      = RegisterUnit(Model, "days");
-	auto System = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1991-1-1");
-	
 	AddSimplyPHydrologyModule(Model);
 	AddSimplyPSedimentModule(Model);
 	AddSimplyPPhosphorusModule(Model);

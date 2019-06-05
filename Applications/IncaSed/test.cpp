@@ -18,11 +18,6 @@ int main()
 	
 	mobius_model *Model = BeginModelDefinition("INCA-Sed", "0.0");
 	
-	auto Days   = RegisterUnit(Model, "days");
-	auto System = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 10957);
-	RegisterParameterDate(Model, System, "Start date", "1981-1-1");
-	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
 	
