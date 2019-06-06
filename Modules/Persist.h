@@ -295,7 +295,6 @@ AddPersistModel(mobius_model *Model)
     
 	auto AbstractionTimeseries = RegisterInput(Model, "Abstraction flow", MetresCubedPerSecond);
 	auto EffluentTimeseries    = RegisterInput(Model, "Effluent flow", MetresCubedPerSecond);
-	auto LandUseTimeseries     = RegisterInput(Model, "%", PercentU);
 
 	auto IncaSolver = RegisterSolver(Model, "Reach solver", 0.1, IncaDascru);
 	
@@ -333,9 +332,7 @@ AddPersistModel(mobius_model *Model)
 	//                      * Runoff (mm/d)
 	//                      * 1e6 m2/km2 * 1e-3 m/mm * 1/86400 d/s
 	EQUATION(Model, DiffuseFlowOutput,
-		double percent = IF_INPUT_ELSE_PARAMETER(LandUseTimeseries, Percent);
-	
-		return (PARAMETER(TerrestrialCatchmentArea) * (percent / 100.0) * RESULT(TotalRunoffToReach) * 1000000.0 * 0.001 * (1.0 / 86400.0));
+		return (PARAMETER(TerrestrialCatchmentArea) * (PARAMETER(Percent) / 100.0) * RESULT(TotalRunoffToReach) * 1000000.0 * 0.001 * (1.0 / 86400.0));
 	)
 
 	EQUATION(Model, ReachFlowInput,

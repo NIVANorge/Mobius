@@ -89,7 +89,6 @@ AddIncaNModel(mobius_model *Model)
 	
 	auto AbstractionTimeseries = GetInputHandle(Model, "Abstraction flow");
 	auto EffluentTimeseries    = GetInputHandle(Model, "Effluent flow");
-	auto LandUseTimeseries     = GetInputHandle(Model, "%");
 	
 	auto ActualPrecipitation   = GetInputHandle(Model, "Actual precipitation");
 
@@ -549,7 +548,7 @@ AddIncaNModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DiffuseNitrate,
-		double percent = IF_INPUT_ELSE_PARAMETER(LandUseTimeseries, Percent);
+		double percent = PARAMETER(Percent);
 		return RESULT(TotalNitrateToStream) * PARAMETER(TerrestrialCatchmentArea) * percent / 100.0;
 	)
 	
@@ -561,7 +560,7 @@ AddIncaNModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DiffuseAmmonium,
-		double percent = IF_INPUT_ELSE_PARAMETER(LandUseTimeseries, Percent);
+		double percent = PARAMETER(Percent);
 		return RESULT(TotalAmmoniumToStream) * PARAMETER(TerrestrialCatchmentArea) * percent / 100.0;
 	)
 	
@@ -708,7 +707,6 @@ AddIncaNModel(mobius_model *Model)
 			- RESULT(ReachAmmoniumAbstraction);
 	)
 	
-	//NOTE: Added this for easier calibration - MDN
 	auto ReachNitrateConcentration = RegisterEquation(Model, "Reach nitrate concentration", MgPerL);
 	auto ReachAmmoniumConcentration = RegisterEquation(Model, "Reach ammonium concentration", MgPerL);
 	
