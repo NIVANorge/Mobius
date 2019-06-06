@@ -39,7 +39,7 @@ Documentation can be found in the [Documentation](https://github.com/NIVANorge/M
 
 
 # Quick start guide
-*This is a guide on how to get the tutorials running and to start building your own models. We also provide a quick introduction to the python wrapper, navigating around the repository, and to getting started with the INCAView Graphical User Interface.*
+*This is a guide on how to get the tutorials running and to start building your own models. We also provide a quick introduction to the python wrapper, navigating around the repository, and to getting started with the MobiView Graphical User Interface.*
 
 ## Download the repository
 
@@ -100,7 +100,7 @@ After understanding basic model building we recommended you explore the python w
 
 ## The MobiView graphical user interface
 
-[MobiView](https://github.com/NIVANorge/MobiView) is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with INCAView.
+[MobiView](https://github.com/NIVANorge/MobiView) is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with MobiView.
 
 ![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
 
