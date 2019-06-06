@@ -234,7 +234,7 @@ AddINCACModel(mobius_model *Model)
 	
 	auto SOCMassInMineralLayerFastPool = RegisterEquationODE(Model, "SOC mass in mineral soil layer fast pool", KgPerKm2);
 	SetSolver(Model, SOCMassInMineralLayerFastPool, IncaSolver);
-	SetInitialValue(Model, SOCMassInMineralLayerFastPool, MineralLayerInitialSOCSlow);
+	SetInitialValue(Model, SOCMassInMineralLayerFastPool, MineralLayerInitialSOCFast);
 	
 	auto SOCMassInMineralLayerSlowPool = RegisterEquationODE(Model, "SOC mass in mineral soil layer slow pool", KgPerKm2);
 	SetSolver(Model, SOCMassInMineralLayerSlowPool, IncaSolver);

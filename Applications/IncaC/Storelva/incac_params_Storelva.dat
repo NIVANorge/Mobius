@@ -1,0 +1,308 @@
+# Parameter file generated for INCA-C V0.0
+
+index_sets:
+"Landscape units" : {"All"}
+"Soils" : {"Direct runoff" "Organic layer" "Mineral layer" "Groundwater"}
+"Reaches" : {"Vegår" {"Nes Verk" "Vegår"} {"Outlet" "Nes Verk"}}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days) [0, 18446744073709551615]
+8400
+
+"Start date" :     # ["1000-01-01", "3000-12-31"]
+"1993-01-01"
+
+"Latitude" :     #(°) [-90, 90] Used to compute solar radiation if no solar radiation timeseries was provided in the input data.
+60
+
+"Elevation" :     #(m) [0, 8848] Used to compute solar radiation if no solar radiation timeseries was provided in the input data.
+0
+
+###################### "Landscape units" ######################
+"Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
+1
+
+"Snow melt temperature" :     #(°C) [-4, 4] The temperature at or above which snow can melt
+3.16515109227748
+
+"Degree day melt factor" :     #(mm/°C/day) [1, 4] Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature
+2.6618431548063
+
+"Rain multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling
+1
+
+"Initial snow depth" :     #(mm SWE) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
+0
+
+"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
+0.157653979484291
+
+"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
+-1
+
+"Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
+0
+
+"Thermal conductivity of soil" :     #(W/m/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.7
+
+"Specific heat capacity due to freeze/thaw" :     #(MJ/m3/°C) [1, 200] Controls the energy released when water is frozen and energy consumed under melting
+6.6
+
+"Water equivalent factor" :     #(dimensionless) [0.01, 1] 1mm of snow would produce this amount of water when melted
+0.3
+
+"Snow depth / soil temperature factor" :     #(/cm) [-0.03, -0.001] Defines an empirical relationship between snow pack depth and its insulating effect on soils
+-0.02
+
+"Specific heat capacity of soil" :     #(MJ/m3/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
+1.1
+
+"Soil depth" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.2
+
+"Initial soil temperature" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
+20
+
+"Min rate depth" :     #(mm) [0, 10000] The water depth at which carbon processes in the soil are at their lowest rate
+50
+
+"Max rate depth" :     #(mm) [0, 10000] The water depth at which carbon processes in the soil are at their highest rate
+400
+
+"Min moisture factor" :     #(dimensionless) [0, 1] The rate factor from moisture on carbon processes when soil moisture is at its minimal
+1
+
+"Litter fall rate" :     #(kg/Ha/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+75
+
+"Litter fall start day" :     #(Julian day) [1, 364]
+1
+
+"Litter fall duration" :     #(day) [0, 365]
+366
+
+"SOC fast pool equilibrium fraction in the organic layer" :     #(dimensionless) [0, 1] The relative size that the fast SOC pool tends towards.
+0.25
+
+"SOC fast pool equilibrium fraction in the mineral layer" :     #(dimensionless) [0, 1] The relative size that the fast SOC pool tends towards.
+0.15
+
+"SOC fast pool rate constant in the organic layer" :     #(dimensionless) [0, 5000] Constant used to determine the rate of exchange between the fast and slow pools of SOC.
+50
+
+"SOC fast pool rate constant in the mineral layer" :     #(dimensionless) [0, 5000] Constant used to determine the rate of exchange between the fast and slow pools of SOC.
+50
+
+"Response to a 10° change in temperature" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+10
+
+"Temperature at which the response is 1" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
+20
+
+"DIC mass transfer velocity" :     #(m/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"DIC saturation constant" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"SOC mineralisation base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"SOC mineralisation base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"SOC desorption base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.00013112804316743
+
+"SOC desorption base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.000873479545709396
+
+"DOC sorption base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.499999876321018
+
+"DOC sorption base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.00908486472521717
+
+"DOC mineralisation base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.001
+
+"DOC mineralisation base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1e-005
+
+"DOC mineralisation rate in groundwater" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Linear effect of SO4 on organic matter solubility in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Linear effect of SO4 on organic matter solubility in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Exponential effect of SO4 on organic matter solubility in organic soil layer" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Exponential effect of SO4 on organic matter solubility in mineral soil layer" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Direct runoff initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Direct runoff initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Organic soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Organic soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Organic soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
+1000000
+
+"Mineral soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Mineral soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Mineral soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
+100
+
+###################### "Landscape units" "Soils" "Soils" ######################
+"Percolation matrix" :     #(dimensionless) [0, 1]
+0 1 0 0
+1 0.786903539228482 0.213096460771519 0
+1 0 1 0
+1 0 0 1
+
+###################### "Soils" ######################
+"This is a quick box" :
+true false false false
+
+###################### "Soils" "Landscape units" ######################
+"Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
+0
+300
+15
+15
+
+"Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
+1
+1
+1
+1
+
+"Infiltration" :     #(mm/day) [0, 500] The maximum rate at which water can infiltrate into a box from overlying boxes
+1000
+100
+20
+20
+
+"Retained water depth" :     #(mm) [0, 100000] The depth of water in a box which does not contribute to runoff but can contribute to evapotranspiration and to diluting nutrient inputs to the box. For the soil water box, this is similar to the field capacity
+0
+300
+100
+0
+
+"Drought runoff fraction" :     #(dimensionless) [0, 0.5] The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth
+0
+0.1
+0
+0
+
+"Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
+1
+1.97369982046073
+66.5648605984746
+66.5648605984746
+
+"Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
+0
+3.5
+0
+0
+
+"Relative evapotranspiration index" :     #(dimensionless) [0, 1] The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket
+0
+1
+0
+0
+
+"Maximum capacity" :     #(mm) [0, 9999] The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity
+1000
+430
+300
+300
+
+###################### "Reaches" ######################
+"Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
+173.8 119.3 114.2
+
+"Reach length" :     #(m) [1, 999999] The length of the main stem of the stream / reach in a subcatchment
+17500 19900 10900
+
+"Reach width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
+4 7 12
+
+"a" :     #(1/m2) [0.001, 1] The flow velocity 'a' parameter V=aQ^b
+0.0147637759800187 0.0147637759800187 0.0147637759800187
+
+"b" :     #(dimensionless) [0.3, 0.5] The flow velocity 'b' parameter V=aQ^b
+0.4 0.4 0.4
+
+"Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
+0 0 0
+
+"Reach snow multiplier" :     #(dimensionless) [0.5, 2] The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+1 1 1
+
+"Reach rain multiplier" :     #(dimensionless) [0.5, 2] The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+1 1 1
+
+"Abstraction flow" :     #(m3/s) [0, 9999] The rate at which water is removed from a reach by human activities
+0 0 0
+
+"Effluent flow" :     #(m3/s) [0, 9999] The rate of liquid inputs to a reach from e.g. sewage treatment works
+0 0 0
+
+"Reach has abstraction" :
+false false false
+
+"Reach has effluent input" :
+false false false
+
+"Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
+0.87 0 0
+
+"Groundwater initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Groundwater initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Aquatic DOC mineralisation self-shading multiplier" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Aquatic DOC mineralisation offset" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Reach DIC loss rate" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+"Aquatic DOC microbial mineralisation base rate" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+1e-005 1e-005 1e-005
+
+"Reach initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+5 5 5
+
+"Reach initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0 0
+
+###################### "Reaches" "Landscape units" ######################
+"%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
+100
+100
+100
+
