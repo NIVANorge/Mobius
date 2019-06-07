@@ -8,7 +8,7 @@ SimplyP is a parsimonious hydrology, sediment and phosphorus model. The model is
 Examples of potential model uses include:
 
 1. Interpolating sparse monitoring data, to provide more ecologically-relevant estimates of in-stream phosphorus concentrations, or more accurate estimates of loads delivered downstream to lakes or estuaries;
-2. Hypothesis testing and highlighting knowledge and data gaps. This in turn could be used to help design monitoring startegies and experimental needs, and prioritise areas for future model development;
+2. Hypothesis testing and highlighting knowledge and data gaps. This in turn could be used to help design monitoring strategies and experimental needs, and prioritise areas for future model development;
 3. Exploring the potential response of the system to future environmental change (e.g. climate, land use and management), including potential storm and low-flow dynamics;
 4. Providing evidence to support decision-making, e.g. to help set water quality and load reduction goals, and advise on means of achieving those goals.
 
@@ -30,9 +30,9 @@ The Mobius version offers dramatic performance improvements compared to the Pyth
 
 * Three .cpp files and three accompanying compile.bat files which are used to compile different kinds of model executables (don't worry, compiling is easy, see [here](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes) for a quick description of why/when you compile, and a walk through of how it's done):
 
+  - simplyp_wrapper.cpp (compiled using compile_pythonwrapper.bat): this creates a .dll which is then used by the python wrapper or the MobiView GUI. You shouldn't need to alter this .cpp for different model applications.
   - simplyp_testing.cpp (compiled using compile_testing.bat): this creates a .exe which is useful for testing during model devleopment. **This .cpp contains things you should change for different model applications.** It also contains flags for doing useful things like creating an .exe which, when run, **creates a new parameter file** using the structure you define in the .cpp file and the default parameter values defined in the model header file SimplyP.h. This can save a lot of typing if you have lots of sub-catchments.
-  - simplyp_incaview.cpp (compiled using compile_incaview.bat): this creates a .exe which can be used with [INCAView](https://github.com/NIVANorge/Mobius#the-incaview-graphical-user-interface), and to create the parameter database required by INCAView (further instructions are provided [here](https://github.com/NIVANorge/Mobius#the-incaview-graphical-user-interface)). You shouldn't need to alter this .cpp for different model applications.
-  - simplyp_wrapper.cpp (compiled using compile_pythonwrapper.bat): this creates a .dll which is then used by the python wrapper. You shouldn't need to alter this .cpp for different model applications.
+  - simplyp_incaview.cpp (compiled using compile_incaview.bat): this was used for creating an .exe that was compatible with the now abandoned GUI INCAView. Will probably soon be removed.
   
 * three .dat files for setting up optimization and uncertainty analysis in C++, i.e. without use of the python wrapper. More info on this will come shortly.
 
@@ -43,17 +43,13 @@ The Mobius version offers dramatic performance improvements compared to the Pyth
  
 * Download/clone the GitHub Mobius repository onto your computer (see instructions [here](https://github.com/NIVANorge/Mobius#download-the-repository)), and familiarize yourself with the basics of the Mobius model building system and the contents of the repository (introductory documentation is [here](https://github.com/NIVANorge/Mobius#mobius)).
  
-* Follow the instructions [here](https://github.com/NIVANorge/Mobius#the-incaview-graphical-user-interface) to:
-  - Get an INCAView executable
-  - Get/compile an INCAView-compatible simplyP executable: After [installing a compiler](https://github.com/NIVANorge/Mobius#first-download-a-compiler) and the [extras necessary](https://github.com/NIVANorge/Mobius#creating-incaview-compatible-exes) to compile INCA-View compatible .exes, from the command line `cd` into the Applications/SimplyP folder and run `simplyp_incaview.bat`. SimplyP_INCAView.exe should be created. Alternatively, [contact us](magnus.norling@niva.no) and we can supply a pre-compiled executable.
-  - Create a parameter database for either the Morsa or Tarland catchment by using the .exe you just created to convert parameters in the .dat file to a .db file. E.g. from the command line, type
-         `SimplyP_INCAView convert_parameters Tarland/TarlandParameters.dat Tarland/TarlandParameters.db`
-    For this example, the new TarlandParameters.db file should appear within the Applications/SimplyP/Tarland folder. Note: if we supplied you with a pre-compiled SimplyP executable, we'll have to provide you with this .db as well.
-  - Open INCAView.exe, read in the parameter database and input data and run the model, then explore the results. Try changing parameter values and re-running the model to see what happens. If you want to know more about what the results variables are or how they are calculated, you can look directly into the SimplyP.h file ([here](https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h)).
+* Follow the instructions [here](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) to:
+  - Get an MobiView executable
+  - Get/compile a simplyP dll: After [installing a compiler](https://github.com/NIVANorge/Mobius#first-download-a-compiler), from the command line `cd` into the Applications/SimplyP folder and run `compile_dll.bat`. simplyp.dll should be created. Alternatively, [contact us](magnus.norling@niva.no) and we can supply a pre-compiled dll.
+  - Open MobiView.exe, read in the dll, the input file and the parameter file and run the model, then explore the results. Try changing parameter values and re-running the model to see what happens. If you want to know more about what the results variables are or how they are calculated, you can look directly into the SimplyP.h file ([here](https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h)).
  
 **Notes:**
- * INCAView will soon be replaced with a new improved GUI, which doesn't require parameter databases to be created
- * We are working on a build and distribution system which will make this all **much easier**! More coming soon!
+ * We are working on a build and distribution system which will make it possible to download MobiView and the various model dlls from a server. More coming soon!
  * Some people have issues installing software (e.g. the MingW compiler) on their system due to admin rights and/or over-zealous antivirus software. We recommend you beg your IT department to give you full admin rights at least temporarily, and disable your antivirus software during install if you're having troubles. This should all be sorted once we get a build system finished.
 
  2. **[Auto-calibration and uncertainty estimation with the Python wrapper](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb)**. An example illustrating how to auto-calibrate SimplyP and explore parametric uncertainty using MCMC.
