@@ -41,13 +41,13 @@ AddINCACModel(mobius_model *Model)
 	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
 	
 	//TODO: As always, find better default values, min/max, description..
-	auto MinRateDepth                 = RegisterParameterDouble(Model, Land, "Min rate depth", Mm, 50.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their lowest rate");
-	auto MaxRateDepth                 = RegisterParameterDouble(Model, Land, "Max rate depth", Mm, 400.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their highest rate");
-	auto MinimalMoistureFactor        = RegisterParameterDouble(Model, Land, "Min moisture factor", Dimensionless, 0.05, 0.0, 1.0, "The rate factor from moisture on carbon processes when soil moisture is at its minimal");
+	auto MinRateDepth                 = RegisterParameterDouble(Model, Land, "Min rate depth", Mm, 50.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their lowest rate.");
+	auto MaxRateDepth                 = RegisterParameterDouble(Model, Land, "Max rate depth", Mm, 400.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their highest rate. Rates are lower both for higher and lower temperatures.");
+	auto MinimalMoistureFactor        = RegisterParameterDouble(Model, Land, "Min moisture factor", Dimensionless, 0.05, 0.0, 1.0, "The rate factor from moisture on carbon processes when soil moisture is at its minimal.");
 	
-	auto LitterFallRate                = RegisterParameterDouble(Model, Land, "Litter fall rate", KgPerHaPerDay, 1.0);
+	auto LitterFallRate                = RegisterParameterDouble(Model, Land, "Litter fall rate", KgPerHaPerDay, 1.0, 0.0, 1000.0, "The amount of organic carbon entering the soil from e.g. litter fall from trees or root breakdown. This parameter is used only if a Litterfall timeseries is not provided.");
 	auto LitterFallStartDay            = RegisterParameterUInt(  Model, Land, "Litter fall start day", JulianDay, 300, 1, 364);
-	auto LitterFallDuration            = RegisterParameterUInt(  Model, Land, "Litter fall duration", Days, 30, 0, 365);
+	auto LitterFallDuration            = RegisterParameterUInt(  Model, Land, "Litter fall duration", Days, 30, 0, 366);
 	
 	auto LitterFallTimeseries          = RegisterInput(Model, "Litterfall", KgPerHaPerDay);
 	
@@ -56,21 +56,21 @@ AddINCACModel(mobius_model *Model)
 	auto FastPoolRateConstantOrganicLayer = RegisterParameterDouble(Model, Land, "SOC fast pool rate constant in the organic layer", Dimensionless, 50.0, 0.0, 5000.0, "Constant used to determine the rate of exchange between the fast and slow pools of SOC.");
 	auto FastPoolRateConstantMineralLayer = RegisterParameterDouble(Model, Land, "SOC fast pool rate constant in the mineral layer", Dimensionless, 50.0, 0.0, 5000.0, "Constant used to determine the rate of exchange between the fast and slow pools of SOC.");
 	
-	auto SoilTemperatureRateMultiplier = RegisterParameterDouble(Model, Land, "Response to a 10° change in temperature", Dimensionless, 1.0);
-	auto SoilTemperatureRateOffset     = RegisterParameterDouble(Model, Land, "Temperature at which the response is 1", DegreesCelsius, 20.0);
+	auto SoilTemperatureRateMultiplier = RegisterParameterDouble(Model, Land, "Response to a 10° change in temperature", Dimensionless, 1.0, 0.0, 20.0, "How much faster all processes (sorption, desorption, mineralisation) in the soil become if temperature increases by 10°");
+	auto SoilTemperatureRateOffset     = RegisterParameterDouble(Model, Land, "Temperature at which the response is 1", DegreesCelsius, 20.0, 0.0, 40.0, "The temperature at which the base rate of the soil processes (sorption, desorption, mineralisation) occurs.");
 	
-	auto DICMassTransferVelocity               = RegisterParameterDouble(Model, Land, "DIC mass transfer velocity", MPerDay, 1.0);
-	auto DICSaturationConstant                 = RegisterParameterDouble(Model, Land, "DIC saturation constant", KgPerM3, 1.0);
-	auto SOCMineralisationBaseRateOrganicLayer = RegisterParameterDouble(Model, Land, "SOC mineralisation base rate in organic soil layer", PerDay, 0.1);
-	auto SOCMineralisationBaseRateMineralLayer = RegisterParameterDouble(Model, Land, "SOC mineralisation base rate in mineral soil layer", PerDay, 0.1);
-	auto SOCDesorptionBaseRateOrganicLayer     = RegisterParameterDouble(Model, Land, "SOC desorption base rate in organic soil layer", PerDay, 0.1);
-	auto SOCDesorptionBaseRateMineralLayer     = RegisterParameterDouble(Model, Land, "SOC desorption base rate in mineral soil layer", PerDay, 0.1);
-	auto DOCSorptionBaseRateOrganicLayer       = RegisterParameterDouble(Model, Land, "DOC sorption base rate in organic soil layer", PerDay, 0.1);
-	auto DOCSorptionBaseRateMineralLayer       = RegisterParameterDouble(Model, Land, "DOC sorption base rate in mineral soil layer", PerDay, 0.1);
-	auto DOCMineralisationBaseRateOrganicLayer = RegisterParameterDouble(Model, Land, "DOC mineralisation base rate in organic soil layer", PerDay, 0.1);
-	auto DOCMineralisationBaseRateMineralLayer = RegisterParameterDouble(Model, Land, "DOC mineralisation base rate in mineral soil layer", PerDay, 0.1);
+	auto DICMassTransferVelocity               = RegisterParameterDouble(Model, Land, "DIC mass transfer velocity", MPerDay, 1.0, 0.0, 100.0, "How fast DIC in the soil is able to escape to the atmosphere.");
+	auto DICSaturationConstant                 = RegisterParameterDouble(Model, Land, "DIC saturation constant", KgPerM3, 1.0, 0.0, 100.0, "Saturation concentration of DIC where no mass transfer to the atmosphere occurs.");
+	auto SOCMineralisationBaseRateOrganicLayer = RegisterParameterDouble(Model, Land, "SOC mineralisation base rate in organic soil layer", PerDay, 0.1, 0.0, 1.0, "How fast SOC is transformed to DIC disregarding temperature and moisture modifiers.");
+	auto SOCMineralisationBaseRateMineralLayer = RegisterParameterDouble(Model, Land, "SOC mineralisation base rate in mineral soil layer", PerDay, 0.1, 0.0, 1.0, "How fast SOC is transformed to DIC disregarding temperature and moisture modifiers.");
+	auto SOCDesorptionBaseRateOrganicLayer     = RegisterParameterDouble(Model, Land, "SOC desorption base rate in organic soil layer", PerDay, 0.1, 0.0, 1.0, "How fast SOC is transformed to DOC disregarding temperature and moisture modifiers.");
+	auto SOCDesorptionBaseRateMineralLayer     = RegisterParameterDouble(Model, Land, "SOC desorption base rate in mineral soil layer", PerDay, 0.1, 0.0, 1.0, "How fast SOC is transformed to DOC disregarding temperature and moisture modifiers.");
+	auto DOCSorptionBaseRateOrganicLayer       = RegisterParameterDouble(Model, Land, "DOC sorption base rate in organic soil layer", PerDay, 0.1, 0.0, 1.0, "How fast DOC is transformed to SOC disregarding temperature and moisture modifiers.");
+	auto DOCSorptionBaseRateMineralLayer       = RegisterParameterDouble(Model, Land, "DOC sorption base rate in mineral soil layer", PerDay, 0.1, 0.0, 1.0, "How fast DOC is transformed to SOC disregarding temperature and moisture modifiers.");
+	auto DOCMineralisationBaseRateOrganicLayer = RegisterParameterDouble(Model, Land, "DOC mineralisation base rate in organic soil layer", PerDay, 0.1, 0.0, 1.0, "How fast DOC is transformed to DIC disregarding temperature and moisture modifiers.");
+	auto DOCMineralisationBaseRateMineralLayer = RegisterParameterDouble(Model, Land, "DOC mineralisation base rate in mineral soil layer", PerDay, 0.1, 0.0, 1.0, "How fast DOC is transformed to DIC disregarding temperature and moisture modifiers.");
 	
-	auto DOCMineralisationRateGroundwater      = RegisterParameterDouble(Model, Land, "DOC mineralisation rate in groundwater", PerDay, 0.1);
+	auto DOCMineralisationRateGroundwater      = RegisterParameterDouble(Model, Land, "DOC mineralisation rate in groundwater", PerDay, 0.1, 0.0, 1.0, "How fast DOC is transformed to DIC in the groundwater. No temperature or moisture modifiers are applied here.");
 	
 	auto LinearEffectOfSO4OnSolubilityOrganicLayer = RegisterParameterDouble(Model, Land, "Linear effect of SO4 on organic matter solubility in organic soil layer", PerDay, 0.1); //TODO: This is actually a different unit, but it depends on the unit of the SO4 timeseries, which could be user specified..
 	auto LinearEffectOfSO4OnSolubilityMineralLayer = RegisterParameterDouble(Model, Land, "Linear effect of SO4 on organic matter solubility in mineral soil layer", PerDay, 0.1); //TODO: This is actually a different unit, but it depends on the unit of the SO4 timeseries, which could be user specified..
@@ -95,19 +95,19 @@ AddINCACModel(mobius_model *Model)
 	auto MineralLayerToGroundwaterFraction  = RegisterEquation(Model, "Mineral layer to groundwater fraction", PerDay);
 	auto GroundwaterToReachFraction         = RegisterEquation(Model, "Groundwater to reach fraction", PerDay);
 	
-	auto DirectRunoffInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Direct runoff initial DOC concentration", MgPerL, 0.0);
-	auto DirectRunoffInitialDICConcentration = RegisterParameterDouble(Model, Land, "Direct runoff initial DIC concentration", MgPerL, 0.0);
+	auto DirectRunoffInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Direct runoff initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto DirectRunoffInitialDICConcentration = RegisterParameterDouble(Model, Land, "Direct runoff initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
 	
-	auto OrganicSoilInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Organic soil water initial DOC concentration", MgPerL, 0.0);
-	auto OrganicSoilInitialDICConcentration = RegisterParameterDouble(Model, Land, "Organic soil water initial DIC concentration", MgPerL, 0.0);
-	auto OrganicSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Organic soil water initial SOC mass", KgPerHa, 0.0);
+	auto OrganicSoilInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Organic soil water initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto OrganicSoilInitialDICConcentration = RegisterParameterDouble(Model, Land, "Organic soil water initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto OrganicSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Organic soil water initial SOC mass", KgPerHa, 0.0, 0.0, 1e6);
 	
-	auto MineralSoilInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Mineral soil water initial DOC concentration", MgPerL, 0.0);
-	auto MineralSoilInitialDICConcentration = RegisterParameterDouble(Model, Land, "Mineral soil water initial DIC concentration", MgPerL, 0.0);
-	auto MineralSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Mineral soil water initial SOC mass", KgPerHa, 0.0);
+	auto MineralSoilInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Mineral soil water initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto MineralSoilInitialDICConcentration = RegisterParameterDouble(Model, Land, "Mineral soil water initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto MineralSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Mineral soil water initial SOC mass", KgPerHa, 0.0, 0.0, 1e6);
 	
-	auto GroundwaterInitialDOCConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial DOC concentration", MgPerL, 0.0);
-	auto GroundwaterInitialDICConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial DIC concentration", MgPerL, 0.0);
+	auto GroundwaterInitialDOCConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto GroundwaterInitialDICConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
 	
 	auto SOCMineralisationInOrganicLayer = RegisterEquation(Model, "SOC mineralisation in organic soil layer", PerDay);
 	SetSolver(Model, SOCMineralisationInOrganicLayer, IncaSolver);
@@ -578,19 +578,18 @@ AddINCACModel(mobius_model *Model)
 		return SafeDivide(RESULT(DOCMassInGroundwater), RESULT(WaterDepth, Groundwater));
 	)
 	
-	
 	auto ReachVolume = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow   = GetEquationHandle(Model, "Reach flow");
 	auto ReachAbstraction = GetEquationHandle(Model, "Reach abstraction");
 	
 	
-	auto DOCMineralisationSelfShadingMultiplier = RegisterParameterDouble(Model, Reaches, "Aquatic DOC mineralisation self-shading multiplier", Dimensionless, 1.0); //TODO: Not actually dimensionless
-	auto DOCMineralisationOffset                = RegisterParameterDouble(Model, Reaches, "Aquatic DOC mineralisation offset", KgPerM3, 1.0);
-	auto ReachDICLossRate                       = RegisterParameterDouble(Model, Reaches, "Reach DIC loss rate", PerDay, 0.1);
-	auto MicrobialMineralisationBaseRate        = RegisterParameterDouble(Model, Reaches, "Aquatic DOC microbial mineralisation base rate", PerDay, 0.1);
+	auto DOCMineralisationSelfShadingMultiplier = RegisterParameterDouble(Model, Reaches, "Aquatic DOC mineralisation self-shading multiplier", Dimensionless, 1.0, 0.0, 1.0); //TODO: Not actually dimensionless
+	auto DOCMineralisationOffset                = RegisterParameterDouble(Model, Reaches, "Aquatic DOC mineralisation offset", KgPerM3, 1.0, 0.0, 100.0);
+	auto ReachDICLossRate                       = RegisterParameterDouble(Model, Reaches, "Reach DIC loss rate", PerDay, 0.1, 0.0, 1.0);
+	auto MicrobialMineralisationBaseRate        = RegisterParameterDouble(Model, Reaches, "Aquatic DOC microbial mineralisation base rate", PerDay, 0.1, 0.0, 1.0);
 	
-	auto ReachInitialDOCConcentration = RegisterParameterDouble(Model, Reaches, "Reach initial DOC concentration", MgPerL, 0.0);
-	auto ReachInitialDICConcentration = RegisterParameterDouble(Model, Reaches, "Reach initial DIC concentration", MgPerL, 0.0);
+	auto ReachInitialDOCConcentration = RegisterParameterDouble(Model, Reaches, "Reach initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto ReachInitialDICConcentration = RegisterParameterDouble(Model, Reaches, "Reach initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
 	
 	auto SolarRadiation = GetEquationHandle(Model, "Solar radiation");
 	

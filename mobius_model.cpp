@@ -1821,8 +1821,8 @@ PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 			FOR_ALL_BATCH_EQUATIONS(Batch,
 				int PrintCount = 0;
 				printf("\n\t");
-				if(Model->EquationSpecs[Equation.Handle].Type == EquationType_Cumulative) PrintCount += printf("(Cumulative) ");
-				else if(Model->EquationSpecs[Equation.Handle].Type == EquationType_ODE) PrintCount += printf("(ODE) ");
+				if(Model->Equations.Specs[Equation.Handle].Type == EquationType_Cumulative) PrintCount += printf("(Cumulative) ");
+				else if(Model->Equations.Specs[Equation.Handle].Type == EquationType_ODE) PrintCount += printf("(ODE) ");
 				PrintCount += printf("%s: ", GetName(Model, Equation));
 				
 				u64 Cc = ValueSet->EquationTotalCycles[Equation.Handle];
@@ -1844,5 +1844,3 @@ PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 	std::cout << "\nTotal average cycles per evaluation: " << ((double)SumCc / (double)TotalHits)<< std::endl;
 #endif
 }
-
-#undef FOR_ALL_BATCH_EQUATIONS

@@ -8,10 +8,10 @@ index_sets:
 parameters:
 ###################### (no index sets) ######################
 "Timesteps" :     #(days) [0, 18446744073709551615]
-8400
+2000
 
 "Start date" :     # ["1000-01-01", "3000-12-31"]
-"1993-01-01"
+"1996-09-01"
 
 "Latitude" :     #(°) [-90, 90] Used to compute solar radiation if no solar radiation timeseries was provided in the input data.
 60
@@ -66,16 +66,16 @@ parameters:
 20
 
 "Min rate depth" :     #(mm) [0, 10000] The water depth at which carbon processes in the soil are at their lowest rate
-50
+300.45
 
 "Max rate depth" :     #(mm) [0, 10000] The water depth at which carbon processes in the soil are at their highest rate
-400
+320
 
 "Min moisture factor" :     #(dimensionless) [0, 1] The rate factor from moisture on carbon processes when soil moisture is at its minimal
-1
+0
 
 "Litter fall rate" :     #(kg/Ha/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-75
+25
 
 "Litter fall start day" :     #(Julian day) [1, 364]
 1
@@ -96,7 +96,7 @@ parameters:
 50
 
 "Response to a 10° change in temperature" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-10
+4.5
 
 "Temperature at which the response is 1" :     #(°C) [-1.79769313486232e+308, 1.79769313486232e+308]
 20
@@ -114,22 +114,22 @@ parameters:
 0
 
 "SOC desorption base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.00013112804316743
+0.00013
 
 "SOC desorption base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.000873479545709396
+0.00087
 
 "DOC sorption base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.499999876321018
+0.25
 
 "DOC sorption base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.00908486472521717
+0.01
 
 "DOC mineralisation base rate in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.001
+0
 
 "DOC mineralisation base rate in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-005
+0
 
 "DOC mineralisation rate in groundwater" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
@@ -153,16 +153,16 @@ parameters:
 0
 
 "Organic soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+6
 
 "Organic soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
 "Organic soil water initial SOC mass" :     #(kg/Ha) [-1.79769313486232e+308, 1.79769313486232e+308]
-1000000
+1100000
 
 "Mineral soil water initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+6
 
 "Mineral soil water initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
@@ -295,7 +295,7 @@ false false false
 1e-005 1e-005 1e-005
 
 "Reach initial DOC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-5 5 5
+3 5 5
 
 "Reach initial DIC concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0 0 0
