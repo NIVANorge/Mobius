@@ -1600,8 +1600,8 @@ RunModel(mobius_data_set *DataSet)
 	ValueSet.AllCurInputsBase = DataSet->InputData + ((size_t)InputDataStartOffsetTimesteps)*DataSet->InputStorageStructure.TotalCount;
 	
 #if MOBIUS_EQUATION_PROFILING
-	ValueSet.EquationHits        = AllocClearedArray(size_t, Model->FirstUnusedEquationHandle);
-	ValueSet.EquationTotalCycles = AllocClearedArray(u64, Model->FirstUnusedEquationHandle);
+	ValueSet.EquationHits        = AllocClearedArray(size_t, Model->Equations.Count());
+	ValueSet.EquationTotalCycles = AllocClearedArray(u64, Model->Equations.Count());
 #endif
 	
 	for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
@@ -1818,7 +1818,9 @@ PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 			std::cout << "\n\t-----";
 			if(Batch.Type == BatchType_Solver) std::cout << " (SOLVER: " << GetName(Model, Batch.Solver) << ")";
 			
-			FOR_ALL_BATCH_EQUATIONS(Batch,
+			ForAllBatchEquations(Batch,
+			[Model, ValueSet, &TotalHits, &SumCc](equation_h Equation)
+			{
 				int PrintCount = 0;
 				printf("\n\t");
 				if(Model->Equations.Specs[Equation.Handle].Type == EquationType_Cumulative) PrintCount += printf("(Cumulative) ");
@@ -1837,7 +1839,8 @@ PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 				
 				TotalHits += (u64)Hits;
 				SumCc += Cc;
-			)
+				return false;
+			});
 			if(BatchIdx == BatchGroup.LastBatch) std::cout << "\n\t-----\n";
 		}
 	}
