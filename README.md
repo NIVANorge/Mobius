@@ -59,7 +59,14 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 
 ### First download a compiler
 
-Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
+Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. 
+
+- g++ : Tested and works. There can be problems with gcc versions older than 5.0
+- clang (llvm) : Sometimes gives errors. Will be looked into eventually.
+- Visual C++ : Not yet tested.
+- Other compilers : Not tested.
+
+To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
 
 - You can use the version of MingW-w64 found here (click the sourceforge link to download):
 https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installation that you choose x86-64 under the 'Architecture' dropdown list.** Take note of where the compiler is installed, you will need it shortly.
