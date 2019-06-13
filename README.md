@@ -59,7 +59,14 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 
 ### First download a compiler
 
-Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
+Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable. We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. 
+
+- g++ : Tested and works. There can be problems with gcc versions older than 5.0
+- clang (llvm) : Sometimes gives errors. Will be looked into eventually.
+- Visual C++ : Not yet tested.
+- Other compilers : Not tested.
+
+To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
 
 - You can use the version of MingW-w64 found here (click the sourceforge link to download):
 https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installation that you choose x86-64 under the 'Architecture' dropdown list.** Take note of where the compiler is installed, you will need it shortly.
@@ -100,24 +107,27 @@ After understanding basic model building we recommended you explore the python w
 
 ## The MobiView graphical user interface
 
-[MobiView](https://github.com/NIVANorge/MobiView) is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model exes that are compatible with MobiView.
+[MobiView](https://github.com/NIVANorge/MobiView) is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model dlls that are compatible with MobiView.
 
 ![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
 
 ### Getting MobiView
 
-For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to compile it yourself feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing this.
+For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to compile it yourself feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing MobiView.
 
 ### Creating MobiView compatible .dlls
 
-MobiView can load the same .dlls as the python wrapper. Most models now have applications set up to compile such dlls. The bat script that compiles them is usually called compile.bat or compile_wrapper.bat. If you want to set up your own model for use with MobiView or the python wrapper, try to follow one of the existing examples.
+MobiView can load the same .dlls as the python wrapper. Most models now have applications set up to compile such dlls. The script that compiles them is usually called compile.bat or compile_wrapper.bat. If you want to set up your own model for use with MobiView or the python wrapper, try to follow one of the existing examples.
 
 ### Load a model and run it
 
 - Double click MobiView.exe
 - Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in the .dat formats).
 - Click the little runner or (F7) to run the model.
-- Click result or input series to plot them. There are a lot of different (combinations) of plot modes to select between.
+- Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
+- Ctrl-click to select multiple timeseries or to deselect them.
+- Some timeseries exist for multiple indexes. You can choose the indexes to show in the views below the plot. Multiselection is possible here too.
+- Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
 - More in-depth documentation will follow later.
 
 
