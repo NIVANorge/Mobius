@@ -216,9 +216,10 @@ struct parameter_group_spec
 {
 	const char *Name;
 	parameter_group_h ParentGroup;
-	std::vector<parameter_group_h> ChildrenGroups;
 	index_set_h IndexSet;
+	
 	std::vector<entity_handle> Parameters;
+	std::vector<parameter_group_h> ChildrenGroups;
 };
 
 enum index_set_type
@@ -1529,7 +1530,7 @@ GetInputCount(value_set_accessor *ValueSet, index_set_h IndexSet)
 inline size_t
 BranchInputIteratorEnd(value_set_accessor *ValueSet, index_set_h IndexSet, index_t Branch)
 {
-	return ValueSet->Running ? ValueSet->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1; //NOTE: The count is always one greater than the largest index, so it is guaranteed to be invalid.
+	return ValueSet->Running ? ValueSet->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1; //NOTE: The count is always one greater than the largest index, so it is guaranteed to not be a valid index.
 }
 
 struct branch_input_iterator

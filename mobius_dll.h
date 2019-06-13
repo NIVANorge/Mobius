@@ -612,6 +612,7 @@ DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ParentGroupName)
 	const mobius_model *Model = DataSet->Model;
 	
 	parameter_group_h ParentGroup = {0};
+	
 	if(ParentGroupName && strlen(ParentGroupName) > 0)
 	{
 		ParentGroup = GetParameterGroupHandle(Model, ParentGroupName);
@@ -622,7 +623,7 @@ DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ParentGroupName)
 	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
 	{
 		const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
-		if(!IsValid(ParentGroup) || ParentGroup == Spec.ParentGroup) ++Count;
+		if(ParentGroup == Spec.ParentGroup) ++Count;
 	}
 	
 	return Count;
@@ -650,7 +651,7 @@ DllGetAllParameterGroups(void *DataSetPtr, const char **NamesOut, const char *Pa
 	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
 	{
 		const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
-		if(!IsValid(ParentGroup) || ParentGroup == Spec.ParentGroup)
+		if(ParentGroup == Spec.ParentGroup)
 		{
 			NamesOut[Idx] = Spec.Name;
 			++Idx;

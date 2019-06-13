@@ -96,13 +96,13 @@ AddPersistModel(mobius_model *Model)
 
 	//TODO: Allow parameter groups to have multiple index sets so that the matrix does not have to be built in three group stages?
 	
-	auto MatrixCol = RegisterParameterGroup(Model, "Matrix column", SoilBoxes);
+	auto MatrixCol = RegisterParameterGroup(Model, "Percolation to", SoilBoxes);
 	auto PercolationMatrix = RegisterParameterDouble(Model, MatrixCol, "Percolation matrix", Dimensionless, 0.05, 0.0, 1.0);
 	
-	auto MatrixRow = RegisterParameterGroup(Model, "Matrix row", SoilBoxes);
+	auto MatrixRow = RegisterParameterGroup(Model, "Percolation from", SoilBoxes);
 	SetParentGroup(Model, MatrixCol, MatrixRow);
 	
-	auto MatrixLand = RegisterParameterGroup(Model, "Matrix land", LandscapeUnits);
+	auto MatrixLand = RegisterParameterGroup(Model, "Percolation", LandscapeUnits);
 	SetParentGroup(Model, MatrixRow, MatrixLand);
 
 	
