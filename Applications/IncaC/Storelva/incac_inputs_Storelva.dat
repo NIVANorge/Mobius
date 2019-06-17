@@ -7,9 +7,16 @@ additional_timeseries :
 "Observed snow depth" unit "cm"
 "Observed discharge outlet" unit "m3/s"
 "Observed TOC" unit "mg/l"
+"Observed NO3" unit "mg/l"
+"Observed NH4" unit "mg/l"
+"Observed TOTN" unit "mg/l"
+
 
 index_set_dependencies :
 "Observed TOC" : {"Reaches"}
+"Observed NO3" : {"Reaches"}
+"Observed NH4" : {"Reaches"}
+"Observed TOTN" : {"Reaches"}
 
 
 
