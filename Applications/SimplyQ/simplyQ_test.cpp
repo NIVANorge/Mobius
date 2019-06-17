@@ -6,6 +6,9 @@
 
 #include "../../mobius.h"
 
+
+#define SIMPLYQ_GROUNDWATER    //NOTE: #defining this before the inclusion of the SimplyQ.h file turns on groundwater in SimplyQ.
+
 #include "../../Modules/SimplyQ.h"
 
 #define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
@@ -13,11 +16,6 @@
 int main()
 {
 	mobius_model *Model = BeginModelDefinition("SimplyQ", "0.0");
-	
-	auto Days 	        = RegisterUnit(Model, "days");
-	auto System = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 10957);
-	RegisterParameterDate(Model, System, "Start date", "1981-1-1");
 	
 	AddSimplyHydrologyModule(Model);
 	
@@ -34,13 +32,13 @@ int main()
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "newparams.dat");
 #else
-	ReadParametersFromFile(DataSet, "newparams.dat");
+	ReadParametersFromFile(DataSet, "testparameters.dat");
 
 	ReadInputsFromFile(DataSet, "tarlandinputs.dat");
 	
 	PrintResultStructure(Model);
 	PrintParameterStorageStructure(DataSet);
-	//PrintInputStorageStructure(DataSet);
+	PrintInputStorageStructure(DataSet);
 	
 	
 	//SetParameterValue(DataSet, "Timesteps", {}, (u64)1);

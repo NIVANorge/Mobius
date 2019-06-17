@@ -1,2 +1,4 @@
 @echo off
-g++ simplyHydrol_test.cpp -O2 -std=c++11 -fno-exceptions -o SimplyHydrol_testing.exe -fmax-errors=5
+
+g++ -c -m64 -std=c++11 -O2 simplyq_dll.cpp -fexceptions -fmax-errors=5
+g++ -o simplyq.dll -static -static-libgcc -static-libstdc++ -s -shared simplyq_dll.o -Wl,--subsystem,windows

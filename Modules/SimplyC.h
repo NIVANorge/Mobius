@@ -1,5 +1,11 @@
 #include "UnitConversions.h"
 
+
+
+
+// IMPORTANT NOTE: This is now broken until it is made compatible with the new SimplyQ!!
+
+
 static void
 AddSimplyCModel(mobius_model *Model)
 {
@@ -8,8 +14,8 @@ AddSimplyCModel(mobius_model *Model)
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");
 
 	// Solvers already defined in hydrology module
-	auto SimplySolverLand = GetSolverHandle(Model, "Simply solver, land");
-	auto SimplySolverReach = GetSolverHandle(Model, "Simply solver, reach");
+	auto SimplySolverLand = GetSolverHandle(Model, "SimplyQ land solver");
+	auto SimplySolverReach = GetSolverHandle(Model, "SimplyQ reach solver");
 
 	// Units
 	auto Kg			= RegisterUnit(Model, "kg");
