@@ -4,4 +4,4 @@ REM g++ -O2 -I../../Calibration/MCMC/mcmc/include/ -I../../Calibration/MCMC/mcmc
 REM g++ incamicroplastics.cpp -std=c++11 -O2 -Werror=return-type -o incamicroplastics.exe ../../sqlite3/sqlite3.o -fmax-errors=5
 
 g++ -c -m64 -std=c++11 -O2 incamicroplastics_dll.cpp -fexceptions -fmax-errors=5
-g++ -o incamicroplastics.dll -s -shared incamicroplastics_dll.o -Wl,--subsystem,windows
+g++ -o incamicroplastics.dll -static -static-libgcc -static-libstdc++ -s -shared incamicroplastics_dll.o -Wl,--subsystem,windows
