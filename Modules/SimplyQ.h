@@ -101,7 +101,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto PrecipitationFallingAsRain = RegisterEquation(Model, "Precipitation falling as rain", MmPerDay);
 	auto PotentialDailySnowmelt     = RegisterEquation(Model, "Potential daily snowmelt", MmPerDay);
 	auto SnowMelt                   = RegisterEquation(Model, "Snow melt", MmPerDay);
-	auto SnowDepth                  = RegisterEquation(Model, "Snow depth", Mm);
+	auto SnowDepth                  = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
 	SetInitialValue(Model, SnowDepth, InitialSnowDepth);
 	auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
@@ -348,7 +348,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	//Assumes rectangular cross section. See comment in ReachFlow equation for source
 		double reachdepth = 0.349 * pow(RESULT(ReachFlow), 0.34);
 		double reachwidth = 2.71 * pow(RESULT(ReachFlow), 0.557);
-		return reachdepth * reachwidth * PARAMETER(ReachLength);
+		return reachdepth * reachwidth * PARAMETER(ReachLength); //NOTE: Should we have used EffectiveReachLength here instead??
 	)
 	
 	EQUATION(Model, DailyMeanReachFlow,

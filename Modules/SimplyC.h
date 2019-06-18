@@ -14,8 +14,8 @@ AddSimplyCModel(mobius_model *Model)
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");
 
 	// Solvers already defined in hydrology module
-	auto SimplySolverLand = GetSolverHandle(Model, "SimplyQ land solver");
-	auto SimplySolverReach = GetSolverHandle(Model, "SimplyQ reach solver");
+	auto LandSolver = GetSolverHandle(Model, "SimplyQ land solver");
+	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
 
 	// Units
 	auto Kg			= RegisterUnit(Model, "kg");
@@ -24,7 +24,7 @@ AddSimplyCModel(mobius_model *Model)
 	auto MgPerL		 = RegisterUnit(Model, "mg/l");
 	auto PerDegreesC = RegisterUnit(Model, "1/degreesC");
 
-	// Set up indexers
+	// Set up index sets
 	auto Reach          = GetIndexSetHandle(Model, "Reaches"); //Defined in SimplyQ.h
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units"); //Defined in SimplyQ.h
 //	auto LowCarbon   = RequireIndex(Model, LandscapeUnits, "Low soil carbon");
@@ -57,7 +57,7 @@ AddSimplyCModel(mobius_model *Model)
 //	auto TotalGroundwaterFlowToReach = GetEquationHandle(Model, "Total groundwater flow to reach from all land classes");
 	auto ReachVolume                 = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow                   = GetEquationHandle(Model, "Reach flow (end-of-day)");
-	auto DailyMeanReachFlow          = GetEquationHandle(Model, "Reach flow (daily mean, mm/day)");
+	auto DailyMeanReachFlow          = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
 	auto SnowMelt					 = GetEquationHandle(Model, "Snow melt");
 	auto SnowDepth					 = GetEquationHandle(Model, "Snow depth as water equivalent");
 	auto PrecipitationFallingAsRain  = GetEquationHandle(Model, "Precipitation falling as rain");
@@ -72,11 +72,11 @@ AddSimplyCModel(mobius_model *Model)
 	auto InfiltrationExcessCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerDay);
 	
 	auto SoilwaterCarbonFlux = RegisterEquation(Model, "Soil water carbon flux", KgPerDay);
-	SetSolver(Model, SoilwaterCarbonFlux, SimplySolverLand);
+	SetSolver(Model, SoilwaterCarbonFlux, LandSolver);
 	
 	auto DailyMeanSoilwaterCarbonFluxToReach = RegisterEquationODE(Model, "Soil water carbon flux to reach, daily mean", KgPerDay);
 	SetInitialValue(Model, DailyMeanSoilwaterCarbonFluxToReach, 0.0);	
-	SetSolver(Model, DailyMeanSoilwaterCarbonFluxToReach, SimplySolverLand);
+	SetSolver(Model, DailyMeanSoilwaterCarbonFluxToReach, LandSolver);
 	ResetEveryTimestep(Model, DailyMeanSoilwaterCarbonFluxToReach);
 
 	//TO DO: test whether get better results by raising soil temp to power 2 or not (empirical analysis from Langtjern surface water DOC)
@@ -89,7 +89,7 @@ AddSimplyCModel(mobius_model *Model)
 		*/
 		// Power law relationship between soil DOC concentration and soil temperature
 		double SoilTempAboveZero = Max(0.0, RESULT(SoilTemperature));
-		return PARAMETER(SoilTemperatureCoefficient) * PARAMETER(BaselineSoilDOCConcentration) * pow(SoilTempAboveZero,2)
+		return PARAMETER(SoilTemperatureCoefficient) * PARAMETER(BaselineSoilDOCConcentration) * pow(SoilTempAboveZero, 2.0)
 			   + PARAMETER(SoilDOCInterceptCoefficient) * PARAMETER(BaselineSoilDOCConcentration);
 	)
 	
@@ -106,7 +106,7 @@ AddSimplyCModel(mobius_model *Model)
 		if (RESULT(InfiltrationExcess)>0.) quickDOCconcentration = f_melt*6.0 + f_rain*soilwaterDOCconc;
 		else quickDOCconcentration = soilwaterDOCconc;
 			
-		return PARAMETER(LandUseProportions) * RESULT(InfiltrationExcess)
+		return RESULT(InfiltrationExcess)
 			   * ConvertMgPerLToKgPerMm(quickDOCconcentration, PARAMETER(CatchmentArea));
 	)
 
@@ -118,28 +118,28 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DailyMeanSoilwaterCarbonFluxToReach,
-		return PARAMETER(LandUseProportions) * RESULT(SoilwaterCarbonFlux);
+		return RESULT(SoilwaterCarbonFlux);
 	)
 	
 	// Instream equations
 
-	auto TotalSoilwaterCarbonFluxToReach = RegisterEquationCumulative(Model, "Soilwater carbon flux to reach summed over landscape units", DailyMeanSoilwaterCarbonFluxToReach, LandscapeUnits);
+	auto TotalSoilwaterCarbonFluxToReach = RegisterEquationCumulative(Model, "Soilwater carbon flux to reach summed over landscape units", DailyMeanSoilwaterCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 	
-	auto TotalInfiltrationExcessCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", InfiltrationExcessCarbonFluxToReach, LandscapeUnits);
+	auto TotalInfiltrationExcessCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", InfiltrationExcessCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 	
 //	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
 	
 	//To do: work initial condition out from baseline DOC parameter
 	auto StreamDOCMass = RegisterEquationODE(Model, "Reach DOC mass", Kg);
 	SetInitialValue(Model, StreamDOCMass, 0.02); 
-	SetSolver(Model, StreamDOCMass, SimplySolverReach);
+	SetSolver(Model, StreamDOCMass, ReachSolver);
 
 	auto StreamDOCFluxOut = RegisterEquation(Model, "DOC flux from reach, end-of-day", KgPerDay);
-	SetSolver(Model, StreamDOCFluxOut, SimplySolverReach);
+	SetSolver(Model, StreamDOCFluxOut, ReachSolver);
 
 	auto DailyMeanStreamDOCFlux = RegisterEquationODE(Model, "DOC flux from reach, daily mean", KgPerDay);
 	SetInitialValue(Model, DailyMeanStreamDOCFlux, 0.0);
-	SetSolver(Model, DailyMeanStreamDOCFlux, SimplySolverReach);
+	SetSolver(Model, DailyMeanStreamDOCFlux, ReachSolver);
 	ResetEveryTimestep(Model, DailyMeanStreamDOCFlux);
 
 	auto ReachDOCConcentration = RegisterEquation(Model, "Reach DOC concentration (volume weighted daily mean)", MgPerL);
@@ -162,7 +162,7 @@ AddSimplyCModel(mobius_model *Model)
 	)
 		
 	EQUATION(Model, StreamDOCFluxOut,
-		return RESULT(StreamDOCMass) * RESULT(ReachFlow) / RESULT(ReachVolume);
+		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(StreamDOCMass), RESULT(ReachVolume));
 	)
 
 	EQUATION(Model, DailyMeanStreamDOCFlux,
@@ -170,7 +170,7 @@ AddSimplyCModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, ReachDOCConcentration,
-		return ConvertKgPerMmToMgPerL(RESULT(DailyMeanStreamDOCFlux) / RESULT(DailyMeanReachFlow), PARAMETER(CatchmentArea));
+		return 1000.0 * SafeDivide(RESULT(StreamDOCMass), RESULT(ReachVolume));
 	)
 	
 	

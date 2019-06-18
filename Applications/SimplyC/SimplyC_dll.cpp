@@ -3,11 +3,11 @@
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
 
-#include "../../PythonWrapper/python_wrapper.h"
+#include "../../mobius_dll.h"
 
 #include "../../Modules/UnitConversions.h"
+#include "../../Modules/SimplyQ.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SimplyQ_noGW.h"
 #include "../../Modules/SoilTemperature_simply.h"
 
 DLLEXPORT void *
@@ -16,11 +16,6 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	CHECK_ERROR_BEGIN
 	
 	mobius_model *Model = BeginModelDefinition("SimplyC", "1.0");
-	
-	auto Days 	      = RegisterUnit(Model, "days");
-	auto System       = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 10957);
-	RegisterParameterDate(Model, System, "Start date", "1986-1-1");
 	
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel(Model);

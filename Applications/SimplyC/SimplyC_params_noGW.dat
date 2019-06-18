@@ -30,11 +30,8 @@ parameters:
 "Soil field capacity" :     #(mm) [0, 5000]
 50
 
-"Gradient of stream velocity-discharge relationship" :     #(m^{-3}) [1e-05, 0.99] The a in V = aQ^b
-0.6
-
-"Exponent of stream velocity-discharge relationship" :     #(dimensionless) [0.1, 0.99] The b in V = aQ^b
-0.4
+"Manning's coefficient" :     #(m^{-3}) [1e-05, 0.99] The a in V = aQ^b
+0.04
 
 "Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
 -0.001
