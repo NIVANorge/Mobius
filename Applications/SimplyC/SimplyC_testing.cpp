@@ -7,20 +7,17 @@
 #include "../../mobius.h"
 
 #include "../../Modules/UnitConversions.h"
+
+
+#include "../../Modules/SimplyQ.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SimplyQ_noGW.h"
-#include "../../Modules/SoilTemperature_simply.h"
+#include "../../Modules/SimplySoilTemperature.h"
 
 #define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
 
 int main()
 {
 	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1"); //Name, version
-	
-	auto Days 	        = RegisterUnit(Model, "days");
-	auto System = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 10957);
-	RegisterParameterDate(Model, System, "Start date", "1986-1-1");
 	
 	//Call functions declared earlier
 	AddSimplyHydrologyModule(Model);
