@@ -350,7 +350,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	//Assumes rectangular cross section. See comment in ReachFlow equation for source
 		double reachdepth = 0.349 * pow(RESULT(ReachFlow), 0.34);
 		double reachwidth = 2.71 * pow(RESULT(ReachFlow), 0.557);
-		return reachdepth * reachwidth * PARAMETER(ReachLength); //NOTE: Should we have used EffectiveReachLength here instead??
+		return reachdepth * reachwidth * PARAMETER(ReachLength);
 	)
 	
 	EQUATION(Model, DailyMeanReachFlow,
