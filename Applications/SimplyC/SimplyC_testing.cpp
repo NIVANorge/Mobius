@@ -11,7 +11,7 @@
 
 #include "../../Modules/SimplyQ.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SoilTemperature_simply.h"
+#include "../../Modules/SimplySoilTemperature.h"
 
 #define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
 

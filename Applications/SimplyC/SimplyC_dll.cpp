@@ -8,14 +8,14 @@
 #include "../../Modules/UnitConversions.h"
 #include "../../Modules/SimplyQ.h"
 #include "../../Modules/SimplyC.h"
-#include "../../Modules/SoilTemperature_simply.h"
+#include "../../Modules/SimplySoilTemperature.h"
 
 DLLEXPORT void *
 DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("SimplyC", "1.0");
+	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1");
 	
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel(Model);
