@@ -44,7 +44,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
-	
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	
 	// Global snow parameters
@@ -53,12 +52,12 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
 	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
 	
-	// Hydrology parameters that hopefully don't vary by sub-catchment or reach
+	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
-	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0);
-	auto PETReductionFactor      = RegisterParameterDouble(Model, Hydrology, "PET multiplication factor", Dimensionless, 1.0, 0.0, 1.0);
-	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 5000.0);
+	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0); //Max ok, or breaks model?
+	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, Hydrology, "PET multiplication factor", Dimensionless, 1.0, 0.0, 2.0);
+	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0);
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
@@ -78,11 +77,10 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	auto InitialInStreamFlow     = RegisterParameterDouble(Model, HydrologyReach, "Initial in-stream flow", M3PerSecond, 1.0, 0.0, 1000000.0, "This parameter is only used by reaches that don't have other reaches as inputs.");
 
-	
 	// Terrestrial hydrology parameters that vary by land class
 	auto HydrologyLand = RegisterParameterGroup(Model, "Hydrology land", LandscapeUnits);
 	
-	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.05, 40.0);
+	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0);
 	
 	// General parameters that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", LandscapeUnits);
@@ -101,7 +99,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto PrecipitationFallingAsRain = RegisterEquation(Model, "Precipitation falling as rain", MmPerDay);
 	auto PotentialDailySnowmelt     = RegisterEquation(Model, "Potential daily snowmelt", MmPerDay);
 	auto SnowMelt                   = RegisterEquation(Model, "Snow melt", MmPerDay);
-	auto SnowDepth                  = RegisterEquation(Model, "Snow depth", Mm);
+	auto SnowDepth                  = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
 	SetInitialValue(Model, SnowDepth, InitialSnowDepth);
 	auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
@@ -146,10 +144,14 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	// ODE equations
 	
+	// Make solvers
+	
 	auto LandSolver = RegisterSolver(Model, "SimplyQ land solver", 0.01 /* 1.0/20000.0 */, IncaDascru);
 	auto ReachSolver = RegisterSolver(Model, "SimplyQ reach solver", 0.1 /* 1.0/20000.0 */, IncaDascru);
 
-	auto SoilWaterFlow = RegisterEquation(Model, "Soil water flow", MmPerDay);
+	// Soil water equations
+	
+	auto SoilWaterFlow = RegisterEquation(Model, "Soil water flow", MmPerDay); // Total flow out of soil box (including that which then goes to GW)
 	SetSolver(Model, SoilWaterFlow, LandSolver);
 	
 	auto SoilWaterVolume = RegisterEquationODE(Model, "Soil water volume", Mm);
@@ -169,7 +171,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	EQUATION(Model, SoilWaterVolume,
 		return
 			  RESULT(Infiltration)
-			- PARAMETER(PETReductionFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity))) //NOTE: Should 0.01 be a parameter?
+			- PARAMETER(PETMultiplicationFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity))) //NOTE: Should 0.01 be a parameter?
 			- RESULT(SoilWaterFlow);	
 	)
 	
@@ -180,7 +182,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto TotalSoilWaterFlow       = RegisterEquationCumulative(Model, "Landuse weighted soil water flow", DailyMeanSoilWaterFlow, LandscapeUnits, LandUseProportions);
 	
 	
-	// Groundwater and In-stream hydrology equations (group together as one reach equation is used in a groundwater equation)
+	// Groundwater and In-stream hydrology equations (group together, as one reach equation is used in a groundwater equation)
 	
 	// Derived parameters used in instream hydrol equations
 	auto UpstreamArea 	= RegisterParameterDouble(Model, HydrologyReach, "Upstream land area", Km2, 0.0); //Derived param
