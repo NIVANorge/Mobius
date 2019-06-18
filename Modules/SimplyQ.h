@@ -162,14 +162,13 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, SoilWaterFlow,
 		double smd = PARAMETER(SoilFieldCapacity) - RESULT(SoilWaterVolume);
-		//return - smd / (PARAMETER(SoilWaterTimeConstant, Arable) * (1.0 + exp(smd)));
 		return -smd * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
 	)
 	
 	EQUATION(Model, SoilWaterVolume,
 		return
 			  RESULT(Infiltration)
-			- PARAMETER(PETReductionFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity))) //NOTE: Should 0.01 be a parameter?
+			- PARAMETER(PETReductionFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)))
 			- RESULT(SoilWaterFlow);	
 	)
 	
@@ -341,7 +340,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 		double val = RESULT(ReachVolume) * sqrt(PARAMETER(ReachSlope))
 							  / (PARAMETER(EffectiveReachLength) * PARAMETER(ManningsCoefficient));
 		
-		return 0.28 * val * sqrt(val); //NOTE: This is just an optimization; equiv to val^1.5
+		return 0.28 * val * sqrt(val); //NOTE: This is just an optimization; equiv to pow(val, 1.5)
 	)
 	
 	EQUATION(Model, InitialReachVolume,
