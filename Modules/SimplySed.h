@@ -126,7 +126,7 @@ AddSimplySedimentModule(mobius_model *Model)
 	EQUATION(Model, ReachSedimentInputCoefficient,
 		//# Reach sed input coefficient per land use class (kg/m3). This was recently changed from kg/mm which had a different rationalization.
 		double Esus_i =
-			  PARAMETER(ReachSedimentInputScalingFactor) * 1e6 //1000 just for convenient range in input parameter
+			  PARAMETER(ReachSedimentInputScalingFactor) * 1e6 //1e6 just for convenient range in input parameter
 			* PARAMETER(ReachSlope)
 			* PARAMETER(MeanSlopeOfLand)
 			* RESULT(TimeDependentVegetationCoverFactor)
