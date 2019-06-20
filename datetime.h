@@ -149,7 +149,7 @@ struct datetime
 	inline void
 	AdvanceDays(s32 NumberOfDays)
 	{
-		SecondsSinceEpoch += 24*60*60*NumberOfDays;
+		SecondsSinceEpoch += 24*60*60*((s64)NumberOfDays);
 	}
 	
 	inline char *
