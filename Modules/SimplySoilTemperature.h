@@ -58,7 +58,7 @@ AddSoilTemperatureModel(mobius_model *Model)
 
 	
 	EQUATION(Model, COUPSoilTemperature,
-		auto Da = (1/1000000.0) * PARAMETER(SoilThermalConductivityOverHeatCapacity);
+		auto Da = 1e-6 * PARAMETER(SoilThermalConductivityOverHeatCapacity);
 		return LAST_RESULT(COUPSoilTemperature)
 			+ 86400.0
 				* Da / Square( 2.0 * 0.15) //0.15m is the soil depth temp is estimated at. Decided to fix
