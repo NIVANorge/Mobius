@@ -207,7 +207,7 @@ Since {\tt ValueSet->Running == false} we are in registration mode, and all the 
 
 After storing such information for every equation, we can now figure out the dependencies of every equation. First one can let each equation inherit the index set dependencies of the parameters and inputs it accesses. Then they have to inherit dependencies from other equations. This step has to be run potentially many times since index set dependencies could be inherited down many steps of equations depending on each other.
 
-Finally the model batch structure is determined. This is a complex many-step process. What it tries to do is explained in the section "Determining the batch structure of advanced models" in the model builder documentation. That section does however not explain the implementation of the algorithm.
+Next, the model batch structure is determined. This is a complex many-step process. What it tries to do is explained in the section "Determining the batch structure of advanced models" in the model builder documentation. That section does however not explain the implementation of the algorithm.
 
 TODO: Give a short description of the chosen algorithm here.
 
@@ -221,13 +221,39 @@ To summarize briefly, most modern processors have 2-3 levels of memory caches (L
 
 This means that if you can place things that you know are going to be accessed close together in time also close together in memory, your program can potentially get a lot faster. This is a very important optimization technique in time-critical programs. TODO: Find a good reference for this.
 
+We have chosen a general storage structure layout. Each storage structure has a list of "storage units", where each storage unit has a list of handles and a list of index sets. The storage is organized so that the memory for each unit is placed after one another in memory. Each unit is then a multi-dimensional array. The number of dimensions is equal to the number of index sets, and are indexed by these index sets. This is an array of blocks, where each block contains a list of values that corresponds to the list of handles. TODO: make a diagram.
 
+For parameters, there is just one such structure. For results and inputs, the entire structure is repeated once for each timestep (for results, including the "initial value step").
 
+The necessary information needed to look up the storage index (i.e. location in memory) of a specific value is kept in the {\tt storage\_structure} struct. The actual data is not a part of this struct and is kept separately in the {\tt mobius\_data\_set}, such as in the aforementioned {\tt DataSet->ParameterData} array. There are several functions called {\tt OffsetForHandle} that does the computation of this storage index based on what handle you are looking up the value for, how your index data is organized and so on.
 
 
 \subsection{More on the value set accessor system}
 
+The {\tt value\_set\_accessor} has four buffers {\tt CurParameters}, {\tt CurResults}, {\tt LastResults}, {\tt CurInputs}. During the model run, the main model loop ({\tt RunInnerLoop}) function will make sure that for each timestep and for each change of indexes, these buffers will be set up so that for instance for the equation handle {\tt H}, {\tt CurResults[H]} is the value of that result for the given indexes and timestep. This makes it so that if you use {\tt RESULT(H)} to look up the value of this result inside an {\tt EQUATION}, that will only be an array lookup, which is fast.
 
+First one can think of a very simple algorithm to achieve this:
+\begin{example}
+Pseudocode for a very simple way to update all the parameter values
+\begin{lstlisting}[style = mycpp]
+for each parameter handle H :
+	memory_location = OffsetForHandle(DataSet->ParameterStorageStructure, (current state of indexes), H)
+	ValueSet->CurParameters[H] = DataSet->ParameterData[memory_location]
+\end{lstlisting}
+\end{example}
 
+However, this would be slow for a few reasons
+\begin{enumerate}[i]
+\item We are looking up values of all the parameters, but we are probably not going to need all of them for the current equation batch.
+\item The OffsetForHandle computation relatively slow.
+\end{enumerate}
+
+To address (i), remember that we actually know all the handles that are going to be accessed by each equation, because this was registered during the {\tt EndModelDefinition} step. So at the end of {\tt EndModelDefinition} we store with each batch all the handles that are looked up by equations in that batch. Moreover, since some of these handles can be to entities that don't index over as many index sets as the batch itself, we also store at which index change we need to look up the value again. This means that not all values have to be loaded in again at every index change.
+
+To address (ii), since we know that for each timestep, it is going to look up the same parameters in the same order as in the last timestep, we cheat and go through this process just once before we start the main model run. This is the {\tt FastLookupSetupInnerLoop}. This gives us a list of parameter values in the order that they are going to be looked up. When we are executing the main model run, we can then just read from this list linearly each timestep instead of re-computing the memory indexes and looking up the values from main storage.
+
+For results and inputs it is a little more complicated: Since we have a different value for each timestep, we store a memory offset in the fast lookup list instead of a value. This is a memory offset from the start of the storage of the current timestep (or previous timestep if you are looking at last-results). Moreover, the {\tt ValueSet} will always be updated by the {\tt RunModel} procedure at each timestep to have a pointer to the start of the storage of the current (and previous) timestep. This allows for looking up the needed values.
+
+TODO: Document further details for looking up and storing out result values.
 
 \end{document}

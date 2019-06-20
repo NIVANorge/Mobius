@@ -445,6 +445,7 @@ struct entity_registry
 
 struct mobius_model
 {
+	//TODO: It should probably instead have a list of versions of the submodules, and these should be set by the submodules instead during registration, not on application level.
 	const char *Name;
 	const char *Version;
 	
