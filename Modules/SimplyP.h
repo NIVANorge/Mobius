@@ -146,7 +146,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", LandscapeUnits);
 	SetParentGroup(Model, SubcatchmentGeneral, ReachParams);
 	
-	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0);
+	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0, "Total proportion of land use in the sub-catchment. Include any newly-converted land in the total (any of this total that is newly-converted from another land class is accounted for later)");
 	
 	// Inputs
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);
@@ -650,7 +650,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	// Phosphorus parameters that vary by sub-catchment/reach
 	auto PhosphorousReach = RegisterParameterGroup(Model, "Phosphorous reach", Reach);
 	auto EffluentTDP                    = RegisterParameterDouble(Model, PhosphorousReach, "Reach effluent TDP inputs", KgPerDay, 0.1, 0.0, 10.0);
-	auto NCType                         = RegisterParameterUInt(Model, Phosphorous, "Newly-converted type", Dimensionless, 2, 0, 2, "0=Agricultural (from semi-natural), 2=Semi-natural (from agricultural), anything else=None");
+	auto NCType                         = RegisterParameterUInt(Model, Phosphorous, "Newly-converted type", Dimensionless, 2, 0, 2, "0=Agricultural (from semi-natural), 2=Semi-natural (from agricultural), anything else=None"); //TO DO: Replace this with a derived parameter, using proportion of newly-converted params
 	
 	// Phorphorus parameters that vary by land class
 	auto PhosphorousLand = RegisterParameterGroup(Model, "Phosphorous land", LandscapeUnits);
@@ -659,7 +659,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	// Params that vary by reach and land class (add to existing group)
 	auto SubcatchmentGeneral = GetParameterGroupHandle(Model, "Subcatchment characteristics by land class");
-	auto LandUseProportionsNC = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions from newly-converted", Dimensionless, 0.0, 0.0, 1.0);
+	auto LandUseProportionsNC = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions from newly-converted", Dimensionless, 0.0, 0.0, 1.0, "Proportion of each land use class that has been newly-converted from another type. Only one of these should be >0");
 
 	// Add to global system parameter group
 	auto System = GetParameterGroupHandle(Model, "System");
@@ -711,7 +711,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	// P equations
 	
-	// Method 2: regular equation to define the sorption coefficient. Returns a constant value, which can be seen in INCAViewer.
+	// Method 2: regular equation to define the sorption coefficient. Returns a constant value, which can be seen in e.g. INCAViewer.
 	auto SoilPSorptionCoefficient = RegisterEquation(Model, "Soil phosphorous sorption coefficient", MmPerKg);
 	auto InitialAgriculturalSoilWaterEPC0 = RegisterEquationInitialValue(Model, "Initial agricultural soil water EPC0", KgPerMm);
 	auto AgriculturalSoilWaterEPC0   = RegisterEquation(Model, "Agricultural soil water EPC0", KgPerMm);
