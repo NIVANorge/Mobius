@@ -128,6 +128,7 @@ MobiView can load the same .dlls as the python wrapper. Most models now have app
 - Ctrl-click to select multiple timeseries or to deselect them.
 - Some timeseries exist for multiple indexes. You can choose the indexes to show in the views below the plot. Multiselection is possible here too.
 - Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
+- Right click the plot for options to change text, formatting and to export it to an image or pdf.
 - More in-depth documentation will follow later.
 
 There are a number of **known issues** with MobiView, e.g. relating to window sizing problems on some Windows 10 computers. See [here](https://github.com/NIVANorge/MobiView#needed-improvements-todo-list) for further details and possible workarounds. 
