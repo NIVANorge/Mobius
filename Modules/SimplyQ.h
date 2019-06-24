@@ -1,5 +1,16 @@
 // Simply Hydrology module
 
+
+
+
+//NOTE: When you #include this file in your main application, put ability
+// #define SIMPLYQ_GROUNDWATER
+// right above your #include "(path)/SimplyQ.h"
+// in order to have groundwater in the simulation.
+
+
+
+
 #include "Preprocessing/ThornthwaitePET.h"
 #include "UnitConversions.h"
 

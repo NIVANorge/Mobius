@@ -15,9 +15,8 @@ AddSimplySedimentModule(mobius_model *Model)
 	auto Reach          = GetIndexSetHandle(Model, "Reaches");
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	
+	// Could alternatively just have a "Dynamic erodibility" flag on each landscape unit.
 	auto Arable             = RequireIndex(Model, LandscapeUnits, "Arable");
-	auto ImprovedGrassland  = RequireIndex(Model, LandscapeUnits, "Improved grassland");
-	auto Seminatural        = RequireIndex(Model, LandscapeUnits, "Semi-natural");	
 	
 	// Params already defined
 	auto CatchmentArea = GetParameterDoubleHandle(Model, "Catchment area");
