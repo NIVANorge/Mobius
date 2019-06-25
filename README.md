@@ -123,6 +123,7 @@ MobiView can load the same .dlls as the python wrapper. Most models now have app
 
 - Double click MobiView.exe
 - Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in the .dat formats).
+- **If you want to start a new dataset with your own index sets, take one existing parameter file, then delete everything except the index set setup. Set up the index sets however you want (following the file format guide). Once you load this file from MobiView and save it again (disk icon), the parameter file will now contain default values for all the parameters.**
 - Click the little runner or (F7) to run the model.
 - Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
 - Ctrl-click to select multiple timeseries or to deselect them.
