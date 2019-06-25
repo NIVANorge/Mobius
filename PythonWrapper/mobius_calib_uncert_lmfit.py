@@ -20,14 +20,13 @@ def plot_reach_structure(dataset, reach_index_set='Reaches'):
     
     Args:
         dataset:         Obj. Mobius dataset object
-        reach_index_set: Str. The name of the index_set representing
-                         river reaches
+        reach_index_set: Str. The name of the index_set representing river reaches
                          
     Returns:
-        NetworkX graph. Can be displayed using 
+        NetworkX graph. Can be displayed/saved using 
             
             from nxpd import draw
-            draw(g, show='ipynb')
+            draw(g, show='ipynb', filename=None)
     """  
     assert reach_index_set in dataset.get_index_sets(), "The specified 'reach_index_set' is not recognised."
     
