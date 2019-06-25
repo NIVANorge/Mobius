@@ -12,7 +12,7 @@ We have already built some examples atop of mobius.py to show you how you can in
 
 ## Dependencies
 
-The Python wrapper has so far only been tested using **64-bit Python 3.6**. The main dependencies of mobius.py and mobius_calib_uncert_lmfit.py are:
+The Python wrapper has so far only been tested using **64-bit Python 3**. The main dependencies of `mobius.py` and `mobius_calib_uncert_lmfit.py` are:
 
  * Numpy
  * Scipy
@@ -23,6 +23,12 @@ The Python wrapper has so far only been tested using **64-bit Python 3.6**. The 
  * Corner
 
 Additonally, we recommend using the wrapper via JupyterLab, in which case you will need to install that too.
+
+If you want to be able to visualise river networks/reach connectivity for more complex models, you can optionally install:
+
+ * NetworkX
+ * Graphviz
+ * nxpd
 
 ## Quick start using Anaconda and Jupyter Lab
 
@@ -43,6 +49,10 @@ After downloading Anaconda, open up the Anaconda prompt (an enhanced command lin
 3. Install the required packages in the new environment
 
     `conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3`
+    
+4. [Optional]. Install the network visualistion tools if desired
+
+    `pip install networkx graphviz nxpd`
 
 ### Run an example Jupyter notebook   
 
