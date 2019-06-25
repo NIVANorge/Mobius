@@ -11,9 +11,44 @@ import datetime as dt
 import random
 import pickle
 import time
+import networkx as nx
 from scipy.stats import norm
 from multiprocessing import Pool
 
+def plot_reach_structure(dataset, reach_index_set='Reaches'):
+    """ Display the model's reach/river network as a directed graph.
+    
+    Args:
+        dataset:         Obj. Mobius dataset object
+        reach_index_set: Str. The name of the index_set representing
+                         river reaches
+                         
+    Returns:
+        NetworkX graph. Can be displayed using 
+            
+            from nxpd import draw
+            draw(g, show='ipynb')
+    """  
+    assert reach_index_set in dataset.get_index_sets(), "The specified 'reach_index_set' is not recognised."
+    
+    reaches = dataset.get_indexes(reach_index_set)
+
+    g = nx.DiGraph()
+
+    # Add reaches as nodes
+    for reach in reaches:
+        g.add_node(reach, label=reach)
+
+    # Add edges linking reaches
+    for reach in reaches:
+        # Get upstream reaches
+        upstream_reaches = dataset.get_branch_inputs(reach_index_set, reach)
+
+        for upstream_reach in upstream_reaches:       
+            g.add_edge(upstream_reach, reach)
+
+    return g
+    
 def get_double_parameters_as_dataframe(dataset):
     """ Get all 'double' parameters declared in the model 'dataset' object and return a dataframe
         summarising parameter names, units, prior ranges etc.
