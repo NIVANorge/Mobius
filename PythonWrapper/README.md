@@ -4,7 +4,7 @@ The python wrapper allows you to easily create optimization and calibration rout
 
 To learn the basics of how to build and compile models, see the [quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide) at the front page, and the tutorials.
 
-The C++-end code of the C++-python interface is in python_wrapper.h, while the python-end of it is in mobius.py.
+The C++-end code of the C++-python interface is in mobius_dll.h, while the python-end of it is in mobius.py.
 
 To use a model with the python wrapper, create your own .cpp file along the lines of Persist/persistwrapper.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of compilepersist.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded within Python using mobius.initialize('name_of_dll.dll')
 
@@ -12,7 +12,7 @@ We have already built some examples atop of mobius.py to show you how you can in
 
 ## Dependencies
 
-The Python wrapper has so far only been tested using **64-bit Python 3.6**. The main dependencies of mobius.py and mobius_calib_uncert_lmfit.py are:
+The Python wrapper has so far only been tested using **64-bit Python 3**. The main dependencies of `mobius.py` and `mobius_calib_uncert_lmfit.py` are:
 
  * Numpy
  * Scipy
@@ -23,6 +23,12 @@ The Python wrapper has so far only been tested using **64-bit Python 3.6**. The 
  * Corner
 
 Additonally, we recommend using the wrapper via JupyterLab, in which case you will need to install that too.
+
+If you want to be able to visualise river networks/reach connectivity for more complex models, you can optionally install:
+
+ * NetworkX
+ * Graphviz
+ * nxpd
 
 ## Quick start using Anaconda and Jupyter Lab
 
@@ -43,6 +49,10 @@ After downloading Anaconda, open up the Anaconda prompt (an enhanced command lin
 3. Install the required packages in the new environment
 
     `conda install -c conda-forge numpy scipy matplotlib pandas lmfit emcee corner jupyterlab notebook ipython=7.3`
+    
+4. [Optional]. Install the network visualistion tools if desired
+
+    `pip install networkx graphviz nxpd`
 
 ### Run an example Jupyter notebook   
 

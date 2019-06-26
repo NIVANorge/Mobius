@@ -4,12 +4,12 @@ import pickle
 from scipy.stats import norm
 
 # Initialise wrapper
-wrapper_fpath = (r"../mobius.py")
+wrapper_fpath = (r'../mobius.py')
 wr = imp.load_source('mobius', wrapper_fpath)
-wr.initialize('../../Applications/SimplyP/simplyp.dll')
+wr.initialize('../../Applications/SimplyP/simplyp.so')
 
 # Calibration functions
-calib_fpath = (r"../mobius_calib_uncert_lmfit.py")
+calib_fpath = (r'../mobius_calib_uncert_lmfit.py')
 cu = imp.load_source('mobius_calib_uncert_lmfit', calib_fpath)
 
 def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
@@ -65,7 +65,7 @@ dataset = wr.DataSet.setup_from_parameter_and_input_files('../../Applications/Si
 if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
     
     # Unpack options from pickled file
-    with open('pickled/mcmc_settings.pkl', 'rb') as handle:
+    with open('results/mcmc_settings.pkl', 'rb') as handle:
         settings_dict = pickle.load(handle)
 
     params = settings_dict['params']
@@ -88,6 +88,9 @@ if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
                          ntemps=ntemps, nsteps=nsteps, nwalk=nwalk, nburn=0, thin=1, start=init_chains,
                          fcn_args=(error_param_dict, comparisons), 
                          fcn_kws={'skip_timesteps':skip_timesteps})
+    
+    # Update median and MAP estimates to reflect nburn and thin
+    result = cu.update_mcmc_results(result, nburn, thin)
 
     # Save results
     with open(result_path, 'wb') as output:
@@ -98,9 +101,9 @@ if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
     cu.triangle_plot(result, nburn, thin, file_name=corner_path)
 
     # MAP simulation
-    cu.set_parameter_values(result.params, dataset)
+    cu.set_parameter_values(result.params, dataset, use_stat='map')
     dataset.run_model()
     cu.plot_objective(dataset, comparisons)
 
     # Goodness-of-fit stats
-    cu.gof_stats_map(result, dataset, comparisons, skip_timesteps)
+    cu.gof_stats(result, dataset, comparisons, skip_timesteps, use_stat='map')

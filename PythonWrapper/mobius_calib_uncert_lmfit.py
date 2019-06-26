@@ -11,9 +11,43 @@ import datetime as dt
 import random
 import pickle
 import time
+import networkx as nx
 from scipy.stats import norm
 from multiprocessing import Pool
 
+def plot_reach_structure(dataset, reach_index_set='Reaches'):
+    """ Display the model's reach/river network as a directed graph.
+    
+    Args:
+        dataset:         Obj. Mobius dataset object
+        reach_index_set: Str. The name of the index_set representing river reaches
+                         
+    Returns:
+        NetworkX graph. Can be displayed/saved using 
+            
+            from nxpd import draw
+            draw(g, show='ipynb', filename=None)
+    """  
+    assert reach_index_set in dataset.get_index_sets(), "The specified 'reach_index_set' is not recognised."
+    
+    reaches = dataset.get_indexes(reach_index_set)
+
+    g = nx.DiGraph()
+
+    # Add reaches as nodes
+    for reach in reaches:
+        g.add_node(reach, label=reach)
+
+    # Add edges linking reaches
+    for reach in reaches:
+        # Get upstream reaches
+        upstream_reaches = dataset.get_branch_inputs(reach_index_set, reach)
+
+        for upstream_reach in upstream_reaches:       
+            g.add_edge(upstream_reach, reach)
+
+    return g
+    
 def get_double_parameters_as_dataframe(dataset):
     """ Get all 'double' parameters declared in the model 'dataset' object and return a dataframe
         summarising parameter names, units, prior ranges etc.
@@ -73,6 +107,17 @@ def parameter_df_to_lmfit(df):
     params = lmfit.Parameters()
 
     for idx, row in df.iterrows():
+
+        # For gradient-based optimisers to work, the initial values should not be 
+        # exactly equal to either min or max (the algorithm needs to be able to 
+        # "explore" around the current value to estimate the gradient).
+        # Warn user is (value == min) or (value == max)
+        if ((row['initial_value'] == row['min_value']) or 
+            (row['initial_value'] == row['max_value'])):
+            print("WARNING: Parameter '%s' was initialised at the limit of its range. "
+                  "Gradient-based optimisers find this difficult.\n"
+                  "         Consider setting (min < value < max) instead?" % row['short_name'])
+    
         param = lmfit.Parameter(row['short_name'],
                                 value=row['initial_value'],
                                 min=row['min_value'],
@@ -87,22 +132,32 @@ def parameter_df_to_lmfit(df):
 
     return params 
     
-def set_parameter_values(params, dataset):
+def set_parameter_values(params, dataset, use_stat=None):
     """ Set the current parameter values in 'dataset' to those specified by 'params'.
         NOTE: Ignores error parameters with names beginning 'err_'
     
     Args:
         params:      Obj. LMFit 'Parameters' object
         dataset:     Obj. Mobius 'dataset' object
+        use_stat:    Str. (None, 'median' or 'map'). Only relevant if 'params' is part 
+                     of an MCMC result object; otherwise pass None. Specifies whether to
+                     update the model to use the median or the MAP estimate from the 
+                     posterior
         
     Returns:
         None. Parameter values in 'dataset' are changed.
     """
+    assert use_stat in (None, 'median', 'map'), "'use_stat' must be None, 'median' or 'map'."
+    
     for key in params.keys():
         if key.split('_')[0] != 'err':
             name = params[key].user_data['name']
             index =  params[key].user_data['index']
-            val = params[key].value
+            
+            if use_stat:
+                val = params[key].user_data[use_stat]                
+            else:
+                val = params[key].value
             #print('%s %s %s' % (name, index, val))
             dataset.set_parameter_double(name, index, val)
         
@@ -285,6 +340,64 @@ def run_mcmc(log_like_fcn, params, error_param_dict, comparisons, nworkers=8, nt
     
     return result
 
+def update_mcmc_results(result, nburn, thin):
+    """ The summary statistics contained in the LMFit result object do not account for
+        the burn-in period. This function discards the burn-in, thins and then re-calculates
+        parameter medians and standard errors. The 'user_data' attribute for each parameter
+        is then updated to include two new values: 'median' and 'map'. These can be passed to
+        set_parameter_values() via the 'use_stat' kwarg.        
+        
+    Args:
+        result: Obj. LMFit result object with method='emcee'
+        nburn:  Int. Number of steps to discrad from the start of each chain as 'burn-in'
+        thin:   Int. Keep only every 'thin' steps
+        
+    Returns:
+        Updated LMFit result object.    
+    """
+    # Discard the burn samples and thin
+    chain = result.chain[..., nburn::thin, :]
+    ndim = result.chain.shape[-1]
+
+    # Take the zero'th PTsampler temperature for the parameter estimators
+    if len(result.chain.shape) == 4:
+        # Parallel tempering
+        flatchain = chain[0, ...].reshape((-1, ndim))
+    else:
+        flatchain = chain.reshape((-1, ndim))
+
+    # 1-sigma quantile, estimated as half the difference between the 15 and 84 percentiles
+    quantiles = np.percentile(flatchain, [15.87, 50, 84.13], axis=0)
+
+    for i, var_name in enumerate(result.var_names):
+        std_l, median, std_u = quantiles[:, i]
+        result.params[var_name].value = median
+        result.params[var_name].stderr = 0.5 * (std_u - std_l)
+        result.params[var_name].correl = {}
+
+    result.params.update_constraints()
+
+    # Work out correlation coefficients
+    corrcoefs = np.corrcoef(flatchain.T)
+
+    for i, var_name in enumerate(result.var_names):
+        for j, var_name2 in enumerate(result.var_names):
+            if i != j:
+                result.params[var_name].correl[var_name2] = corrcoefs[i, j]
+
+    # Add both the median and the MAP as additonal 'user_data' pars in the 'result' object
+    lnprob = result.lnprob[..., nburn::thin]
+    highest_prob = np.argmax(lnprob)
+    hp_loc = np.unravel_index(highest_prob, lnprob.shape)
+    map_soln = chain[hp_loc]
+    
+    for i, var_name in enumerate(result.var_names):
+        std_l, median, std_u = quantiles[:, i]
+        result.params[var_name].user_data['median'] = median
+        result.params[var_name].user_data['map'] = map_soln[i]
+        
+    return result 
+    
 def chain_plot(result, file_name=None):
     """ Plot 'raw' chains for each variable.
     
@@ -405,8 +518,8 @@ def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
     if file_name:
         plt.savefig(filename, dpi=200)
     
-def gof_stats_map(result, dataset, comparisons, skip_timesteps):
-    """ Run the model with the 'best' (i.e. MAP) parameter set and print
+def gof_stats(result, dataset, comparisons, skip_timesteps, use_stat='map'):
+    """ Run the model with the 'best' (i.e. MAP or median) parameter set and print
         goodness-of-fit statistics.
     
     Args:
@@ -414,13 +527,14 @@ def gof_stats_map(result, dataset, comparisons, skip_timesteps):
         dataset:        Obj. Mobius 'dataset' object
         comparisons:    List. Datasets to be compared
         skip_timesteps: Int. Number of steps to skip before performing comparison
+        use_stat:       Str. 'map' or 'median'
         
     Returns:
         None. 
     """
-    set_parameter_values(result.params, dataset)
+    set_parameter_values(result.params, dataset, use_stat=use_stat)
     dataset.run_model()
-    print('\nBest sample (max log likelihood):')
+    print('\nBest sample (%s):' % use_stat)
     print_goodness_of_fit(dataset, comparisons, skip_timesteps)
 
 def print_goodness_of_fit(dataset, comparisons, skip_timesteps=0):
