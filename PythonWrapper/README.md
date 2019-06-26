@@ -4,7 +4,7 @@ The python wrapper allows you to easily create optimization and calibration rout
 
 To learn the basics of how to build and compile models, see the [quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide) at the front page, and the tutorials.
 
-The C++-end code of the C++-python interface is in python_wrapper.h, while the python-end of it is in mobius.py.
+The C++-end code of the C++-python interface is in mobius_dll.h, while the python-end of it is in mobius.py.
 
 To use a model with the python wrapper, create your own .cpp file along the lines of Persist/persistwrapper.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of compilepersist.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded within Python using mobius.initialize('name_of_dll.dll')
 

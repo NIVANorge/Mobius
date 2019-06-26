@@ -85,13 +85,17 @@ The basics of compiling are simple once you have a compiler installed:
 
 You could also set up a build system of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
 
-### Run a model
+### Run a model and explore the principles of building models using Mobius
 
-To compile **Tutorial 1**, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe (just type `tutorial1` and hit enter) to see the output printed to the command line.
+We have put together a number of [tutorials](https://github.com/NIVANorge/Mobius/tree/master/Tutorials) to get you started running and developing models, starting from very basic to more complicated.
+
+For example, to compile **Tutorial 1**, navigate to the Tutorial1 folder from the command line and run the compile.bat file. Then you can run tutorial1.exe (just type `tutorial1` and hit enter) to see the output printed to the command line.
 
 Try to make changes in the tutorials by changing or adding new equations and parameters, and see what happens (remembering that you have to recompile after any change, then run, to see an effect in the output). This is the best way to learn. Along with following Tutorials 1-3, you can read the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) for a more detailed description of the API.
 
 To edit the C++ files, you can use whatever text editor you want, such as Notepad++, or you can find an IDE. We will not go through how to learn C++ here, but you will not need to know that many advanced concepts. Any online tutorial of just the basics will hopefully do (and also you can just learn by example from the models that are in this repository already, e.g the tutorials or the files in the Modules folder).
+
+Further instructions for running models using the MobiView graphical user interface are given [below](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface).
 
 ## Python wrapper
 
@@ -122,8 +126,8 @@ MobiView can load the same .dlls as the python wrapper. Most models now have app
 ### Load a model and run it
 
 - Double click MobiView.exe
-- Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in the .dat formats).
-- **If you want to start a new dataset with your own index sets, take one existing parameter file, then delete everything except the index set setup. Set up the index sets however you want (following the file format guide). Once you load this file from MobiView and save it again (disk icon), the parameter file will now contain default values for all the parameters.**
+- Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in .dat formats). Almost all the pre-built models have example input files that you can use to get you started. Input file formats are documented [here](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf), and for some pre-built models, model-specific information is available [here](https://github.com/NIVANorge/Mobius/tree/master/Documentation/ModelInputRequirements).
+- **To create a new parameter file with your own index sets**, take an existing parameter file (e.g. any parameter.dat file from within the 'Applications' folder) and delete everything except the index set setup. Set up the index sets however you want (following the [file format guide](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf)). Once you load this file from MobiView and save it again (disk icon), the parameter file will contain default values for all the parameters, which you can then edit.**
 - Click the little runner or (F7) to run the model.
 - Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
 - Ctrl-click to select multiple timeseries or to deselect them.
