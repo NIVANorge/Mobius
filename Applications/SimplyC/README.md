@@ -7,3 +7,5 @@ This folder contains an application of a first prototype version of SimplyC, a s
 The scientific motivation behind the development of SimplyC is similar to that for SimplyP, which is briefly outlined in the [SimplyP readme](https://github.com/NIVANorge/Mobius/tree/master/Applications/SimplyP#simplyp-mobius-version). The SimplyC folder contents are  similar to the contents of the Applications/SimplyP folder, described in the SimplyP readme.
 
 Contributions to SimplyC development and testing are welcome.
+
+Note that the example parameter file has only been calibrated in a very preliminary way. Improvements to the model fit are almost certainly possible through manual calibration or auto-calibration.
