@@ -223,6 +223,11 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 	
 	while(true)
 	{
+		if(!DataSet->ParameterData && DataSet->AllIndexesHaveBeenSet)
+		{
+			AllocateParameterStorage(DataSet);
+		}
+		
 		token Token = Stream.PeekToken();
 		
 		if(Token.Type == TokenType_EOF)
@@ -328,15 +333,17 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 		}
 		else if(Mode == 1)
 		{
+			if(!DataSet->ParameterData) //TODO: This is probably not necessary anymore..
+			{
+				AllocateParameterStorage(DataSet);
+			}
+			
 			while(true)
 			{
 				Token = Stream.PeekToken();
 				if(Token.Type != TokenType_QuotedString) break;
 					
-				if(!DataSet->ParameterData)
-				{
-					AllocateParameterStorage(DataSet);
-				}
+				
 				
 				token_string ParameterName = Stream.ExpectQuotedString();
 				Stream.ExpectToken(TokenType_Colon);
