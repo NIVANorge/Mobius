@@ -1,11 +1,5 @@
 #include "UnitConversions.h"
 
-
-
-
-// IMPORTANT NOTE: This is now broken until it is made compatible with the new SimplyQ!!
-
-
 static void
 AddSimplyCModel(mobius_model *Model)
 {
@@ -27,8 +21,8 @@ AddSimplyCModel(mobius_model *Model)
 	// Set up index sets
 	auto Reach          = GetIndexSetHandle(Model, "Reaches"); //Defined in SimplyQ.h
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units"); //Defined in SimplyQ.h
-//	auto LowCarbon   = RequireIndex(Model, LandscapeUnits, "Low soil carbon");
-//	auto HighCarbon  = RequireIndex(Model, LandscapeUnits, "High soil carbon");
+//	auto LowCarbon   = RequireIndex(Model, LandscapeUnits, "Low soil carbon"); //Not sure whether to do this or just recommend people follow this
+//	auto HighCarbon  = RequireIndex(Model, LandscapeUnits, "High soil carbon"); //Not sure whether to do this
 
 	// PARAMS
 	

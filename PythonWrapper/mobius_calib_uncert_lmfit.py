@@ -15,6 +15,59 @@ import networkx as nx
 from scipy.stats import norm
 from multiprocessing import Pool
 
+def reaches_from_adjacency_table(excel_path, sheet_name='Sheet1', reach_index_set='Reaches'):
+    """ Generate text to define the 'Reaches' index_set in a Mobius parameter file from
+        an adjacency table.
+        
+        The syntax to define reach structures in Mobius is concise, but can be confusing for
+        complex river networks. This function takes an "adjacency table" defining the reach
+        structure and converts it to Mobius syntax, which can be copied into a Mobius
+        parameter file.
+        
+    Args:
+        excel_path:      Raw str. Path to Excel adjacency table. Must contain two columns:
+                  
+                             ['reach_id', 'next_down_id']
+                             
+                         Each reach should appear only ONCE in the first column. The second 
+                         column should contain the reach_id for the next reach DOWNSTREAM. 
+                         Each reach must flow into ONE (and only one) downstream reach
+        sheet_name:      Str. Name of Excel sheet containing the adjacency table
+        reach_index_set: Str. The name of the index_set for reaches
+        
+    Returns:
+        Str. Reaches defined using Mobius syntax.
+    """
+    df = pd.read_excel(excel_path, sheet_name=sheet_name)
+    
+    assert list(df.columns) == ['reach_id', 'next_down_id'], "Column headings must be ['reach_id', 'next_down_id']."
+    
+    data = []
+    
+    for idx, row in df.iterrows():
+        reach = row['reach_id']
+
+        upstream_reaches = df.query('next_down_id == @reach')['reach_id'].values
+
+        if len(upstream_reaches) == 0:
+            data.append('"%s"' % reach)
+
+        else:
+            # Build Mobius string for this reach
+            reach_str = ['"%s"' % i for i in upstream_reaches]
+            reach_str = ['"%s"' % reach] + reach_str
+            reach_str = ' '.join(reach_str)
+            reach_str = '{%s}' % reach_str
+            data.append(reach_str)
+
+    # Build final string
+    total_str = ' '.join(data)
+    total_str = '"%s" : {%s}' % (reach_index_set, total_str)
+    
+    print(total_str)   
+    
+    return total_str 
+    
 def plot_reach_structure(dataset, reach_index_set='Reaches'):
     """ Display the model's reach/river network as a directed graph.
     

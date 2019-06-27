@@ -28,25 +28,28 @@ The Mobius version offers dramatic performance improvements compared to the Pyth
 
 * Morsa and Tarland folders contain example input files for two catchments, the Tarland catchment in northeast Scotland, and the Morsa (also known as the Vansjø-Hobøl) catchment in southeast Norway. Input files include (1) parameter .dat files, which in this case are rough manually calibrated values for the two catchments, and (2) time series .dat files. The time series files include meteorological data to drive the models, as well as observed data for comparing simulated output to. See [the documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) for a further description of input file formats, to help you modify or make your own files.
 
-* Three .cpp files and three accompanying compile.bat files which are used to compile different kinds of model executables (don't worry, compiling is easy, see [here](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes) for a quick description of why/when you compile, and a walk through of how it's done):
+* Two .cpp files and accompanying compile.bat files which are used to compile different kinds of model executables (don't worry, compiling is easy, see [here](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes) for a quick description of why/when you compile, and a walk through of how it's done):
 
-  - simplyp_wrapper.cpp (compiled using compile_pythonwrapper.bat): this creates a .dll which is then used by the python wrapper or the MobiView GUI. You shouldn't need to alter this .cpp for different model applications.
-  - simplyp_testing.cpp (compiled using compile_testing.bat): this creates a .exe which is useful for testing during model devleopment. **This .cpp contains things you should change for different model applications.** It also contains flags for doing useful things like creating an .exe which, when run, **creates a new parameter file** using the structure you define in the .cpp file and the default parameter values defined in the model header file SimplyP.h. This can save a lot of typing if you have lots of sub-catchments.
-  - simplyp_incaview.cpp (compiled using compile_incaview.bat): this was used for creating an .exe that was compatible with the now abandoned GUI INCAView. Will probably soon be removed.
+  - simplyp_dll.cpp (compiled using compile_dll.bat): this creates a .dll which is then used by the python wrapper or the MobiView GUI. You shouldn't need to alter this .cpp for different model applications.
+  - simplyp_testing.cpp (compiled using compile_testing.bat): this creates a .exe which is useful for testing during model devleopment. **This .cpp contains things you should change for different model applications.** It also contains flags for doing useful things like creating an .exe which, when run, **creates a new parameter file** using the structure you define in the .cpp file and the default parameter values defined in the model header file SimplyP.h. This can also be done in MobiView.
   
 * three .dat files for setting up optimization and uncertainty analysis in C++, i.e. without use of the python wrapper. More info on this will come shortly.
 
 
 ## Tutorials
 
-1. **Quick start: Run the Tarland or Morsa examples using the INCAView graphical user interface**
+1. **Quick start: Run the Tarland or Morsa examples using the MobiView graphical user interface**
  
 * Download/clone the GitHub Mobius repository onto your computer (see instructions [here](https://github.com/NIVANorge/Mobius#download-the-repository)), and familiarize yourself with the basics of the Mobius model building system and the contents of the repository (introductory documentation is [here](https://github.com/NIVANorge/Mobius#mobius)).
  
 * Follow the instructions [here](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) to:
-  - Get an MobiView executable
+  - Get a MobiView executable
   - Get/compile a simplyP dll: After [installing a compiler](https://github.com/NIVANorge/Mobius#first-download-a-compiler), from the command line `cd` into the Applications/SimplyP folder and run `compile_dll.bat`. simplyp.dll should be created. Alternatively, [contact us](magnus.norling@niva.no) and we can supply a pre-compiled dll.
-  - Open MobiView.exe, read in the dll, the input file and the parameter file and run the model, then explore the results. Try changing parameter values and re-running the model to see what happens. If you want to know more about what the results variables are or how they are calculated, you can look directly into the SimplyP.h file ([here](https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h)).
+  - Open MobiView.exe, read in:
+      * The SimplyP dll
+	  * An input file, which contains precipitation and temperature data to drive the model, and optionally also potential evapotranspiration data and observed data to compare model output to. Example input files are in the Morsa and Tarland folders, e.g. TarlandInputs.dat
+	  * A parameter file. Example files are in the Morsa and Tarland folders, e.g. TarlandParameters_v0-3.dat
+  - Run the model, then explore the results. Try changing parameter values and re-running the model to see what happens. If you want to know more about what the results variables are or how they are calculated, you can look directly into the SimplyP.h file ([here](https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h)). See also the comments which accompany the parameters within the parameter.dat file or in MobiView.
  
 **Notes:**
  * We are working on a build and distribution system which will make it possible to download MobiView and the various model dlls from a server. More coming soon!
