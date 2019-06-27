@@ -1,6 +1,6 @@
 
 
-#define MOBIUS_TEST_FOR_NAN 0
+#define MOBIUS_TEST_FOR_NAN 1
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
 
@@ -8,18 +8,18 @@
 
 #include "../../Modules/SimplyP.h"
 
-#define READ_PARAMETER_FILE 0 //Read params from file? Or auto-generate using indexers defined below & defaults
+#define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
 
 int main()
 {
 	mobius_model *Model = BeginModelDefinition("SimplyP", "0.3");
 	
-	auto Days 	        = RegisterUnit(Model, "days");
-	auto System = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 10957);
-	RegisterParameterDate(Model, System, "Start date", "1981-1-1");
+	AddSimplyPHydrologyModule(Model);
+	AddSimplyPSedimentModule(Model);
+	AddSimplyPPhosphorusModule(Model);
+	AddSimplyPInputToWaterBodyModule(Model);
 	
-	ReadInputDependenciesFromFile(Model, "Tarland/TarlandInputs.dat"); //NOTE: This has to happen here before EndModelDefinition
+	ReadInputDependenciesFromFile(Model, "Tarland/TarlandInputs_TEST.dat"); //NOTE: This has to happen here before EndModelDefinition
 	
 	EndModelDefinition(Model);
 	
@@ -32,9 +32,9 @@ int main()
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "newparams.dat");
 #else
-	ReadParametersFromFile(DataSet, "Tarland/TarlandParameters_v0-3_2ReachExample.dat");
+	ReadParametersFromFile(DataSet, "Tarland/TarlandParameters_v0-3_TEST.dat");
 
-	ReadInputsFromFile(DataSet, "Tarland/TarlandInputs.dat");
+	ReadInputsFromFile(DataSet, "Tarland/TarlandInputs_TEST.dat");
 	
 	PrintResultStructure(Model);
 	//PrintParameterStorageStructure(DataSet);
