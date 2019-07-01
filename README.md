@@ -118,7 +118,7 @@ After understanding basic model building we recommended you explore the python w
 
 ### Getting MobiView
 
-For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to (compile it yourself)[https://github.com/NIVANorge/MobiView#building-mobiview-yourself] feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing MobiView.
+For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing MobiView.
 
 ### Creating MobiView compatible .dlls
 
