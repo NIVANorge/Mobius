@@ -131,7 +131,7 @@ MobiView can load the same .dlls as the python wrapper. Most models now have app
 - **To create a new parameter file with your own index sets**, take an existing parameter file (e.g. any parameter.dat file from within the 'Applications' folder) and delete everything except the index set setup. Set up the index sets however you want (following the [file format guide](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf)). Once you load this file from MobiView and save it again (disk icon), the parameter file will contain default values for all the parameters, which you can then edit.**
 - Click the little runner or (F7) to run the model.
 - Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
-- Ctrl-click to select multiple timeseries or to deselect them.
+- **Ctrl-click** to select multiple timeseries or to **deselect** a timeseries.
 - Some timeseries exist for multiple indexes. You can choose the indexes to show in the views below the plot. Multiselection is possible here too.
 - Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
 - Right click the plot for options to change text, formatting and to export it to an image or pdf.
