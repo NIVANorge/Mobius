@@ -193,7 +193,7 @@ MOBIUS_SOLVER_SETUP_FUNCTION(IncaDascru)
 {
 	SolverSpec->SolverFunction = IncaDascruImpl_;
 	SolverSpec->UsesJacobian = false;
-	SolverSpec->UsesErrorControl = false;
+	SolverSpec->UsesErrorControl = false; //NOTE: It actually DOES use error control, but the error control is not governed by any externally provided parameters.
 }
 
 
