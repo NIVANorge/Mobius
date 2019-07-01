@@ -78,12 +78,12 @@ https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installati
 ### Compiling
 
 The basics of compiling are simple once you have a compiler installed:
-- Make a .bat file, which contains the command line instruction(s) for the compiler to compile the .cpp file into an executable. All of the models already built using Mobius already have such .bat files.
+- Make a .bat file, which contains the command line instruction(s) for the compiler to compile the .cpp file into an executable or dll. All of the models already built using Mobius (in the Applications folder) have such .bat files.
 - Open the command line prompt (e.g. press the windows key and type 'cmd' and then hit enter)
 - From the command line, navigate to wherever your .bat file is located. To change drives (e.g. from C: to D:), just type the name of drive you want to be in and hit enter. When you're in the right drive, change to your desired folder by typing cd then the filepath, e.g. `cd C:\GitHub\Mobius\Applications\SimplyP`
 - Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
 
-You could also set up a build system of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
+You could also set up a build system or IDE of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
 
 ### Run a model and explore the principles of building models using Mobius
 
@@ -107,7 +107,7 @@ After understanding basic model building we recommended you explore the python w
 
 - The main model definition files are within the 'Modules' folder. This is where the meat is in terms of parameter definitions, equations, etc. All these files have a .h file extension.
 - The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders typically also have a few example parameter and input files.
-- For now all the source code of the main Mobius functionality is in the base folder. The models rely on this base functionality to organize data in memory and executie the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier. Beware however that you should make sure not to include mobius.h into several different compilation units in your project if you need to have more than one compilation unit.
+- For now all the source code of the main Mobius functionality is in the base folder. The models rely on this base functionality to organize data in memory and execute the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier for non-experts. Beware however that you should make sure not to include mobius.h into several different compilation units in your project if you need to have more than one compilation unit.
 - The 'Calibration' folder contains some experiments with setting up Mobius with C++ calibration software. Right now this is experimental and not completely supported since we have found Python calibration packages easier to use. They may be revisited in the future.
 
 ## The MobiView graphical user interface
@@ -118,7 +118,7 @@ After understanding basic model building we recommended you explore the python w
 
 ### Getting MobiView
 
-For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to compile it yourself feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing MobiView.
+For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to (compile it yourself)[https://github.com/NIVANorge/MobiView#building-mobiview-yourself] feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing MobiView.
 
 ### Creating MobiView compatible .dlls
 
