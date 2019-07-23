@@ -31,7 +31,7 @@ The following models are already implemented using the Mobius framework (see the
  * "INCA" models (INCA-N, INCA-C, INCA-P, INCA-Sed, INCA-Microplastics, PERSiST) 
  * HBV
  
-Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA
+Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA . INCA models are re-implementations (and sometimes slight modifications) of models developed by many other people and for most of them there exist other non-Mobius implementations by Dan Butterfield.
 
 ## Documentation
 
@@ -161,3 +161,9 @@ Mobius is a reimplementation and extension of the functionality that was provide
 This project was partially funded by Nordforsk “Nordic eScience Globalisation Initiative (NeGI)” via the project [An open access, generic ePlatform for environmental model-building at the river-basin scale (Machu-Picchu)](https://www.nordforsk.org/en/programmes-and-projects/projects/an-open-access-generic-eplatform-for-environmental-model-building-at-the-river-basin-scale-machu-picchu).
 
 Developed by by Magnus Dahler Norling for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
+
+Additional contributions:
+James Sample (statistics and auto-calibration, python utilities)
+Leah Jackson-Blake (Simply models, general testing)
+Jose-Luis Guerrero (Json format, general testing)
+Many others: General testing, feedback, ideas.
