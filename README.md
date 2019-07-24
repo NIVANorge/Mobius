@@ -133,6 +133,7 @@ MobiView can load the same .dlls as the python wrapper. Most models now have app
 - Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
 - **Ctrl-click** to select multiple timeseries or to **deselect** a timeseries.
 - Some timeseries exist for multiple indexes. You can choose the indexes to show in the views below the plot. Multiselection is possible here too.
+- If you want to calibrate the model and view **goodness of fit** statistics: Make sure your observation timeseries is in the input file as an 'additional timeseries' (see file format docs). Select the result series you want to calibrate for and your observation timeseries, and don't have any other timeseries selected. Also make sure you have only one index combination selected at a time. Select the 'Residuals' plot mode. The goodness of fit stats are displayed in the Results info text box.
 - Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
 - Right click the plot for options to change text, formatting and to export it to an image or pdf.
 - More in-depth documentation will follow later.
