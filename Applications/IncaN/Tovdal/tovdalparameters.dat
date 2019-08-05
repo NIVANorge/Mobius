@@ -11,7 +11,7 @@ parameters:
 2922
 
 "Start date" :     # ["1000-01-01", "3000-12-31"]
-"1996-01-01"
+1996-01-01
 
 ###################### "Landscape units" ######################
 "Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
