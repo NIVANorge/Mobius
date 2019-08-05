@@ -9,11 +9,12 @@ enum token_type
 	TokenType_CloseBrace,
 	TokenType_Numeric,
 	TokenType_Bool,
+	TokenType_Date,
 	TokenType_EOF,
 };
 
 //NOTE: WARNING: This has to match the token_type enum!!!
-const char *TokenNames[9] =
+const char *TokenNames[10] =
 {
 	"(unknown)",
 	"unquoted string",
@@ -23,20 +24,21 @@ const char *TokenNames[9] =
 	"}",
 	"number",
 	"boolean",
+	"date",
 	"(end of file)",
 };
 
 struct token
 {
-	//TODO: putting these in a union breaks something. Can we find out what?
 	token_type Type;
 	token_string StringValue;
-	//union
-	//{
+
+	//TODO: putting these in a union breaks something. Can we find out what?
 	u64 UIntValue;
 	double DoubleValue;
 	bool BoolValue;
-	//};
+	datetime DateValue;
+
 	bool IsUInt;
 };
 
@@ -209,6 +211,15 @@ MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
 	return true;
 }
 
+static bool
+MultiplyByTenAndAdd(s32 *Number, s32 Addendand)
+{
+	s32 MaxS32 = 2147483647;
+	if( (MaxS32 - Addendand) / 10  < *Number) return false;
+	*Number = *Number * 10 + Addendand;
+	return true;
+}
+
 void
 token_stream::ReadTokenInternal_()
 {
@@ -235,6 +246,9 @@ token_stream::ReadTokenInternal_()
 	u64 AfterComma = 0;
 	u64 Exponent = 0;
 	u64 DigitsAfterComma = 0;
+	
+	s32 Date[3] = {0, 0, 0};
+	u32 DatePos = 0;
 	
 	
 	bool TokenHasStarted = false;
@@ -376,21 +390,36 @@ token_stream::ReadTokenInternal_()
 		{
 			if(c == '-')
 			{
+				//TODO: Should we have a guard against two - signs following each other?
+				
 				if( (HasComma && !HasExponent) || (IsNegative && !HasExponent) || NumericPos != 0)
 				{
-					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Misplaced minus in numeric literal." << std::endl);
-				}
-				
-				if(HasExponent)
-				{
-					ExponentIsNegative = true;
+					if(!HasComma && !HasExponent)
+					{
+						//NOTE we have encountered something of the form x- where x is a plain number. Assume it continues on as x-y-z
+						Token.Type = TokenType_Date;
+						Date[0] = (s32)BeforeComma;
+						if(IsNegative) Date[0] = -Date[0];
+						DatePos = 1;
+					}
+					else
+					{
+						PrintErrorHeader();
+						MOBIUS_FATAL_ERROR("Misplaced minus in numeric literal." << std::endl);
+					}
 				}
 				else
 				{
-					IsNegative = true;
+					if(HasExponent)
+					{
+						ExponentIsNegative = true;
+					}
+					else
+					{
+						IsNegative = true;
+					}
+					NumericPos = 0;
 				}
-				NumericPos = 0;
 			}
 			else if(c == '+')
 			{
@@ -443,7 +472,7 @@ token_stream::ReadTokenInternal_()
 					if(!MultiplyByTenAndAdd(&AfterComma, (u64)(c - '0')))
 					{
 						PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Numeric overflow after comma in numeric literal (too many digits)." << std::endl);
+						MOBIUS_FATAL_ERROR("Overflow after comma in numeric literal (too many digits)." << std::endl);
 					}
 					DigitsAfterComma++;
 				}
@@ -452,7 +481,7 @@ token_stream::ReadTokenInternal_()
 					if(!MultiplyByTenAndAdd(&BeforeComma, (u64)(c - '0')))
 					{
 						PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Numeric overflow in numeric literal (too many digits). If this is a double, try to use scientific notation instead." << std::endl);
+						MOBIUS_FATAL_ERROR("Overflow in numeric literal (too many digits). If this is a double, try to use scientific notation instead." << std::endl);
 					}
 				}
 				++NumericPos;
@@ -473,7 +502,43 @@ token_stream::ReadTokenInternal_()
 				
 				break;
 			}
-		}	
+		}
+		else if(Token.Type == TokenType_Date)
+		{
+			if(c == '-')
+			{
+				++DatePos;
+				if(DatePos == 3)
+				{
+					PrintErrorHeader();
+					MOBIUS_FATAL_ERROR("Too many '-' signs in date literal." << std::endl);
+				}
+			}
+			else if(isdigit(c))
+			{
+				if(!MultiplyByTenAndAdd(&Date[DatePos], (u64)(c - '0')))
+				{
+					PrintErrorHeader();
+					MOBIUS_FATAL_ERROR("Overflow in numeric literal (too many digits)." << std::endl);
+				}
+			}
+			else
+			{
+				// NOTE: We assume that the latest read char was the start of another token, so go back one char to make the position correct for the next call to ReadTokenInternal_.
+				if(c == '\n')
+				{
+					Line--;
+					Column = PreviousColumn;
+				}
+				else
+					Column--;
+				
+				Token.StringValue.Length--;
+				AtChar--;
+				
+				break;
+			}
+		}
 	}
 	
 	if(Token.Type == TokenType_Numeric)
@@ -498,6 +563,22 @@ token_stream::ReadTokenInternal_()
 			{
 				Token.DoubleValue *= Multiplier;
 			}
+		}
+	}
+	
+	if(Token.Type == TokenType_Date)
+	{
+		if(DatePos != 2)
+		{
+			PrintErrorHeader();
+			MOBIUS_FATAL_ERROR("Invalid date literal. Has to be on the form yyyy-mm-dd ." << std::endl);
+		}
+		bool Success;
+		Token.DateValue = datetime(Date[0], Date[1], Date[2], &Success);
+		if(!Success)
+		{
+			PrintErrorHeader();
+			MOBIUS_FATAL_ERROR("The date " << Token.StringValue << " does not exist." << std::endl);
 		}
 	}
 	
@@ -529,6 +610,7 @@ bool token_stream::ExpectBool()
 	return Token.BoolValue;
 }
 
+/*
 datetime token_stream::ExpectDate()
 {
 	token_string DateStr = ExpectQuotedString();
@@ -540,6 +622,13 @@ datetime token_stream::ExpectDate()
 		MOBIUS_FATAL_ERROR("Unrecognized date format \"" << DateStr << "\". Supported format: Y-m-d" << std::endl);
 	}
 	return Date;
+}
+*/
+
+datetime token_stream::ExpectDate()
+{
+	token Token = ExpectToken(TokenType_Date);
+	return Token.DateValue;
 }
 
 token_string token_stream::ExpectQuotedString()
@@ -657,6 +746,16 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, paramet
 			token Token = PeekToken();
 			if(Token.Type != TokenType_Bool) break;
 			Value.ValBool = ExpectBool();
+			ListOut.push_back(Value);
+		}
+	}
+	else if(Type == ParameterType_Time)
+	{
+		while(true)
+		{
+			token Token = PeekToken();
+			if(Token.Type != TokenType_Date) break;
+			Value.ValTime = ExpectDate();
 			ListOut.push_back(Value);
 		}
 	}

@@ -367,30 +367,15 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				}
 
 				//TODO: Check that the values are in the Min-Max range? (issue warning only)
-				if(Type == ParameterType_Time)
-				{
-					//NOTE: Since we can't distinguish date identifiers from quoted string identifiers, we have to handle them separately. Perhaps we should have a separate format for dates so that the parsing could be handled entirely by the lexer??
-					std::vector<parameter_value> Values;
-					Values.resize(ExpectedCount);
-					
-					for(size_t ValIdx = 0; ValIdx < ExpectedCount; ++ValIdx)
-					{
-						Values[ValIdx].ValTime = Stream.ExpectDate();
-					}
-					SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
-				}
-				else
-				{
-					std::vector<parameter_value> Values;
-					Values.reserve(ExpectedCount);
-					Stream.ReadParameterSeries(Values, Type);
-					if(Values.size() != ExpectedCount)                                                                   
-					{                                                                                                    
-						Stream.PrintErrorHeader();                                                                       
-						MOBIUS_FATAL_ERROR("Did not get the expected number of values for " << ParameterName << std::endl); 
-					}                                                                                                    
-					SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
-				}
+				std::vector<parameter_value> Values;
+				Values.reserve(ExpectedCount);
+				Stream.ReadParameterSeries(Values, Type);
+				if(Values.size() != ExpectedCount)                                                                   
+				{                                                                                                    
+					Stream.PrintErrorHeader();                                                                       
+					MOBIUS_FATAL_ERROR("Did not get the expected number of values for " << ParameterName << std::endl); 
+				}                                                                                                    
+				SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
 			}
 		}
 	}
@@ -515,7 +500,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		{
 			FormatType = 0;
 		}
-		else if(Token.Type == TokenType_QuotedString)
+		else if(Token.Type == TokenType_Date)
 		{
 			FormatType = 1;
 			//NOTE: For this format, the default value is NaN (signifying a missing value).
@@ -566,7 +551,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				
 				token Token = Stream.PeekToken();
 				
-				if(Token.Type == TokenType_QuotedString)
+				if(Token.Type == TokenType_Date)
 				{
 					datetime Date = Stream.ExpectDate();
 					CurTimestep = StartDate.DaysUntil(Date); //NOTE: Only one-day timesteps currently supported.

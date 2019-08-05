@@ -25,35 +25,31 @@ MonthLength(s32 Year, s32 Month)
 	//NOTE: Returns the number of days in a month. The months are indexed from 0 in this context.
 	s32 Length[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	s32 Days = Length[Month];
-	if(Month == 2 && IsLeapYear(Year)) Days += 1;
+	if(Month == 1 && IsLeapYear(Year)) Days += 1;
 	return Days;
 }
 
 struct datetime
 {
-	//NOTE: It is very important that SecondsSinceEpoch is the only data member of datetime, because a datetime is a member of the parameter_value union (mobius_model.h). Changing this may change the size of the parameter_value, which could break things.
-	s64 SecondsSinceEpoch;
-	
-	datetime() : SecondsSinceEpoch(0) {}
-	
-	datetime(const char *DateString, bool *Success)
+private:
+
+	inline s32
+	MonthOffset(s32 Year, s32 Month)
 	{
-		//NOTE: Does not account for leap seconds, but that should not be a problem.
-		// Takes a string of the form "yyyy-mm-dd" and puts the number of seconds since "1970-01-01" in the SecondsSinceEpoch. Note that a negative value is computed for dates before "1970-01-01". Returns a bool saying if a correct date was provided.
+		//NOTE: Returns the number of the day of year (starting at january 1st = day 0) that this month starts on. The months are indexed from 0 in this context.
 		
-		s32 Day, Month, Year;
-		
-		int Found = sscanf(DateString, "%d-%d-%d", &Year, &Month, &Day);
-		if(Found != 3)
+		s32 Offset[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+		s32 Days = Offset[Month];
+		if(Month >= 2 && IsLeapYear(Year)) Days += 1;
+		return Days;
+	}
+	
+	inline bool
+	SetFromYearMonthDay(s32 Year, s32 Month, s32 Day)
+	{
+		if(Day < 1 || Day > MonthLength(Year, Month-1) || Month < 1 || Month > 12)
 		{
-			*Success = false;
-			return;
-		}
-		
-		if(Day < 1 || Day > 31 || Month < 1 || Month > 12) //TODO: Should we test this more thoroughly depending on the month?
-		{
-			*Success = false;
-			return; 
+			return false; 
 		}
 		
 		s64 Result = 0;
@@ -76,7 +72,42 @@ struct datetime
 		Result += (Day-1)*24*60*60;
 		
 		SecondsSinceEpoch = Result;
-		*Success = true;
+		return true;
+	}
+	
+	
+public:
+	//NOTE: It is very important that SecondsSinceEpoch is the only data member of datetime, because a datetime is a member of the parameter_value union (mobius_model.h). Changing this may change the size of the parameter_value, which could break things.
+	s64 SecondsSinceEpoch;
+	
+	datetime() : SecondsSinceEpoch(0) {}
+	
+	datetime(const char *DateString, bool *Success)
+	{
+		//NOTE: Does not account for leap seconds, but that should not be a problem.
+		// Takes a string of the form "yyyy-mm-dd" and puts the number of seconds since "1970-01-01" in the SecondsSinceEpoch. Note that a negative value is computed for dates before "1970-01-01". Returns a bool saying if a correct date was provided.
+		
+		s32 Day, Month, Year;
+		
+		int Found = sscanf(DateString, "%d-%d-%d", &Year, &Month, &Day);
+		if(Found != 3)
+		{
+			*Success = false;
+			return;
+		}
+		
+		*Success = SetFromYearMonthDay(Year, Month, Day);
+	}
+	
+	datetime(s32 Year, s32 Month, s32 Day, bool *Success)
+	{
+		if(Day < 1 || Day > 31 || Month < 1 || Month > 12) //TODO: Should we test this more thoroughly depending on the month?
+		{
+			*Success = false;
+			return; 
+		}
+		
+		*Success = SetFromYearMonthDay(Year, Month, Day);
 	}
 	
 	inline void
@@ -176,19 +207,6 @@ struct datetime
 		{
 			return (OtherSeconds - SecondsSinceEpoch - 1) / (24*60*60);
 		}
-	}
-
-private:
-
-	inline s32
-	MonthOffset(s32 Year, s32 Month)
-	{
-		//NOTE: Returns the number of the day of year (starting at january 1st = day 0) that this month starts on. The months are indexed from 0 in this context.
-		
-		s32 Offset[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-		s32 Days = Offset[Month];
-		if(Month >= 2 && IsLeapYear(Year)) Days += 1;
-		return Days;
 	}
 };
 
