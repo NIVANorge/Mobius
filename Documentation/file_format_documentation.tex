@@ -102,6 +102,8 @@ Number & {\tt 8} or {\tt 0.05} or {\tt 1e-9} or {\tt NaN} \\
 \hline
 Boolean &{\tt  true} or {\tt false} \\
 \hline
+Date & 1999-05-01 (format yyyy-mm-dd) \\
+\hline
 Unquoted string & {\tt index\_sets} \\
 \hline
 Quoted string & {\tt "Timesteps"} \\
@@ -129,7 +131,7 @@ parameters :
 365
 
 "Start date" :
-"1999-1-1"
+1999-1-1
 
 "Growing degree threshold" :
 1 2.0
@@ -203,7 +205,7 @@ The parameter section consists of a series of quoted names of parameters followe
 \hline
 {\bf boolean} &{\tt  true} or {\tt false} \\
 \hline
-{\bf time} & {\tt "1999-1-1"} \\
+{\bf time} & {\tt 1999-1-1} \\
 \hline
 \end{tabular}
 \caption{Parameter value types}
@@ -213,7 +215,7 @@ The parameter section consists of a series of quoted names of parameters followe
 \item Parameter values of type {\bf double} (double-precision floating point numbers) can written as numbers with or without a decimal separator '.', or in scientific notation. Technically you could also provide a NaN (not-a-number), but that will probably crash the model in most cases.
 \item Values of type {\bf uint} (unsigned integers) have to be written as a non-negative number without any commas. These are often used to denote a number of timesteps or days of duration for some process.
 \item {\bf Boolean} values are either {\tt true} or {\tt false}. These are typically switches that turn on or off a process.
-\item Values of {\bf time} type are provided as a date on the format "y-m-d".
+\item Values of {\bf time} type are provided as a date on the format yyyy-mm-dd.
 \end{enumerate}
 
 Every parameter indexes over a list of index sets determined by the model. Note that an index set can appear more than one time in this list. If a parameter indexes over no index sets, it has only one value. If it indexes over one index set it has one value for each index in that index set. If it indexes over more than one index set, it has one value for each element in the cartesian product\footnote{Remember that the Cartesian product of sets $X$ and $Y$ is the set of tuples $(x, y)$, with $x\in X$ and $y\in Y$.} of these index sets, i.e. the number of values is equal to the product of the number of indexes.
@@ -288,7 +290,7 @@ parameters :
 365
 
 "Start date" :     # ["1000-1-1", "3000-12-31"]
-"1999-1-1"
+1999-1-1
 
 ###################### "Landscape units" ######################
 "Growing degree threshold" :     #(${^\circ}$C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
@@ -321,7 +323,7 @@ false true
 A shortened example of an input file
 \begin{lstlisting}
 start_date :
-"1999-1-1"
+1999-1-1
 
 timesteps :
 5
@@ -357,16 +359,16 @@ inputs :
 1.54
 
 "Discharge" {"Reach 1"} :
-"1999-01-01"	0.001982
-"1999-01-02"	0.001982
-"1999-01-04"	0.001428
-"1999-01-05"	0.00404
+1999-01-01	0.001982
+1999-01-02	0.001982
+1999-01-04	0.001428
+1999-01-05	0.00404
 end_timeseries
 
 "Discharge" {"Reach 2"} :
-"1999-01-01"	0.001486
-"1999-01-03"	0.003005
-"1999-01-05"	0.002082
+1999-01-01	0.001486
+1999-01-03	0.003005
+1999-01-05	0.002082
 end_timeseries
 
 \end{lstlisting}
@@ -384,7 +386,7 @@ Input files, like the file in Example \ref{ex:inputfile}, can or must have the f
 You can completely omit providing data for a timeseries (i.e. don't type its name or any values for it). In that case it will be asumed to be equal to 0 for every timestep. There are two formats you can choose.
 \begin{enumerate}[i]
 \item If you use the dense format, just list all the values after one another. If you use this format you have to provide exactly as many values as the number of timesteps you declared for the input data.
-\item If you use the sparse format, list pairs of dates (format "y-m-d") and values. If you use this format, dates in the start date - timesteps range that do not receive a value will be assigned NaN. This means that this format is mostly suitable for observation timeseries and not for model required inputs, since the model will most likely crash on getting a NaN value. The exception is if you fill in all the values (maybe using constant periods as described below). Every sparse timeseries has to be ended with a {\tt end\_timeseries} token. The dates do not have to be provided in order.
+\item If you use the sparse format, list pairs of dates (format yyyy-m-d) and values. If you use this format, dates in the start date - timesteps range that do not receive a value will be assigned NaN. This means that this format is mostly suitable for observation timeseries and not for model required inputs, since the model will most likely crash on getting a NaN value. The exception is if you fill in all the values (maybe using constant periods as described below). Every sparse timeseries has to be ended with a {\tt end\_timeseries} token. The dates do not have to be provided in order.
 \end{enumerate}
 Input values can be provided in the same format as parameters of type double in the parameter file. I.e. they can be numbers with or without decimal separator or in scientific notation.
 
@@ -435,8 +437,8 @@ As in Example \ref{ex:multiseries} you can make sure the same timeseries is used
 Declaring constant periods of values
 \begin{lstlisting}
 "Nitrate dry deposition" :
-"1999-01-01" to "1999-05-31" 0.01
-"1999-06-01" to "1999-12-31" 0.02
+1999-01-01 to 1999-05-31 0.01
+1999-06-01 to 1999-12-31 0.02
 end_timeseries
 \end{lstlisting}
 \end{example}
@@ -447,11 +449,11 @@ As in Example \ref{ex:constantperiods} you can declare that the timeseries shoul
 Combining various advanced formats.
 \begin{lstlisting}
 "Nitrate dry deposition" {"Reach1"} {"Reach2"}:
-"1999-01-01" to "1999-05-31" 0.01
-"1999-06-01" to "1999-12-31" 0.02
-"2000-01-01" 0.01    #NOTE: you can provide values for single days in-between periods
-"2000-01-02" 0.015
-"1999-01-03" to "1999-05-31" 0.01
+1999-01-01 to 1999-05-31 0.01
+1999-06-01 to 1999-12-31 0.02
+2000-01-01 0.01    #NOTE: you can provide values for single days in-between periods
+2000-01-02 0.015
+1999-01-03 to 1999-05-31 0.01
 end_timeseries
 \end{lstlisting}
 \end{example}
@@ -463,7 +465,7 @@ If you have a lot of input data, it can be useful to organize it in many separat
 \begin{example}
 Including other files. The master file:
 \begin{lstlisting}
-start_date : "2004-01-01"
+start_date : 2004-01-01
 timesteps  : 5
 
 inputs:
@@ -480,13 +482,13 @@ include_file "depositions.dat"
 The entire contents of depositions.dat:
 \begin{lstlisting}
 "Nitrate dry deposition" :
-"2004-01-01" to "2005-01-01" 0.01
-"2005-01-02" to "2008-01-01" 0.02
+2004-01-01 to 2005-01-01 0.01
+2005-01-02 to 2008-01-01 0.02
 end_timeseries
 
 "Nitrate wet deposition" :
-"2004-01-01" to "2005-01-01" 0.03
-"2005-01-02" to "2008-01-01" 0.04
+2004-01-01 to 2005-01-01 0.03
+2005-01-02 to 2008-01-01 0.04
 end_timeseries
 \end{lstlisting}
 \end{example}
@@ -502,45 +504,9 @@ In many cases, your input data will a priori exist in a .csv format or an .xlsx 
 \begin{enumerate}[i]
 \item If your data are opened in Excel (or Open Office Calc) your can click the letter of a column in the top bar to select the entire column, then ctrl-c to copy it. You can now paste it in a text editor.
 \item You need all values to have a '.' decimal separator rather than a ','. You can either do a search-replace in a text editor after copying the values, or in excel go to File$\rightarrow$Options, On the Advanced tab, under Editing options, uncheck the Use system separators box, then type in the right Decimal separator in its box.
-\item To format a column of dates to the "y-m-d" format, select the colum, then right click it and select Format Cells. Under Date select the right format.
+\item To format a column of dates to the yyyy-m-d format, select the colum, then right click it and select Format Cells. Under Date select the right format.
 \item If you have one date column and many data columns and you want to copy just the date column together with one data column, you can temporarily copy the data column next to the date column and ctrl-select and copy the two together.
-\item You may still need to enclose all dates in quotation marks " ". This can be tedious to do manually. It is pretty easy to do it using macros or by specifying a custom format for the data if it is opened as a spreadsheet (see below).
 \end{enumerate}
-
-To use macros in Notepad++, look for the buttons in Figure \ref{fig:macro}.
-\begin{figure}[H]
-\centering
-\includegraphics{img/notepadmacro}
-\caption{Notepad++ macro buttons}\label{fig:macro}
-\end{figure}
-
-Say that you have a file that looks like this
-\begin{example}
-\begin{lstlisting}
-1999-01-01	0.001982
-1999-01-02	0.001982
-1999-01-04	0.001428
-1999-01-05	0.00404
-\end{lstlisting}
-\end{example}
-and you want to put quotation marks around the dates. You can use Notepad++ macros to record your keyboard strokes in order to repeat the same operation many times.
-\begin{enumerate}[i]
-\item Move your cursor to the left of the first date.
-\item Click the red circle to start recording.
-\item Type in a " symbol.
-\item Press the right arrow on the keyboard until the cursor is at the right of the date.
-\item Type another " symbol.
-\item Press the left arrow until the cursor is at the beginning of the line again.
-\item Press the down arrow once to move the cursor to the beginning of the next line.
-\item Click the black square symbol to stop the recording.
-\item You can now click the triangle symbol to repeat these keystrokes for one line at a time, or the double triangle to do it for multiple lines.
-\end{enumerate}
-
-You can alternatively use the custom format in Excel and specify the format string as 
-\begin{lstlisting}
-\"yyyy-mm-dd\";@
-\end{lstlisting}
-to get the quotes.
 
 \subsection{Error messages}
 
@@ -675,14 +641,6 @@ The structure of the input file in json
 \item The value of {\tt inputs} is a dictionary where every key is the name of an input.
 \item The value of every input in {\tt data} is a list of dictionaries. Each of these dictionaries has the two keys {\tt indexes} and {\tt values}. The value of {\tt indexes} is a list of names of indexes for this timeseries. The value of {\tt values} is a list of numeric values. Unlike in the dat format, {\tt NaN} is not a valid json identifier, so {\tt null} is used to signify a missing value instead.
 \end{enumerate}
-
-\section{The sqlite3 format}
-
-\subsection{General}
-
-Sqlite is a database format. This format is not really used anymore and may be removed.
-
-\#TODO Complete the description!
 
 \bibliographystyle{plain}
 \bibliography{citations}

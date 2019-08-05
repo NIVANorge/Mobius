@@ -8,7 +8,7 @@ parameters:
 100
 
 "Start date" :
-"1999-1-1"
+1999-1-1
 
 ###################### "Landscape units" ######################
 "Initial snow pack depth" :

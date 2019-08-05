@@ -9,10 +9,8 @@ parameters:
 100
 
 "Start date" :
-"1983-1-1"
+1983-1-1
 
-#"Baseline SMD" :
-#300.000000
 
 ###################### "Landscape units" ######################
 "Snow multiplier" :

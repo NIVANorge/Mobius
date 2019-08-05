@@ -12,7 +12,7 @@ parameters:
 2922
 
 "Start date" :     # ["1000-01-01", "3000-12-31"]
-"1996-01-01"
+1996-01-01
 
 "Latitude" :     #(°) [-90, 90] Used to compute solar radiation if no solar radiation timeseries was provided in the input data.
 60

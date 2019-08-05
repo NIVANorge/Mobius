@@ -373,7 +373,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				if(Values.size() != ExpectedCount)                                                                   
 				{                                                                                                    
 					Stream.PrintErrorHeader();                                                                       
-					MOBIUS_FATAL_ERROR("Did not get the expected number of values for " << ParameterName << std::endl); 
+					MOBIUS_FATAL_ERROR("Did not get the expected number of values for parameter \"" << ParameterName << "\". Got " << Values.size() << ", expected " << ExpectedCount << std::endl); 
 				}                                                                                                    
 				SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
 			}
