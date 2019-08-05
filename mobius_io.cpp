@@ -54,7 +54,7 @@ WriteParameterValue(FILE *File, parameter_value Value, parameter_type Type)
 		break;
 		
 		case ParameterType_Time:
-		fprintf(File, "\"%s\"", Value.ValTime.ToString());
+		fprintf(File, "%s", Value.ValTime.ToString());
 		break;
 	}
 }
