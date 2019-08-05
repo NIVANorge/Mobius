@@ -386,12 +386,16 @@ Input files, like the file in Example \ref{ex:inputfile}, can or must have the f
 You can completely omit providing data for a timeseries (i.e. don't type its name or any values for it). In that case it will be asumed to be equal to 0 for every timestep. There are two formats you can choose.
 \begin{enumerate}[i]
 \item If you use the dense format, just list all the values after one another. If you use this format you have to provide exactly as many values as the number of timesteps you declared for the input data.
-\item If you use the sparse format, list pairs of dates (format yyyy-m-d) and values. If you use this format, dates in the start date - timesteps range that do not receive a value will be assigned NaN. This means that this format is mostly suitable for observation timeseries and not for model required inputs, since the model will most likely crash on getting a NaN value. The exception is if you fill in all the values (maybe using constant periods as described below). Every sparse timeseries has to be ended with a {\tt end\_timeseries} token. The dates do not have to be provided in order.
+\item If you use the sparse format, list pairs of dates (format yyyy-m-d) and values. Every sparse timeseries has to be ended with a {\tt end\_timeseries} token. The dates do not have to be provided in order.
 \end{enumerate}
 Input values can be provided in the same format as parameters of type double in the parameter file. I.e. they can be numbers with or without decimal separator or in scientific notation.
 
 \begin{note}
 If you have a timeseries of, say, "Air temperature" that you want to use as a model input timeseries (as opposed to an additional observation timeseries) and it has missing values, you have to do preprocessing on it yourself to interpolate the missing values before you put it in the input file.
+\end{note}
+
+\begin{note}
+Additional timeseries (ones not specified by the model) are by default cleared to NaN instead of to 0. This is for instance useful when using this feature to load in observation series, because it means that dates you don't provide values for will be properly treated as missing values.
 \end{note}
 
 There are a few more advanced options you can use when providing inputs.
@@ -443,7 +447,7 @@ end_timeseries
 \end{lstlisting}
 \end{example}
 
-As in Example \ref{ex:constantperiods} you can declare that the timeseries should have a given constant value between two dates. Both the start date and end date is inclusive. Note that this otherwise counts as using the sparse format, i.e. missing dates will be given the NaN value. Moreover, the periods do not have to be declared in order. You can also combine these advanced features freely as seen below.
+As in Example \ref{ex:constantperiods} you can declare that the timeseries should have a given constant value between two dates. Both the start date and end date is inclusive. Note that this otherwise counts as using the sparse format. Moreover, the periods do not have to be declared in order. You can also combine these advanced features freely as seen below.
 
 \begin{example}
 Combining various advanced formats.

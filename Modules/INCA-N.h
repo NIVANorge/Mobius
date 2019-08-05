@@ -127,7 +127,6 @@ AddIncaNModel(mobius_model *Model)
 	auto AmmoniumDryStorage          = RegisterEquation(Model, "Ammonium dry storage", KgPerHectare);
 	auto NitrateFertilizerAddition   = RegisterEquation(Model, "Nitrate fertilizer addition", KgPerHectarePerDay);
 	auto AmmoniumFertilizerAddition  = RegisterEquation(Model, "Ammonium fertilizer addition", KgPerHectarePerDay);
-	auto CurrentGrowthCurveOffset    = RegisterEquation(Model, "Growth curve offset", Dimensionless);
 	auto CurrentGrowthCurveAmplitude = RegisterEquation(Model, "Growth curve amplitude", Dimensionless);
 	auto CurrentPlantGrowthStartDay  = RegisterEquation(Model, "Plant growth start day", Dimensionless);
 	
@@ -340,16 +339,9 @@ AddIncaNModel(mobius_model *Model)
 		return SCurveResponse(depth, zeroratedepth, maxratedepth, 0.0, 1.0);
 	)
 	
-	EQUATION(Model, CurrentGrowthCurveOffset,
-		double growthcurveoffset = IF_INPUT_ELSE_PARAMETER(GrowthCurveOffsetTimeseries, GrowthCurveOffset);
-		if(std::isnan(growthcurveoffset)) return 0.0;
-		return growthcurveoffset;
-	)
-	
 	EQUATION(Model, CurrentGrowthCurveAmplitude,
-		double growthcurveamplitude = IF_INPUT_ELSE_PARAMETER(GrowthCurveAmplitudeTimeseries, GrowthCurveAmplitude);
-		if(std::isnan(growthcurveamplitude)) return 0.0;
-		return growthcurveamplitude;
+		//NOTE: The only purpose of this equation is so that we can look up LAST_RESULT of it below (since there is no LAST_INPUT lookup)
+		return IF_INPUT_ELSE_PARAMETER(GrowthCurveAmplitudeTimeseries, GrowthCurveAmplitude);
 	)
 	
 	EQUATION(Model, CurrentPlantGrowthStartDay,
@@ -372,7 +364,10 @@ AddIncaNModel(mobius_model *Model)
 		double currentday   = (double)CURRENT_DAY_OF_YEAR();
 		double endday   = startday + (double)PARAMETER(PlantGrowthPeriod);
 		
-		double curve = RESULT(CurrentGrowthCurveOffset) + RESULT(CurrentGrowthCurveAmplitude) * sin(2.0 * Pi * (currentday - startday) / daysthisyear );
+		double offset    = IF_INPUT_ELSE_PARAMETER(GrowthCurveOffsetTimeseries, GrowthCurveOffset);
+		double amplitude = IF_INPUT_ELSE_PARAMETER(GrowthCurveAmplitudeTimeseries, GrowthCurveAmplitude);
+		
+		double curve = offset + amplitude * sin(2.0 * Pi * (currentday - startday) / daysthisyear );
 		
 		if(!INPUT_WAS_PROVIDED(GrowthCurveOffsetTimeseries) && (currentday < startday || currentday > endday)) return 0.0;
 		

@@ -503,7 +503,17 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		else if(Token.Type == TokenType_Date)
 		{
 			FormatType = 1;
-			//NOTE: For this format, the default value is NaN (signifying a missing value).
+		}
+		else
+		{
+			Stream.PrintErrorHeader();
+			MOBIUS_FATAL_ERROR("Inputs are to be provided either as a series of numbers or a series of dates together with numbers" << std::endl);
+		}
+		
+		if(Model->Inputs.Specs[Input.Handle].IsAdditional)
+		{
+			//NOTE: Additional timeseries are by default cleared to NaN instead of 0.
+			//TODO: This makes us only clear the ones that are provided in the file... Whe should really also clear ones that are not provided..
 			for(size_t Offset : Offsets)
 			{
 				double *WriteTo = DataSet->InputData + Offset;
@@ -513,11 +523,6 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					WriteTo += DataSet->InputStorageStructure.TotalCount;
 				}
 			}
-		}
-		else
-		{
-			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Inputs are to be provided either as a series of numbers or a series of dates together with numbers" << std::endl);
 		}
 		
 		if(FormatType == 0)

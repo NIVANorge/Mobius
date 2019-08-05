@@ -33,7 +33,7 @@ struct token
 	token_type Type;
 	token_string StringValue;
 
-	//TODO: putting these in a union breaks something. Can we find out what?
+	//TODO: It is tempting to put these in a union, but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint (and the bit patterns of a double and a u64 don't encode the same number even if it is a whole number).
 	u64 UIntValue;
 	double DoubleValue;
 	bool BoolValue;
@@ -609,21 +609,6 @@ bool token_stream::ExpectBool()
 	token Token = ExpectToken(TokenType_Bool);
 	return Token.BoolValue;
 }
-
-/*
-datetime token_stream::ExpectDate()
-{
-	token_string DateStr = ExpectQuotedString();
-	bool ParseSuccess;
-	datetime Date(DateStr.Data, &ParseSuccess);
-	if(!ParseSuccess)
-	{
-		PrintErrorHeader();
-		MOBIUS_FATAL_ERROR("Unrecognized date format \"" << DateStr << "\". Supported format: Y-m-d" << std::endl);
-	}
-	return Date;
-}
-*/
 
 datetime token_stream::ExpectDate()
 {
