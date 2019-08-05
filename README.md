@@ -1,3 +1,11 @@
+# Important note (2019-08-05):
+We recently changed the format of dates in parameter and input files. A date should now be formatted like
+2003-01-01
+instead of what it was previously
+"2003-01-01"
+I.e. remove the quotations.
+
+
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
 
