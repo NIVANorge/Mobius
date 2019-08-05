@@ -1,6 +1,6 @@
 
 
-start_date : "1990-01-01"
+start_date : 1990-01-01
 timesteps : 10591
 
 additional_timeseries :

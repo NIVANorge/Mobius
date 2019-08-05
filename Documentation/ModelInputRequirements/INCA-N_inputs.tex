@@ -92,30 +92,27 @@ If an optional input is provided at all it has to have to have a value for every
 \item {\bf\tt "Effluent ammonium concentration"}. In $mg/l$. Replaces the parameter "Reach effluent ammonium concentration".
 \end{enumerate}
 
-\begin{note}
-It may be convenient to use the format of constant periods to specify e.g. fertilization inputs. However, note that using this format will set any days you don't provide data for to NaN, which will crash the model. If you want the missing values to be 0, you should instead clear the entire input series to 0 before providing the other periods like seen below.
+\begin{example}
+It may be convenient to use the format of constant periods to specify e.g. fertilization inputs. An example of that is:
 \begin{lstlisting}
 "Fertilizer nitrate" :
-"2004-01-01" to "2011-12-31" 0   #NOTE: Clears the entire series first
-
-#everything below overwrites the above 0's.
-"2004-04-10" to "2004-06-01" 0.01
+2004-04-10 to 2004-06-01 0.01
 <..etc..>
 end_timeseries
 \end{lstlisting}
-\end{note}
+\end{example}
 
-There is also the possibility to specify multiple plant growth periods (which will influence plant ammonium uptake). This is done using the optional timeseries {\tt\bf "Growth curve offset"} and {\tt\bf "Growth curve amplitude"}. They should be specified using the constant periods format as in the next example. It is important that the periods in these two timeseries match up. Unlike with the other timeseries, the model expects the value between periods to be NaN, and uses this to determine whether a period started or ended. This replaces the parameter-based growth periods.
+There is also the possibility to specify multiple plant growth periods (which will influence plant ammonium uptake). This is done using the optional timeseries {\tt\bf "Growth curve offset"} and {\tt\bf "Growth curve amplitude"}. They should be specified using the constant periods format as in the next example. It is important that the periods in these two timeseries match up. This replaces the parameter-based growth periods.
 
 \begin{example}
 \begin{lstlisting}
 "Growth curve offset" :
-"2004-04-10" to "2004-06-01" 0.33
-"2004-03-27" to "2004-06-15" 0.31
+2004-04-10 to 2004-06-01 0.33
+2004-03-27 to 2004-06-15 0.31
 
 "Growth curve amplitude" :
-"2004-04-10" to "2004-06-01" 0.67
-"2004-03-27" to "2004-06-15" 0.69
+2004-04-10 to 2004-06-01 0.67
+2004-03-27 to 2004-06-15 0.69
 \end{lstlisting}
 \end{example}
 

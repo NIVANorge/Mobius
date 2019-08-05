@@ -10,7 +10,7 @@ parameters:
 10957
 
 "Start date" :     # ["1000-01-01", "3000-12-31"]
-"1986-01-01"
+1986-01-01
 
 ###################### "Landscape units" ######################
 "Degree day factor" :     #(mm/°C/day) [1.5, 4] Degree day factor, rate at which the snow will melt water in snow will freeze

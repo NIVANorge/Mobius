@@ -10,7 +10,7 @@ parameters:
 4017 # 30 years: 10956 days; 11 yrs: 4017 days
 
 "Start date" :     # ["1000-01-01", "3000-12-31"]
-"1979-10-01"
+1979-10-01
 
 "Latitude" :     #(°) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
 59.6
