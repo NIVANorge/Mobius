@@ -40,12 +40,12 @@ GenerateDataSet(mobius_model *Model)
 
 mobius_data_set::~mobius_data_set()
 {
-	//NOTE: This has not been properly tested yet..
-	
 	if(ParameterData) free(ParameterData);
 	if(InputData) free(InputData);
 	if(ResultData) free(ResultData);
 	if(InputTimeseriesWasProvided) free(InputTimeseriesWasProvided);
+	
+	//TODO: This destructor should not have to look up Model->IndexSets.Count(), because we want to allow people to delete the model and datasets in arbitrary order.
 	
 	if(IndexCounts)
 	{

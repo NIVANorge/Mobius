@@ -76,6 +76,22 @@ DllDeleteDataSet(void *DataSetPtr)
 	CHECK_ERROR_END
 }
 
+DLLEXPORT void
+DllDeleteModelAndDataSet(void *DataSetPtr)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	mobius_model *Model = (mobius_model *)DataSet->Model;
+	
+	//NOTE: Unfortunately it seems like the dataset destructor has to look up stuff in the model, so the dataset must always be destroyed first.
+	delete DataSet;
+	delete Model;
+	
+	CHECK_ERROR_END
+}
+
+
 DLLEXPORT u64
 DllGetTimesteps(void *DataSetPtr)
 {
