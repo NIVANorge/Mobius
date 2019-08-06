@@ -1029,12 +1029,38 @@ We logically separate application building from model building. By application b
 
 There are a few more procedures that we will try to document soon.
 
+\apientry{CopyDataSet}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{bool CopyResults = false}{Whether or not results series should be copied.}
+\apiret{A {\tt mobius\_data\_set *} pointer to a copy of the dataset.}
+\apidesc{Creates a new mobius\_data\_set and copies all index set structure, parameter and input values from the provided dataset. If CopyResults == true, result series are also copied if present. This does not copy the mobius\_model object, instead the new dataset will refer to the same model object as the old one.} 
+}
+
+\apientry{SetIndexes}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{token\_string IndexSetName}{The name of one of the index sets in the model.}
+\apipar{const std::vector<token\_string> \&Indexes}{A list of index names}
+\apidesc{Sets the indexes for the given index set in the dataset. Can only be done for an index set that has not received indexes in any way already.}
+}
+
+\apientry{SetParameterValue}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *Name}{The name of a parameter in the model.}
+\apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the parameter indexes over. These have to be in the right order.}
+\apipar{{\emph x} Value}{The value you want to set the parameter to. Here x is either double, u64, bool or const char * (the latter one for date values). The type has to match the registered type of the parameter.}
+\apidesc{Sets the (indexed) parameter to the provided value. Example: {\tt SetParameterValue(DataSet, "Degree-day factor", \{"Forest"\}, 0.33);}}
+}
+
+\apientry{GetParameter{\emph X}}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *Name}{The name of a parameter in the model.}
+\apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the parameter indexes over. These have to be in the right order.}
+\apiret{Returns an {\tt x} value, where x is either  double, u64 or bool.}
+\apidesc{Examples:{\tt double flow = GetParameterDouble(DataSet, "Reach flow", \{"First"\});}{\tt u64 Timesteps = GetParameterUInt(DataSet, "Timesteps", \{\});}}
+}
+
 %TODO: These should possibly be documented:
-%CopyDataSet(mobius_data_set *)
-%SetIndexes(mobius_data_set *, token_string, vector<token_string>)
 %SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vector<std::pair<token_string, std::vector<token_string>>>& Inputs)
-%SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, x Value)
-%GetParameterX(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes)
 %SetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char *> &IndexNames, const double *InputSeries, size_t InputSeriesSize)
 %GetResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize)
 %GetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize, bool AlignWithResults = false)
