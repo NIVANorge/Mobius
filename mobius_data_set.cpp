@@ -1124,7 +1124,7 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	if(Spec.Type == EquationType_InitialValue)
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Can not get the result series of the equation " << Name << ", which is an initial value equation." << std::endl);
+		MOBIUS_FATAL_ERROR("ERROR: Can not get the result series of the equation " << Name << ", because it is an initial value equation." << std::endl);
 	}
 	
 	size_t StorageUnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
@@ -1133,7 +1133,7 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 
 	if(IndexCount != IndexSets.size())
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Got the wrong amount of indexes when getting the result series for " << GetName(Model, Equation) << ". Got " << IndexCount << ", expected " << IndexSets.size() << std::endl);
+		MOBIUS_FATAL_ERROR("ERROR: Got the wrong amount of indexes when getting the result series for " << Name << ". Got " << IndexCount << ", expected " << IndexSets.size() << std::endl);
 	}
 	index_t Indexes[256];
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.size(); ++IdxIdx)

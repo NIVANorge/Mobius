@@ -1059,11 +1059,39 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Examples:{\tt double flow = GetParameterDouble(DataSet, "Reach flow", \{"First"\});}{\tt u64 Timesteps = GetParameterUInt(DataSet, "Timesteps", \{\});}}
 }
 
+\apientry{SetInputSeries}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *Name}{The name of an input to model.}
+\apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the input indexes over. These have to be in the right order.}
+\apipar{const double *InputSeries}{A pointer to the input data.}
+\apipar{size\_t InputSeriesSize}{The amount of values in the provided input data.}
+\apipar{bool AlignWithResults=false}{Whether the provided data should be written starting at the result start date ("Start date" parameter) or the input data start date.}
+\apidesc{Will write the provided input timeseries into the dataset. If no input data has already been provided, the input timesteps will be set equal to {\tt InputSeriesSize}, limiting all subsequent input series to the same size. Note that you can provide an input series that is shorter than the input timesteps. The remaining values will then stay what they were before (they are initialized to 0).}
+}
+
+\apientry{GetResultSeries}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *Name}{The name of a result (equation) of the model.}
+\apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the result indexes over. These have to be in the right order.}
+\apipar{double *WriteTo}{Pointer to memory where the result series should be written}
+\apipar{size\_t WriteSize}{How many values are requested.}
+\apidesc{Extracts a result series from the DataSet. Only works if {\tt RunModel} has been called on the DataSet at least once. The caller of this function has to allocate space to write the data into: the {\tt WriteTo} array has to be at least {\tt WriteSize} long. The values are extracted starting with the first timestep. If {\tt WriteSize} is larger than the timesteps in the last run of the model, only the values for these timesteps are provided, and the rest of the {\tt WriteTo} array is left unchanged.}
+}
+
+\apientry{GetInputSeries}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *Name}{The name of an input to the model.}
+\apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the input indexes over. These have to be in the right order.}
+\apipar{double *WriteTo}{Pointer to memory where the result series should be written}
+\apipar{size\_t WriteSize}{How many values are requested.}
+\apipar{bool AlignWithResults=false}{Whether the extracted data should start at the result start date ("Start date" parameter) or the input data start date.}
+\apidesc{Extracts an input series from the DataSet. The caller of this function has to allocate space to write the data into: the {\tt WriteTo} array has to be at least {\tt WriteSize} long.}
+}
+
+TODO: There are some more procedures that should be documented here.
+
 %TODO: These should possibly be documented:
 %SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vector<std::pair<token_string, std::vector<token_string>>>& Inputs)
-%SetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char *> &IndexNames, const double *InputSeries, size_t InputSeriesSize)
-%GetResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize)
-%GetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize, bool AlignWithResults = false)
 %PrintResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
 %PrintInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
 %PrintIndexes(mobius_data_set *DataSet, const char *IndexSetName)
@@ -1268,6 +1296,13 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apipar{const char *Name}{The name of an already registered X.}
 \apiret{A {\tt \emph{x}\_h} handle.}
 \apidesc{X is either Equation, Input, ParameterGroup, ParameterDouble, ParameterUInt, ParameterBool, ParameterTime, IndexSet, or Solver. Is useful if you want to modularize different parts of your model into several different registration procedures, but need one module to access some of the handles of another one.}
+}
+
+\apientry{AddInputIndexSetDependency}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{input\_h Input}{Handle to an input.}
+\apipar{index\_set\_h IndexSet}{Handle to an index set.}
+\apidesc{Tell the model that this input should index over this index set. Note that this should only be called if you want to hard code the index set dependencies of your input series instead of letting the user specify it in an input file.}
 }
 
 \subsection{Equation body declaration}

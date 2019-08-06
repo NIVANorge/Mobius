@@ -1242,8 +1242,6 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 	Spec.IndexSetDependencies.push_back(IndexSet);
 }
 
-
-#undef REGISTER_MODEL_ENTITY
 #undef REGISTRATION_BLOCK
 
 
