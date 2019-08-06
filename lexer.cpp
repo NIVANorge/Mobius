@@ -137,7 +137,6 @@ private:
 	
 	bool AtEnd = false;
 	
-	//FILE *File;
 	char   *FileData;
 	size_t FileDataLength;
 	s64    AtChar;
@@ -240,7 +239,6 @@ token_stream::ReadTokenInternal_()
 	bool IsNegative  = false;
 	bool HasComma    = false;
 	bool HasExponent = false;
-	//bool IsNAN       = false;
 	bool ExponentIsNegative = false;
 	u64 BeforeComma = 0;
 	u64 AfterComma = 0;
@@ -599,7 +597,7 @@ u64 token_stream::ExpectUInt()
 	if(!Token.IsUInt)
 	{
 		PrintErrorHeader();
-		MOBIUS_FATAL_ERROR("Got a signed value when expecting an unsigned integer." << std::endl);
+		MOBIUS_FATAL_ERROR("Got a value that is signed, with a comma or with an exponent when expecting an unsigned integer." << std::endl);
 	}
 	return Token.UIntValue;
 }
@@ -744,8 +742,5 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, paramet
 			ListOut.push_back(Value);
 		}
 	}
-	else assert(0);  //NOTE: This should be caught by the library implementer. Signifies that this was called with either a Type==ParameterType_Time or a possibly new type that is not handled yet?
-	
-	//NOTE: Date values have to be handled separately since we can't distinguish them from quoted strings...
-	// TODO: Make separate format for dates?
+	else assert(0);  //NOTE: This should be caught by the library implementer. Signifies that this was called with possibly a new type that is not handled yet?
 }

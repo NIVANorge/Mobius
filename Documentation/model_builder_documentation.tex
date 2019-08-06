@@ -359,7 +359,7 @@ parameters:
 10
 
 "Start date":
-"2019-02-22"
+2019-02-22
 
 "A":
 5.0
@@ -521,7 +521,7 @@ EQUATION(Model, HydrologicalInputToSoilBox,
 \end{lstlisting}
 \end{example}
 
-In Example \ref{ex:simplypequations} we see that {\tt RESULT} refers to the value of another equation from the current timestep, while {\tt LAST\_RESULT} refers to the value from the previous timestep. Looking at the model result structure that is printed using the {\tt PrintModelResultStructure} procedure, we see the following.
+In Example \ref{ex:simplypequations} we see that {\tt RESULT} refers to the value of another equation from the current timestep, while {\tt LAST\_RESULT} refers to the value from the previous timestep. Looking at the model result structure that is printed using the {\tt PrintResultStructure} procedure, we see the following.
 
 \begin{example}
 Batch structure for the SimplyP snow module.
@@ -756,7 +756,7 @@ The framework lets you access a few additional variables that tell you something
 \item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
 \item {\tt FIRST\_INDEX(IndexSetHandle)} Gives you an {\tt index\_t} corresponding to the first index of that index set. Registers no dependencies.
 \item {\tt INDEX\_NUMBER(IndexSetHandle, Number)} Gives you an {\tt index\_t} corresponding to the index of that number. However, be careful when using this that the index is smaller than {\tt INDEX\_COUNT(IndexSetHandle)}. Also, it is probably better to use a predeclared index, which guarantees you that what you are referring to has the right index name  (see Section \ref{sec:predeclared} below). Registers no dependencies.
-\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an unsigned integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is "1999-1-15", then during the first timestep, the current day of year will be 15.
+\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an unsigned integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is 1999-1-15, then during the first timestep, the current day of year will be 15.
 \item {\tt DAYS\_THIS\_YEAR()} Returns an unsigned integer that is either 365 (in a normal year) or 366 (in a leap year).
 \end{enumerate}
 

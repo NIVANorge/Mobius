@@ -101,12 +101,6 @@ public:
 	
 	datetime(s32 Year, s32 Month, s32 Day, bool *Success)
 	{
-		if(Day < 1 || Day > 31 || Month < 1 || Month > 12) //TODO: Should we test this more thoroughly depending on the month?
-		{
-			*Success = false;
-			return; 
-		}
-		
 		*Success = SetFromYearMonthDay(Year, Month, Day);
 	}
 	
