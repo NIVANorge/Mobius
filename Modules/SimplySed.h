@@ -146,7 +146,6 @@ AddSimplySedimentModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachSedimentInput,
-		double A_catch = PARAMETER(CatchmentArea);
 		return RESULT(TotalReachSedimentInputCoefficient) * RESULT(ErosionFactor);
 	)
 	

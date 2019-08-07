@@ -188,7 +188,7 @@ AddSimplyPModel(mobius_model *Model)
 		double Kf = RESULT(SoilPSorptionCoefficient);
 		double Plab_A = LAST_RESULT(SoilLabilePMass);
 		
-		if(PARAMETER(DynamicEPC0)) return Plab_A / (Kf * Msoil);
+		if(PARAMETER(DynamicEPC0)) return SafeDivide(Plab_A, (Kf * Msoil));
 		
 		return LAST_RESULT(SoilWaterEPC0);
 	)
