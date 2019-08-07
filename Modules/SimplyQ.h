@@ -239,7 +239,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	//SetSolver(Model, ReachFlowInputFromUpstream, ReachSolver);
 	
 	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Reach flow input from land", M3PerSecond);
-	//SetSolver(Model, ReachFlowInputFromLand, ReachSolver);
+	SetSolver(Model, ReachFlowInputFromLand, ReachSolver);
 
 	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", M3);
 	auto InitialReachVolume = RegisterEquationInitialValue(Model, "Initial reach volume", M3); 
@@ -315,7 +315,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	EQUATION(Model, ReachFlowInputFromLand,
 		//Flow from land in mm/day, converted to m3/s
 #ifdef SIMPLYQ_GROUNDWATER
-		double fromland = RESULT(InfiltrationExcess) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow);
+		double fromland = RESULT(InfiltrationExcess) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
 #else
 		double fromland = RESULT(InfiltrationExcess) + RESULT(TotalSoilWaterFlow);
 #endif
@@ -344,7 +344,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachVolume,
 #ifdef SIMPLYQ_GROUNDWATER
-		return 86400.0 * (RESULT(ReachFlowInputFromLand) + ConvertMmPerDayToM3PerSecond(RESULT(GroundwaterFlow), PARAMETER(CatchmentArea)) + RESULT(ReachFlowInputFromUpstream) - RESULT(ReachFlow));
+		return 86400.0 * (RESULT(ReachFlowInputFromLand) + RESULT(ReachFlowInputFromUpstream) - RESULT(ReachFlow));
 #else
 		return 86400.0 * (RESULT(ReachFlowInputFromLand) + RESULT(ReachFlowInputFromUpstream) - RESULT(ReachFlow));
 #endif

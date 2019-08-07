@@ -58,8 +58,9 @@ AddSimplyPModel(mobius_model *Model)
 	// Phorphorus parameters that vary by land class
 	auto PhosphorousLand = RegisterParameterGroup(Model, "Phosphorous land", LandscapeUnits);
 	auto NetAnnualPInput                = RegisterParameterDouble(Model, PhosphorousLand, "Net annual P input to soil", KgPerHaPerYear, 10.0, -100.0, 100.0);
-	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run. Note: arable and improved grassland are grouped as 'agricultural' and only the arable value is used; semi-natural initial EPC0 is assumed to be zero");
-	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0, "Note: arable and improved grassland are grouped as 'agricultural' land, so only the arable and semi-natural values are read in");
+	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run.");
+	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0);
+	auto SoilInactivePConcentration     = RegisterParameterDouble(Model, Phosphorous, "Inactive soil P content", MgPerKg, 873, 0.0, 10000.0, "Is recommended to be about the same as the Initial total soil P content of seminatural land, but a little lower.");
 	
 	// Params that vary by reach and land class (add to existing group)
 	auto SubcatchmentGeneral = GetParameterGroupHandle(Model, "Subcatchment characteristics by land class");
@@ -92,7 +93,8 @@ AddSimplyPModel(mobius_model *Model)
 	auto ReachFlow                      = GetEquationHandle(Model, "Reach flow (end-of-day)");
 	auto DailyMeanReachFlow             = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
 	auto GroundwaterFlow                = GetEquationHandle(Model, "Groundwater flow");
-	auto ReachSedimentInput             = GetEquationHandle(Model, "Reach sediment input (erosion and entrainment)");
+	auto ReachSedimentInputCoefficient  = GetEquationHandle(Model, "Sediment input coefficient");
+	auto ErosionFactor                  = GetEquationHandle(Model, "Erosion factor");
 	
 	
 /* 	// P sorption coefficient calculation
@@ -125,7 +127,7 @@ AddSimplyPModel(mobius_model *Model)
 	EQUATION(Model, SoilPSorptionCoefficient,
 		/* # Assume SN has EPC0=0, PlabConc =0. Units: (kg/mg)(mg/kgSoil)(mm/kg)*/
 		double initialEPC0 = ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0), PARAMETER(CatchmentArea));
-		double Kf = 1e-6 * PARAMETER(InitialSoilPConcentration)/initialEPC0;
+		double Kf = 1e-6 * (PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)) /initialEPC0;
 				  
 		double KfPar = PARAMETER(PhosphorousSorptionCoefficient);
 				  
@@ -160,7 +162,7 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, InitialSoilLabilePMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		return 1e-6 * PARAMETER(InitialSoilPConcentration) * Msoil;
+		return 1e-6 * (PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)) * Msoil;
 	)
 	
 	EQUATION(Model, SoilLabilePMass,
@@ -261,7 +263,8 @@ AddSimplyPModel(mobius_model *Model)
 	
 	auto ReachTDPInputFromUpstream = RegisterEquation(Model, "Reach TDP input from upstream", KgPerDay);
 	auto ReachPPInputFromErosion   = RegisterEquation(Model, "Reach PP input from erosion", KgPerDay);
-	auto TotalReachPPInputFromErosion = RegisterEquationCumulative(Model, "Total reach PP input from erosion", ReachPPInputFromErosion, LandscapeUnits);
+	SetSolver(Model, ReachPPInputFromErosion, ReachSolver);
+	//auto TotalReachPPInputFromErosion = RegisterEquationCumulative(Model, "Total reach PP input from erosion", ReachPPInputFromErosion, LandscapeUnits);
 	auto ReachPPInputFromUpstream  = RegisterEquation(Model, "Reach PP input from upstream", KgPerDay);
 	
 	EQUATION(Model, StreamTDPFlux,
@@ -299,7 +302,13 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, ReachPPInputFromErosion,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		return PARAMETER(PPEnrichmentFactor) * RESULT(SoilLabilePMass) * RESULT(ReachSedimentInput) / Msoil; // TODO: How to handle inactive P??
+		double PP = 0.0;
+		double P_inactive = PARAMETER(SoilInactivePConcentration)*Msoil;
+		for(index_t Land = FIRST_INDEX(LandscapeUnits); Land < INDEX_COUNT(LandscapeUnits); ++Land)
+		{
+			PP += (RESULT(SoilLabilePMass, Land) + P_inactive) * RESULT(ReachSedimentInputCoefficient, Land);
+		}
+		return RESULT(ErosionFactor) * PARAMETER(PPEnrichmentFactor) * PP / Msoil;
 	)
 	
 	EQUATION(Model, ReachPPInputFromUpstream,
@@ -312,7 +321,7 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, StreamPPMass,
 		return
-			  RESULT(TotalReachPPInputFromErosion)
+			  RESULT(ReachPPInputFromErosion)
 			+ RESULT(ReachPPInputFromUpstream)
 			- RESULT(StreamPPFlux);
 	)

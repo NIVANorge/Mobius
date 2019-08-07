@@ -62,15 +62,17 @@ AddSimplySedimentModule(mobius_model *Model)
 	
 	// Sediment equations
 	auto TimeDependentVegetationCoverFactor = RegisterEquation(Model, "Time dependent vegetation cover factor", Dimensionless);
-	//auto ReachSedimentInputCoefficient         = RegisterEquation(Model, "Sediment input coefficient", KgPerM3);
-	//auto TotalReachSedimentInputCoefficient    = RegisterEquationCumulative(Model, "Sediment input coefficient summed over land classes", ReachSedimentInputCoefficient, LandscapeUnits);
+	auto ReachSedimentInputCoefficient         = RegisterEquation(Model, "Sediment input coefficient", KgPerM3);
+	auto TotalReachSedimentInputCoefficient    = RegisterEquationCumulative(Model, "Sediment input coefficient summed over land classes", ReachSedimentInputCoefficient, LandscapeUnits);
+	auto ErosionFactor                      = RegisterEquation(Model, "Erosion factor", Dimensionless);
+	SetSolver(Model, ErosionFactor, ReachSolver);
 	
 	auto SuspendedSedimentFlux = RegisterEquation(Model, "Reach suspended sediment flux", KgPerDay);
 	SetSolver(Model, SuspendedSedimentFlux, ReachSolver);
 	
 	auto ReachSedimentInput = RegisterEquation(Model, "Reach sediment input (erosion and entrainment)", KgPerDay);
-	//SetSolver(Model, ReachSedimentInput, ReachSolver);
-	auto TotalReachSedimentInput = RegisterEquationCumulative(Model, "Total reach sediment input (erosion and entrainment)", ReachSedimentInput, LandscapeUnits);
+	SetSolver(Model, ReachSedimentInput, ReachSolver);
+	//auto TotalReachSedimentInput = RegisterEquationCumulative(Model, "Total reach sediment input (erosion and entrainment)", ReachSedimentInput, LandscapeUnits);
 	
 	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Reach suspended sediment mass", Kg);
 	SetInitialValue(Model, SuspendedSedimentMass, 0.0);
@@ -123,7 +125,7 @@ AddSimplySedimentModule(mobius_model *Model)
 		return C_cover;
 	)
 	
-	EQUATION(Model, ReachSedimentInput,
+	EQUATION(Model, ReachSedimentInputCoefficient,
 		//# Reach sed input coefficient per land use class (kg/m3). This was recently changed from kg/mm which had a different rationalization.
 		double Esus_i =
 			  PARAMETER(ReachSedimentInputScalingFactor) * 1e6 //1e6 just for convenient range in input parameter
@@ -134,8 +136,18 @@ AddSimplySedimentModule(mobius_model *Model)
 	
 		// This does not take into account the greater sediment mobilisation capacity of reaches which are further downstream in the catchment, and may need revisiting. May need to split sediment delivery into two (terrestrial versus instream), which would likely require two of these equations which we want to avoid as long as possible.
 		//Note: if this changes, also needs to change in the particulate P equations
+		//double A_catch = PARAMETER(CatchmentArea);
+		return Esus_i * PARAMETER(LandUseProportions);// * A_catch * pow(RESULT(ReachFlowInputFromLand) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
+	)
+	
+	EQUATION(Model, ErosionFactor,
 		double A_catch = PARAMETER(CatchmentArea);
-		return Esus_i * PARAMETER(LandUseProportions) * A_catch * pow(RESULT(ReachFlowInputFromLand) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
+		return A_catch * pow(RESULT(ReachFlowInputFromLand) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
+	)
+	
+	EQUATION(Model, ReachSedimentInput,
+		double A_catch = PARAMETER(CatchmentArea);
+		return RESULT(TotalReachSedimentInputCoefficient) * RESULT(ErosionFactor);
 	)
 	
 	EQUATION(Model, SuspendedSedimentMass,	
@@ -144,7 +156,7 @@ AddSimplySedimentModule(mobius_model *Model)
 			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, *Input);
 		)
 		
-		return RESULT(TotalReachSedimentInput) + upstreamflux - RESULT(SuspendedSedimentFlux);
+		return RESULT(ReachSedimentInput) + upstreamflux - RESULT(SuspendedSedimentFlux);
 	)
 	
 	EQUATION(Model, SuspendedSedimentFlux,
