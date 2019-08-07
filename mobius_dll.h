@@ -39,7 +39,7 @@ DllEncounteredError(char *ErrmsgOut)
 	
 	//NOTE: Since IPython does not seem to reload the dll when you restart it (normally), we have to clear this.
 	Dll_GlobalErrorCode = 0;
-	Dll_GlobalErrstream.clear();
+	Dll_GlobalErrstream.str(std::string());
 	
 	return Code;
 }
