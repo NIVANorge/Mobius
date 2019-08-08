@@ -134,8 +134,7 @@ AddSimplyPModel(mobius_model *Model)
 		if(PARAMETER(CalibrationMode)) return Kf;
 		
 		return KfPar;
-	)
-				
+	)			
 
 	auto InitialSoilTDPMass     = RegisterEquationInitialValue(Model, "Initial soil TDP mass", Kg);
 	auto SoilTDPMass            = RegisterEquation(Model, "Soil TDP mass", Kg);

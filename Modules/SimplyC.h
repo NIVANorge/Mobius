@@ -28,7 +28,9 @@ AddSimplyCModel(mobius_model *Model)
 	
 	// Params defined in hydrol model
 	auto CatchmentArea               = GetParameterDoubleHandle(Model, "Catchment area");
-//	auto BaseflowIndex               = GetParameterDoubleHandle(Model, "Baseflow index");
+#ifdef SIMPLYQ_GROUNDWATER
+	auto BaseflowIndex               = GetParameterDoubleHandle(Model, "Baseflow index");
+#endif
 	auto LandUseProportions			 = GetParameterDoubleHandle(Model, "Land use proportions");
 	auto ProportionToQuickFlow		 = GetParameterDoubleHandle(Model, "Proportion of precipitation that contributes to quick flow");
 
@@ -36,7 +38,9 @@ AddSimplyCModel(mobius_model *Model)
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
 	auto SoilTemperatureCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Gradient of the soil water [DOC] response to changing soil temperature", PerDegreesC, 0.1, 0.001, 1.0);
 	auto SoilDOCInterceptCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Coefficient describing intercept in [DOC]= m * soilT + c equation, as a proportion of the baseline DOC concentration", Dimensionless, 0.5);
-//	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 30.0);
+#ifdef SIMPLYQ_GROUNDWATER
+	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 30.0);
+#endif
 
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
@@ -48,7 +52,9 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilWaterVolume 			 = GetEquationHandle(Model, "Soil water volume");
 	auto InfiltrationExcess          = GetEquationHandle(Model, "Infiltration excess");
 	auto SoilWaterFlow   		     = GetEquationHandle(Model, "Soil water flow");
-//	auto TotalGroundwaterFlowToReach = GetEquationHandle(Model, "Total groundwater flow to reach from all land classes");
+#ifdef SIMPLYQ_GROUNDWATER
+	auto GroundwaterFlow             = GetEquationHandle(Model, "Groundwater flow");
+#endif
 	auto ReachVolume                 = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow                   = GetEquationHandle(Model, "Reach flow (end-of-day)");
 	auto DailyMeanReachFlow          = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
@@ -107,7 +113,9 @@ AddSimplyCModel(mobius_model *Model)
 	EQUATION(Model, SoilwaterCarbonFlux,
 		return
 			ConvertMgPerLToKgPerMm(RESULT(SoilWaterCarbonConcentration), PARAMETER(CatchmentArea))
-			//* ((1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow)) ; // With groundwater
+#ifdef SIMPLYQ_GROUNDWATER
+			* (1.0-PARAMETER(BaseflowIndex))
+#endif
 			* RESULT(SoilWaterFlow); // No groundwater
 	)
 	
@@ -120,8 +128,11 @@ AddSimplyCModel(mobius_model *Model)
 	auto TotalSoilwaterCarbonFluxToReach = RegisterEquationCumulative(Model, "Soilwater carbon flux to reach summed over landscape units", DailyMeanSoilwaterCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 	
 	auto TotalInfiltrationExcessCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", InfiltrationExcessCarbonFluxToReach, LandscapeUnits, LandUseProportions);
-	
-//	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
+
+#ifdef SIMPLYQ_GROUNDWATER	
+	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
+	SetSolver(Model, GroundwaterFluxToReach, ReachSolver);
+#endif
 	
 	//To do: work initial condition out from baseline DOC parameter
 	auto StreamDOCMass = RegisterEquationODE(Model, "Reach DOC mass", Kg);
@@ -138,9 +149,11 @@ AddSimplyCModel(mobius_model *Model)
 
 	auto ReachDOCConcentration = RegisterEquation(Model, "Reach DOC concentration (volume weighted daily mean)", MgPerL);
 
-/* 	EQUATION(Model, GroundwaterFluxToReach,
-		return RESULT(TotalGroundwaterFlowToReach)*ConvertMgPerLToKgPerMm(PARAMETER(DeepSoilDOCConcentration), PARAMETER(CatchmentArea));
-	) */
+#ifdef SIMPLYQ_GROUNDWATER
+ 	EQUATION(Model, GroundwaterFluxToReach,
+		return RESULT(GroundwaterFlow)*ConvertMgPerLToKgPerMm(PARAMETER(DeepSoilDOCConcentration), PARAMETER(CatchmentArea));
+	)
+#endif
 	
 	EQUATION(Model, StreamDOCMass,
 		double upstreamflux = 0.0;
@@ -150,7 +163,9 @@ AddSimplyCModel(mobius_model *Model)
 		return
 			RESULT(TotalInfiltrationExcessCarbonFlux)
 			+ RESULT(TotalSoilwaterCarbonFluxToReach)
-//			+ RESULT(GroundwaterFluxToReach)
+#ifdef SIMPLYQ_GROUNDWATER
+			+ RESULT(GroundwaterFluxToReach)
+#endif
 			+ upstreamflux
 			- RESULT(StreamDOCFluxOut);		
 	)
