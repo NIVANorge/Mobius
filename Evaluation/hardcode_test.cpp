@@ -121,7 +121,7 @@ void ReachStep(int Timestep, std::vector<std::vector<double>> &ReachResults, con
 }
 
 
-void RunHardcodedModel(
+double RunHardcodedModel(
 u64 Timesteps, 
 const std::vector<double> &Parameters, 
 const std::vector<double> &TC, 
@@ -155,6 +155,8 @@ std::vector<std::vector<double>> &ReachResults)
 		
 		//std::cout << "Vr : " << ReachResults[1][Timestep] << std::endl;
 	}
+	
+	return ReachResults[0][0];
 }
 
 
@@ -304,6 +306,7 @@ int main()
 	
 	u64 SumMobius;
 	u64 SumHardcode;
+	double DummySum;
 	for(int Run = 0; Run < 1000; ++Run)
 	{
 		u64 BeforeMobius = __rdtsc();
@@ -312,9 +315,12 @@ int main()
 		SumMobius += AfterMobius - BeforeMobius;
 		
 		u64 BeforeHardcode = __rdtsc();
-		RunHardcodedModel(Timesteps, Parameters, TC, LUP, Inputs, SnowResults, LandResults, ReachResults);
+		double Dummy = RunHardcodedModel(Timesteps, Parameters, TC, LUP, Inputs, SnowResults, LandResults, ReachResults);
 		u64 AfterHardcode  = __rdtsc();
 		SumHardcode += AfterHardcode - BeforeHardcode;
+		
+		DummySum += Dummy; //NOTE: We do this so that the compiler doesn't suddenly decide to optimize away the entire call to RunHardcodedModel.
 	}
 	std::cout << "Ratio: " << (double)SumHardcode / (double)SumMobius << std::endl;
+	std::cout << "Dummy: " << DummySum << std::endl;
 }

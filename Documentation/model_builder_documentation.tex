@@ -1088,16 +1088,39 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Extracts an input series from the DataSet. The caller of this function has to allocate space to write the data into: the {\tt WriteTo} array has to be at least {\tt WriteSize} long.}
 }
 
+\apientry{PrintResultSeries or PrintInputSeries}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *Name}{The name of a result (equation) of the model.}
+\apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the result indexes over. These have to be in the right order.}
+\apipar{size\_t WriteSize}{How many values are requested.}
+\apidesc{Extracts the result or input series similar to how GetResultSeries works, but instead of writing it to a provided buffer, prints it to the standard output.}
+}
+
+\apientry{PrintIndexes}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apipar{const char *IndexSetName}{The name of an index set in the model.}
+\apidesc{Prints the list of indexes for the given index set to the standard output if it has received indexes already.}
+}
+
+\apientry{PrintResultStructure}{Application building procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object}
+\apidesc{Prints the batch structure of the equations in the model to the standard output. This is the same as the storage structure of the Results.}
+}
+
+\apientry{PrintParameterStorageStructure}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apidesc{Prints the storage structure of the parameters in the model to the standard output.}
+}
+
+\apientry{PrintInputrStorageStructure}{Application building procedure}{
+\apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
+\apidesc{Prints the storage structure of the inputs in the model to the standard output.}
+}
+
 TODO: There are some more procedures that should be documented here.
 
 %TODO: These should possibly be documented:
-%SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vector<std::pair<token_string, std::vector<token_string>>>& Inputs)
-%PrintResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
-%PrintInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
-%PrintIndexes(mobius_data_set *DataSet, const char *IndexSetName)
-%PrintResultStructure(mobius_model *)
-%PrintParameterStorageStructure(mobius_data_set *)
-%PrintInputStorageStructure(mobius_data_set *)
+%SetBranchIndexes
 
 
 \section{Model building API}
