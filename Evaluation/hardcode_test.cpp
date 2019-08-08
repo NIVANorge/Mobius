@@ -2,7 +2,7 @@
 
 #define MOBIUS_TEST_FOR_NAN 0
 #define MOBIUS_EQUATION_PROFILING 0
-#define MOBIUS_PRINT_TIMING_INFO 1
+#define MOBIUS_PRINT_TIMING_INFO 0
 
 #include "../mobius.h"
 
@@ -121,6 +121,44 @@ void ReachStep(int Timestep, std::vector<std::vector<double>> &ReachResults, con
 }
 
 
+void RunHardcodedModel(
+u64 Timesteps, 
+const std::vector<double> &Parameters, 
+const std::vector<double> &TC, 
+const std::vector<double> &LUP, 
+const std::vector<std::vector<double>> &Inputs, 
+std::vector<std::vector<double>> &SnowResults, 
+std::vector<std::vector<std::vector<double>>> &LandResults, 
+std::vector<std::vector<double>> &ReachResults)
+{
+
+	//NOTE: Assuming only one reach! Otherwise the hard coding of the model would be more complex.
+	std::vector<double> x0(3);
+	std::vector<double> wk(12);
+	
+	for(int Timestep = 1; Timestep <= (int)Timesteps; ++Timestep)
+	{
+		SnowStep(Timestep, Inputs, SnowResults, Parameters);
+		
+		double Inf = SnowResults[6][Timestep];
+		double InfEx = SnowResults[7][Timestep];
+		
+		double Qsw = 0.0;
+		for(int LU = 0; LU < LandResults.size(); ++LU)
+		{
+			LandStep(Timestep, Inputs[2], LandResults[LU], Parameters, TC[LU], Inf, x0.data(), wk.data());
+			
+			Qsw += LandResults[LU][1][Timestep] * LUP[LU];
+		}
+		
+		ReachStep(Timestep, ReachResults, Parameters, InfEx, Qsw, x0.data(), wk.data());
+		
+		//std::cout << "Vr : " << ReachResults[1][Timestep] << std::endl;
+	}
+}
+
+
+
 int main()
 {
 	//TODO: We have to do a much more rigorous timing comparison where we run each version many times.
@@ -142,16 +180,13 @@ int main()
 	
 	RunModel(DataSet);
 	
+	
+	
 	//TODO: These should be extracted from the DataSet instead!
 	std::vector<const char *> LandscapeUnits = {"Arable", "Improved grassland", "Semi-natural"};
-	
-	//NOTE: Assuming only one reach! Otherwise the hard coding of the model would be more complex.
-	
-	
-	// Hard coded model.
+	const char *Reach = "Coull"; //NOTE: Assuming only one reach
 	
 	u64 Timesteps = GetParameterUInt(DataSet, "Timesteps", {});
-	
 	
 	std::vector<double> Parameters(11);
 	
@@ -163,12 +198,10 @@ int main()
 	Parameters[5] = GetParameterDouble(DataSet, "Groundwater time constant", {});
 	Parameters[6] = GetParameterDouble(DataSet, "Minimum groundwater flow", {}),
 	Parameters[7] = GetParameterDouble(DataSet, "Manning's coefficient", {});
-	Parameters[8] = GetParameterDouble(DataSet, "Catchment area", {"Coull"});
+	Parameters[8] = GetParameterDouble(DataSet, "Catchment area", {Reach});
 	//Effective reach length:
-	Parameters[9] = GetParameterDouble(DataSet, "Reach length", {"Coull"}) * 0.5;
-	Parameters[10] = GetParameterDouble(DataSet, "Reach slope", {"Coull"});
-	
-	
+	Parameters[9] = GetParameterDouble(DataSet, "Reach length", {Reach}) * 0.5;
+	Parameters[10] = GetParameterDouble(DataSet, "Reach slope", {Reach});
 	
 	std::vector<double> TC(LandscapeUnits.size());
 	std::vector<double> LUP(LandscapeUnits.size());
@@ -176,10 +209,8 @@ int main()
 	{
 		TC[LU] = GetParameterDouble(DataSet, "Soil water time constant", {LandscapeUnits[LU]});
 		
-		LUP[LU] = GetParameterDouble(DataSet, "Land use proportions", {"Coull", LandscapeUnits[LU]});
+		LUP[LU] = GetParameterDouble(DataSet, "Land use proportions", {Reach, LandscapeUnits[LU]});
 	}
-	
-	
 	
 	std::vector<std::vector<double>> Inputs(3);
 	for(auto &Ts : Inputs) Ts.resize(Timesteps + 1);
@@ -220,39 +251,11 @@ int main()
 	ReachResults[1][0] = 0.349 * pow(Qr0, 0.34) * 2.71 * pow(Qr0, 0.557) * Parameters[9] * 2.0;
 	
 	
+	//Run hardcoded model
 	
-	std::vector<double> x0(3);
-	std::vector<double> wk(12);
+	RunHardcodedModel(Timesteps, Parameters, TC, LUP, Inputs, SnowResults, LandResults, ReachResults);
 	
-	
-	u64 Before = __rdtsc();
-	for(int Timestep = 1; Timestep <= (int)Timesteps; ++Timestep)
-	{
-		SnowStep(Timestep, Inputs, SnowResults, Parameters);
-		
-		double Inf = SnowResults[6][Timestep];
-		double InfEx = SnowResults[7][Timestep];
-		
-		double Qsw = 0.0;
-		for(int LU = 0; LU < LandscapeUnits.size(); ++LU)
-		{
-			LandStep(Timestep, Inputs[2], LandResults[LU], Parameters, TC[LU], Inf, x0.data(), wk.data());
-			
-			Qsw += LandResults[LU][1][Timestep] * LUP[LU];
-		}
-		
-		ReachStep(Timestep, ReachResults, Parameters, InfEx, Qsw, x0.data(), wk.data());
-		
-		//std::cout << "Vr : " << ReachResults[1][Timestep] << std::endl;
-	}
-	u64 After = __rdtsc();
-	
-	std::cout << "Hard coded model processor cycles: " << (After - Before) << std::endl;
-	
-	
-	
-	
-	
+
 	//Correctness evaluation
 	
 	std::vector<double> MobiusSnowDepth(Timesteps);
@@ -262,7 +265,7 @@ int main()
 	GetResultSeries(DataSet, "Soil water volume", {LandscapeUnits[0]}, MobiusSoilWaterVolumeArable.data(), Timesteps);
 	
 	std::vector<double> MobiusMeanReachFlow(Timesteps);
-	GetResultSeries(DataSet, "Reach flow (daily mean, cumecs)", {"Coull"}, MobiusMeanReachFlow.data(), Timesteps);
+	GetResultSeries(DataSet, "Reach flow (daily mean, cumecs)", {Reach}, MobiusMeanReachFlow.data(), Timesteps);
 	
 	std::vector<double> &HCSnowDepth = SnowResults[4];
 	
@@ -296,4 +299,22 @@ int main()
 		//std::cout << "SWV: " << MobiusSoilWaterVolumeArable[Timestep] << " " << HCSWV[Timestep+1] << std::endl;
 	}
 	
+	// Timing tests
+	//TODO: This is not entirely fair to Mobius, because before each run,Mobius has to re-allocate data and do some setup of initial values that are already done for the hardcoded test. Maybe make the Mobius RunModel function return the cycle count of the model run itself?
+	
+	u64 SumMobius;
+	u64 SumHardcode;
+	for(int Run = 0; Run < 1000; ++Run)
+	{
+		u64 BeforeMobius = __rdtsc();
+		RunModel(DataSet);
+		u64 AfterMobius  = __rdtsc();
+		SumMobius += AfterMobius - BeforeMobius;
+		
+		u64 BeforeHardcode = __rdtsc();
+		RunHardcodedModel(Timesteps, Parameters, TC, LUP, Inputs, SnowResults, LandResults, ReachResults);
+		u64 AfterHardcode  = __rdtsc();
+		SumHardcode += AfterHardcode - BeforeHardcode;
+	}
+	std::cout << "Ratio: " << (double)SumHardcode / (double)SumMobius << std::endl;
 }
