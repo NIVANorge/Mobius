@@ -15,13 +15,13 @@ AddSoilTemperatureModel(mobius_model *Model)
 	
 	auto Land = GetParameterGroupHandle(Model, "Landscape units");    //NOTE: This should be declared by the main model
 	
-	auto ThermalConductivitySoil 			= RegisterParameterDouble(Model, Land, "Thermal conductivity of soil", 				WattsPerMetrePerDegreeCelsius,			 0.7);
+	auto ThermalConductivitySoil 			= RegisterParameterDouble(Model, Land, "Thermal conductivity of soil", 				WattsPerMetrePerDegreeCelsius,			 0.7, 0.1, 2.0);
 	auto SpecificHeatCapacityFreezeThaw	    = RegisterParameterDouble(Model, Land, "Specific heat capacity due to freeze/thaw", MegaJoulesPerCubicMetrePerDegreeCelsius, 6.6, 1.0, 200.0, "Controls the energy released when water is frozen and energy consumed under melting");
 	auto WaterEquivalentFactor	            = RegisterParameterDouble(Model, Land, "Water equivalent factor", 	   Dimensionless, 	  0.3,  0.01,   1.0, "1mm of snow would produce this amount of water when melted");
 	auto SnowDepthSoilTemperatureFactor	    = RegisterParameterDouble(Model, Land, "Snow depth / soil temperature factor", 		PerCm, 								    -0.02, -0.03, -0.001, "Defines an empirical relationship between snow pack depth and its insulating effect on soils");
-	auto SpecificHeatCapacitySoil			= RegisterParameterDouble(Model, Land, "Specific heat capacity of soil",			MegaJoulesPerCubicMetrePerDegreeCelsius, 1.1);
-	auto SoilDepth							= RegisterParameterDouble(Model, Land, "Soil depth",								Metres,									 0.2);
-	auto InitialSoilTemperature		    	= RegisterParameterDouble(Model, Land, "Initial soil temperature",					DegreesCelsius,							20.0);
+	auto SpecificHeatCapacitySoil			= RegisterParameterDouble(Model, Land, "Specific heat capacity of soil",			MegaJoulesPerCubicMetrePerDegreeCelsius, 1.1, 0.5, 2.0);
+	auto SoilDepth							= RegisterParameterDouble(Model, Land, "Soil depth",								Metres,									 0.2, 0.0, 20.0, "Depth at which soil temperature is predicted.");
+	auto InitialSoilTemperature		    	= RegisterParameterDouble(Model, Land, "Initial soil temperature",					DegreesCelsius,							20.0, -30.0, 50.0);
 	
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");  //NOTE: This should be declared by the main model
 	

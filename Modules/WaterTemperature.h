@@ -11,9 +11,9 @@ AddWaterTemperatureModel(mobius_model *Model)
 	auto Reaches = RegisterParameterGroup(Model, "Reaches", Reach);
 	
 	
-	auto InitialWaterTemperature     = RegisterParameterDouble(Model, Reaches, "Initial water temperature",    DegreesCelsius, 20.0);
-	auto MinimumWaterTemperature     = RegisterParameterDouble(Model, Reaches, "Minimum water temperature",    DegreesCelsius,  0.0);
-	auto WaterTemperatureLagFactor   = RegisterParameterDouble(Model, Reaches, "Water temperature lag factor", Dimensionless,   3.0);
+	auto InitialWaterTemperature     = RegisterParameterDouble(Model, Reaches, "Initial water temperature",    DegreesCelsius, 20.0, 0.0, 40.0);
+	auto MinimumWaterTemperature     = RegisterParameterDouble(Model, Reaches, "Minimum water temperature",    DegreesCelsius,  0.0, -5.0, 40.0);
+	auto WaterTemperatureLagFactor   = RegisterParameterDouble(Model, Reaches, "Water temperature lag factor", Dimensionless,   3.0, 1.0, 10.0);
 	
 	auto AirTemperature = GetInputHandle(Model, "Air temperature"); //NOTE: Is registered in the snow melt model
 	
