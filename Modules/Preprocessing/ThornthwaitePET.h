@@ -23,7 +23,7 @@ AnnualThornthwaite(const std::vector<double> &MonthlyMeanT, const std::vector<do
 		double T = MonthlyMeanT[M];
 		T = T >= 0.0 ? T : 0.0;
 		double L = MonthlyMeanDLH[M];
-		double N = (double)MonthLength(Year, M);
+		double N = (double)MonthLength(Year, M+1);
 		PETOut[M] = 16.0 * (L / 12.0) * (N / 30.0) * pow(10.0 * T / I, a);
 	}
 }
@@ -38,7 +38,7 @@ MonthlyMeanDLH(double Latitude, s32 Year, std::vector<double> &DLHOut)
 	for(int M = 0; M < 12; ++M)
 	{
 		double Dlh = 0.0;
-		int Len = MonthLength(Year, M);
+		int Len = MonthLength(Year, M+1);
 		for(int Day = 1; Day <= Len; ++Day)
 		{
 			double SD = 0.409 * sin((2.0 * Pi / Ylen)*(double)DayOfYear - 1.39); //Solar declination
@@ -110,7 +110,7 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 				for(int M = 0; M < 12; ++M)
 				{
 					double AirTSum = 0.0;
-					int MonthLen = MonthLength(Year, M);
+					int MonthLen = MonthLength(Year, M+1);
 					for(int Day = 0; Day < MonthLen; ++Day)
 					{
 						AirTSum += AirTemperature[Timestep];
@@ -127,7 +127,7 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 				
 				for(int M = 0; M < 12; ++M)
 				{
-					int MonthLen = MonthLength(Year, M);
+					int MonthLen = MonthLength(Year, M+1);
 					PET[M] /= (double)MonthLen;         //Turn average monthly into average daily.
 				}
 				
@@ -150,7 +150,7 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 					double NextMonthValue = MonthlyPET[MonthIndex];
 					if(Year < EndYear || M < 11) NextMonthValue = MonthlyPET[MonthIndex + 1];
 					
-					int MonthLen = MonthLength(Year, M);
+					int MonthLen = MonthLength(Year, M+1);
 					for(int Day = 0; Day < MonthLen; ++Day)
 					{
 						double Value;

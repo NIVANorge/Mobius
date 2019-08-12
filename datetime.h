@@ -22,32 +22,32 @@ YearLength(s32 Year)
 inline s32
 MonthLength(s32 Year, s32 Month)
 {
-	//NOTE: Returns the number of days in a month. The months are indexed from 0 in this context.
-	s32 Length[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	//NOTE: Returns the number of days in a month. The months are indexed from 1 in this context.
+	s32 Length[13] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	s32 Days = Length[Month];
-	if(Month == 1 && IsLeapYear(Year)) Days += 1;
+	if(Month == 2 && IsLeapYear(Year)) Days += 1;
+	return Days;
+}
+
+inline s32
+MonthOffset(s32 Year, s32 Month)
+{
+	//NOTE: Returns the number of the days in this year before this month starts. The months are indexed from 1 in this context.
+	
+	s32 Offset[14] = {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+	s32 Days = Offset[Month];
+	if(Month > 2 && IsLeapYear(Year)) Days += 1;
 	return Days;
 }
 
 struct datetime
 {
 private:
-
-	inline s32
-	MonthOffset(s32 Year, s32 Month)
-	{
-		//NOTE: Returns the number of the day of year (starting at january 1st = day 0) that this month starts on. The months are indexed from 0 in this context.
-		
-		s32 Offset[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-		s32 Days = Offset[Month];
-		if(Month >= 2 && IsLeapYear(Year)) Days += 1;
-		return Days;
-	}
 	
 	inline bool
 	SetFromYearMonthDay(s32 Year, s32 Month, s32 Day)
 	{
-		if(Day < 1 || Day > MonthLength(Year, Month-1) || Month < 1 || Month > 12)
+		if(Day < 1 || Day > MonthLength(Year, Month) || Month < 1 || Month > 12)
 		{
 			return false; 
 		}
@@ -68,7 +68,7 @@ private:
 			}
 		}
 		
-		Result += MonthOffset(Year, Month-1)*24*60*60;
+		Result += MonthOffset(Year, Month)*24*60*60;
 		Result += (Day-1)*24*60*60;
 		
 		SecondsSinceEpoch = Result;
@@ -110,7 +110,7 @@ public:
 		//Computes the day of year (Starting at january 1st = day 1)
 		
 		s32 Year = 1970;
-		s32 DayOfYear = 0;
+		s32 DOY = 0;
 		s64 SecondsLeft = SecondsSinceEpoch;
 		if(SecondsLeft > 0)
 		{
@@ -124,7 +124,7 @@ public:
 				}
 				else break;
 			}
-			DayOfYear = SecondsLeft / (24*60*60);
+			DOY = SecondsLeft / (24*60*60);
 		}
 		else if(SecondsLeft < 0)
 		{
@@ -144,11 +144,11 @@ public:
 			s64 DaysThisYear = 365 + IsLeapYear(Year);
 
 			SecondsThisYear = DaysThisYear*24*60*60;
-			DayOfYear = (SecondsThisYear - SecondsLeft) / (24*60*60);
+			DOY = (SecondsThisYear - SecondsLeft) / (24*60*60);
 		}
 		
 		*YearOut = Year;
-		*DayOut  = DayOfYear + 1;
+		*DayOut  = DOY + 1;
 	}
 	
 	inline void
@@ -159,13 +159,12 @@ public:
 		s32 Day;
 		DayOfYear(&Day, YearOut);
 		
-		for(s32 Month = 0; Month < 12; ++Month)
+		for(s32 Month = 1; Month <= 12; ++Month)
 		{
 			if(Day <= MonthOffset(*YearOut, Month+1))
 			{
-				*MonthOut = (Month+1);
-				if(Month == 0) *DayOut = Day;
-				else *DayOut = (s32)Day - (s32)MonthOffset(*YearOut, Month);
+				*MonthOut = Month;
+				*DayOut = Day - MonthOffset(*YearOut, Month);
 				break;
 			}
 		}
