@@ -533,6 +533,7 @@ struct mobius_data_set
 	
 	branch_inputs **BranchInputs; //BranchInputs[ReachIndexSet][ReachIndex] ...
 	
+	//TODO: Shouldn't these just be on the ValueSet instead of the DataSet: ?
 	std::vector<parameter_value> FastParameterLookup;
 	std::vector<size_t> FastInputLookup;
 	std::vector<size_t> FastResultLookup;

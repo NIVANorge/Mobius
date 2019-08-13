@@ -227,6 +227,8 @@ For parameters, there is just one such structure. For results and inputs, the en
 
 The necessary information needed to look up the storage index (i.e. location in memory) of a specific value is kept in the {\tt storage\_structure} struct. The actual data is not a part of this struct and is kept separately in the {\tt mobius\_data\_set}, such as in the aforementioned {\tt DataSet->ParameterData} array. There are several functions called {\tt OffsetForHandle} that does the computation of this storage index based on what handle you are looking up the value for, how your index data is organized and so on.
 
+TODO: More details!
+
 
 \subsection{More on the value set accessor system}
 
@@ -237,22 +239,49 @@ First one can think of a very simple algorithm to achieve this:
 Pseudocode for a very simple way to update all the parameter values
 \begin{lstlisting}[style = mycpp]
 for each parameter handle H :
-	memory_location = OffsetForHandle(DataSet->ParameterStorageStructure, (current state of indexes), H)
+	memory_location = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, H)
 	ValueSet->CurParameters[H] = DataSet->ParameterData[memory_location]
 \end{lstlisting}
+Here {\tt ValueSet->CurrentIndexes} must first be updated with the current state of the index sets so that we retrieve the right values corresponding to the right indexes.
 \end{example}
 
 However, this would be slow for a few reasons
 \begin{enumerate}[i]
 \item We are looking up values of all the parameters, but we are probably not going to need all of them for the current equation batch.
-\item The OffsetForHandle computation relatively slow.
+\item The OffsetForHandle computation is relatively slow.
 \end{enumerate}
 
-To address (i), remember that we actually know all the handles that are going to be accessed by each equation, because this was registered during the {\tt EndModelDefinition} step. So at the end of {\tt EndModelDefinition} we store with each batch all the handles that are looked up by equations in that batch. Moreover, since some of these handles can be to entities that don't index over as many index sets as the batch itself, we also store at which index change we need to look up the value again. This means that not all values have to be loaded in again at every index change.
+To address (i), remember that we actually know all the handles that are going to be accessed by each equation, because this was registered during the {\tt EndModelDefinition} step. So at the end of {\tt EndModelDefinition} we store with each batch group all the handles that are looked up by equations in that batch. Moreover, since some of these handles can be to entities that don't index over as many index sets as the batch itself, we also store at which index change we need to look up the value again. This means that not all values have to be loaded in again at every index change. In detail, if an equation batch group indexes over the index sets in {\tt BatchGroup->IndexSets}, then what parameters, results and inputs to update in the {\tt ValueSet} are stored in {\tt BatchGroup->IterationData}. In pseudocode, running the batch group (See {\tt ModelLoop} and {\tt RunInnerLoop} in {\tt mobius\_model.cpp}.
 
-To address (ii), since we know that for each timestep, it is going to look up the same parameters in the same order as in the last timestep, we cheat and go through this process just once before we start the main model run. This is the {\tt FastLookupSetupInnerLoop}. This gives us a list of parameter values in the order that they are going to be looked up. When we are executing the main model run, we can then just read from this list linearly each timestep instead of re-computing the memory indexes and looking up the values from main storage.
+\begin{example}
+Pseudocode for how one could evaluate one batch group of the model for one given timestep.
+\begin{lstlisting}[style = mycpp]
+for each Index corresponding to the index set BatchGroup->IndexSets[0] :
+	ValueSet->CurrentIndexes[IndexSets[0]] = Index
+	update the ValueSet with all values specified by BatchGroup->IterationData[0]
+	for each Index corresponding to the index set BatchGroup->IndexSets[1] :
+		ValueSet->CurrentIndexes[IndexSets[1]] = Index
+		update the ValueSet with all values specified by BatchGroup->IterationData[1]
+			.
+			.
+			.
+			for each Index corresponding to the index set BatchGroup->IndexSets[N] :
+				ValueSet->CurrentIndexes[IndexSets[N]] = Index
+				update the ValueSet with all values specified by BatchGroup->IterationData[N]
+				for each Batch in the BatchGroup :
+					solve/evaluate all equations in the Batch
+
+\end{lstlisting}
+In practice the structure of this code is implemented a little differently since the number of index set dependencies per batch group is variable.
+\end{example}
+
+To address (ii), since we know that for each timestep, it is going to look up the same parameters in the same order as in the last timestep, we cheat and go through this process just once before we start the main model run. This is the {\tt FastLookupSetupInnerLoop}. This gives us a list of parameter values in the order that they are going to be looked up. When we are executing the main model run, we can then just read from this list in order each timestep instead of re-computing the memory indexes and looking up the values from main storage. The lists are called {\tt DataSet->FastParameterLookup} etc.
 
 For results and inputs it is a little more complicated: Since we have a different value for each timestep, we store a memory offset in the fast lookup list instead of a value. This is a memory offset from the start of the storage of the current timestep (or previous timestep if you are looking at last-results). Moreover, the {\tt ValueSet} will always be updated by the {\tt RunModel} procedure at each timestep to have a pointer to the start of the storage of the current (and previous) timestep. This allows for looking up the needed values.
+
+\subsection{Storage of result values}
+
+When it comes to result values from equations, the {\tt DataSet->ResultStorageStructure} is always set up to mirror the model batch group structure. What this means in practice is that results of equations are stored in the main DataSet->ResultData array exactly in the order that they are evaluated by the model. This gives a small extra performance win in a few instances. For instance, when equations are evaluated/solved, the results can just be written in order into memory instead of having to also figure out at which index they are to be placed. It also allows for easier looking up of results of these equations from the previous timestep in case they are needed by a {\tt LAST\_RESULT} lookup.
 
 TODO: Document further details for looking up and storing out result values.
 
