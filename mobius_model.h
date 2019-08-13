@@ -532,15 +532,6 @@ struct mobius_data_set
 	bool AllIndexesHaveBeenSet;
 	
 	branch_inputs **BranchInputs; //BranchInputs[ReachIndexSet][ReachIndex] ...
-	
-	//TODO: Shouldn't these just be on the ValueSet instead of the DataSet: ?
-	std::vector<parameter_value> FastParameterLookup;
-	std::vector<size_t> FastInputLookup;
-	std::vector<size_t> FastResultLookup;
-	std::vector<size_t> FastLastResultLookup;
-	
-	double *x0; //NOTE: Temporary storage for use by solvers
-	double *wk; //NOTE: Temporary storage for use by solvers
 
 	bool HasBeenRun;
 	u64 TimestepsLastRun;
@@ -583,6 +574,13 @@ struct value_set_accessor
 	double *AtResult;
 	double *AtLastResult;
 	
+	std::vector<parameter_value> FastParameterLookup;
+	std::vector<size_t> FastInputLookup;
+	std::vector<size_t> FastResultLookup;
+	std::vector<size_t> FastLastResultLookup;
+	
+	double *x0; //NOTE: Temporary storage for use by solvers
+	double *wk; //NOTE: Temporary storage for use by solvers
 	
 	parameter_value *AtParameterLookup;
 	size_t *AtInputLookup;
@@ -633,6 +631,9 @@ struct value_set_accessor
 		DayOfYear = 0;
 		DaysThisYear = 365;
 		Timestep = 0;
+		
+		x0 = 0;
+		wk = 0;
 	}
 	
 	~value_set_accessor()
@@ -645,7 +646,8 @@ struct value_set_accessor
 			free(CurResults);
 			free(LastResults);
 			free(CurrentIndexes);
-
+			if(x0) free(x0);
+			if(wk) free(wk);
 		}
 	}
 	

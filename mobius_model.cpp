@@ -1200,11 +1200,11 @@ INNER_LOOP_BODY(RunInnerLoop)
 					//NOTE: Reading the Equations.Specs vector here may be slightly inefficient since each element of the vector is large. We could copy out an array of the ResetEveryTimestep bools instead beforehand.
 					if(Model->Equations.Specs[Equation.Handle].ResetEveryTimestep)
 					{
-						DataSet->x0[EquationIdx] = 0;
+						ValueSet->x0[EquationIdx] = 0;
 					}
 					else
 					{
-						DataSet->x0[EquationIdx] = ValueSet->LastResults[Equation.Handle]; //NOTE: ValueSet.LastResult is set up above already.
+						ValueSet->x0[EquationIdx] = ValueSet->LastResults[Equation.Handle]; //NOTE: ValueSet.LastResult is set up above already.
 					}
 					++EquationIdx;
 				}
@@ -1257,12 +1257,12 @@ INNER_LOOP_BODY(RunInnerLoop)
 					{
 						//TODO: Have to see if it is safe to use DataSet->wk here. It is ok for the boost solvers since they use their own working memory.
 						// It is not really safe design to do this, and so we should instead preallocate different working memory for the Jacobian estimation..
-						EstimateJacobian(X, MatrixInserter, DataSet->wk, Model, ValueSet, Batch);
+						EstimateJacobian(X, MatrixInserter, ValueSet->wk, Model, ValueSet, Batch);
 					};
 				}
 				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(SolverSpec.h, Batch.EquationsODE.size(), DataSet->x0, DataSet->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
+				SolverSpec.SolverFunction(SolverSpec.h, Batch.EquationsODE.size(), ValueSet->x0, ValueSet->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
 				//NOTE: Store out the final results from this solver to the ResultData set.
 				for(equation_h Equation : Batch.Equations)
@@ -1278,7 +1278,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				EquationIdx = 0;
 				for(equation_h Equation : Batch.EquationsODE)
 				{
-					double ResultValue = DataSet->x0[EquationIdx];
+					double ResultValue = ValueSet->x0[EquationIdx];
 					ValueSet->CurResults[Equation.Handle] = ResultValue;
 					*ValueSet->AtResult = ResultValue;
 					++ValueSet->AtResult;
@@ -1302,25 +1302,25 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 			//NOTE: Parameters are special here in that we can just store the value in the fast lookup, instead of the offset. This is because they don't change with the timestep.
 			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, ParameterHandle);
 			parameter_value Value = DataSet->ParameterData[Offset];
-			DataSet->FastParameterLookup.push_back(Value);
+			ValueSet->FastParameterLookup.push_back(Value);
 		}
 		
 		for(input_h Input : BatchGroup.IterationData[CurrentLevel].InputsToRead)
 		{
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Input.Handle);
-			DataSet->FastInputLookup.push_back(Offset);
+			ValueSet->FastInputLookup.push_back(Offset);
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].ResultsToRead)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			DataSet->FastResultLookup.push_back(Offset);
+			ValueSet->FastResultLookup.push_back(Offset);
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].LastResultsToRead)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			DataSet->FastLastResultLookup.push_back(Offset);
+			ValueSet->FastLastResultLookup.push_back(Offset);
 		}
 	}
 	else
@@ -1328,7 +1328,7 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 		for(equation_h Equation : BatchGroup.LastResultsToReadAtBase)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			DataSet->FastLastResultLookup.push_back(Offset);
+			ValueSet->FastLastResultLookup.push_back(Offset);
 		}
 	}
 }
@@ -1512,12 +1512,6 @@ RunModel(mobius_data_set *DataSet)
 		//NOTE: This is in case somebody wants to re-run the same dataset after e.g. changing a few parameters.
 		free(DataSet->ResultData);
 		DataSet->ResultData = 0;
-		
-		DataSet->FastParameterLookup.clear();
-		//TODO: We may not need to clear the last ones, but in that case we should not rebuild them below.
-		DataSet->FastInputLookup.clear();
-		DataSet->FastResultLookup.clear();
-		DataSet->FastLastResultLookup.clear();
 	}
 	
 	AllocateResultStorage(DataSet, Timesteps);
@@ -1553,8 +1547,8 @@ RunModel(mobius_data_set *DataSet)
 			}
 		}
 	}
-	if(!DataSet->x0) DataSet->x0 = AllocClearedArray(double, MaxODECount);
-	if(!DataSet->wk) DataSet->wk = AllocClearedArray(double, 4*MaxODECount); //TODO: This size is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
+	ValueSet.x0 = AllocClearedArray(double, MaxODECount);
+	ValueSet.wk = AllocClearedArray(double, 4*MaxODECount); //TODO: This size is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
 	
 	
 
@@ -1589,7 +1583,7 @@ RunModel(mobius_data_set *DataSet)
 	//NOTE: Set up initial values;
 	ValueSet.AtResult = ValueSet.AllCurResultsBase;
 	ValueSet.AtLastResult = ValueSet.AllLastResultsBase;
-	ValueSet.AtParameterLookup = DataSet->FastParameterLookup.data();
+	ValueSet.AtParameterLookup = ValueSet.FastParameterLookup.data();
 	ValueSet.Timestep = -1;
 	ModelLoop(DataSet, &ValueSet, InitialValueSetupInnerLoop);
 	
@@ -1620,10 +1614,10 @@ RunModel(mobius_data_set *DataSet)
 		ValueSet.AtResult = ValueSet.AllCurResultsBase;
 		ValueSet.AtLastResult = ValueSet.AllLastResultsBase;
 		
-		ValueSet.AtParameterLookup  = DataSet->FastParameterLookup.data();
-		ValueSet.AtInputLookup      = DataSet->FastInputLookup.data();
-		ValueSet.AtResultLookup     = DataSet->FastResultLookup.data();
-		ValueSet.AtLastResultLookup = DataSet->FastLastResultLookup.data();
+		ValueSet.AtParameterLookup  = ValueSet.FastParameterLookup.data();
+		ValueSet.AtInputLookup      = ValueSet.FastInputLookup.data();
+		ValueSet.AtResultLookup     = ValueSet.FastResultLookup.data();
+		ValueSet.AtLastResultLookup = ValueSet.FastLastResultLookup.data();
 		
 		//NOTE: We have to update the inputs that don't depend on any index sets here, as that is not handled by the "fast lookup system".
 		if(!DataSet->InputStorageStructure.Units.empty() && DataSet->InputStorageStructure.Units[0].IndexSets.empty())

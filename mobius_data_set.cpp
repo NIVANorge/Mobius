@@ -83,9 +83,6 @@ mobius_data_set::~mobius_data_set()
 		
 		free(IndexCounts);
 	}
-	
-	if(x0) free(x0);
-	if(wk) free(wk);
 }
 
 static void
