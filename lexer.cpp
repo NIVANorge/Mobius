@@ -107,7 +107,6 @@ struct token_stream
 		if(FileData) free(FileData);
 	}
 	
-	//NOTE! Any pointer to a previously read token may be invalidated if you read or peek a new one.
 	token ReadToken();
 	token PeekToken(size_t PeekAhead = 1);
 	token ExpectToken(token_type);

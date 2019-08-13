@@ -1079,8 +1079,12 @@ NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultVa
 		}
 		for(input_h In : Spec.InputDependencies)
 		{
-			//TODO: Maaybe only report this if the input was provided?
-			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, In) << " was " << ValueSet->CurInputs[In.Handle] << std::endl);
+			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, In) << " was " << ValueSet->CurInputs[In.Handle]);
+			if(!ValueSet->CurInputWasProvided[In.Handle])
+			{
+				MOBIUS_PARTIAL_ERROR(" (Not provided in dataset)");
+			}
+			MOBIUS_PARTIAL_ERROR(std::endl);
 		}
 		for(equation_h Res : Spec.DirectResultDependencies )
 		{
@@ -1400,9 +1404,6 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 }
 
 static void
-PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet);
-
-static void
 ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 {
 	//NOTE: Preprocessing of computed parameters.
@@ -1448,6 +1449,9 @@ ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet
 		}
 	}
 }
+
+static void
+PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet);
 
 static void
 RunModel(mobius_data_set *DataSet)
@@ -1693,37 +1697,37 @@ PrintEquationDependencies(mobius_model *Model)
 }
 
 static void
-PrintResultStructure(mobius_model *Model)
+PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 {
-	std::cout << std::endl << "**** Result Structure ****" << std::endl;
-	//std::cout << "Number of batches: " << Model->ResultStructure.size() << std::endl;
-	for(equation_batch_group &BatchGroup : Model->BatchGroups)
+	Out << std::endl << "**** Result Structure ****" << std::endl;
+	//Out << "Number of batches: " << Model->ResultStructure.size() << std::endl;
+	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
 	{
-		if(BatchGroup.IndexSets.empty()) std::cout << "[]";
+		if(BatchGroup.IndexSets.empty()) Out << "[]";
 		for(index_set_h IndexSet : BatchGroup.IndexSets)
 		{
-			std::cout << "[" << GetName(Model, IndexSet) << "]";
+			Out << "[" << GetName(Model, IndexSet) << "]";
 		}
 		
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
-			equation_batch &Batch = Model->EquationBatches[BatchIdx];
-			std::cout << "\n\t-----";
-			if(Batch.Type == BatchType_Solver) std::cout << " (SOLVER: " << GetName(Model, Batch.Solver) << ")";
+			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
+			Out << "\n\t-----";
+			if(Batch.Type == BatchType_Solver) Out << " (SOLVER: " << GetName(Model, Batch.Solver) << ")";
 			
 			ForAllBatchEquations(Batch,
-			[Model](equation_h Equation)
+			[Model, &Out](equation_h Equation)
 			{
-				std::cout << "\n\t";
-				if(Model->Equations.Specs[Equation.Handle].Type == EquationType_Cumulative) std::cout << "(Cumulative) ";
-				else if(Model->Equations.Specs[Equation.Handle].Type == EquationType_ODE) std::cout << "(ODE) ";
-				std::cout << GetName(Model, Equation);
+				Out << "\n\t";
+				if(Model->Equations.Specs[Equation.Handle].Type == EquationType_Cumulative) Out << "(Cumulative) ";
+				else if(Model->Equations.Specs[Equation.Handle].Type == EquationType_ODE) Out << "(ODE) ";
+				Out << GetName(Model, Equation);
 				return false;
 			});
-			if(BatchIdx == BatchGroup.LastBatch) std::cout << "\n\t-----\n";
+			if(BatchIdx == BatchGroup.LastBatch) Out << "\n\t-----\n";
 		}
 		
-		std::cout << std::endl;
+		Out << std::endl;
 	}
 }
 

@@ -852,3 +852,19 @@ DllGetBranchInputs(void *DataSetPtr, const char *IndexSetName, const char *Index
 	CHECK_ERROR_END
 }
 
+DLLEXPORT void
+DllPrintResultStructure(void *DataSetPtr, char *Buf, u64 BufLen)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	const mobius_model *Model = DataSet->Model;
+	
+	std::stringstream Out;
+	PrintResultStructure(Model, Out);
+	std::string Str = Out.str();
+	strncpy(Buf, Str.c_str(), BufLen);
+	
+	CHECK_ERROR_END
+}
+
