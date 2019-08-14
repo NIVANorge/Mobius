@@ -1502,7 +1502,7 @@ RunModel(mobius_data_set *DataSet)
 	
 	if(((s64)DataSet->InputDataTimesteps - InputDataStartOffsetTimesteps) < (s64)Timesteps)
 	{
-		MOBIUS_FATAL_ERROR("ERROR: The input data provided has fewer timesteps than the number of timesteps the model is running for." << std::endl);
+		MOBIUS_FATAL_ERROR("ERROR: The input data provided has fewer timesteps (after the model run start date) than the number of timesteps the model is running for." << std::endl);
 	}
 	
 	//std::cout << "Input data start offset timesteps was " << InputDataStartOffsetTimesteps << std::endl;

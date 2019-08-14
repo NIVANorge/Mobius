@@ -496,11 +496,6 @@ ForAllBatchEquations(const batch_like &Batch, std::function<bool(equation_h)> Do
 }
 
 
-
-#if !defined(MOBIUS_EQUATION_PROFILING)
-#define MOBIUS_EQUATION_PROFILING 0
-#endif
-
 //TODO: The name "inputs" here is confusing, since there is already a different concept called input.
 //TODO: Couldn't this just be a std::vector?
 struct branch_inputs
@@ -541,9 +536,13 @@ struct mobius_data_set
 	~mobius_data_set();
 };
 
+#if !defined(MOBIUS_EQUATION_PROFILING)
+#define MOBIUS_EQUATION_PROFILING 0
+#endif
+
 struct value_set_accessor
 {
-	// The purpose of the value set accessor is to store state during the run of the model as well as providing access to various values to each equation that gets evaluated.
+	// The purpose of the value set accessor is to store temporary state that is needed to run the model as well as providing an access point to data that is needed when evaluating equations.
 	// There are two use cases.
 	// If Running=false, this is a setup run, where the purpose is to register the accesses of all the equations to later determine their dependencies.
 	// If Running=true, this is the actual run of the model, where equations should have access to the actual parameter values and so on.
@@ -1256,17 +1255,6 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 ////////////////////////////////////////////////
 
 
-
-/////////// IMPORTANT NOTE: ////////////////////
-// ##__VA_ARGS__ with double hashes to eliminate superfluous commas may not be supported on all compilers. The alternative __VA_OPT__(,) is not supported until C++20
-// Try to detect if this does not work so that the user does not get a barrage of unintelligible error messages?
-////////////////////////////////////////////////
-
-////////// IMPORTANT NOTE: /////////////////////
-// It may actually be pretty bad to return unsigned ints to the user because it is very easy to get integer underflows when using them. Is there any
-// reason not to use signed integers as a parameter type instead of unsigned? (One could just set the min value to 0 if one wants to).
-////////////////////////////////////////////////
-
 #define PARAMETER(ParH, ...) (ValueSet__->Running ? GetCurrentParameter(ValueSet__, ParH, ##__VA_ARGS__) : RegisterParameterDependency(ValueSet__, ParH, ##__VA_ARGS__))
 #define INPUT(InputH) (ValueSet__->Running ? GetCurrentInput(ValueSet__, InputH) : RegisterInputDependency(ValueSet__, InputH))
 #define RESULT(ResultH, ...) (ValueSet__->Running ? GetCurrentResult(ValueSet__, ResultH, ##__VA_ARGS__) : RegisterResultDependency(ValueSet__, ResultH, ##__VA_ARGS__))
@@ -1486,7 +1474,7 @@ RegisterLastResultDependency(value_set_accessor *ValueSet, equation_h Result, T.
 	return 0.0;
 }
 
-//TODO: SET_RESULT is not that nice, and can interfere with how the dependency system works if used incorrectly. It was only included to get Persist to work. However, Persist should probably be rewritten to remove that necessity.
+//TODO: SET_RESULT is not that nice, and can interfere with how the dependency system works if used incorrectly. It is included to get Persist and some other models to work, but should be used with care!
 #define SET_RESULT(ResultH, Value, ...) {if(ValueSet__->Running){SetResult(ValueSet__, Value, ResultH, ##__VA_ARGS__);}}
 
 template<typename... T> void
