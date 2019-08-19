@@ -588,6 +588,8 @@ AddINCACModel(mobius_model *Model)
 	auto ReachDICLossRate                       = RegisterParameterDouble(Model, Reaches, "Reach DIC loss rate", PerDay, 0.1, 0.0, 1.0);
 	auto MicrobialMineralisationBaseRate        = RegisterParameterDouble(Model, Reaches, "Aquatic DOC microbial mineralisation base rate", PerDay, 0.1, 0.0, 1.0);
 	
+	auto EffluentDOCConcentration               = RegisterParameterDouble(Model, Reaches, "Effluent DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	
 	auto ReachInitialDOCConcentration = RegisterParameterDouble(Model, Reaches, "Reach initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
 	auto ReachInitialDICConcentration = RegisterParameterDouble(Model, Reaches, "Reach initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
 	
@@ -627,8 +629,19 @@ AddINCACModel(mobius_model *Model)
 	SetSolver(Model, ReachDOCAbstraction, ReachSolver);
 	auto ReachDICAbstraction = RegisterEquation(Model, "Reach DIC abstraction", KgPerDay);
 	SetSolver(Model, ReachDICAbstraction, ReachSolver);
+	auto ReachEffluentDOC = RegisterEquation(Model, "Reach effluent DOC input", KgPerDay);
 	
+	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
+	auto EffluentFlow       = GetParameterDoubleHandle(Model, "Effluent flow");
+	auto ReachHasEffluentInput = GetParameterBoolHandle(Model, "Reach has effluent input");
 	
+	EQUATION(Model, ReachEffluentDOC,
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
+		double effluentconc = PARAMETER(EffluentDOCConcentration);
+		
+		if(PARAMETER(ReachHasEffluentInput)) return effluentflow*effluentconc;
+		return 0.0;
+	)
 	
 	EQUATION(Model, ReachDOCInput,
 		double upstreamdoc = 0.0;
@@ -636,7 +649,7 @@ AddINCACModel(mobius_model *Model)
 			upstreamdoc += RESULT(ReachDOCOutput, *Input);
 		)
 		
-		return upstreamdoc + RESULT(TotalDiffuseDOCOutput); //+effluent?
+		return upstreamdoc + RESULT(TotalDiffuseDOCOutput) + RESULT(ReachEffluentDOC);
 	)
 	
 	EQUATION(Model, ReachDOCOutput,
@@ -650,6 +663,8 @@ AddINCACModel(mobius_model *Model)
 	EQUATION(Model, ReachDICAbstraction,
 		return 86400.0 * SafeDivide(RESULT(DICMassInReach) * RESULT(ReachAbstraction), RESULT(ReachVolume));
 	)
+	
+	
 	
 	EQUATION(Model, PhotoMineralisationRate,
 		return
