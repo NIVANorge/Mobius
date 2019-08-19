@@ -532,7 +532,7 @@ def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
     Returns:
         None.
     """
-    fig_height = max(30, len(comparisons)*3.5)
+    fig_height = min(30, len(comparisons)*3.5)
 
     fig, axes = plt.subplots(nrows=len(comparisons), ncols=1, figsize=(15, fig_height)) 
     
