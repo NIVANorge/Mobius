@@ -1,6 +1,6 @@
 #define MOBIUS_TIMESTEP_VERBOSITY 0
 //NOTE: the g++ compiler flag ffast-math will make it so that isnan does not work correctly, so don't use that flag.
-#define MOBIUS_TEST_FOR_NAN 0 //0 or 1. Test for NaNs and if find print which equation, indexer and params associated with it. Slows model.
+#define MOBIUS_TEST_FOR_NAN 1 //0 or 1. Test for NaNs and if find print which equation, indexer and params associated with it. Slows model.
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 1
 
@@ -17,6 +17,10 @@
 
 int main()
 {
+	const char *InputFile = "Storgama/inputs_Storgama.dat";
+	const char *ParameterFile = "Storgama/params_Storgama_noGW.dat";
+	
+	
 	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1"); //Name, version
 	
 	//Call functions declared earlier
@@ -25,7 +29,7 @@ int main()
 	AddSimplyCModel(Model);
 	
 	//Input .dat file can say whether inputs vary per reach/landscape unit/are global, etc., which affects eqns
-	ReadInputDependenciesFromFile(Model, "../SimplyC/langtjerninputs.dat"); //NOTE: This has to happen here before EndModelDefinition
+	ReadInputDependenciesFromFile(Model, InputFile); //NOTE: This has to happen here before EndModelDefinition
 	
 	EndModelDefinition(Model);  //"compiles" model - order eqns, etc.
 	
@@ -38,9 +42,9 @@ int main()
 	AllocateParameterStorage(DataSet);
 	WriteParametersToFile(DataSet, "new_SimplyC_params.dat");
 #else
-	ReadParametersFromFile(DataSet, "SimplyC_params_noGW.dat");
+	ReadParametersFromFile(DataSet, ParameterFile);
 
-	ReadInputsFromFile(DataSet, "../SimplyC/langtjerninputs.dat");
+	ReadInputsFromFile(DataSet, InputFile);
 	
 	PrintResultStructure(Model);
 	PrintParameterStorageStructure(DataSet);
