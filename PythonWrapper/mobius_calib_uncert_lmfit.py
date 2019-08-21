@@ -244,6 +244,9 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
         sim = dataset_copy.get_result_series(simname, simindexes)
         obs = dataset_copy.get_input_series(obsname, obsindexes, alignwithresults=True)
         
+        if np.isnan(sim).any() :
+            raise ValueError('Got a NaN in the simulated data')
+		
         sim = sim[skip_timesteps:]
         obs = obs[skip_timesteps:]
         
