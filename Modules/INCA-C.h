@@ -353,7 +353,7 @@ AddINCACModel(mobius_model *Model)
 	EQUATION(Model, SOCDesorptionInOrganicLayer,
 		return
 			  RESULT(RateModifierOrganicLayer)
-			* (PARAMETER(SOCDesorptionBaseRateOrganicLayer) + PARAMETER(LinearEffectOfSO4OnSolubilityOrganicLayer)*pow(INPUT(SO4Deposition), PARAMETER(ExponentialEffectOfSO4OnSolubilityOrganicLayer)))
+			* (PARAMETER(SOCDesorptionBaseRateOrganicLayer) - PARAMETER(LinearEffectOfSO4OnSolubilityOrganicLayer)*pow(INPUT(SO4Deposition), PARAMETER(ExponentialEffectOfSO4OnSolubilityOrganicLayer)))
 			* RESULT(SOCFastFractionInOrganicLayer)
 			* RESULT(SOCMassInOrganicLayerFastPool);
 	)
