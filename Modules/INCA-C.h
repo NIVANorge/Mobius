@@ -653,15 +653,15 @@ AddINCACModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachDOCOutput,
-		return 86400.0 * SafeDivide(RESULT(DOCMassInReach) * RESULT(ReachFlow), RESULT(ReachVolume));
+		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(DOCMassInReach), RESULT(ReachVolume));
 	)
 	
 	EQUATION(Model, ReachDOCAbstraction,
-		return 86400.0 * SafeDivide(RESULT(DOCMassInReach) * RESULT(ReachAbstraction), RESULT(ReachVolume));
+		return 86400.0 * RESULT(ReachAbstraction) * SafeDivide(RESULT(DOCMassInReach), RESULT(ReachVolume));
 	)
 	
 	EQUATION(Model, ReachDICAbstraction,
-		return 86400.0 * SafeDivide(RESULT(DICMassInReach) * RESULT(ReachAbstraction), RESULT(ReachVolume));
+		return 86400.0 * RESULT(ReachAbstraction) * SafeDivide(RESULT(DICMassInReach), RESULT(ReachVolume));
 	)
 	
 	

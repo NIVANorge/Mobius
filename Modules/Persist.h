@@ -253,10 +253,13 @@ AddPersistModel(mobius_model *Model)
 		
 		for(index_t OtherSoil = CURRENT_INDEX(SoilBoxes) + 1; OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
 		{
-			double othersoildepth = LAST_RESULT(WaterDepth, OtherSoil) + RESULT(PercolationInput, OtherSoil);
-			double othersoilremainingcap = PARAMETER(MaximumCapacity, OtherSoil, LU) - othersoildepth;
+			//NOTE: (mdn 22.08.2019)  Commented out the following because if it was this way, no saturation excess would ever be generated. We SHOULD percolate to the other box exceeding their capacity, and then the saturation excess from that box will make sure it does not overflow.
 			
-			double mpi = Min(PARAMETER(Infiltration, OtherSoil, LU), othersoilremainingcap);
+			//double othersoildepth = LAST_RESULT(WaterDepth, OtherSoil) + RESULT(PercolationInput, OtherSoil);
+			//double othersoilremainingcap = PARAMETER(MaximumCapacity, OtherSoil, LU) - othersoildepth;
+			//double mpi = Min(PARAMETER(Infiltration, OtherSoil, LU), othersoilremainingcap);
+			
+			double mpi = PARAMETER(Infiltration, OtherSoil, LU);
 			
 			double perc = Min(mpi * PARAMETER(RelativeAreaIndex, OtherSoil, LU) / relativeareaindex,
 				PARAMETER(PercolationMatrix, OtherSoil) * totalrunoff);
