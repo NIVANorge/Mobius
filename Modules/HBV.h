@@ -1,7 +1,8 @@
 
 
-//NOTE: This is an implementation of the HBV (Hydrologiska Byråns Vattenbalansavdeling) model (Bergström 1976)
-//TODO: add proper reference.
+//NOTE: This module is based on the HBV (Hydrologiska Byråns Vattenbalansavdeling) model
+// The HBV model was originally introduced in
+// Bergström, S., 1979. Development and application of a conceptual runoff model for Scandinavian catchments, SHMI Report RHO 7, Norrköping, 134.
 
 
 #if !defined(HBV_H)

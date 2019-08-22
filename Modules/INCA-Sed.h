@@ -1,6 +1,6 @@
 
 
-// NOTE NOTE NOTE This module is in development and is not finished!!!!
+//This particular implementation follows L.A.Jackson-Blake &al 2016
 
 #include "../boost_solvers.h"
 

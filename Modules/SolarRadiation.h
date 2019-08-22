@@ -1,6 +1,6 @@
 
 
-//NÒTE: These calculations are based on the formulas given in http://www.fao.org/3/X0490E/x0490e07.htm
+//NÒTE: This module is based on the formulas given in "Crop evapotranspiration - Guidelines for computing crop water requirements - FAO Irrigation and drainage paper 56" http://www.fao.org/3/X0490E/x0490e07.htm
 
 
 inline double

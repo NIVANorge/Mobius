@@ -1,4 +1,10 @@
 
+// An early version of INCA-N is for instance described in
+// A.J.Wade et. al. 2002, A nitrogen model for European catchments: INCA, new model structure and equations, Hydrol. Earth Syst. Sci., 6(3), 559-582,
+// however, this version has had a lot of additions on top of that. Moreover, this version is integrated with the PERSiST hydrology model instead of the earlier hydrology model that was specified for INCA-N.
+
+
+
 #if !defined INCAN_MODEL_H
 
 static void
