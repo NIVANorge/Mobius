@@ -1,4 +1,4 @@
-# Parameter file generated for INCA-C V0.0 at 2019-08-22 12:22:51
+# Parameter file generated for INCA-C V0.0 at 2019-08-22 13:15:56
 
 index_sets:
 "Landscape units" : {"All"}
@@ -14,7 +14,7 @@ parameters:
 1985-01-01
 
 "Latitude" :     #(°) [-90, 90] Used to compute solar radiation if no solar radiation timeseries was provided in the input data.
-60
+59
 
 "Elevation" :     #(m) [0, 8848] Used to compute solar radiation if no solar radiation timeseries was provided in the input data.
 0
