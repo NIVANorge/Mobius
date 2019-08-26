@@ -31,7 +31,7 @@
 2008-01-01 to 2008-12-31 10
 2009-01-01 to 2009-12-31 10
 2010-01-01 to 2010-12-31 10
-end_timeseries
+
 
 # Net annual P input to newly-converted soil
 
@@ -67,4 +67,3 @@ end_timeseries
 2008-01-01 to 2008-12-31 0.1
 2009-01-01 to 2009-12-31 0.1
 2010-01-01 to 2010-12-31 0.1
-end_timeseries
