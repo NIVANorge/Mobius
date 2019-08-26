@@ -218,18 +218,20 @@ else :
 summobius = 0
 sumhardcode = 0
 for run in range(1000) :
-	before = time.time()
+	before = time.perf_counter()
 	dataset.run_model()
-	after = time.time()
+	after = time.perf_counter()
 	summobius += (after - before)
 	
-	before = time.time()
+	before = time.perf_counter()
 	run_hardcoded_model(timesteps, parameters, tc, lup, inputs, snow_results, land_results, reach_results)
-	after = time.time()
+	after = time.perf_counter()
 	sumhardcode += (after - before)
 	
 print('Mobius time (1000 runs):')
 print(summobius)
 print('Hardcoded time (1000 runs):')
 print(sumhardcode)
+print('Ratio:')
+print(sumhardcode / summobius)
 	
