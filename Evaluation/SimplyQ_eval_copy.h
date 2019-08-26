@@ -129,7 +129,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, PrecipitationFallingAsRain,
 		double precip = INPUT(Precipitation);
-		return (INPUT(AirTemperature) > 0) ? precip : 0.0;
+		return (INPUT(AirTemperature) >= 0) ? precip : 0.0;
 	)
 	
 	EQUATION(Model, PotentialDailySnowmelt,

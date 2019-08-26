@@ -1,9 +1,5 @@
 
 
-#define MOBIUS_TEST_FOR_NAN 0
-#define MOBIUS_EQUATION_PROFILING 0
-#define MOBIUS_PRINT_TIMING_INFO 0
-
 #include "../mobius.h"
 
 
@@ -35,7 +31,7 @@ void SnowStep(int Timestep, const std::vector<std::vector<double>> &Inputs, std:
 	std::vector<double> &InfEx = SnowResults[7];
 	
 	PSnow[Timestep] = (AirT < 0.0) ? Precip : 0.0;
-	PRain[Timestep] = (AirT > 0.0) ? Precip : 0.0;
+	PRain[Timestep] = (AirT >= 0.0) ? Precip : 0.0;
 	PotMelt[Timestep] = Max(0.0, DDFmelt*AirT);
 	Melt[Timestep] = Min(SnowDepth[Timestep-1], PotMelt[Timestep]);
 	SnowDepth[Timestep] = SnowDepth[Timestep-1] + PSnow[Timestep] - Melt[Timestep];
@@ -247,7 +243,7 @@ int main()
 		LandResults[LU][0][0] = GetParameterDouble(DataSet, "Soil field capacity", {});
 	}
 	
-	double Qr0 = GetParameterDouble(DataSet, "Initial in-stream flow", {"Coull"});
+	double Qr0 = GetParameterDouble(DataSet, "Initial in-stream flow", {Reach});
 	ReachResults[0][0] = ConvertM3PerSecondToMmPerDay(Qr0, Parameters[8]) * Parameters[4] * Parameters[5];
 	
 	ReachResults[1][0] = 0.349 * pow(Qr0, 0.34) * 2.71 * pow(Qr0, 0.557) * Parameters[9] * 2.0;
