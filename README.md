@@ -4,6 +4,8 @@ We recently changed the format of dates in parameter and input files. A date sho
 instead of what it was previously
 "2003-01-01"
 I.e. remove the quotations.
+### New change (2019-08-26):
+Timeseries in input files no longer have to be ended with 'end_timeseries'
 
 
 # Mobius
