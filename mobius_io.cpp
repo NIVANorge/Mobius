@@ -587,7 +587,12 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				Token = Stream.PeekToken();
 				if(Token.Type == TokenType_UnquotedString)
 				{
-					Stream.ReadToken(); //TODO: Check that the token actually says "to"?
+					Stream.ReadToken();
+					if(!Token.StringValue.Equals("to"))
+					{
+						Stream.PrintErrorHeader();
+						MOBIUS_FATAL_ERROR("Expected a token saying 'to'.");
+					}
 					datetime EndDateRange = Stream.ExpectDate();
 					s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
 					
