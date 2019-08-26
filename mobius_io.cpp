@@ -561,7 +561,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					datetime Date = Stream.ExpectDate();
 					CurTimestep = StartDate.DaysUntil(Date); //NOTE: Only one-day timesteps currently supported.
 				}
-				else if(Token.Type == TokenType_UnquotedString)
+				else if(Token.Type == TokenType_UnquotedString) //TODO: Remove the whole 'end_timeseries' thing in the future when people have adjusted to the change.
 				{
 					if(Token.StringValue.Equals("end_timeseries"))
 					{
@@ -574,10 +574,14 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						MOBIUS_FATAL_ERROR("Unexpected command word: " << Token.StringValue << std::endl);
 					}
 				}
+				else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
+				{
+					break;
+				}
 				else
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Expected either a date (as a quoted string) or the command word end_timeseries." << std::endl);
+					MOBIUS_FATAL_ERROR("Expected either a date or the beginning of a new input series." << std::endl);
 				}
 				
 				Token = Stream.PeekToken();

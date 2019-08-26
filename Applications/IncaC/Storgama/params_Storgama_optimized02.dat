@@ -1,4 +1,4 @@
-# Parameter file generated for INCA-C V0.0 at 2019-08-22 13:15:56
+# Parameter file generated for INCA-C V0.0 at 2019-08-23 10:36:45
 
 index_sets:
 "Landscape units" : {"All"}
@@ -36,7 +36,7 @@ parameters:
 0
 
 "Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
-0.184566074656706
+0.07
 
 "Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
 -1
@@ -84,7 +84,7 @@ parameters:
 366
 
 "SOC fast pool equilibrium fraction in the organic layer" :     #(dimensionless) [0, 1] The relative size that the fast SOC pool tends towards.
-0.998523429511287
+0.998523429511288
 
 "SOC fast pool equilibrium fraction in the mineral layer" :     #(dimensionless) [0, 1] The relative size that the fast SOC pool tends towards.
 0.643196931591553
@@ -134,16 +134,16 @@ parameters:
 "DOC mineralisation rate in groundwater" :     #(/day) [0, 1] How fast DOC is transformed to DIC in the groundwater. No temperature or moisture modifiers are applied here.
 0
 
-"Linear effect of SO4 on organic matter solubility in organic soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Linear effect of SO4 on organic matter solubility in organic soil layer" :     #(/day) [0, 1]
 7e-07
 
-"Linear effect of SO4 on organic matter solubility in mineral soil layer" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Linear effect of SO4 on organic matter solubility in mineral soil layer" :     #(/day) [0, 1]
 0
 
-"Exponential effect of SO4 on organic matter solubility in organic soil layer" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Exponential effect of SO4 on organic matter solubility in organic soil layer" :     #(dimensionless) [0, 5]
 1
 
-"Exponential effect of SO4 on organic matter solubility in mineral soil layer" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Exponential effect of SO4 on organic matter solubility in mineral soil layer" :     #(dimensionless) [0, 5]
 1
 
 "Direct runoff initial DOC concentration" :     #(mg/l) [0, 100]
@@ -173,7 +173,7 @@ parameters:
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]
 0 1 0 0
-1 0.778156427114743 0.221843572885258 0
+1 0.778156427114744 0.221843572885258 0
 1 0 0.480562530027237 0.519437469972763
 1 0 0 1
 
