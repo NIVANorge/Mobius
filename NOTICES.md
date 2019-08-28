@@ -11,13 +11,9 @@ These license, notice and copyright texts were obtained on 04.04.2019
 
 Any model using boost_solvers.h relies on the Boost.Numeric.Odeint package
 The various C++ autocalibraton routines (optimizer, GLUE, MCMC) use Boost.Accumulators
-The code in the Utilities folder uses Boost.Regex and Boost.Lexical_Cast
 
 * Boost.Numeric.Odeint Copyright © 2009-2015 Karsten Ahnert and Mario Mulansky
 * Boost.Accumulators Copyright © 2005, 2006 Eric Niebler
-* Boost.Regex Copyright © 1998-2013 John Maddock
-* Boost.Lexical_Cast Copyright © 2000-2005 Kevlin Henney, Copyright © 2006-2010 Alexander Nasonov, Copyright © 2011-2014 Antony Polukhin 
-
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
