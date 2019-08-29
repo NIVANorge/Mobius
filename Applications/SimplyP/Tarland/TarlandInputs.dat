@@ -10,7 +10,7 @@ additional_timeseries :  		  # All observed at Coull
 
 inputs :
 
-#include_file "Dynamic_P_inputs_example.dat"
+#include_file "Dynamic_P_inputs_example.dat" # Uncomment this line if you want to provide a separate time series of P inputs, rather than a constant
 
 "Air temperature" :
 2.91
