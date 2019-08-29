@@ -363,13 +363,11 @@ inputs :
 1999-01-02	0.001982
 1999-01-04	0.001428
 1999-01-05	0.00404
-end_timeseries
 
 "Discharge" {"Reach 2"} :
 1999-01-01	0.001486
 1999-01-03	0.003005
 1999-01-05	0.002082
-end_timeseries
 
 \end{lstlisting}
 \end{example}
@@ -386,7 +384,7 @@ Input files, like the file in Example \ref{ex:inputfile}, can or must have the f
 You can completely omit providing data for a timeseries (i.e. don't type its name or any values for it). In that case it will be asumed to be equal to 0 for every timestep. There are two formats you can choose.
 \begin{enumerate}[i]
 \item If you use the dense format, just list all the values after one another. If you use this format you have to provide exactly as many values as the number of timesteps you declared for the input data.
-\item If you use the sparse format, list pairs of dates (format yyyy-m-d) and values. Every sparse timeseries has to be ended with a {\tt end\_timeseries} token. The dates do not have to be provided in order.
+\item If you use the sparse format, list pairs of dates (format yyyy-m-d) and values. The dates do not have to be provided in order.
 \end{enumerate}
 Input values can be provided in the same format as parameters of type double in the parameter file. I.e. they can be numbers with or without decimal separator or in scientific notation.
 
@@ -443,7 +441,6 @@ Declaring constant periods of values
 "Nitrate dry deposition" :
 1999-01-01 to 1999-05-31 0.01
 1999-06-01 to 1999-12-31 0.02
-end_timeseries
 \end{lstlisting}
 \end{example}
 
@@ -458,7 +455,6 @@ Combining various advanced formats.
 2000-01-01 0.01    #NOTE: you can provide values for single days in-between periods
 2000-01-02 0.015
 1999-01-03 to 1999-05-31 0.01
-end_timeseries
 \end{lstlisting}
 \end{example}
 
@@ -488,12 +484,10 @@ The entire contents of depositions.dat:
 "Nitrate dry deposition" :
 2004-01-01 to 2005-01-01 0.01
 2005-01-02 to 2008-01-01 0.02
-end_timeseries
 
 "Nitrate wet deposition" :
 2004-01-01 to 2005-01-01 0.03
 2005-01-02 to 2008-01-01 0.04
-end_timeseries
 \end{lstlisting}
 \end{example}
 

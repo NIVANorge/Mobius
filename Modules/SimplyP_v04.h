@@ -2,7 +2,12 @@
 
 
 
-//  THIS VERSION IS IN DEVELOPMENT!!!!
+//  THIS VERSION IS IN DEVELOPMENT AND HAS BUGS!!!!
+// If you want to use the model, use SimplyP.h instead for now
+
+
+
+
 
 //NOTE: This is an adaption of
 // https://github.com/LeahJB/SimplyP
