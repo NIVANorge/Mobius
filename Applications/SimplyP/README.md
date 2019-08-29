@@ -35,6 +35,8 @@ The Mobius version offers dramatic performance improvements compared to the Pyth
   
 * three .dat files for setting up optimization and uncertainty analysis in C++, i.e. without use of the python wrapper. More info on this will come shortly.
 
+**NOTE: all files labelled _04 are beta versions, and not for stable release**
+
 
 ## Tutorials
 
