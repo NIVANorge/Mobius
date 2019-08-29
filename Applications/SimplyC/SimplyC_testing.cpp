@@ -8,7 +8,7 @@
 
 #include "../../Modules/UnitConversions.h"
 
-
+#define SIMPLYQ_GROUNDWATER
 #include "../../Modules/SimplyQ.h"
 #include "../../Modules/SimplyC.h"
 #include "../../Modules/SimplySoilTemperature.h"
@@ -17,8 +17,8 @@
 
 int main()
 {
-	const char *InputFile = "Storgama/inputs_Storgama.dat";
-	const char *ParameterFile = "Storgama/params_Storgama_noGW.dat";
+	const char *InputFile = "Boyne/inputs_Boyne.dat";
+	const char *ParameterFile = "Boyne/params_Boyne_GW.dat";
 	
 	
 	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1"); //Name, version
@@ -46,8 +46,8 @@ int main()
 
 	ReadInputsFromFile(DataSet, InputFile);
 	
-	PrintResultStructure(Model);
-	PrintParameterStorageStructure(DataSet);
+	//PrintResultStructure(Model);
+	//PrintParameterStorageStructure(DataSet);
 	//PrintInputStorageStructure(DataSet);
 	
 	

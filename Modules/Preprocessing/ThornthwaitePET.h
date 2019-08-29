@@ -85,7 +85,8 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 	datetime Date2 = Date;
 	Date2.AdvanceDays((s32)Timesteps - 1);
 	Date2.YearMonthDay(&Year, &Month, &Day);
-	if(Month != 12 && Day != 31)
+	
+	if(Month != 12 || Day != 31)
 	{
 		MOBIUS_FATAL_ERROR("ERROR: To use the Thornthwaite PET module, the input data has to end at Dec. 31st. It ends on " << Year << "-" << Month << "-" << Day << std::endl);
 	}
