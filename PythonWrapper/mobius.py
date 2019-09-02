@@ -1,5 +1,6 @@
 import ctypes
 import numpy as np
+import datetime as dt
 
 mobiusdll = None
 
@@ -274,9 +275,12 @@ class DataSet :
 		Arguments:
 			name             -- string. The name of the parameter. Example : "Start date"
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
-			value            -- string. The value to write to the parameter. Must be on the format "YYYY-MM-dd", e.g. "1999-05-15"
+			value            -- string or datetime. The value to write to the parameter. If provided as a string it must be on the format "YYYY-MM-dd", e.g. "1999-05-15"
 		'''
-		
+		if value.type == datetime.datetime :
+			strvalue = value.strftime('%Y-%m-%d')
+		else :
+			strvalue = value
 		#TODO: Maybe we just want to take a datetime value as value instead since that is what most people are going to use?
 		
 		mobiusdll.DllSetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), value.encode('utf-8'))
@@ -334,15 +338,14 @@ class DataSet :
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
 		Returns:
-			The value of the parameter (a string with the format "YYYY-MM-dd").
+			The value of the parameter (a datetime).
 		'''
-		
-		#TODO: Maybe we just want to return a datetime value from this instead since that is what most people are going to use?
-		
+
 		string = ctypes.create_string_buffer(32)
 		mobiusdll.DllGetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), string)
 		check_dll_error()
-		return string.value.decode('utf-8')
+		datestr = string.value.decode('utf-8')
+		return dt.datetime.strptime(datestr, '%Y-%m-%d')
 		
 	def get_parameter_double_min_max(self, name) :
 		'''
@@ -409,12 +412,13 @@ class DataSet :
 		
 	def get_input_start_date(self):
 		'''
-		Get the start date that was set for the input data. Returns a string of the form "YYYY-MM-dd".
+		Get the start date that was set for the input data. Returns a datetime.
 		'''
 		string = ctypes.create_string_buffer(32)
 		mobiusdll.DllGetInputStartDate(self.datasetptr, string)
 		check_dll_error()
-		return string.value.decode('utf-8')
+		datestr = string.value.decode('utf-8')
+		return dt.datetime.strptime(datestr, '%Y-%m-%d')
 		
 	def get_index_sets(self):
 		'''

@@ -522,7 +522,53 @@ def triangle_plot(result, nburn, thin, file_name=None, truths=None):
     
     if file_name:
         plt.savefig(file_name, dpi=200)
-        
+
+
+def get_input_dataframe(dataset, list, alignwithresults=False) :
+    """ TODO: Document
+    """
+	
+    if alignwithresults :
+        start_date = dataset.get_parameter_time('Start date', [])
+        timesteps  = dataset.get_parameter_uint('Timesteps', [])
+    else :
+        start_date = dataset.get_input_start_date()
+        timesteps  = dataset.get_input_timesteps()
+	
+    dates = pd.date_range(start_date, periods=timesteps)
+	
+    df = pd.DataFrame({'Date' : dates})
+	
+    for name, indexes in list :
+        series = dataset.get_input_series(name, indexes, alignwithresults)
+        full_name = '%s [%s]' % (name, ', '.join(indexes))
+        df[full_name] = series
+		
+    df.set_index('Date', inplace=True)
+	
+    return df
+	
+def get_result_dataframe(dataset, list) :
+    """ TODO: Document
+    """
+	
+    start_date = dataset.get_parameter_time('Start date', [])
+    timesteps  = dataset.get_parameter_uint('Timesteps', [])
+	
+    dates = pd.date_range(start_date, periods=timesteps)
+	
+    df = pd.DataFrame({'Date' : dates})
+	
+    for name, indexes in list :
+        series = dataset.get_result_series(name, indexes)
+        full_name = '%s [%s]' % (name, ', '.join(indexes))
+        df[full_name] = series
+
+    df.set_index('Date', inplace=True)
+	
+    return df
+
+       
 def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
     """ Plot the results the data series defined in 'comparisons' for a sinlge model run.
     
@@ -543,22 +589,10 @@ def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
         
         simname, simindexes, obsname, obsindexes = comparison
         
-        sim = dataset.get_result_series(simname, simindexes)
-        obs = dataset.get_input_series(obsname, obsindexes, alignwithresults=True)
-       
-        start_date = dt.datetime.strptime(dataset.get_parameter_time('Start date', []),'%Y-%m-%d')
-        timesteps = dataset.get_parameter_uint('Timesteps', [])
-        date_idx = np.array(pd.date_range(start_date, periods=timesteps))
-        
-        sim = sim[skip_timesteps:]
-        obs = obs[skip_timesteps:]
-        date_idx = date_idx[skip_timesteps:]
-
-        df = pd.DataFrame({'Date':date_idx,
-                           '%s [%s]' % (obsname, ', '.join(obsindexes)):obs,
-                           '%s [%s]' % (simname, ', '.join(simindexes)):sim,
-                          })
-        df.set_index('Date', inplace=True)
+        sim_df = get_result_dataframe(dataset, [(simname, simindexes)])
+        obs_df = get_input_dataframe(dataset, [(obsname, obsindexes)], alignwithresults=True)
+		
+        df = pd.concat([obs_df, sim_df], axis=1)
 
         unit = dataset.get_result_unit(simname) # Assumes that the unit is the same for obs and sim
 		
