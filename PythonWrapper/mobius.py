@@ -407,8 +407,9 @@ class DataSet :
 		'''
 		Get the number of timesteps that was allocated for the input data.
 		'''
-		mobiusdll.DllGetInputTimesteps(self.datasetptr)
+		timesteps = mobiusdll.DllGetInputTimesteps(self.datasetptr)
 		check_dll_error()
+		return timesteps
 		
 	def get_input_start_date(self):
 		'''

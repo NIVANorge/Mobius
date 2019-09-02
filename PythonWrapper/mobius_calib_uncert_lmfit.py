@@ -527,7 +527,7 @@ def triangle_plot(result, nburn, thin, file_name=None, truths=None):
 def get_input_dataframe(dataset, list, alignwithresults=False) :
     """ TODO: Document
     """
-	
+
     if alignwithresults :
         start_date = dataset.get_parameter_time('Start date', [])
         timesteps  = dataset.get_parameter_uint('Timesteps', [])
@@ -535,7 +535,7 @@ def get_input_dataframe(dataset, list, alignwithresults=False) :
         start_date = dataset.get_input_start_date()
         timesteps  = dataset.get_input_timesteps()
 	
-    dates = pd.date_range(start_date, periods=timesteps)
+    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='D'))
 	
     df = pd.DataFrame({'Date' : dates})
 	
@@ -555,7 +555,7 @@ def get_result_dataframe(dataset, list) :
     start_date = dataset.get_parameter_time('Start date', [])
     timesteps  = dataset.get_parameter_uint('Timesteps', [])
 	
-    dates = pd.date_range(start_date, periods=timesteps)
+    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='D'))
 	
     df = pd.DataFrame({'Date' : dates})
 	
