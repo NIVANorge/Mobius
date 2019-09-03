@@ -73,7 +73,7 @@ Mobius is written in C++, and so to produce a program that the computer can run 
 
 - g++ : Tested and works. There can be problems with gcc versions older than 5.0
 - clang (llvm) : Sometimes gives errors. Will be looked into eventually.
-- Visual C++ : Not yet tested.
+- Visual C++ : Tested and works. (you need to set up your own command line compilation scripts if you want to use this).
 - Other compilers : Not tested.
 
 To install g++ on Windows, you will need one of the MingW g++ distributions. We recommend using one of the MingW-w64 distributions that can compile to 64-bit, for compatibility with the Python wrapper. To install the compiler:
