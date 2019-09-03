@@ -38,6 +38,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto MineralLayerDOCConcentration      = RegisterParameterDouble(Model, Reach, "Mineral layer DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	
 	auto RunoffToReach         = GetEquationHandle(Model, "Runoff to reach");
+	auto PercolationInput      = GetEquationHandle(Model, "Percolation input");
 	auto ReachFlow             = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume           = GetEquationHandle(Model, "Reach volume");
 	
@@ -46,6 +47,11 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto TerrestrialCatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
 	
 	auto SoilWaterDOCConcentration = RegisterEquation(Model, "Soil water DOC concentration", MgPerL);
+	
+	auto SoilDOCFluxToReach        = RegisterEquation(Model, "Soil DOC flux to reach", KgPerKm2PerDay);
+	auto SoilDOCFluxToGroundwater  = RegisterEquation(Model, "Soil DOC flux to groundwater", KgPerKm2PerDay);
+	auto GroundwaterDOCFluxToReach = RegisterEquation(Model, "Groundwater DOC flux to reach", KgPerKm2PerDay);
+	
 	auto DiffuseDOCOutput          = RegisterEquation(Model, "Diffuse DOC output", KgPerDay);
 	auto TotalDiffuseDOCOutput     = RegisterEquationCumulative(Model, "Total diffuse DOC output", DiffuseDOCOutput, LandscapeUnits);
 	
@@ -62,11 +68,27 @@ AddIncaToxDOCModule(mobius_model *Model)
 		return PARAMETER(SoilWaterBaselineDOCConcentration);
 	)
 	
+	EQUATION(Model, SoilDOCFluxToReach,
+		return RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration) * 1000.0; //NOTE: convert to kg/km2/day
+	)
+	
+	//NOTE: this is currently not used to modify DOC concentration in the groundwater, it is just here for contaminant transport.
+	EQUATION(Model, SoilDOCFluxToGroundwater,
+		return RESULT(PercolationInput, Groundwater) * RESULT(SoilWaterDOCConcentration) * 1000.0; //NOTE: convert to kg/km2/day
+	)
+	
+	EQUATION(Model, GroundwaterDOCFluxToReach,
+		return RESULT(RunoffToReach, Groundwater) * PARAMETER(MineralLayerDOCConcentration) * 1000.0; //NOTE: convert to kg/km2/day
+	)
+	
+	//TODO: Transport by direct runoff (infiltration excess)?
+	
 	EQUATION(Model, DiffuseDOCOutput,
-		double soilwaterflux = RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration) * 1000.0;            //NOTE: convert to kg/km2/day
-		double groundwaterflux = RESULT(RunoffToReach, Groundwater) * PARAMETER(MineralLayerDOCConcentration) * 1000.0;  //NOTE: convert to kg/km2/day
-		
-		return PARAMETER(Percent) * PARAMETER(TerrestrialCatchmentArea) * (soilwaterflux + groundwaterflux);
+		return PARAMETER(Percent) * PARAMETER(TerrestrialCatchmentArea) *
+		(
+		  RESULT(SoilDOCFluxToReach)
+		+ RESULT(GroundwaterDOCFluxToReach)
+		);
 	)
 	
 	EQUATION(Model, ReachDOCOutput,
