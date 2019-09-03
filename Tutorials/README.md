@@ -5,7 +5,7 @@ Here are three tutorials that you can use to learn the very basics of building m
 - Try to understand all the comments in the files.
 - Modify the files, then **recompile** and run and see if the output is what you expected.
 
-More detailed documentation can e.g. be found in the [Model builder documentation](https://github.com/NIVANorge/Mobius/blob/master/Documentation/model_builder_documentation.pdf), but it is strongly recommended that you try the tutorials instead of just reading the documentation.
+More detailed documentation can e.g. be found in the [Model builder documentation](https://github.com/NIVANorge/Mobius/blob/master/Documentation/model_builder_documentation.pdf), but we recommend that you try the tutorials in addition to reading the documentation.
 After following these three tutorials, you can also see if you can understand the more complex models found in the Modules folder.
 
 
