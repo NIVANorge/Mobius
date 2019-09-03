@@ -1487,6 +1487,14 @@ SetResult(value_set_accessor *ValueSet, double Value, equation_h Result, T... In
 	ValueSet->AllCurResultsBase[Offset] = Value;
 }
 
+void
+SetResult(value_set_accessor *ValueSet, double Value, equation_h Result)
+{
+	mobius_data_set *DataSet = ValueSet->DataSet;
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, nullptr, 0, Result.Handle);
+	ValueSet->AllCurResultsBase[Offset] = Value;
+}
+
 
 #define INDEX_COUNT(IndexSetH) (ValueSet__->Running ? (ValueSet__->DataSet->IndexCounts[IndexSetH.Handle]) : 1)
 #define CURRENT_INDEX(IndexSetH) (ValueSet__->Running ? GetCurrentIndex(ValueSet__, IndexSetH) : RegisterIndexSetDependency(ValueSet__, IndexSetH))

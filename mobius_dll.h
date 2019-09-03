@@ -10,7 +10,7 @@ std::stringstream Dll_GlobalErrstream;
 	
 #define MOBIUS_FATAL_ERROR(Msg) \
 	{MOBIUS_PARTIAL_ERROR(Msg) \
-	throw 0;}
+	throw 1;}
 
 
 #include "mobius.h"
