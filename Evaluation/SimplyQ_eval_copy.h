@@ -76,7 +76,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0);
 	auto PETReductionFactor      = RegisterParameterDouble(Model, Hydrology, "PET multiplication factor", Dimensionless, 1.0, 0.0, 1.0);
 	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 5000.0);
-#ifdef SIMPLYQ_GROUNDWATER
+#if defined(SIMPLYQ_GROUNDWATER)
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
@@ -230,7 +230,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 		return effective_length;
 	)
 
-#ifdef SIMPLYQ_GROUNDWATER
+#if defined(SIMPLYQ_GROUNDWATER)
 	auto InitialGroundwaterVolume = RegisterEquationInitialValue(Model, "Initial groundwater volume", Mm);
 	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm);
 	SetInitialValue(Model, GroundwaterVolume, InitialGroundwaterVolume);
@@ -265,7 +265,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	// Groundwater equations
 	
-#ifdef SIMPLYQ_GROUNDWATER
+#if defined(SIMPLYQ_GROUNDWATER)
 	EQUATION(Model, GroundwaterFlow,
 		double flow0   = RESULT(GroundwaterVolume) / PARAMETER(GroundwaterTimeConstant);
 		double flowmin = PARAMETER(MinimumGroundwaterFlow);
@@ -317,15 +317,18 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	// In-stream equations
 	
+#if defined(SIMPLYQ_GROUNDWATER)
 	EQUATION(Model, ReachFlowInputFromLand,
 		//Flow from land in mm/day, converted to m3/s
-#ifdef SIMPLYQ_GROUNDWATER
 		double fromland = RESULT(InfiltrationExcess) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
-#else
-		double fromland = RESULT(InfiltrationExcess) + RESULT(TotalSoilWaterFlow);
-#endif
 		return ConvertMmPerDayToM3PerSecond(fromland, PARAMETER(CatchmentArea));
 	)
+#else
+	EQUATION(Model, ReachFlowInputFromLand,
+		double fromland = RESULT(InfiltrationExcess) + RESULT(TotalSoilWaterFlow);
+		return ConvertMmPerDayToM3PerSecond(fromland, PARAMETER(CatchmentArea));
+	)
+#endif
 	
 	EQUATION(Model, ReachFlowInputFromUpstream,
 		double upstreamflow = 0.0;
