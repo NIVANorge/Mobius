@@ -33,11 +33,13 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto Land = GetParameterGroupHandle(Model, "Landscape units");
 	auto Reach = GetParameterGroupHandle(Model, "Reaches");
 	
-	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerKm2);
+	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerKm2, 0.0, 0.0, 1e7);
 	auto SoilWaterBaselineDOCConcentration = RegisterParameterDouble(Model, Land, "Soil water baseline DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	auto MineralLayerDOCConcentration      = RegisterParameterDouble(Model, Reach, "Mineral layer DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	
-	auto RunoffToReach         = GetEquationHandle(Model, "Runoff to reach");
+	//PERSiST.h :
+	auto WaterDepth            = GetEquationHandle(Model, "Water depth");
+	auto RunoffToReach         = GetEquationHandle(Model, "Runoff to reach");   
 	auto PercolationInput      = GetEquationHandle(Model, "Percolation input");
 	auto ReachFlow             = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume           = GetEquationHandle(Model, "Reach volume");
@@ -47,7 +49,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto TerrestrialCatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
 	
 	auto SoilWaterDOCConcentration = RegisterEquation(Model, "Soil water DOC concentration", MgPerL);
-	
+	auto SoilDOCMass               = RegisterEquation(Model, "Soil DOC mass", KgPerKm2);
 	auto SoilDOCFluxToReach        = RegisterEquation(Model, "Soil DOC flux to reach", KgPerKm2PerDay);
 	auto SoilDOCFluxToGroundwater  = RegisterEquation(Model, "Soil DOC flux to groundwater", KgPerKm2PerDay);
 	auto GroundwaterDOCFluxToReach = RegisterEquation(Model, "Groundwater DOC flux to reach", KgPerKm2PerDay);
@@ -68,8 +70,12 @@ AddIncaToxDOCModule(mobius_model *Model)
 		return PARAMETER(SoilWaterBaselineDOCConcentration);
 	)
 	
+	EQUATION(Model, SoilDOCMass,
+		return RESULT(SoilWaterDOCConcentration) * RESULT(WaterDepth, Soilwater) * 1000.0; //NOTE: convert mm * mg/l  to kg/km2
+	)
+	
 	EQUATION(Model, SoilDOCFluxToReach,
-		return RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration) * 1000.0; //NOTE: convert to kg/km2/day
+		return RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration) * 1000.0; //NOTE: convert mm * mg/l  to kg/km2
 	)
 	
 	//NOTE: this is currently not used to modify DOC concentration in the groundwater, it is just here for contaminant transport.
