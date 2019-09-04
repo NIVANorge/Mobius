@@ -71,11 +71,12 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 
 Mobius is written in C++, and so to produce a program that the computer can run you need a compiler to produce the executable.
 
-| Compiler      | Windows        | Linux        | MacOS       |
-| ------------- | -------------- | ------------ | ----------- |
-| g++ / MingW64 | works          | works        | works       |
-| clang++ (llvm)| works(warnings)|              |             |
-| Visual C++    | works          |              |             |
+| Compiler      | Windows        | Linux        | MacOS       | Note    |
+| :------------ | :------------- | :----------- | :---------- | :------ |
+| g++ / MingW64 | works          | works        | works       | need version 5.0 or later |
+| clang++ (llvm)| works          |              |             | many warnings |
+| Visual C++    | works          |              |             | some warnings |
+
 Compilers that have been tested with Mobius. Empty cell means that it has not been tested on that platform.
 
 We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. g++ also seems to produce the fastest running code of the compilers we have tested. It is also the only one we have set up compilation scripts for for all models.
