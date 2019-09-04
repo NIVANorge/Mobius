@@ -85,8 +85,9 @@ To install g++ on Windows, you will need one of the MingW g++ distributions. We 
 
 - You can use the version of MingW-w64 found here (click the sourceforge link to download):
 https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installation that you choose x86-64 under the 'Architecture' dropdown list.** Take note of where the compiler is installed, you will need it shortly.
-- Linux: just use the distribution of g++ that comes with your Linux distribution, and it should work.
 - Make sure that the /bin/ folder of your installation of g++ is in your PATH variable, and that you don't have any other installations of g++ in the PATH: in Windows 10, hit the start button, then type 'system environment variables', and select the option that best matches this. Then click on 'Environment variables'. Within the 'User variables' or 'System variables', there should be a variable called 'Path' or 'PATH'. Within this there should be something like mingw64\bin. If it isn't there, add it (click 'New' and then 'Browse', and find and select the location of the \bin\ folder of your compiler, making sure to click 'ok' every time you close a dialogue box).
+
+On Linux you should be able to get g++ using the command `sudo apt install g++` or something similar (maybe depending on the Linux distribution).
 
 (Note: we would normally have recommended the TDM-gcc distribution of MingW, as that allows you to use multithreading and openmp in C++ code, but unfortunately there is a bug in this (last checked 2019-02-05) so that Windows 10 is unable to load .dll's compiled with it)
 
