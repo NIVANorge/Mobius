@@ -64,6 +64,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto ReachDOCOutput            = RegisterEquation(Model, "Reach DOC output", KgPerDay);
 	SetSolver(Model, ReachDOCOutput, ReachSolver);
 	auto ReachDOCInput             = RegisterEquation(Model, "Reach DOC input", KgPerDay);
+	auto ReachDOCConcentration     = RegisterEquation(Model, "Reach DOC concentration", MgPerL);
 	
 	EQUATION(Model, SoilWaterDOCConcentration,
 		//TODO: Temperature and SO4 controls?
@@ -71,26 +72,26 @@ AddIncaToxDOCModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilDOCMass,
-		return RESULT(SoilWaterDOCConcentration) * RESULT(WaterDepth, Soilwater) * 1000.0; //NOTE: convert mm * mg/l  to kg/km2
+		return RESULT(SoilWaterDOCConcentration) * RESULT(WaterDepth, Soilwater); //NOTE: convert mm * mg/l  to kg/km2 (factor is 1)
 	)
 	
 	EQUATION(Model, SoilDOCFluxToReach,
-		return RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration) * 1000.0; //NOTE: convert mm * mg/l  to kg/km2
+		return RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration); //NOTE: convert mm * mg/l  to kg/km2 (factor is 1)
 	)
 	
 	//NOTE: this is currently not used to modify DOC concentration in the groundwater, it is just here for contaminant transport.
 	EQUATION(Model, SoilDOCFluxToGroundwater,
-		return RESULT(PercolationInput, Groundwater) * RESULT(SoilWaterDOCConcentration) * 1000.0; //NOTE: convert to kg/km2/day
+		return RESULT(PercolationInput, Groundwater) * RESULT(SoilWaterDOCConcentration); //NOTE: convert mm * mg/l  to kg/km2 (factor is 1)
 	)
 	
 	EQUATION(Model, GroundwaterDOCFluxToReach,
-		return RESULT(RunoffToReach, Groundwater) * PARAMETER(MineralLayerDOCConcentration) * 1000.0; //NOTE: convert to kg/km2/day
+		return RESULT(RunoffToReach, Groundwater) * PARAMETER(MineralLayerDOCConcentration); //NOTE: convert mm * mg/l  to kg/km2 (factor is 1)
 	)
 	
 	//TODO: Transport by direct runoff (infiltration excess)?
 	
 	EQUATION(Model, DiffuseDOCOutput,
-		return PARAMETER(Percent) * PARAMETER(TerrestrialCatchmentArea) *
+		return PARAMETER(Percent) * 0.01 * PARAMETER(TerrestrialCatchmentArea) *
 		(
 		  RESULT(SoilDOCFluxToReach)
 		+ RESULT(GroundwaterDOCFluxToReach)
@@ -114,6 +115,10 @@ AddIncaToxDOCModule(mobius_model *Model)
 	EQUATION(Model, ReachDOCMass,
 		//TODO: effluent and abstraction
 		return RESULT(ReachDOCInput) - RESULT(ReachDOCOutput);
+	)
+	
+	EQUATION(Model, ReachDOCConcentration,
+		return SafeDivide(RESULT(ReachDOCMass), RESULT(ReachVolume)) * 1000.0; // Convert kg/m3 -> mg/l
 	)
 	
 }

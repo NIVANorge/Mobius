@@ -14,6 +14,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerM2PerDay    = RegisterUnit(Model, "ng/m2/day");
 	auto NgPerM3          = RegisterUnit(Model, "ng/m3");
+	auto NgPerKg          = RegisterUnit(Model, "ng/kg");
 	auto M3PerKg          = RegisterUnit(Model, "m3/kg");
 	auto M3PerKm2         = RegisterUnit(Model, "m3/km2");
 	auto KiloJoulesPerMol = RegisterUnit(Model, "kJ/mol");
@@ -25,13 +26,15 @@ AddIncaToxModule(mobius_model *Model)
 	auto LitterFallDeposition     = RegisterInput(Model, "Litter fall contaminant deposition",     NgPerM2PerDay);
 	
 	
-	auto Soils        = GetIndexSetHandle(Model, "Soils");
+	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
+	auto Soils          = GetIndexSetHandle(Model, "Soils");
 	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
 	
 	
 	auto Chemistry = RegisterParameterGroup(Model, "Chemistry");
+	auto Land      = GetParameterGroupHandle(Model, "Landscape units");
 
 	//TODO: As always, find better default, min, max values for parameters!
 	
@@ -39,6 +42,9 @@ AddIncaToxModule(mobius_model *Model)
 	auto OctanolWaterPhaseTransferEntalphy     = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase tranfer between octanol and water", KiloJoulesPerMol, 0.0);
 	auto HenrysConstant25                      = RegisterParameterDouble(Model, Chemistry, "Henry's constant at 25°C", PascalM3PerMol, 0.0);
 	auto OctanolWaterPartitioningCoefficient25 = RegisterParameterDouble(Model, Chemistry, "Octanol-water partitioning coefficient at 25°C", PascalM3PerMol, 0.0);
+	
+	auto ConstantContaminantInputToLand = RegisterParameterDouble(Model, Land, "Constant contaminant input to land", NgPerM2PerDay, 0.0, 0.0, 1000.0, "This is just a debug feature");
+	
 	
 	auto SoilTemperature = GetEquationHandle(Model, "Soil temperature"); //SoilTemperature.h
 	auto WaterDepth      = GetEquationHandle(Model, "Water depth");      //PERSiST.h
@@ -63,12 +69,10 @@ AddIncaToxModule(mobius_model *Model)
 	
 	auto SoilWaterContaminantConcentration = RegisterEquation(Model, "Soil water contaminant concentration", NgPerM3);
 	SetSolver(Model, SoilWaterContaminantConcentration, SoilSolver);
-	auto SoilSOCContaminantConcentration   = RegisterEquation(Model, "Soil SOC contaminant concentration", NgPerM3);
+	auto SoilSOCContaminantConcentration   = RegisterEquation(Model, "Soil SOC contaminant concentration", NgPerKg);
 	SetSolver(Model, SoilSOCContaminantConcentration, SoilSolver);
-	auto SoilDOCContaminantConcentration   = RegisterEquation(Model, "Soil DOC contaminant concentration", NgPerM3);
+	auto SoilDOCContaminantConcentration   = RegisterEquation(Model, "Soil DOC contaminant concentration", NgPerKg);
 	SetSolver(Model, SoilDOCContaminantConcentration, SoilSolver);
-	auto SoilAirContaminantConcentration   = RegisterEquation(Model, "Soil air contaminant concentration", NgPerM3);
-	//Probably don't need to set solver on soil air contaminant concentration unless it is involved in another process?
 	
 	auto SoilWaterVolume                   = RegisterEquation(Model, "Soil water volume", M3PerKm2);
 	auto SoilAirVolume                     = RegisterEquation(Model, "Soil air volume", M3PerKm2);
@@ -121,7 +125,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilAirVolume,
-		return (PARAMETER(MaximumCapacity, Soilwater) - RESULT(WaterDepth, Soilwater)) * 1e3;  //Convert mm*km2 / km2 to m3/km2
+		return (PARAMETER(MaximumCapacity, Soilwater, CURRENT_INDEX(LandscapeUnits)) - RESULT(WaterDepth, Soilwater)) * 1e3;  //Convert mm*km2 / km2 to m3/km2
 	)
 	
 	EQUATION(Model, SoilWaterContaminantConcentration,
@@ -140,31 +144,30 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilDOCContaminantConcentration,
-		return RESULT(SoilWaterContaminantConcentration) * RESULT(SoilDOCContaminantConcentration);
-	)
-	
-	EQUATION(Model, SoilAirContaminantConcentration,
-		return RESULT(SoilWaterContaminantConcentration) * RESULT(AirWaterPartitioningCoefficient);
+		return RESULT(SoilWaterContaminantConcentration) * RESULT(WaterDOCPartitioningCoefficient);
 	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,
 		//TODO: dry and wet inputs should depend on precipitation
 		//TODO: maybe also let the user parametrize these in case they don't have detailed timeseries
 		//NOTE: convert ng/m2 -> ng/km2
-		return (INPUT(AtmosphericDryDeposition) + INPUT(AtmosphericWetDeposition) + INPUT(LandManagementDeposition) + INPUT(LitterFallDeposition)) * 1e6;
+		return (
+			INPUT(AtmosphericDryDeposition) + INPUT(AtmosphericWetDeposition) + INPUT(LandManagementDeposition) + INPUT(LitterFallDeposition)
+			+ PARAMETER(ConstantContaminantInputToLand) // NOTE: debug feature. To be removed eventually
+			) * 1e6;
 	)
 	
 	EQUATION(Model, SoilContaminantFluxToReach,
 		return
-			RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterContaminantConcentration) // TODO unit conversion factor
-		  + RESULT(SoilDOCFluxToReach) * RESULT(SoilDOCContaminantConcentration);        // TODO unit conversion factor
+			RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
+		  + RESULT(SoilDOCFluxToReach) * RESULT(SoilDOCContaminantConcentration);
 		  //TODO: erosion (from microplastics module) should be able to transport SOC with contaminants in it.
 	)
 	
 	EQUATION(Model, SoilContaminantFluxToGroundwater,
 		return
-			RESULT(PercolationInput, Groundwater) * RESULT(SoilWaterContaminantConcentration) // TODO unit conversion factor
-		  + RESULT(SoilDOCFluxToGroundwater) * RESULT(SoilDOCContaminantConcentration);       // TODO unit conversion factor
+			RESULT(PercolationInput, Groundwater) * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
+		  + RESULT(SoilDOCFluxToGroundwater) * RESULT(SoilDOCContaminantConcentration);
 	)
 	
 	EQUATION(Model, SoilContaminantFluxToDirectRunoff,
