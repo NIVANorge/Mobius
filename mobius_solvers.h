@@ -148,9 +148,10 @@ TT:     h3 = h / 3.0;
 
                     if ( fabs(h) < hmin )
                     {
-						#define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-                        h = SIGN( hmin, h ); //NOTE: This is probably unnecessary since we are never solving backwards?? -MDN
-						#undef SIGN
+						h = hmin;
+						//#define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
+                        //h = SIGN( hmin, h ); //NOTE: This is probably unnecessary since we are never solving backwards?? -MDN
+						//#undef SIGN
                         bx = 0;
                     }
 
