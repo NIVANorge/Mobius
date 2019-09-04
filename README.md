@@ -77,7 +77,7 @@ Mobius is written in C++, and so to produce a program that the computer can run 
 | clang++ (llvm)| works          |              |             | many compiler warnings |
 | Visual C++    | works          |              |             | tested with VC2019. Some compiler warnings |
 
-Compilers that have been tested with Mobius. Empty cell means that it has not been tested on that platform.
+**Table:** Compilers that have been tested with Mobius. Empty cell means that it has not been tested on that platform.
 
 We aim to allow you to use any compiler, but for now it has mostly been tested with the g++ compiler. g++ also seems to produce the fastest running code of the compilers we have tested. It is also the only one we have set up compilation scripts for for all models.
 
