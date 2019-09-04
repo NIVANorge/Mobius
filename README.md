@@ -73,9 +73,9 @@ Mobius is written in C++, and so to produce a program that the computer can run 
 
 | Compiler      | Windows        | Linux        | MacOS       | Note    |
 | :------------ | :------------- | :----------- | :---------- | :------ |
-| g++ / MingW64 | works          | works        | works       | need version 5.0 or later |
-| clang++ (llvm)| works          |              |             | many warnings |
-| Visual C++    | works          |              |             | some warnings |
+| g++ / MingW64 | works          | works        | works       | need gcc version 5.0 or later |
+| clang++ (llvm)| works          |              |             | many compiler warnings |
+| Visual C++    | works          |              |             | tested with VC2019. Some compiler warnings |
 
 Compilers that have been tested with Mobius. Empty cell means that it has not been tested on that platform.
 
