@@ -1,6 +1,6 @@
 
 #define MOBIUS_TIMESTEP_VERBOSITY 0
-#define MOBIUS_TEST_FOR_NAN 0
+#define MOBIUS_TEST_FOR_NAN 1
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 1
 #define MOBIUS_INDEX_BOUNDS_TESTS 1
@@ -8,7 +8,7 @@
 #include "../../mobius.h"
 
 #include "../../Modules/Persist.h"
-#include "../../Modules/INCA-Microplastics.h"
+//#include "../../Modules/INCA-Microplastics.h"
 #include "../../Modules/SoilTemperature.h"
 #include "../../Modules/INCA-Tox-C.h"
 #include "../../Modules/INCA-Tox.h"
@@ -21,7 +21,7 @@ int main()
 	mobius_model *Model = BeginModelDefinition("INCA-Tox", "0.0");
 	
 	AddPersistModel(Model);
-	AddINCAMicroplasticsModel(Model);
+	//AddINCAMicroplasticsModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
