@@ -37,8 +37,12 @@ TODOs:
 #include <sstream>
 #include <iomanip>
 
-//TODO: Does this intrinsic header exist for all compilers? We only use it for __rdtsc();
-#include <x86intrin.h>
+//NOTE: we use this header for __rdtsc(); The intrinsic is in different headers for different compilers. If you compile with a different compiler than what is already set up you must update this.
+#if defined(__GNUC__) || defined(__GNUG__)
+	#include <x86intrin.h>
+#elif defined(_MSC_VER)
+	#include <intrin.h>
+#endif
 
 
 typedef uint64_t u64;
