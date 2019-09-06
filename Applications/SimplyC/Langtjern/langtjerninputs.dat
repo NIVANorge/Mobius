@@ -1,4 +1,4 @@
-start_date : 1986-1-1
+start_date : 1986-01-01
 timesteps : 10957
 
 additional_timeseries :
@@ -7,6 +7,9 @@ additional_timeseries :
 
 
 inputs :
+
+include_file "deposition.dat"
+
 
 "Air temperature" :
 -17.21
