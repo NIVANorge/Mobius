@@ -42,9 +42,10 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", Dimensionless, 0.0, 0.0, 20.0);
 	
 	auto DiluteSnow = RegisterParameterBool(Model, CarbonParamsGlobal, "Lower carbon concentration in meltwater", true);
+	auto SnowMeltDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Snow melt DOC concentration", MgPerL, 0.0, 0.0, 70.0);
 
 #ifdef SIMPLYQ_GROUNDWATER
-	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 30.0);
+	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 70.0);
 #endif
 
 	// Carbon params that vary with land class
@@ -93,7 +94,8 @@ AddSimplyCModel(mobius_model *Model)
 		double f_melt = PARAMETER(ProportionToQuickFlow)*RESULT(SnowMelt)/RESULT(InfiltrationExcess);
 		double f_rain = 1.0-f_melt;
 		double soilwaterDOCconc = RESULT(SoilWaterCarbonConcentration);
-		if (RESULT(InfiltrationExcess)>0.) quickDOCconcentration = f_melt*6.0 + f_rain*soilwaterDOCconc;
+		double meltDOCconc      = PARAMETER(SnowMeltDOCConcentration);
+		if (RESULT(InfiltrationExcess)>0.) quickDOCconcentration = f_melt*meltDOCconc + f_rain*soilwaterDOCconc;
 		else quickDOCconcentration = soilwaterDOCconc;
 
 		if(!PARAMETER(DiluteSnow))

@@ -1,4 +1,4 @@
-# Parameter file generated for SimplyC V0.1 at 2019-09-06 13:42:51
+# Parameter file generated for SimplyC V0.1 at 2019-09-06 14:13:57
 
 index_sets:
 "Reaches" : {"Inlet"}
@@ -50,6 +50,9 @@ parameters:
 
 "Lower carbon concentration in meltwater" :
 true
+
+"Snow melt DOC concentration" :     #(mg/l) [0, 70]
+9.5
 
 ###################### "Reaches" ######################
 "Catchment area" :     #(km^2) [0, 10000]
