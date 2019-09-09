@@ -1,4 +1,4 @@
-# Parameter file generated for SimplyC V0.1 at 2019-09-06 14:22:36
+# Parameter file generated for SimplyC V0.1 at 2019-09-09 11:19:30
 
 index_sets:
 "Reaches" : {"Inlet"}
@@ -34,16 +34,16 @@ parameters:
 0.04
 
 "Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
--0.001
+-0.4
 
 "Initial soil temperature" :     #(°C) [-30, 40]
 0
 
 "Soil temperature DOC concentration linear coefficient" :     #(mg/l/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.31
+0.28
 
 "Soil temperature DOC concentration square coefficient" :     #(mg/l/(°C)^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.0097
+0.019
 
 "Soil carbon solubility response to SO4 deposition" :     #(dimensionless) [0, 20]
 0.8
@@ -52,7 +52,7 @@ parameters:
 false
 
 "Snow melt DOC concentration" :     #(mg/l) [0, 70]
-0
+9.7
 
 ###################### "Reaches" ######################
 "Catchment area" :     #(km^2) [0, 10000]
@@ -76,8 +76,8 @@ false
 5.5
 
 "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)" :     #(1E-6 m2/s) [0.01, 0.8]
-0.03
+0.05
 
 "Baseline soil water DOC concentration" :     #(mg/l) [0, 70]
-12.2
+11.4
 
