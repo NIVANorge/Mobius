@@ -33,7 +33,7 @@ ActivationControl(double X, double Threshold, double RelativeActivationDistance)
 static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
-	auto Degrees = RegisterUnit(Model, "°");
+	auto Degrees = RegisterUnit(Model, "°C");
 	auto System = GetParameterGroupHandle(Model, "System");
 	RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
 	

@@ -130,7 +130,7 @@ AddSimplyPModel(mobius_model *Model)
 	SetInitialValue(Model, SoilWaterEPC0, InitialSoilWaterEPC0);
 	
 	EQUATION(Model, SoilPSorptionCoefficient,
-		/* # Assume SN has EPC0=0, PlabConc =0. Units: (kg/mg)(mg/kgSoil)(mm/kg)*/
+		/* Units: (kg/mg)(mg/kgSoil)(mm/kg)*/
 		double initialEPC0 = ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0), PARAMETER(CatchmentArea));
 
 		double Kf = 1e-6 * SafeDivide((PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)), initialEPC0);
@@ -267,7 +267,7 @@ AddSimplyPModel(mobius_model *Model)
 	ResetEveryTimestep(Model, DailyMeanStreamPPFlux);
 	
 	auto ReachTDPInputFromUpstream = RegisterEquation(Model, "Reach TDP input from upstream", KgPerDay);
-	auto ReachPPInputFromErosion   = RegisterEquation(Model, "Reach PP input from erosion", KgPerDay);
+	auto ReachPPInputFromErosion   = RegisterEquation(Model, "Reach PP input from erosion and entrainment", KgPerDay);
 	SetSolver(Model, ReachPPInputFromErosion, ReachSolver);
 	//auto TotalReachPPInputFromErosion = RegisterEquationCumulative(Model, "Total reach PP input from erosion", ReachPPInputFromErosion, LandscapeUnits);
 	auto ReachPPInputFromUpstream  = RegisterEquation(Model, "Reach PP input from upstream", KgPerDay);
@@ -311,6 +311,7 @@ AddSimplyPModel(mobius_model *Model)
 		double P_inactive = 1e-6*PARAMETER(SoilInactivePConcentration)*Msoil;
 		for(index_t Land = FIRST_INDEX(LandscapeUnits); Land < INDEX_COUNT(LandscapeUnits); ++Land)
 		{
+			//NOTE: This could be factored out as its own equation and summed up using an EquationCumulative:
 			PP += (RESULT(SoilLabilePMass, Land) + P_inactive) * RESULT(ReachSedimentInputCoefficient, Land);
 		}
 		return RESULT(ErosionFactor) * PARAMETER(PPEnrichmentFactor) * PP / Msoil;
