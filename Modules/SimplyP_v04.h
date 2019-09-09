@@ -132,7 +132,8 @@ AddSimplyPModel(mobius_model *Model)
 	EQUATION(Model, SoilPSorptionCoefficient,
 		/* # Assume SN has EPC0=0, PlabConc =0. Units: (kg/mg)(mg/kgSoil)(mm/kg)*/
 		double initialEPC0 = ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0), PARAMETER(CatchmentArea));
-		double Kf = 1e-6 * (PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)) /initialEPC0;
+
+		double Kf = 1e-6 * SafeDivide((PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)), initialEPC0);
 				  
 		double KfPar = PARAMETER(PhosphorousSorptionCoefficient);
 				  
@@ -177,6 +178,7 @@ AddSimplyPModel(mobius_model *Model)
 		//TODO: factor out calculations of b0, a? Would probably not matter that much to speed though.
 	
 		double sorp = RESULT(SoilPSorptionCoefficient) * Msoil * (a / b0 - RESULT(SoilWaterEPC0) + (LAST_RESULT(SoilTDPMass)/LAST_RESULT(SoilWaterVolume) - a/b0)*(1.0 - exp(-b))/b);
+		if(!std::isfinite(sorp)) sorp = 0.0; //NOTE: Otherwise calculation can break down in some rare cases.
 		
 		if(!PARAMETER(DynamicEPC0)) sorp = 0.0;
 	
@@ -199,7 +201,6 @@ AddSimplyPModel(mobius_model *Model)
 	
 	
 	// Post-processing soil P equations (convert units)
-	
 	auto SoilWaterTDPConcentration = RegisterEquation(Model, "Soil water TDP concentration", MgPerL);
 	auto EPC0MgL                   = RegisterEquation(Model, "Soil water EPC0 in mg/l", MgPerL);
 	auto SoilLabilePConcentration  = RegisterEquation(Model, "Soil labile P concentration", MgPerKg);
@@ -307,7 +308,7 @@ AddSimplyPModel(mobius_model *Model)
 	EQUATION(Model, ReachPPInputFromErosion,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
 		double PP = 0.0;
-		double P_inactive = PARAMETER(SoilInactivePConcentration)*Msoil;
+		double P_inactive = 1e-6*PARAMETER(SoilInactivePConcentration)*Msoil;
 		for(index_t Land = FIRST_INDEX(LandscapeUnits); Land < INDEX_COUNT(LandscapeUnits); ++Land)
 		{
 			PP += (RESULT(SoilLabilePMass, Land) + P_inactive) * RESULT(ReachSedimentInputCoefficient, Land);

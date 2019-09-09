@@ -137,7 +137,7 @@ AddSimplySedimentModule(mobius_model *Model)
 		// This does not take into account the greater sediment mobilisation capacity of reaches which are further downstream in the catchment, and may need revisiting. May need to split sediment delivery into two (terrestrial versus instream), which would likely require two of these equations which we want to avoid as long as possible.
 		//Note: if this changes, also needs to change in the particulate P equations
 		//double A_catch = PARAMETER(CatchmentArea);
-		return Esus_i * PARAMETER(LandUseProportions);// * A_catch * pow(RESULT(ReachFlowInputFromLand) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
+		return Esus_i * PARAMETER(LandUseProportions);
 	)
 	
 	EQUATION(Model, ErosionFactor,
