@@ -14,8 +14,8 @@
 
 //#include "../../Modules/SimplyC.h"
 //#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_exp_temp_SO4_groundwater_transport.h"
-#define DILUTE_SNOW
-#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
+//#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
+#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4_equilibrizing_DOC.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
 DLLEXPORT void *
@@ -26,7 +26,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1");
 	
 	AddSimplyHydrologyModule(Model);
-	AddSoilTemperatureModel(Model);
+	AddSoilTemperatureModel2(Model);
 	AddSimplyCModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);

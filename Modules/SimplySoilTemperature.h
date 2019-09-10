@@ -7,6 +7,9 @@
 static void
 AddSoilTemperatureModel(mobius_model *Model)
 {
+	//NOTE: This is a simplified version of the Rankinen soil temperature model.
+	
+	
 	auto WattsPerMetrePerDegreeCelsius				= RegisterUnit(Model, "W/m/°C");
 	auto MegaJoulesPerCubicMetrePerDegreeCelsius	= RegisterUnit(Model, "MJ/m3/°C");
 	auto Dimensionless 								= RegisterUnit(Model);
@@ -71,6 +74,41 @@ AddSoilTemperatureModel(mobius_model *Model)
 	)
 
 }
+
+
+static void
+AddSoilTemperatureModel2(mobius_model *Model)
+{
+	//NOTE: Lindström model (Lindström et. al. 2002)
+	
+	auto Dimensionless  = RegisterUnit(Model);
+	auto DegreesCelsius	= RegisterUnit(Model, "°C");
+	auto PerMM          = RegisterUnit(Model, "1/mm");
+	
+	auto SoilTempParamsGlobal = RegisterParameterGroup(Model, "Global soil temperature parameters");
+	
+	auto SoilTemperatureSensitivityToAirTemperature      = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Soil temperature sensitivity to air temperature", Dimensionless, 1.0, 1.0, 20.0, "Value is proportional to number of days soil temperature lags behind air temperature.");
+	auto SoilTemperatureDeepSoilWeight                   = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Soil temperature deep soil weight", Dimensionless, 0.2, 0.0, 1.0);
+	auto DeepSoilTemperature                             = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Deep soil temperature", DegreesCelsius, 10.0, -30.0, 40.0, "Unless there are measurements, this could be set to equal the yearly mean air temperature.");
+	auto SnowInsulationFactor                            = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Snow insulation factor", PerMM, 0.1, 0.0, 100.0, "Per mm water equivalent");
+	auto InitialSoilTemperature		    	             = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Initial soil temperature", DegreesCelsius, 10.0, -30.0, 40.0);                          
+	
+	auto SnowDepthAsWaterEquivalent = GetEquationHandle(Model, "Snow depth as water equivalent");
+	auto AirTemperature             = GetInputHandle(Model, "Air temperature");
+	
+	auto SoilTemperature = RegisterEquation(Model, "Soil temperature corrected for insulating effect of snow", DegreesCelsius);
+	SetInitialValue(Model, SoilTemperature, InitialSoilTemperature);
+	
+	EQUATION(Model, SoilTemperature,
+		
+		double airtemperatureweight = 1.0 / (PARAMETER(SoilTemperatureSensitivityToAirTemperature) + PARAMETER(SnowInsulationFactor)*RESULT(SnowDepthAsWaterEquivalent));
+		
+		double deepsoilweight = PARAMETER(SoilTemperatureDeepSoilWeight);
+		
+		return (1.0 - airtemperatureweight - deepsoilweight)*LAST_RESULT(SoilTemperature) + airtemperatureweight * INPUT(AirTemperature) + deepsoilweight * PARAMETER(DeepSoilTemperature);
+	)
+}
+
 
 #define SOIL_TEMPERATURE_MODEL_H
 #endif
