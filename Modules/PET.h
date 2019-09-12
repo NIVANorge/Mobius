@@ -44,7 +44,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 		return 2.501 - 2.361e-3 * INPUT(AirTemperature);
 	)
 	
-	EQUATION(Model, PsycrhometricConstant,
+	EQUATION(Model, PsychrometricConstant,
 		double meanBarometricPressure = 101.3 - PARAMETER(Elevation)*(0.01152 - 0.544e-6*PARAMETER(Elevation));
 		return 1.013e-3 * meanBarometricPressure / (0.622 * RESULT(LatentHeatOfVaporization));
 	)
