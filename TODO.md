@@ -4,7 +4,7 @@
 - Modules should be more well-defined. They should have their own version numbers (instead of the version number being tied to the application), and each model entity (parameter, input, equation, etc.) should know what module they are tied to.
 - Expose such data for use in organization e.g. in MobiView.
 - There should be an option for run-time choice of module (i.e. what PET module to use for a specific model run).
-- When accessing a timeseries from another module, one should not have to specify if it is an input timeseries or an equation timeseries.
+- When accessing a timeseries that was declared in another module, one should not be forced to know if it is an input timeseries or an equation timeseries.
 - Parameter group system to be tied to the module system.
 - Index set dependencies to be decoupled from parameter group system? Or at least, get rid of sub-group system and allow parameter groups to have multiple index set dependencies directly.
 
