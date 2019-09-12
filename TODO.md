@@ -8,20 +8,6 @@
 - Parameter group system to be tied to the module system.
 - Index set dependencies to be decoupled from parameter group system? Or at least, get rid of sub-group system and allow parameter groups to have multiple index set dependencies directly.
 
-
-## Syntax
-It could be nice to have registration syntax be something like
-```
-Model.RegisterParameter(Land, "Baseflow index", Dimensionless, 0.0, 0.0, 1.0); //Type auto-inferred from type of default value
-```
-or even
-```
-auto IncaN = Model.RegisterModule("INCA-N", "1.0");
-auto Land = IncaN.RegisterParameterGroup("Land", Reaches, LandscapeUnits);
-auto BFI  = Land.RegisterParameter("Baseflow index", Dimensionless, 0.0, 0.0, 1.0);
-```
-(though it would be a lot of work rewriting all the existing modules and documentation though)
-
 ## Other
 - It would be cleaner just to have a ParameterInt (int64_t) instead of ParameterUInt.
 - Built-in system for running sanity checks on parameter values on model startup.
