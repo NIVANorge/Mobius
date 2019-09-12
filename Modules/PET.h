@@ -8,10 +8,7 @@ static void
 AddPriestleyTaylorPET(mobius_model *Model)
 {
 	auto AirTemperature             = GetInputHandle(Model, "Air temperature");
-	
-	
 	auto SnowDepthAsWaterEquivalent = GetResultHandle(Model, "Snow depth as water equivalent");
-	
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto M              = RegisterUnit(Model, "m");
@@ -19,7 +16,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 	auto kPaPerDegreesC = RegisterUnit(Model, "kPa/°C");
 	auto MJPerM2        = RegisterUnit(Model, "MJ/m2");
 	auto MJPerKg        = RegisterUnit(Model, "MJ/kg");
-	auto Mm             = RegisterUnit(Model, "Mm");
+	auto Mm             = RegisterUnit(Model, "mm");
 	
 	//TODO: Provide ways to estimate these too?
 	auto RelativeHumidity     = RegisterInput(Model, "Relative humidity", Dimensionless);
@@ -94,7 +91,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 		double alphapet = 1.28;
 		double petday = 
 			  alphapet
-			* (RESULT(SlopeOfSaturationPressureCurve) / (RESULT(SlopeOfSaturationPressureCurve) + RESULT(PsychometricConstant))
+			* (RESULT(SlopeOfSaturationPressureCurve) / (RESULT(SlopeOfSaturationPressureCurve) + RESULT(PsychrometricConstant))
 			* RESULT(NetRadiation) / RESULT(LatentHeatOfVaporization);
 		return Max(0.0, petday);
 	)
