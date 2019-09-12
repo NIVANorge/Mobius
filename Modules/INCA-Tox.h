@@ -22,6 +22,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto MPerDay          = RegisterUnit(Model, "m/day");
 	auto PGPerM3          = RegisterUnit(Model, "pg/m3");
 	auto K                = RegisterUnit(Model, "K");
+	auto PerDay           = RegisterUnit(Model, "1/day");
 	
 	auto AtmosphericDryDeposition = RegisterInput(Model, "Atmospheric dry contaminant deposition", NgPerM2PerDay);
 	auto AtmosphericWetDeposition = RegisterInput(Model, "Atmospheric wet contaminant deposition", NgPerM2PerDay);
@@ -47,6 +48,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto OctanolWaterPartitioningCoefficient25 = RegisterParameterDouble(Model, Chemistry, "Octanol-water partitioning coefficient at 25°C", Dimensionless, 0.0);
 	
 	auto AtmosphericContaminantConcentration   = RegisterParameterDouble(Model, Chemistry, "Atmospheric contaminant concentration", PGPerM3, 0.0, 0.0, 100.0);
+	auto ContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant", PerDay, 0.0, 0.0, 1.0);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
 	
@@ -90,6 +92,8 @@ AddIncaToxModule(mobius_model *Model)
 	SetSolver(Model, SoilAirContaminantConcentration, SoilSolver);
 	auto DiffusiveAirSoilExchangeFlux      = RegisterEquation(Model, "Diffusive exchange of contaminants between soil and atmosphere", NgPerKm2PerDay);
 	SetSolver(Model, DiffusiveAirSoilExchangeFlux, SoilSolver);
+	auto SoilContaminantDegradation        = RegisterEquation(Model, "Soil contaminant degradation", NgPerKm2PerDay);
+	SetSolver(Model, SoilContaminantDegradation, SoilSolver);
 	
 	auto SoilWaterVolume                   = RegisterEquation(Model, "Soil water volume", M3PerKm2);
 	auto SoilAirVolume                     = RegisterEquation(Model, "Soil air volume", M3PerKm2);
@@ -105,6 +109,11 @@ AddIncaToxModule(mobius_model *Model)
 	auto SoilContaminantFluxToDirectRunoff = RegisterEquation(Model, "Soil contaminant flux to direct runoff", NgPerKm2PerDay);
 	SetSolver(Model, SoilContaminantFluxToDirectRunoff, SoilSolver);
 	
+	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay);
+	SetSolver(Model, GroundwaterContaminantFluxToReach, SoilSolver);
+	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2);
+	SetSolver(Model, ContaminantMassInGroundwater, SoilSolver);
+	//SetInitialValue
 	
 	EQUATION(Model, HenrysConstant,
 		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
@@ -187,7 +196,6 @@ AddIncaToxModule(mobius_model *Model)
 		return
 			RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
 		  + RESULT(SoilDOCFluxToReach) * RESULT(SoilDOCContaminantConcentration);
-		  //TODO: erosion (from microplastics module) should be able to transport SOC with contaminants in it.
 	)
 	
 	EQUATION(Model, SoilContaminantFluxToGroundwater,
@@ -200,6 +208,15 @@ AddIncaToxModule(mobius_model *Model)
 		return 0.0; //TODO
 	)
 	
+	EQUATION(Model, SoilContaminantDegradation,
+		double degradablemass =
+		  RESULT(SoilWaterVolume) * RESULT(SoilWaterContaminantConcentration)
+		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
+		+ PARAMETER(SoilSOCMass)  * RESULT(SoilSOCContaminantConcentration);
+		
+		return PARAMETER(ContaminantDegradationRateConstant) * degradablemass;
+	)
+	
 	EQUATION(Model, ContaminantMassInSoil,
 		return
 		  RESULT(ContaminantInputsToSoil)
@@ -207,5 +224,20 @@ AddIncaToxModule(mobius_model *Model)
 		- RESULT(SoilContaminantFluxToGroundwater)
 		- RESULT(SoilContaminantFluxToDirectRunoff)
 		+ RESULT(DiffusiveAirSoilExchangeFlux);
+		- RESULT(SoilContaminantDegradation);
+		//TODO: erosion (from microplastics module) should be able to transport SOC with contaminants in it.
 	)
+	
+	EQUATION(Model, GroundwaterContaminantFluxToReach,
+		//TODO: Do we need to care about partitioning here
+		return RESULT(RunoffToReach, Groundwater) * SafeDivide(RESULT(ContaminantMassInGroundwater), RESULT(WaterDepth, Groundwater));
+	)
+	
+	EQUATION(Model, ContaminantMassInGroundwater,
+		return
+		  RESULT(SoilContaminantFluxToGroundwater)
+		- RESULT(GroundwaterContaminantFluxToReach);
+		//TODO: degradation, probably
+	)
+	
 }
