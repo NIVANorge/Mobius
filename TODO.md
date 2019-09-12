@@ -21,3 +21,11 @@ auto Land = IncaNModule->RegisterParameterGroup("Land", Reaches, LandscapeUnits)
 auto BFI  = Land.RegisterParameter("Baseflow index", Dimensionless, 0.0, 0.0, 1.0);
 ```
 (would be a lot of work rewriting all the existing modules and documentation though)
+
+## Other
+- It would be cleaner just to have a ParameterInt (int64_t) instead of ParameterUInt.
+- Built-in system for running sanity checks on parameter values on model startup.
+- See if we could get rid of some of the overhead when calling the equation lambdas as std::function (i.e. maybe make our own function class with fixed static capture storage).
+
+## Future
+- Actual code generator that generates model code based on model file instead of having all equations be lambdas (with std::function callin overhead).
