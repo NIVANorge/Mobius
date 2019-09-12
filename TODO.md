@@ -12,12 +12,12 @@
 ## Syntax
 It could be nice to have registration syntax be something like
 ```
-Model.RegisterParameter(Land, "Baseflow index", Dimensionless, 0.0, 0.0, 1.0);
+Model.RegisterParameter(Land, "Baseflow index", Dimensionless, 0.0, 0.0, 1.0); //Type auto-infered from type of default value
 ```
 or even
 ```
 auto IncaNModule = Model.RegisterModule("INCA-N", "1.0");
 auto Land = IncaNModule->RegisterParameterGroup("Land", Reaches, LandscapeUnits);
-auto BFI  = Land.RegisterParameterDouble("Baseflow index", Dimensionless, 0.0, 0.0, 1.0);
+auto BFI  = Land.RegisterParameter("Baseflow index", Dimensionless, 0.0, 0.0, 1.0);
 ```
 (would be a lot of work rewriting all the existing modules and documentation though)
