@@ -110,5 +110,60 @@ AddSoilTemperatureModel2(mobius_model *Model)
 }
 
 
+/*
+static void
+AddSoilTemperatureModel3(mobius_model *Model)
+{
+	// Zheng, Hunt, Running 93
+	
+	
+	
+	//NOTE: This one is only here because LAST_INPUT is not implemented, so we have to use LAST_RESULT
+	auto AirTemperatureEq = RegisterEquation(Model, "Air temperature", DegreesCelsius); 
+	
+	EQUATION(Model, AirTemperatureEq,
+		return INPUT(AirTemperature);
+	)
+	
+	
+	EQUATION(Model, AirTemperatureRunningMean,
+		double AirTempSum = 0.0;
+		for(u64 Back = 0; Back < 11; ++Back)
+		{
+			AirTempSum += EARLIER_RESULT(AirTempEq, Back);
+		}
+		return AirTempSum / 11.0;
+	)
+	
+	EQUATION(Model, SoilTemperatureRegression,
+		return RESULT(AirTemperatureRunningMean) * PARAMETER(SoilTemperatureRegressionA) + PARAMETER(SoilTemperatureRegressionB);
+	)
+	
+	
+	EQUATION(Model, BareGroundSoilTemperature,
+		double M;
+		double Reg;
+		double M1 = 0.25 //PARAMETER(AirTemperatureSensitivityWhenNoSnow);
+		double M2 = 0.1  //PARAMETER(AirTemperatureSensitivityWhenSnow);
+		double Reg1   = LAST_RESULT(SoilTemperatureRegression);
+		double Reg2   = RESULT(SoilTemperatureRegression);
+		if(RESULT(SnowDepthAsWaterEquivalent) > 1e-6)
+		{
+			M = M2;
+			Reg   = Reg2;
+		}
+		else
+		{
+			M = M1;
+			Reg   = Reg1;
+		}
+		return (RESULT(AirTemperatureEq) - LAST_RESULT(AirTemperatureEq) * Coeff + Reg;
+	)
+	
+	EQUATION(Model, )
+}
+
+*/
+
 #define SOIL_TEMPERATURE_MODEL_H
 #endif
