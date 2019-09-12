@@ -26,7 +26,8 @@ AddPriestleyTaylorPET(mobius_model *Model)
 	auto SolarRadiation       = RegisterInput(Model, "Solar radiation", MJPerM2);
 	auto MaxPossibleRadiation = RegisterInput(Model, "Max possible radiation", MJPerM2); //TODO: At least this one should be something like what is computed in SolarRadiation.h
 	
-	auto Elevation                      = RegisterParameterDouble(Model, "Elevation", M);
+	auto System                         = GetParameterGroupHandle(Model, "System");
+	auto Elevation                      = RegisterParameterDouble(Model, System, "Elevation", M, 0.0, 0.0, 8848.0);
 	
 	auto LatentHeatOfVaporization       = RegisterEquation(Model, "Latent heat of vaporization", MJPerKg);
 	auto PsychrometricConstant          = RegisterEquation(Model, "Psycrhometric constant", kPaPerDegreesC);
