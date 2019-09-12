@@ -16,8 +16,8 @@ Model.RegisterParameter(Land, "Baseflow index", Dimensionless, 0.0, 0.0, 1.0); /
 ```
 or even
 ```
-auto IncaNModule = Model.RegisterModule("INCA-N", "1.0");
-auto Land = IncaNModule->RegisterParameterGroup("Land", Reaches, LandscapeUnits);
+auto IncaN = Model.RegisterModule("INCA-N", "1.0");
+auto Land = IncaN.RegisterParameterGroup("Land", Reaches, LandscapeUnits);
 auto BFI  = Land.RegisterParameter("Baseflow index", Dimensionless, 0.0, 0.0, 1.0);
 ```
 (though it would be a lot of work rewriting all the existing modules and documentation though)
