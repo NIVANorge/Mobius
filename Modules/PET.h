@@ -8,7 +8,7 @@ static void
 AddPriestleyTaylorPET(mobius_model *Model)
 {
 	auto AirTemperature             = GetInputHandle(Model, "Air temperature");
-	auto SnowDepthAsWaterEquivalent = GetResultHandle(Model, "Snow depth as water equivalent");
+	auto SnowDepthAsWaterEquivalent = GetEquationHandle(Model, "Snow depth as water equivalent");
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto M              = RegisterUnit(Model, "m");
@@ -63,7 +63,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 	
 	EQUATION(Model, NetShortwaveRadiation,
 		double sd   = RESULT(SnowDepthAsWaterEquivalent);
-		double srad = RESULT(SolarRadiation);
+		double srad = INPUT(SolarRadiation);
 		
 		if(sd < 0.5) return srad * (1.0 - 0.23);
 		
@@ -91,7 +91,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 		double alphapet = 1.28;
 		double petday = 
 			  alphapet
-			* (RESULT(SlopeOfSaturationPressureCurve) / (RESULT(SlopeOfSaturationPressureCurve) + RESULT(PsychrometricConstant))
+			* (RESULT(SlopeOfSaturationPressureCurve) / (RESULT(SlopeOfSaturationPressureCurve) + RESULT(PsychrometricConstant)))
 			* RESULT(NetRadiation) / RESULT(LatentHeatOfVaporization);
 		return Max(0.0, petday);
 	)
