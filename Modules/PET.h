@@ -80,7 +80,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 	
 	EQUATION(Model, NetLongWaveRadiation,
 		double tempKelvin = (INPUT(AirTemperature) + 273.15);
-		return RESULT(NetEmissivity) * RESULT(CloudCoverFactor) * 4.9e-9 * tempKelvin * tempKelvin * tempKelvin * tempKelvin; //i.e. tempKelvin^4
+		return RESULT(NetEmissivity) * RESULT(CloudCoverFactor) * 4.9e-9 * tempKelvin * tempKelvin * tempKelvin * tempKelvin; //i.e. pow(tempKelvin, 4.0), but this is probably faster.
 	)
 	
 	EQUATION(Model, NetRadiation,

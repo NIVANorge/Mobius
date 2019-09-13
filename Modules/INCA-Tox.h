@@ -240,4 +240,29 @@ AddIncaToxModule(mobius_model *Model)
 		//TODO: degradation, probably
 	)
 	
+	/*
+	
+	EQUATION(Model, DiffuseContaminantOutput,
+	
+	)
+	
+	EQUATION(Model, ReachContaminantInput,
+		double upstreamflux = 0.0;
+		FOREACH_INPUT(Reach,
+			upstreamflux += RESULT(ReachContaminantFlux, *Input);
+		)
+	
+		return
+			upstreamflux
+			+ RESULT(DiffuseContaminantOutput)
+			//from erosion
+			;
+	)
+	
+	EQUATION(Model, ContaminantMassInReach,
+		return
+			  RESULT(ReachContaminantInput)
+			- RESULT(ReachContaminantFlux);
+	)
+	*/
 }
