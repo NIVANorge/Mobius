@@ -5,10 +5,35 @@
 
 
 static void
-AddPriestleyTaylorPET(mobius_model *Model)
+AddDegreeDayPETModule(mobius_model *Model)
+{
+	auto AirTemperature            = GetInputHandle(Modle, "Air temperature");
+	
+	auto Mm              = RegisterUnit(Model, "mm");
+	auto MmPerDegCPerDay = RegisterUnit(Model, "mm/°C/day");
+	
+	auto LandscapeUnits = GetParameterGroupHandle(Model, "Landscape units");
+	auto PETParams      = RegisterParameterGroup(Model, "Potential evapotranspiration", LandscapeUnits);
+	
+	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, PETParams, "Degree-day evapotranspiration", MmPerDegCPerDay, 0.0, 0.12, 0.05,   0.2);
+	
+	auto PotentialEvapotranspiration = RegisterEquation(Model, "Potential evapotranspiration", Mm);
+	
+	
+	EQUATION(Model, PotentialEvapotranspiration,
+		return PARAMETER(DegreeDayEvapotranspiration) * Max(0.0, INPUT(AirTemperature));
+	)
+}
+
+
+static void
+AddPriestleyTaylorPETModule(mobius_model *Model)
 {
 	auto AirTemperature             = GetInputHandle(Model, "Air temperature");
 	auto SnowDepthAsWaterEquivalent = GetEquationHandle(Model, "Snow depth as water equivalent");
+	
+	auto SolarRadiationMax          = GetEquationHandle(Model, "Solar radiation on a clear sky day"); //From SolarRadiation.h : AddMaxSolarRadiationModule
+	//TODO: Need to verify that the computations in "Solar radiation on a clear sky day" are actually good.
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto M              = RegisterUnit(Model, "m");
@@ -21,7 +46,6 @@ AddPriestleyTaylorPET(mobius_model *Model)
 	//TODO: Provide ways to estimate these too?
 	auto RelativeHumidity     = RegisterInput(Model, "Relative humidity", Dimensionless);
 	auto SolarRadiation       = RegisterInput(Model, "Solar radiation", MJPerM2);
-	auto MaxPossibleRadiation = RegisterInput(Model, "Max possible radiation", MJPerM2); //TODO: At least this one should be something like what is computed in SolarRadiation.h
 	
 	auto System                         = GetParameterGroupHandle(Model, "System");
 	auto Elevation                      = RegisterParameterDouble(Model, System, "Elevation", M, 0.0, 0.0, 8848.0);
@@ -75,7 +99,7 @@ AddPriestleyTaylorPET(mobius_model *Model)
 	)
 	
 	EQUATION(Model, CloudCoverFactor,
-		return 0.9 * SafeDivide(INPUT(SolarRadiation), INPUT(MaxPossibleRadiation)) + 0.1;
+		return 0.9 * SafeDivide(INPUT(SolarRadiation), RESULT(SolarRadiationMax)) + 0.1;
 	)
 	
 	EQUATION(Model, NetLongWaveRadiation,
