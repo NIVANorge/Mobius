@@ -59,7 +59,7 @@ def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
 
 ###################################################################################################################
 
-dataset = wr.DataSet.setup_from_parameter_and_input_files('..\..\Applications\Persist\Haelva\persist_params_Haelva.dat', '..\..\Applications\Persist\Haelva\persist_inputs_Haelva.dat')
+dataset = wr.DataSet.setup_from_parameter_and_input_files('..\..\Applications\Persist\Haelva\optimized_params.dat', '..\..\Applications\Persist\Haelva\persist_inputs_Haelva.dat')
 
 if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
     

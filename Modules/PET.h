@@ -33,7 +33,6 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	auto SnowDepthAsWaterEquivalent = GetEquationHandle(Model, "Snow depth as water equivalent");
 	
 	auto SolarRadiationMax          = GetEquationHandle(Model, "Solar radiation on a clear sky day"); //From SolarRadiation.h : AddMaxSolarRadiationModule
-	//TODO: Need to verify that the computations in "Solar radiation on a clear sky day" are actually good.
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto M              = RegisterUnit(Model, "m");
@@ -63,16 +62,19 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	auto PotentialEvapotranspiration    = RegisterEquation(Model, "Potential evapotranspiration", Mm);
 	
 	EQUATION(Model, LatentHeatOfVaporization,
+		//Harrison (1963)
 		return 2.501 - 2.361e-3 * INPUT(AirTemperature);
 	)
 	
 	EQUATION(Model, PsychrometricConstant,
+		//Doorenbos, Pruitt (1977)
 		double meanBarometricPressure = 101.3 - PARAMETER(Elevation)*(0.01152 - 0.544e-6*PARAMETER(Elevation));
+		//Brunt(1952)
 		return 1.013e-3 * meanBarometricPressure / (0.622 * RESULT(LatentHeatOfVaporization));
 	)
 	
 	EQUATION(Model, SaturationVaporPressure,
-		//Tetens(1930), Murray(1967)
+		//Tetens (1930), Murray (1967)
 		return std::exp( (16.78*INPUT(AirTemperature) - 116.9) / (INPUT(AirTemperature) + 237.3) );
 	)
 	

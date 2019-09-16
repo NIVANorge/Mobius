@@ -35,7 +35,7 @@ AddMaxSolarRadiationModule(mobius_model *Model)
 		double latitude = PARAMETER(Latitude);
 	
 		s32 DOY = (s32)CURRENT_DAY_OF_YEAR();
-		return DailyExtraTerrestrialRadiation(latitude, DOY);	
+		return DailyExtraTerrestrialRadiation(latitude, DOY) * 0.8;	//NOTE: Multiplication by 0.8 is a rough estimate of loss of energy in atmosphere
 	)
 }
 
