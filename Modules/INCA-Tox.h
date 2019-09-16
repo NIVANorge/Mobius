@@ -10,8 +10,10 @@ static void
 AddIncaToxModule(mobius_model *Model)
 {
 	auto Dimensionless    = RegisterUnit(Model);
+	auto Ng               = RegisterUnit(Model, "ng");
 	auto NgPerKm2         = RegisterUnit(Model, "ng/km2");
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
+	auto NgPerDay         = RegisterUnit(Model, "ng/day");
 	auto NgPerM2PerDay    = RegisterUnit(Model, "ng/m2/day");
 	auto NgPerM3          = RegisterUnit(Model, "ng/m3");
 	auto NgPerKg          = RegisterUnit(Model, "ng/kg");
@@ -32,6 +34,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Soils          = GetIndexSetHandle(Model, "Soils");
+	auto Reach          = GetIndexSetHandle(Model, "Reaches");
 	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
@@ -60,9 +63,16 @@ AddIncaToxModule(mobius_model *Model)
 	auto SoilDOCMass     = GetEquationHandle(Model, "Soil DOC mass");    //INCA-Tox-C.h
 	auto SoilDOCFluxToReach = GetEquationHandle(Model, "Soil DOC flux to reach"); //INCA-Tox-C
 	auto SoilDOCFluxToGroundwater = GetEquationHandle(Model, "Soil DOC flux to groundwater"); //INCA-Tox-C
+	auto WaterTemperature = GetEquationHandle(Model, "Water temperature"); //WaterTemperature.h
+	auto ReachFlow       = GetEquationHandle(Model, "Reach flow"); //PERSiST.h
+	auto ReachVolume     = GetEquationHandle(Model, "Reach volume"); //PERSiST.h
+	auto ReachDOCOutput  = GetEquationHandle(Model, "Reach DOC output"); //INCA-Tox-C.h
+	auto ReachDOCMass    = GetEquationHandle(Model, "Reach DOC mass");   //INCA-Tox-C.h
 	
+	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //PERSiST.h
+	auto Percent         = GetParameterDoubleHandle(Model, "%");                //PERSiST.h
 	auto MaximumCapacity = GetParameterDoubleHandle(Model, "Maximum capacity"); //PERSiST.h
-	auto SoilSOCMass   = GetParameterDoubleHandle(Model, "Soil SOC mass");      //INCA-Tox-C.h
+	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");      //INCA-Tox-C.h
 	
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
@@ -229,7 +239,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, GroundwaterContaminantFluxToReach,
-		//TODO: Do we need to care about partitioning here
+		//TODO: Do we need to care about partitioning here? Probably only if we ever need to track what enters the reach through DOC and water separately. But not in this initial simple version.
 		return RESULT(RunoffToReach, Groundwater) * SafeDivide(RESULT(ContaminantMassInGroundwater), RESULT(WaterDepth, Groundwater));
 	)
 	
@@ -240,10 +250,43 @@ AddIncaToxModule(mobius_model *Model)
 		//TODO: degradation, probably
 	)
 	
-	/*
+	
+	
+	
+	auto ReachSolver = GetSolverHandle(Model, "Reach solver"); //PERSiST.h
+	
+	auto WaterTemperatureKelvin        = RegisterEquation(Model, "Water temperature in Kelvin", K);
+	
+	auto DiffuseContaminantOutput      = RegisterEquation(Model, "Diffuse contaminant output", NgPerDay);
+	auto TotalDiffuseContaminantOutput = RegisterEquationCumulative(Model, "Total diffuse contaminant output", DiffuseContaminantOutput, LandscapeUnits);
+	auto ReachContaminantInput         = RegisterEquation(Model, "Reach contaminant input", NgPerDay);
+	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng);
+	SetSolver(Model, ContaminantMassInReach, ReachSolver);
+	//SetInitialValue
+	auto ReachContaminantFlux          = RegisterEquation(Model, "Reach contaminant flux", NgPerDay);
+	SetSolver(Model, ReachContaminantFlux, ReachSolver);
+	
+	auto ReachHenrysConstant                      = RegisterEquation(Model, "Reach Henry's constant", PascalM3PerMol);
+	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Reach air-water partitioning coefficient", Dimensionless);
+	auto ReachOctanolWaterPartitioningCoefficient = RegisterEquation(Model, "Reach octanol-water partitioning coefficient", Dimensionless);
+	auto ReachWaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Reach water-SOC partitioning coefficient", M3PerKg);
+	auto ReachWaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Reach water-DOC partitioning coefficient", M3PerKg);
+	
+	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3);
+	SetSolver(Model, ReachWaterContaminantConcentration, ReachSolver);
+	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg);
+	SetSolver(Model, ReachDOCContaminantConcentration, ReachSolver);
+	
+	
+	
+	
 	
 	EQUATION(Model, DiffuseContaminantOutput,
-	
+		return
+		( RESULT(SoilContaminantFluxToReach)
+		+ RESULT(GroundwaterContaminantFluxToReach)
+		)
+		* PARAMETER(CatchmentArea) * PARAMETER(Percent)*0.01;
 	)
 	
 	EQUATION(Model, ReachContaminantInput,
@@ -254,15 +297,83 @@ AddIncaToxModule(mobius_model *Model)
 	
 		return
 			upstreamflux
-			+ RESULT(DiffuseContaminantOutput)
-			//from erosion
+			+ RESULT(TotalDiffuseContaminantOutput)
+			//+ erosion? But that is maybe tracked differently
 			;
 	)
+	
+	
+	EQUATION(Model, ReachContaminantFlux,
+		return
+		  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration)
+		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration);
+		// + suspended sediment stuff
+	)
+	
 	
 	EQUATION(Model, ContaminantMassInReach,
 		return
 			  RESULT(ReachContaminantInput)
 			- RESULT(ReachContaminantFlux);
+			// exchange with stream bed
+			// breakdown
+			// exchange with air
 	)
-	*/
+	
+	
+	EQUATION(Model, WaterTemperatureKelvin,
+		return RESULT(WaterTemperature) + 273.15;
+	)
+	
+	EQUATION(Model, ReachHenrysConstant,
+		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
+		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+		double tdiff = (1.0 / RESULT(WaterTemperatureKelvin) - 1.0/(273.15 + 25.0));
+		double LogHT = LogH25 - ((1e3 * PARAMETER(AirWaterPhaseTransferEnthalpy) + R*(273.15 + 25.0)) / (std::log(10.0)*R) )  * tdiff;
+		return std::pow(10.0, LogHT);
+	)
+	
+	EQUATION(Model, ReachAirWaterPartitioningCoefficient,
+		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+		return RESULT(ReachHenrysConstant) / (R * RESULT(WaterTemperatureKelvin));
+	)
+	
+	EQUATION(Model, ReachOctanolWaterPartitioningCoefficient,
+		double LogKOW25 = std::log10(PARAMETER(OctanolWaterPartitioningCoefficient25));
+		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+		double tdiff = (1.0 / RESULT(WaterTemperatureKelvin) - 1.0/(273.15 + 25.0));
+		double LogKOWT = LogKOW25 - (1e3*PARAMETER(OctanolWaterPhaseTransferEntalphy) / (std::log(10.0)*R))   * tdiff;
+		return std::pow(10.0, LogKOWT);
+	)
+	
+	EQUATION(Model, ReachWaterSOCPartitioningCoefficient,
+		double densityofSOC = 1900.0; // kg/m^3
+		double rOC = 0.41;   // Empirical constant.
+		return RESULT(ReachOctanolWaterPartitioningCoefficient) * rOC / densityofSOC;
+	)
+	
+	EQUATION(Model, ReachWaterDOCPartitioningCoefficient,
+		double densityofDOC = 1100.0; // kg/m^3
+		return std::pow(10.0, 0.93*std::log10(RESULT(ReachOctanolWaterPartitioningCoefficient)) - 0.45) / densityofDOC;
+	)
+	
+	EQUATION(Model, ReachWaterContaminantConcentration,
+		return
+			RESULT(ContaminantMassInReach) /
+			  (RESULT(ReachWaterDOCPartitioningCoefficient)*RESULT(ReachDOCMass) /*+SOC suspended solids stuff*/ + RESULT(ReachVolume));
+	)
+	
+	EQUATION(Model, ReachDOCContaminantConcentration,
+		return RESULT(ReachWaterContaminantConcentration) * RESULT(ReachWaterDOCPartitioningCoefficient);
+	)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

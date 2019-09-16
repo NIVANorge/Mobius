@@ -10,6 +10,7 @@
 #include "../../Modules/Persist.h"
 //#include "../../Modules/INCA-Microplastics.h"
 #include "../../Modules/SoilTemperature.h"
+#include "../../Modules/WaterTemperature.h"
 #include "../../Modules/INCA-Tox-C.h"
 #include "../../Modules/INCA-Tox.h"
 
@@ -23,6 +24,7 @@ int main()
 	AddPersistModel(Model);
 	//AddINCAMicroplasticsModel(Model);
 	AddSoilTemperatureModel(Model);
+	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
 	
