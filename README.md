@@ -1,11 +1,15 @@
-# Important note (2019-08-05):
+# Recent large updates
+### (2019-09-18):
+The module system was formalized. MobiView and model dlls compiled before and after this change are not compatible with each other respectively.
+### (2019-08-26):
+Timeseries in input files no longer have to be ended with 'end_timeseries'
+### (2019-08-05):
 We recently changed the format of dates in parameter and input files. A date should now be formatted like
 2003-01-01
 instead of what it was previously
 "2003-01-01"
 I.e. remove the quotations.
-### New change (2019-08-26):
-Timeseries in input files no longer have to be ended with 'end_timeseries'
+
 
 
 # Mobius
