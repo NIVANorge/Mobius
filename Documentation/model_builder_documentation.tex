@@ -803,9 +803,9 @@ In Example \ref{ex:persistpercout} we are in one of PERSiST's soil layers, and w
 There are a few prerequisites for allowing you to do this
 \begin{enumerate}[i]
 \item The parameter {\tt Infiltration} has to depend on the index set {\tt SoilBoxes}.
-\item Moreover, {\tt SoilBoxes} has to be the immediate index set dependency for {\tt Infiltration}. This means that {\tt Infiltration} is in a parameter group that indexes over {\tt SoilBoxes} directly (as opposed to only having a parent group that indexes over {\tt SoilBoxes}).
+\item Moreover, {\tt SoilBoxes} has to be the right-most index set dependency for {\tt Infiltration}.
 \end{enumerate}
-Even if you explicitly index only one index set, the parameter can have more than one index set dependency. I.e. its parameter group can be a member of another parameter group which itself has an index set dependency. When you explicitly index only the immediate index set dependency, the index of the higher level index sets is as usual inferred to be the current index of these index sets in the execution state. Moreover, the call will register a dependency for {\tt PercolationOut} on the higher level index set(s) that were automatically inferred, but not on {\tt SoilBoxes}. (Though, {\tt PercolationOut} does get a dependency on  {\tt SoilBoxes} any way from the call to {\tt CURRENT\_INDEX(SoilBoxes)}).
+Even if you explicitly index only one index set, the parameter can have more than one index set dependency. When you explicitly index only the rightmost index set dependency, the index of the other index sets is as usual inferred to be the current index of these index sets in the execution state. Moreover, the call will register a dependency for {\tt PercolationOut} on the higher other set(s) that were automatically inferred, but not on {\tt SoilBoxes}. (Though, {\tt PercolationOut} does get a dependency on  {\tt SoilBoxes} any way from the call to {\tt CURRENT\_INDEX(SoilBoxes)}).
 
 \begin{example}
 Equation {\tt A} refers to {\tt PARAMETER(B, IX)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units"\}, where "Landscape units" is the immediate dependency, and "Reaches" is a dependency of the parent group of the immediate group. The index {\tt IX} will refer to an index of "Landscape units". The framework determines that {\tt A} has to index over "Reaches".
@@ -814,7 +814,7 @@ Equation {\tt A} refers to {\tt PARAMETER(B, IX)} in its equation body. Paramete
 You can also provide more than one explicit index.
 
 \begin{example}\label{ex:multipleexplicitindexes}
-Equation {\tt A} refers to {\tt PARAMETER(B, IX, IY)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units", "Soils"\}, where "Soils" is the immediate dependency, "Landscape units" is a dependency of the parent group of the immediate group, and "Reaches" is again a dependency of a parent of that group. The index {\tt IX} will refer to an index of "Landscape units", {\tt IY} of "Soils". The framework determines that {\tt A} has to index over "Reaches".
+Equation {\tt A} refers to {\tt PARAMETER(B, IX, IY)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units", "Soils"\}, The index {\tt IX} will refer to an index of "Landscape units", {\tt IY} of "Soils". The framework determines that {\tt A} has to index over "Reaches".
 \end{example}
 
 Example \ref{ex:multipleexplicitindexes} also generalizes to higher numbers of explicit indexes. If you only want to explicitly index one of the higher index sets and let the framework infer the index of the immediate one, you can do the following.
@@ -1195,17 +1195,9 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apientry{RegisterParameterGroup}{Registration procedure}{
 \apipar{mobius\_model *Model}{Pointer to the model object.}
 \apipar{const char *Name}{The full name of the parameter group.}
-\apipar{index\_set\_h IndexSet}{(optional) Handle to an index set that the group should index over.}
+\apipar{index\_set\_h IndexSets...}{(0 or more arguments) Handles to index sets that the group should index over.}
 \apiret{An {\tt parameter\_group\_h} handle to the newly registered parameter group.}
 \apidesc{Register a new parameter group with the model.}
-}
-
-\apientry{SetParentGroup}{Registration procedure}{
-\apipar{mobius\_model *Model}{Pointer to the model object.}
-\apipar{parameter\_group\_h Child}{A handle to the child group.}
-\apipar{parameter\_group\_h Parent}{A handle to the parent group.}
-\apiret{{\tt void}}
-\apidesc{Set {\tt Parent} to be the parent group of {\tt Child}. Every parameter in {\tt Child} will index both over the index set of {\tt Child} and the index set of {\tt Parent}.}
 }
 
 \apientry{RegisterInput}{Registration procedure}{
