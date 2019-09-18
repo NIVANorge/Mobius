@@ -17,7 +17,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("PERSiST", "1.0");
+	mobius_model *Model = BeginModelDefinition("PERSiST");
 	
 	AddPersistModel(Model);
 	

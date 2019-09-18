@@ -3,6 +3,8 @@
 static void
 AddSimplySedimentModule(mobius_model *Model)
 {
+	BeginModule(Model, "SimplySed", "0.4");
+	
 	auto Dimensionless = RegisterUnit(Model);
 	auto Kg            = RegisterUnit(Model, "kg");
 	auto KgPerDay      = RegisterUnit(Model, "kg/day");
@@ -170,4 +172,6 @@ AddSimplySedimentModule(mobius_model *Model)
 		//Converting flow m3/s->m3/day, and converting kg/m3 to mg/l. TODO: make conversion functions
 		return 1e3 * SafeDivide(RESULT(DailyMeanSuspendedSedimentFlux), 86400.0 * RESULT(DailyMeanReachFlow));
 	)
+	
+	EndModule(Model);
 }

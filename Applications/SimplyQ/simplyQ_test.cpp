@@ -2,7 +2,7 @@
 
 #define MOBIUS_TEST_FOR_NAN 0
 #define MOBIUS_EQUATION_PROFILING 0
-#define MOBIUS_PRINT_TIMING_INFO 0
+#define MOBIUS_PRINT_TIMING_INFO 1
 
 #include "../../mobius.h"
 
@@ -15,7 +15,7 @@
 
 int main()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyQ", "0.0");
+	mobius_model *Model = BeginModelDefinition("SimplyQ");
 	
 	AddSimplyHydrologyModule(Model);
 	

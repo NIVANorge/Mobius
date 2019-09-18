@@ -10,7 +10,7 @@ static void
 AddINCACModel(mobius_model *Model)
 {
 	//NOTE: Uses PERSiST, SoilTemperature, SolarRadiation
-	
+	BeginModule(Model, "INCA-C", "1.0");
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Mm             = RegisterUnit(Model, "mm");
@@ -40,8 +40,8 @@ AddINCACModel(mobius_model *Model)
 	
 	auto SO4Deposition  = RegisterInput(Model, "SO4 deposition", MeqPerM2);
 	
-	auto Land = GetParameterGroupHandle(Model, "Landscape units");
-	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
+	auto Land =    RegisterParameterGroup(Model, "Carbon by land class", LandscapeUnits);
+	auto Reaches = RegisterParameterGroup(Model, "Carbon by subcatchment", Reach);
 	
 	//TODO: As always, find better default values, min/max, description..
 	auto MinRateDepth                 = RegisterParameterDouble(Model, Land, "Min rate depth", Mm, 50.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their lowest rate.");
@@ -724,4 +724,5 @@ AddINCACModel(mobius_model *Model)
 		return SafeDivide(RESULT(DICMassInReach), RESULT(ReachVolume)) * 1000.0;
 	)
 	
+	EndModule(Model);
 }

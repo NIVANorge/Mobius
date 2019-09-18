@@ -22,12 +22,17 @@ DailyExtraTerrestrialRadiation(double Latitude, s32 DayOfYear)
 static void
 AddMaxSolarRadiationModule(mobius_model *Model)
 {
+	BeginModule(Model, "Solar radiation", "0.1");
+	
+	
+	auto Metres         = RegisterUnit(Model, "m");
 	auto Degrees        = RegisterUnit(Model, "°");
 	auto MJPerM2PerDay  = RegisterUnit(Model, "MJ/M2/day");
 	
-	auto System = GetParameterGroupHandle(Model, "System");
+	auto Solar    = RegisterParameterGroup(Model, "Solar radiation");
 	
-	auto Latitude  = RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0);
+	auto Latitude  = RegisterParameterDouble(Model, Solar, "Latitude", Degrees, 60.0, -90.0, 90.0);
+	auto Elevation = RegisterParameterDouble(Model, Solar, "Elevation", Metres, 0.0, 0.0, 8848.0);  //This is technically not used here, but is used by basically every other module that relies on this one.
 	
 	auto SolarRadiationMax = RegisterEquation(Model, "Solar radiation on a clear sky day", MJPerM2PerDay);
 	
@@ -37,22 +42,23 @@ AddMaxSolarRadiationModule(mobius_model *Model)
 		s32 DOY = (s32)CURRENT_DAY_OF_YEAR();
 		return DailyExtraTerrestrialRadiation(latitude, DOY) * 0.8;	//NOTE: Multiplication by 0.8 is a rough estimate of loss of energy in atmosphere
 	)
+	
+	EndModule(Model);
 }
 
 static void
 AddSolarRadiationModule(mobius_model *Model)
 {
 	AddMaxSolarRadiationModule(Model);
-	
+
+	BeginModule(Model, "Solar radiation", "0.1");  //NOTE: just add this into the same module as above
 	//NOTE: This module is made primarily for use in INCA-C and INCA-P
 	
 	auto WPerM2         = RegisterUnit(Model, "W/m^2");
-	auto Metres         = RegisterUnit(Model, "m");
 	
 	auto SolarRadiationTimeseries = RegisterInput(Model, "Solar radiation", WPerM2);
 	
-	auto System    = GetParameterGroupHandle(Model, "System");
-	auto Elevation = RegisterParameterDouble(Model, System, "Elevation", Metres, 0.0, 0.0, 8848.0);
+	auto Elevation = GetParameterDoubleHandle(Model, "Elevation");
 	
 	auto SolarRadiationMax = GetEquationHandle(Model, "Solar radiation on a clear sky day");
 	auto SolarRadiation    = RegisterEquation(Model,  "Solar radiation", WPerM2);
@@ -72,4 +78,6 @@ AddSolarRadiationModule(mobius_model *Model)
 			
 		return SWR * 11.5740741;  //NOTE: Converting MJ/m2/day to W/m2
 	)
+	
+	EndModule(Model);
 }

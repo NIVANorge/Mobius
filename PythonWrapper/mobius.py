@@ -100,10 +100,10 @@ def initialize(dllname) :
 	
 	mobiusdll.DllGetAllParameters.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_char_p), ctypes.c_char_p]
 	
-	mobiusdll.DllGetAllResultsCount.argtypes = [ctypes.c_void_p]
+	mobiusdll.DllGetAllResultsCount.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 	mobiusdll.DllGetAllResultsCount.restype = ctypes.c_uint64
 	
-	mobiusdll.DllGetAllResults.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_char_p)]
+	mobiusdll.DllGetAllResults.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_char_p), ctypes.c_char_p]
 	
 	mobiusdll.DllGetAllInputsCount.argtypes = [ctypes.c_void_p]
 	mobiusdll.DllGetAllInputsCount.restype = ctypes.c_uint64
@@ -519,11 +519,11 @@ class DataSet :
 		'''
 		Get the name and type of all the equations in the model as a list of pairs of strings.
 		'''
-		num = mobiusdll.DllGetAllResultsCount(self.datasetptr)
+		num = mobiusdll.DllGetAllResultsCount(self.datasetptr, '__all!!__')
 		check_dll_error()
 		namearray = (ctypes.c_char_p * num)()
 		typearray = (ctypes.c_char_p * num)()
-		mobiusdll.DllGetAllResults(self.datasetptr, namearray, typearray)
+		mobiusdll.DllGetAllResults(self.datasetptr, namearray, typearray, '__all!!__')
 		check_dll_error()
 		return [(name.decode('utf-8'), type.decode('utf-8')) for name, type in zip(namearray, typearray)]
 		

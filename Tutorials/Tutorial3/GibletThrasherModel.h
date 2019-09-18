@@ -5,6 +5,9 @@
 static void
 AddGibletThrasherModel(mobius_model *Model)
 {
+	//It can be nice to organize parts of the model in modules for reusability with other models. Though in this case we only use one module for the entire model. Module organization shows up in e.g. MobiView.
+	BeginModule(Model, "Giblet-Thrasher", "1.0");
+	
 	auto Dimensionless = RegisterUnit(Model, "dimensionless");
 	auto Days = RegisterUnit(Model, "days");
 	auto Individuals = RegisterUnit(Model, "individuals");
@@ -37,12 +40,11 @@ AddGibletThrasherModel(mobius_model *Model)
 	auto GibletWillingnessToMigrate = RegisterParameterDouble(Model, All, "Giblet willingness to migrate", Dimensionless, 0.5);
 	auto ThrasherWillingnessToMigrate = RegisterParameterDouble(Model, All, "Thrasher willingness to migrate", Dimensionless, 0.4);
 	
-	auto MigrationMatrixColumn = RegisterParameterGroup(Model, "Migration matrix column", GeographicalLocation);
-	SetParentGroup(Model, MigrationMatrixColumn, Population);
+	//NOTE: The MigrationMatrix has a double dependency on the "Geographical location" index set. So the "Migration matrix" parameter has one value fore each pair of geographical locations, which one can visualize as a matrix where both the rows and columns are indexed by "Geographical location"
+	auto MigrationMatrixGrp = RegisterParameterGroup(Model, "Migration matrix", GeographicalLocation, GeographicalLocation);
 	
-	//NOTE: The MigrationMatrix has a double dependency on the "Geographical location" index set. This is because it is in a group that depends on GeographicalLocation, and that group is again inside a parent group that also depends on GeographicalLocation.
 	// The migration matrix says something about how easy it is to move from one location to another
-	auto MigrationMatrix = RegisterParameterDouble(Model, MigrationMatrixColumn, "Migration matrix", Dimensionless, 1.0, 0.0, 1.0);
+	auto MigrationMatrix = RegisterParameterDouble(Model, MigrationMatrixGrp, "Migration matrix", Dimensionless, 1.0, 0.0, 1.0);
 	
 	
 	auto GibletMigration = RegisterEquation(Model, "Giblet migration rate", IndividualsPerDay);
@@ -130,4 +132,7 @@ AddGibletThrasherModel(mobius_model *Model)
 		return RESULT(GibletBirth) - RESULT(GibletPopulation) * RESULT(ThrasherPopulation) * PARAMETER(PredationRate) + RESULT(GibletMigration);
 	)
 	
+	
+	//Remember to end the module if you started one.
+	EndModule(Model);
 }

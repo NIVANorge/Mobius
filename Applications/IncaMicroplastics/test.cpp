@@ -16,7 +16,7 @@ int main()
     const char *InputFile = "testinputs.dat";
 	const char *ParameterFile = "testparameters.dat";
 	
-	mobius_model *Model = BeginModelDefinition("INCA-Microplastics", "0.0");
+	mobius_model *Model = BeginModelDefinition("INCA-Microplastics");
 	
 	auto Days   = RegisterUnit(Model, "days");
 	auto System = RegisterParameterGroup(Model, "System");

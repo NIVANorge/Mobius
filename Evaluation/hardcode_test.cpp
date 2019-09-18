@@ -162,7 +162,7 @@ int main()
 	//TODO: We have to do a much more rigorous timing comparison where we run each version many times.
 	
 	
-	mobius_model *Model = BeginModelDefinition("SimplyQ", "0.1");
+	mobius_model *Model = BeginModelDefinition("SimplyQ");
 	
 	AddSimplyHydrologyModule(Model);
 	

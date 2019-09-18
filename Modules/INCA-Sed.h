@@ -7,6 +7,8 @@
 static void
 AddINCASedModel(mobius_model *Model)
 {
+	BeginModule(Model, "INCA-Sed", "0.1");
+	
 	//NOTE: Is designed to work with PERSiST
 	
 	auto Dimensionless = RegisterUnit(Model);
@@ -176,13 +178,12 @@ AddINCASedModel(mobius_model *Model)
 	auto SmallestDiameterOfSedimentClass        = RegisterParameterDouble(Model, SedimentSizeClass, "Smallest diameter of sediment in size class", Metres, 0.0, 0.0, 1.0);
 	auto LargestDiameterOfSedimentClass         = RegisterParameterDouble(Model, SedimentSizeClass, "Largest diameter of sediment in size class", Metres, 2e-6, 0.0, 1.0);
 	
-	auto SedimentReach = RegisterParameterGroup(Model, "Sediment reach", Reach);
-	SetParentGroup(Model, SedimentReach, SedimentSizeClass);
+	auto SedimentReach = RegisterParameterGroup(Model, "Sediment by subcatchment", SizeClass, Reach);
 	
 	auto EffluentSedimentConcentration   = RegisterParameterDouble(Model, SedimentReach, "Effluent sediment concentration", MgPerL, 0.0);
 	auto EffluentSedimentConcentrationTimeseries = RegisterInput(Model, "Effluent sediment concentration", MgPerL);
 	
-	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
+	auto Reaches = RegisterParameterGroup(Model, "Erosion and transport by subcatchment", Reach);
 	
 	auto BankErosionScalingFactor        = RegisterParameterDouble(Model, Reaches, "Bank erosion scaling factor", KgPerM2PerM3SPerDay, 1.0);
 	auto BankErosionNonlinearCoefficient = RegisterParameterDouble(Model, Reaches, "Bank erosion non-linear coefficient", Dimensionless, 1.0);
@@ -326,6 +327,8 @@ AddINCASedModel(mobius_model *Model)
 			- RESULT(ReachSuspendedSedimentOutput) 
 			+ PARAMETER(ReachLength) * PARAMETER(ReachWidth) * (RESULT(SedimentEntrainment) + clayrelease - RESULT(SedimentDeposition));
 	)
+	
+	EndModule(Model);
 }
 
 

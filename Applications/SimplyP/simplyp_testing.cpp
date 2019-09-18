@@ -12,7 +12,7 @@
 
 int main()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyP", "0.3");
+	mobius_model *Model = BeginModelDefinition("SimplyP");
 	
 	AddSimplyPHydrologyModule(Model);
 	AddSimplyPSedimentModule(Model);

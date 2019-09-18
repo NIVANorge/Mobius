@@ -16,7 +16,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("HBV", "1.0");
+	mobius_model *Model = BeginModelDefinition("HBV");
 	
 	AddHBVModel(Model);
 	

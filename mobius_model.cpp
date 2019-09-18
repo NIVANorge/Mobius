@@ -1,13 +1,12 @@
 
 static mobius_model *
-BeginModelDefinition(const char *Name = "(unnamed model)", const char *Version = "0.0")
+BeginModelDefinition(const char *Name = "(unnamed model)")
 {
 	mobius_model *Model = new mobius_model {};
 	
 	Model->DefinitionTimer = BeginTimer();
 	
 	Model->Name = Name;
-	Model->Version = Version;
 	
 	auto Days 	      = RegisterUnit(Model, "days");
 	auto System       = RegisterParameterGroup(Model, "System");
@@ -253,19 +252,11 @@ EndModelDefinition(mobius_model *Model)
 	
 	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
 	{
-		const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
+		parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 		parameter_group_h CurrentGroup = Spec.Group;
-		std::vector<index_set_h>& Dependencies = Model->Parameters.Specs[ParameterHandle].IndexSetDependencies;
-		while(IsValid(CurrentGroup))
-		{
-			parameter_group_spec *GroupSpec = &Model->ParameterGroups.Specs[CurrentGroup.Handle];
-			if(IsValid(GroupSpec->IndexSet)) //NOTE: We never insert index set 0 as a dependency. If this is a global parameter, we want to register it as having no dependencies.
-			{
-				Dependencies.insert(Dependencies.begin(), GroupSpec->IndexSet); 
-			}
-			
-			CurrentGroup = GroupSpec->ParentGroup;
-		}
+		const parameter_group_spec &GroupSpec = Model->ParameterGroups.Specs[CurrentGroup.Handle];
+		
+		Spec.IndexSetDependencies = GroupSpec.IndexSets;
 	}
 	
 	/////////////////////// Find all dependencies of equations on parameters, inputs and other results /////////////////////
@@ -1483,7 +1474,19 @@ RunModel(mobius_data_set *DataSet)
 	datetime ModelStartTime = GetStartDate(DataSet); //NOTE: This reads the "Start date" parameter.
 	
 #if MOBIUS_PRINT_TIMING_INFO
-	std::cout << "Running model " << Model->Name << " V" << Model->Version << " for " << Timesteps << " timesteps, starting at " << ModelStartTime.ToString() << std::endl;
+	std::cout << "Running model " << Model->Name;
+	if(Model->Modules.Count() > 1)
+	{
+		std::cout << " with modules (";
+		for(entity_handle ModuleHandle = 1; ModuleHandle < Model->Modules.Count(); ++ModuleHandle)
+		{
+			const module_spec &Module = Model->Modules.Specs[ModuleHandle];
+			std::cout << Module.Name << " V" << Module.Version;
+			if(ModuleHandle != Model->Modules.Count()-1) std::cout << ", ";
+		}
+		std::cout << ")";
+	}
+	std::cout << " for " << Timesteps << " timesteps starting at " << ModelStartTime.ToString() << std::endl;
 #endif
 	
 	//NOTE: Allocate input storage in case it was not allocated during setup.

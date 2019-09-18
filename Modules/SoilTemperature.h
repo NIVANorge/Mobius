@@ -13,6 +13,8 @@
 static void
 AddSoilTemperatureModel(mobius_model *Model)
 {
+	BeginModule(Model, "INCA Soil temperature", "1.0");
+	
 	auto WattsPerMetrePerDegreeCelsius				= RegisterUnit(Model, "W/m/°C");
 	auto MegaJoulesPerCubicMetrePerDegreeCelsius	= RegisterUnit(Model, "MJ/m3/°C");
 	auto Dimensionless 								= RegisterUnit(Model);
@@ -22,15 +24,16 @@ AddSoilTemperatureModel(mobius_model *Model)
 	auto Seconds									= RegisterUnit(Model, "s");
 	auto DegreesCelsius								= RegisterUnit(Model, "°C");
 	
-	auto Land = GetParameterGroupHandle(Model, "Landscape units");    //NOTE: This should be declared by the main model
+	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
+	auto SoilTemp = RegisterParameterGroup(Model, "Soil temperature", LandscapeUnits);
 	
-	auto ThermalConductivitySoil 			= RegisterParameterDouble(Model, Land, "Thermal conductivity of soil", 				WattsPerMetrePerDegreeCelsius,			 0.7, 0.1, 2.0);
-	auto SpecificHeatCapacityFreezeThaw	    = RegisterParameterDouble(Model, Land, "Specific heat capacity due to freeze/thaw", MegaJoulesPerCubicMetrePerDegreeCelsius, 6.6, 1.0, 200.0, "Controls the energy released when water is frozen and energy consumed under melting");
-	auto WaterEquivalentFactor	            = RegisterParameterDouble(Model, Land, "Water equivalent factor", 	   Dimensionless, 	  0.3,  0.01,   1.0, "1mm of snow would produce this amount of water when melted");
-	auto SnowDepthSoilTemperatureFactor	    = RegisterParameterDouble(Model, Land, "Snow depth / soil temperature factor", 		PerCm, 								    -0.02, -0.03, -0.001, "Defines an empirical relationship between snow pack depth and its insulating effect on soils");
-	auto SpecificHeatCapacitySoil			= RegisterParameterDouble(Model, Land, "Specific heat capacity of soil",			MegaJoulesPerCubicMetrePerDegreeCelsius, 1.1, 0.5, 2.0);
-	auto SoilDepth							= RegisterParameterDouble(Model, Land, "Soil depth",								Metres,									 0.2, 0.0, 20.0, "Depth at which soil temperature is predicted.");
-	auto InitialSoilTemperature		    	= RegisterParameterDouble(Model, Land, "Initial soil temperature",					DegreesCelsius,							20.0, -30.0, 50.0);
+	auto ThermalConductivitySoil 			= RegisterParameterDouble(Model, SoilTemp, "Thermal conductivity of soil", 				WattsPerMetrePerDegreeCelsius,			 0.7, 0.1, 2.0);
+	auto SpecificHeatCapacityFreezeThaw	    = RegisterParameterDouble(Model, SoilTemp, "Specific heat capacity due to freeze/thaw", MegaJoulesPerCubicMetrePerDegreeCelsius, 6.6, 1.0, 200.0, "Controls the energy released when water is frozen and energy consumed under melting");
+	auto WaterEquivalentFactor	            = RegisterParameterDouble(Model, SoilTemp, "Water equivalent factor", 	   Dimensionless, 	  0.3,  0.01,   1.0, "1mm of snow would produce this amount of water when melted");
+	auto SnowDepthSoilTemperatureFactor	    = RegisterParameterDouble(Model, SoilTemp, "Snow depth / soil temperature factor", 		PerCm, 								    -0.02, -0.03, -0.001, "Defines an empirical relationship between snow pack depth and its insulating effect on soils");
+	auto SpecificHeatCapacitySoil			= RegisterParameterDouble(Model, SoilTemp, "Specific heat capacity of soil",			MegaJoulesPerCubicMetrePerDegreeCelsius, 1.1, 0.5, 2.0);
+	auto SoilDepth							= RegisterParameterDouble(Model, SoilTemp, "Soil depth",								Metres,									 0.2, 0.0, 20.0, "Depth at which soil temperature is predicted.");
+	auto InitialSoilTemperature		    	= RegisterParameterDouble(Model, SoilTemp, "Initial soil temperature",					DegreesCelsius,							20.0, -30.0, 50.0);
 	
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");  //NOTE: This should be declared by the main model
 	
@@ -69,6 +72,8 @@ AddSoilTemperatureModel(mobius_model *Model)
 		return RESULT(SnowAsWaterEquivalent)
 					/ 10.0 / PARAMETER(WaterEquivalentFactor);
 	)
+	
+	EndModule(Model);
 }
 
 #define SOIL_TEMPERATURE_MODEL_H

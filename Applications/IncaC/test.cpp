@@ -19,7 +19,7 @@ int main()
 	const char *ParameterFile = "langtjernparameters.dat";
 	
 	
-	mobius_model *Model = BeginModelDefinition("INCA-C", "0.0");
+	mobius_model *Model = BeginModelDefinition("INCA-C");
 	
 	auto Days   = RegisterUnit(Model, "days");
 	auto System = RegisterParameterGroup(Model, "System");

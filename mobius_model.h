@@ -16,6 +16,8 @@ bool operator!=(const Type &A, const Type &B) { return A.Handle != B.Handle; } \
 bool operator<(const Type &A, const Type &B) { return A.Handle < B.Handle; } \
 inline bool IsValid(Type H) { return H.Handle > 0; }
 
+MODEL_ENTITY_HANDLE(module_h)
+
 MODEL_ENTITY_HANDLE(unit_h)
 
 MODEL_ENTITY_HANDLE(input_h)
@@ -200,6 +202,11 @@ struct unit_spec
 	//NOTE: We don't need to put anything else here at the moment. Maybe eventually?
 };
 
+struct module_spec
+{
+	const char *Name;
+	const char *Version;
+};
 
 struct value_set_accessor;
 
@@ -215,11 +222,13 @@ typedef MOBIUS_SOLVER_FUNCTION(mobius_solver_function);
 struct parameter_group_spec
 {
 	const char *Name;
-	parameter_group_h ParentGroup;
-	index_set_h IndexSet;
+	//parameter_group_h ParentGroup;
+	std::vector<index_set_h> IndexSets;
+	
+	module_h Module;
 	
 	std::vector<entity_handle> Parameters;
-	std::vector<parameter_group_h> ChildrenGroups;
+	//std::vector<parameter_group_h> ChildrenGroups;
 };
 
 enum index_set_type
@@ -268,6 +277,8 @@ struct equation_spec
 {
 	const char *Name;
 	equation_type Type;
+	
+	module_h Module;
 	
 	unit_h Unit;
 	
@@ -447,7 +458,11 @@ struct mobius_model
 {
 	//TODO: It should probably instead have a list of versions of the submodules, and these should be set by the submodules instead during registration, not on application level.
 	const char *Name;
-	const char *Version;
+	//const char *Version;
+	
+	module_h CurrentModule = {};
+	
+	entity_registry<module_spec> Modules;
 	
 	entity_registry<equation_spec> Equations;
 	std::vector<mobius_equation> EquationBodies;
@@ -767,6 +782,7 @@ GET_ENTITY_HANDLE(parameter_time_h, Parameters, ParameterTime)
 GET_ENTITY_HANDLE(index_set_h, IndexSets, IndexSet)
 GET_ENTITY_HANDLE(parameter_group_h, ParameterGroups, ParameterGroup)
 GET_ENTITY_HANDLE(solver_h, Solvers, Solver)
+GET_ENTITY_HANDLE(module_h, Modules, Module)
 
 #undef GET_ENTITY_HANDLE
 
@@ -810,6 +826,24 @@ RegisterUnit(mobius_model *Model, const char *Name = "dimensionless")
 	entity_handle Unit = Model->Units.Register(Name);
 	
 	return {Unit};
+}
+
+inline module_h
+BeginModule(mobius_model *Model, const char *Name, const char *Version)
+{
+	entity_handle Module = Model->Modules.Register(Name);
+	
+	Model->Modules.Specs[Module].Version = Version;
+	
+	Model->CurrentModule = {Module};
+	
+	return {Module};
+}
+
+inline void
+EndModule(mobius_model *Model)
+{
+	Model->CurrentModule = {};
 }
 
 inline index_set_h
@@ -858,18 +892,21 @@ RequireIndex(mobius_model *Model, index_set_h IndexSet, const char *IndexName)
 }
 
 
+template<typename... T>
 inline parameter_group_h
-RegisterParameterGroup(mobius_model *Model, const char *Name, index_set_h IndexSet = {0})
+RegisterParameterGroup(mobius_model *Model, const char *Name, T... IndexSets)
 {
 	REGISTRATION_BLOCK(Model)
 	
 	entity_handle ParameterGroup = Model->ParameterGroups.Register(Name);
 	
-	Model->ParameterGroups.Specs[ParameterGroup].IndexSet = IndexSet;
+	Model->ParameterGroups.Specs[ParameterGroup].IndexSets = {IndexSets...};
+	Model->ParameterGroups.Specs[ParameterGroup].Module = Model->CurrentModule;
 	
 	return {ParameterGroup};
 }
 
+/*
 inline void
 SetParentGroup(mobius_model *Model, parameter_group_h Child, parameter_group_h Parent)
 {
@@ -884,6 +921,7 @@ SetParentGroup(mobius_model *Model, parameter_group_h Child, parameter_group_h P
 	ChildSpec.ParentGroup = Parent;
 	ParentSpec.ChildrenGroups.push_back(Child);
 }
+*/
 
 inline input_h
 RegisterInput(mobius_model *Model, const char *Name, unit_h Unit = {0}, bool IsAdditional = false)
@@ -1062,6 +1100,7 @@ RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, equation_ty
 	
 	Model->Equations.Specs[Equation].Type = Type;
 	Model->Equations.Specs[Equation].Unit = Unit;
+	Model->Equations.Specs[Equation].Module = Model->CurrentModule;
 	
 	return {Equation};
 }

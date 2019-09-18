@@ -8,7 +8,7 @@ static void
 AddSoilTemperatureModel(mobius_model *Model)
 {
 	//NOTE: This is a simplified version of the Rankinen soil temperature model.
-	
+	BeginModule(Model, "Simple soil temperature", "0.1");
 	
 	auto WattsPerMetrePerDegreeCelsius				= RegisterUnit(Model, "W/m/°C");
 	auto MegaJoulesPerCubicMetrePerDegreeCelsius	= RegisterUnit(Model, "MJ/m3/°C");
@@ -72,7 +72,8 @@ AddSoilTemperatureModel(mobius_model *Model)
 		return RESULT(COUPSoilTemperature)
 			* std::exp(PARAMETER(SnowDepthSoilTemperatureFactor) * (RESULT(SnowAsWaterEquivalent)/10.0));
 	)
-
+	
+	EndModule(Model);
 }
 
 
@@ -80,6 +81,8 @@ static void
 AddSoilTemperatureModel2(mobius_model *Model)
 {
 	//NOTE: Lindström model (Lindström et. al. 2002)
+	BeginModule(Model, "Lindström soil temperature", "1.0");
+	
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");
@@ -107,6 +110,8 @@ AddSoilTemperatureModel2(mobius_model *Model)
 		
 		return (1.0 - airtemperatureweight - deepsoilweight)*LAST_RESULT(SoilTemperature) + airtemperatureweight * INPUT(AirTemperature) + deepsoilweight * PARAMETER(DeepSoilTemperature);
 	)
+	
+	EndModule(Model);
 }
 
 

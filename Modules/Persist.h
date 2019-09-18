@@ -11,6 +11,8 @@
 static void
 AddPersistModel(mobius_model *Model)
 {
+	BeginModule(Model, "PERSiST", "1.2");
+	
 	auto Mm                = RegisterUnit(Model, "mm");
 	auto MmPerDay          = RegisterUnit(Model, "mm/day");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
@@ -26,7 +28,9 @@ AddPersistModel(mobius_model *Model)
 	auto System = GetParameterGroupHandle(Model, "System");
 	
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
-	auto Land = RegisterParameterGroup(Model, "Landscape units", LandscapeUnits);
+	auto Land = RegisterParameterGroup(Model, "Hydrology by land class", LandscapeUnits);
+	
+	auto SoilBoxes = RegisterIndexSet(Model, "Soils");
 	
 	auto SnowMultiplier              = RegisterParameterDouble(Model, Land, "Snow multiplier",             Dimensionless,     1.0,  0.5,    1.5, "Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling");
 	auto SnowMeltTemperature         = RegisterParameterDouble(Model, Land, "Snow melt temperature",       DegreesCelsius,    0.0, -4.0,    4.0, "The temperature at or above which snow can melt");
@@ -38,7 +42,7 @@ AddPersistModel(mobius_model *Model)
     auto CanopyInterception          = RegisterParameterDouble(Model, Land, "Canopy interception",         MmPerDay,          0.0,  0.0,    0.3, "The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation");
 
 	
-	auto SoilsLand = RegisterParameterGroup(Model, "Soils land", LandscapeUnits);
+	auto SoilsLand = RegisterParameterGroup(Model, "Soil characteristics by land class", SoilBoxes, LandscapeUnits);
 
     auto InitialWaterDepth = RegisterParameterDouble(Model, SoilsLand, "Initial water depth", Mm, 200.0, 0.0, 9999.0, "The initial depth of water in a box at the start of a simulation");
 	auto RelativeAreaIndex = RegisterParameterDouble(Model, SoilsLand, "Relative area index", Dimensionless, 1.0, 0.0, 1.0, "The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0");
@@ -53,19 +57,15 @@ AddPersistModel(mobius_model *Model)
 	//auto Porosity = RegisterParameterDouble(Model, SoilsLand, "Porosity", Dimensionless,  0.2,    0.1, 1.0, "The void fraction of a box which is able to hold water");
 	//auto InundationOffset = RegisterParameterDouble(Model, SoilsLand,"Inundation offset", Mm, 0.0) ;
     
+	auto BoxType = RegisterParameterGroup(Model, "Soil box type", SoilBoxes);
 	
-	auto SoilBoxes = RegisterIndexSet(Model, "Soils");
-	auto Soils = RegisterParameterGroup(Model, "Soils", SoilBoxes);
-	
-	auto ThisIsAQuickBox = RegisterParameterBool(Model, Soils, "This is a quick box", true);
+	auto ThisIsAQuickBox = RegisterParameterBool(Model, BoxType, "This is a quick box", true);
 	//auto AllowInundation = RegisterParameterBool(Model, Soils, "Allow inundation", false);
 	//auto AllowInfiltration = RegisterParameterBool(Model, Soils, "Allow infiltration", false);
 	//auto UseThisBoxInSMDCalculation = RegisterParameterBool(Model, Soils, "Use this box in SMD calculation", true);
-	
-    SetParentGroup(Model, SoilsLand, Soils);
 
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
-	auto Reaches = RegisterParameterGroup(Model, "Reaches", Reach);
+	auto Reaches = RegisterParameterGroup(Model, "Reach and subcatchment characteristics", Reach);
 	
 	auto SquareKm = RegisterUnit(Model, "km2");
 	auto CubicMetersPerSecond = RegisterUnit(Model, "m3/s");
@@ -88,26 +88,25 @@ AddPersistModel(mobius_model *Model)
 
 	auto InitialStreamFlow = RegisterParameterDouble(Model, Reaches, "Initial stream flow", CubicMetersPerSecond, 0.1, 0.0001, 9999.0, "The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.");
 	
-	auto LandUsePercentages = RegisterParameterGroup(Model, "Landscape percentages", LandscapeUnits);
+	auto LandUsePercentages = RegisterParameterGroup(Model, "Land use percentages", Reach, LandscapeUnits);
 
     auto PercentU = RegisterUnit(Model, "%");
 
     auto Percent = RegisterParameterDouble(Model, LandUsePercentages, "%", PercentU, 25.0, 0.0, 100.0, "The percentage of a subcatchment occupied by a specific land cover type");
-	
-	SetParentGroup(Model, LandUsePercentages, Reaches);
 
 
 	//TODO: Allow parameter groups to have multiple index sets so that the matrix does not have to be built in three group stages?
 	
-	auto MatrixCol = RegisterParameterGroup(Model, "Percolation to", SoilBoxes);
-	auto PercolationMatrix = RegisterParameterDouble(Model, MatrixCol, "Percolation matrix", Dimensionless, 0.05, 0.0, 1.0);
+	auto Percolation = RegisterParameterGroup(Model, "Percolation", LandscapeUnits, SoilBoxes, SoilBoxes);
+	auto PercolationMatrix = RegisterParameterDouble(Model, Percolation, "Percolation matrix", Dimensionless, 0.05, 0.0, 1.0);
 	
+	/*
 	auto MatrixRow = RegisterParameterGroup(Model, "Percolation from", SoilBoxes);
 	SetParentGroup(Model, MatrixCol, MatrixRow);
 	
 	auto MatrixLand = RegisterParameterGroup(Model, "Percolation", LandscapeUnits);
 	SetParentGroup(Model, MatrixRow, MatrixLand);
-
+	*/
 	
 	auto SnowFall = RegisterEquation(Model, "Snow fall", MmPerDay);
 	auto SnowMelt = RegisterEquation(Model, "Snow melt", MmPerDay);
@@ -417,7 +416,9 @@ AddPersistModel(mobius_model *Model)
 	EQUATION(Model, ReachDepth,
 		//return RESULT(ReachFlow) / (RESULT(ReachVelocity) * PARAMETER(ReachWidth));
 		return RESULT(ReachVolume) / (PARAMETER(ReachWidth) * PARAMETER(ReachLength));
-	)	
+	)
+	
+	EndModule(Model);
 }
 
 #define PERSIST_MODEL_H

@@ -16,7 +16,7 @@ int main()
 	const char *ParameterFile = "tarlandparameters.dat";
 	
 	
-	mobius_model *Model = BeginModelDefinition("INCA-Sed", "0.0");
+	mobius_model *Model = BeginModelDefinition("INCA-Sed");
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);

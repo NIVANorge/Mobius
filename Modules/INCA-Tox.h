@@ -9,6 +9,8 @@
 static void
 AddIncaToxModule(mobius_model *Model)
 {
+	BeginModule(Model, "INCA-Tox", "0.00.0.0.23");
+	
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");
 	auto NgPerKm2         = RegisterUnit(Model, "ng/km2");
@@ -41,7 +43,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	
 	auto Chemistry = RegisterParameterGroup(Model, "Chemistry");
-	auto Land      = GetParameterGroupHandle(Model, "Landscape units");
+	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits);
 
 	//TODO: As always, find better default, min, max values for parameters!
 	
@@ -375,5 +377,5 @@ AddIncaToxModule(mobius_model *Model)
 	
 	
 	
-	
+	EndModule(Model);
 }

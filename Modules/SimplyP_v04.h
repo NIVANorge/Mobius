@@ -23,6 +23,8 @@
 static void
 AddSimplyPModel(mobius_model *Model)
 {
+	BeginModule(Model, "SimplyP", "0.4");
+	
 	// UNITS
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Kg             = RegisterUnit(Model, "kg");
@@ -365,6 +367,9 @@ AddSimplyPModel(mobius_model *Model)
 	EQUATION(Model, SRPConcentration,
 		return RESULT(TDPConcentration) * PARAMETER(SRPFraction);
 	)
+	
+	
+	EndModule(Model);
 }
 /*
 static void

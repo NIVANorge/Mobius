@@ -11,7 +11,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("Giblet-thrasher model", "1.0");
+	mobius_model *Model = BeginModelDefinition("Giblet-Thrasher model");
 	
 	AddGibletThrasherModel(Model);
 	

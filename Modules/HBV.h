@@ -114,6 +114,9 @@ static void AddSnowRoutine(mobius_model *Model)
 	)
 }
 
+
+//TODO: These PET modules are a little bogus. Use better ones from other files instead?
+
 static void
 AddPotentialEvapotranspirationModuleV1(mobius_model *Model)
 {
@@ -225,6 +228,7 @@ AddSoilMoistureRoutine(mobius_model *Model)
 			  RESULT(SoilMoistureRecharge)
 			- RESULT(Evapotranspiration);
 	)
+
 }
 
 
@@ -278,7 +282,7 @@ AddGroundwaterResponseRoutine(mobius_model *Model)
 		double storage = RESULT(GroundwaterStorage);
 		double slowflow = storage * K1;
 		return slowflow;
-	)                                              
+	)    
 }
 
 inline double
@@ -358,7 +362,6 @@ static void
 AddReachFlowRoutine(mobius_model *Model)
 {
 	//NOTE: This almost just copied from PERSiST.
-	
 	auto M3PerDay = RegisterUnit(Model, "m3/day");
 	auto M3       = RegisterUnit(Model, "m3");
 	auto MPerDay  = RegisterUnit(Model, "m/day");
@@ -460,12 +463,16 @@ AddReachFlowRoutine(mobius_model *Model)
 static void
 AddHBVModel(mobius_model *Model)
 {
+	BeginModule(Model, "HBV", "0.2");
+	
 	AddSnowRoutine(Model);
 	AddPotentialEvapotranspirationModuleV2(Model);
 	AddSoilMoistureRoutine(Model);
 	AddGroundwaterResponseRoutine(Model);
 	AddWaterRoutingRoutine(Model);
 	AddReachFlowRoutine(Model);
+	
+	EndModule(Model);
 }
 
 #define HBV_H

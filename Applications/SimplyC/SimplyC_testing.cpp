@@ -21,7 +21,7 @@ int main()
 	const char *ParameterFile = "Boyne/params_Boyne_GW.dat";
 	
 	
-	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1"); //Name, version
+	mobius_model *Model = BeginModelDefinition("SimplyC"); //Name, version
 	
 	//Call functions declared earlier
 	AddSimplyHydrologyModule(Model);

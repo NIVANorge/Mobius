@@ -7,12 +7,14 @@
 static void
 AddDegreeDayPETModule(mobius_model *Model)
 {
+	BeginModule(Model, "Degree-day PET", "0.1");
+	
 	auto AirTemperature            = GetInputHandle(Modle, "Air temperature");
 	
 	auto Mm              = RegisterUnit(Model, "mm");
 	auto MmPerDegCPerDay = RegisterUnit(Model, "mm/°C/day");
 	
-	auto LandscapeUnits = GetParameterGroupHandle(Model, "Landscape units");
+	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto PETParams      = RegisterParameterGroup(Model, "Potential evapotranspiration", LandscapeUnits);
 	
 	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, PETParams, "Degree-day evapotranspiration", MmPerDegCPerDay, 0.0, 0.12, 0.05,   0.2);
@@ -23,12 +25,16 @@ AddDegreeDayPETModule(mobius_model *Model)
 	EQUATION(Model, PotentialEvapotranspiration,
 		return PARAMETER(DegreeDayEvapotranspiration) * Max(0.0, INPUT(AirTemperature));
 	)
+	
+	EndModule(Model);
 }
 
 
 static void
 AddPriestleyTaylorPETModule(mobius_model *Model)
 {
+	BeginModule(Model, "Priestley-Taylor PET");
+	
 	auto AirTemperature             = GetInputHandle(Model, "Air temperature");
 	auto SnowDepthAsWaterEquivalent = GetEquationHandle(Model, "Snow depth as water equivalent");
 	
@@ -46,8 +52,7 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	auto RelativeHumidity     = RegisterInput(Model, "Relative humidity", Dimensionless);
 	auto SolarRadiation       = RegisterInput(Model, "Solar radiation", MJPerM2);
 	
-	auto System                         = GetParameterGroupHandle(Model, "System");
-	auto Elevation                      = RegisterParameterDouble(Model, System, "Elevation", M, 0.0, 0.0, 8848.0);
+	auto Elevation                      = GetParameterDoubleHandle(Model, "Elevation"); //From SolarRadiation.h : AddMaxSolarRadiationModule
 	
 	auto LatentHeatOfVaporization       = RegisterEquation(Model, "Latent heat of vaporization", MJPerKg);
 	auto PsychrometricConstant          = RegisterEquation(Model, "Psycrhometric constant", kPaPerDegreesC);
@@ -121,4 +126,6 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 			* RESULT(NetRadiation) / RESULT(LatentHeatOfVaporization);
 		return Max(0.0, petday);
 	)
+	
+	EndModule(Model);
 }

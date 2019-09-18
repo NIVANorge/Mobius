@@ -44,6 +44,12 @@ DllEncounteredError(char *ErrmsgOut)
 	return Code;
 }
 
+DLLEXPORT const char *
+DllGetModelName(void *DataSetPtr)
+{
+	return ((mobius_data_set *)DataSetPtr)->Model->Name;
+}
+
 DLLEXPORT void
 DllRunModel(void *DataSetPtr)
 {
@@ -574,22 +580,60 @@ DllGetInputIndexSets(void *DataSetPtr, char *InputName, const char **NamesOut)
 }
 
 DLLEXPORT u64
+DllGetAllModulesCount(void *DataSetPtr)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	return DataSet->Model->Modules.Count()-1;
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
+DLLEXPORT void
+DllGetAllModules(void *DataSetPtr, const char **NamesOut, const char **VersionsOut)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	for(entity_handle ModuleHandle = 1; ModuleHandle < DataSet->Model->Modules.Count(); ++ModuleHandle)
+	{
+		NamesOut[ModuleHandle-1] = DataSet->Model->Modules.Specs[ModuleHandle].Name;
+		VersionsOut[ModuleHandle-1] = DataSet->Model->Modules.Specs[ModuleHandle].Version;
+	}
+	
+	CHECK_ERROR_END
+}
+
+
+DLLEXPORT bool
+DllIsParameterGroupName(void *DataSetPtr, char *Name)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	return DataSet->Model->ParameterGroups.NameToHandle.find(Name) != DataSet->Model->ParameterGroups.NameToHandle.end();
+	
+	CHECK_ERROR_END
+	
+	return false;
+}
+
+
+DLLEXPORT u64
 DllGetParameterGroupIndexSetsCount(void *DataSetPtr, char *ParameterGroupName)
 {
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	parameter_group_h ParameterGroup = GetParameterGroupHandle(DataSet->Model, ParameterGroupName);
-	u64 Count = 0;
 	
-	while(IsValid(ParameterGroup))
-	{
-		const parameter_group_spec &Spec = DataSet->Model->ParameterGroups.Specs[ParameterGroup.Handle];
-		if(IsValid(Spec.IndexSet)) ++Count;
-		ParameterGroup = Spec.ParentGroup;
-	}
-	
-	return Count;
+	return (u64)DataSet->Model->ParameterGroups.Specs[ParameterGroup.Handle].IndexSets.size();
 	
 	CHECK_ERROR_END
 	
@@ -604,34 +648,30 @@ DllGetParameterGroupIndexSets(void *DataSetPtr, char *ParameterGroupName, const 
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	parameter_group_h ParameterGroup = GetParameterGroupHandle(DataSet->Model, ParameterGroupName);
 	
-	size_t Idx = 0;
-	while(IsValid(ParameterGroup))
+	const std::vector<index_set_h> &IndexSets = DataSet->Model->ParameterGroups.Specs[ParameterGroup.Handle].IndexSets;
+	for(size_t Idx = 0; Idx < IndexSets.size(); ++Idx)
 	{
-		const parameter_group_spec &Spec = DataSet->Model->ParameterGroups.Specs[ParameterGroup.Handle];
-		if(IsValid(Spec.IndexSet))
-		{
-			NamesOut[Idx] = GetName(DataSet->Model, Spec.IndexSet);
-			++Idx;
-		}
-		ParameterGroup = Spec.ParentGroup;
+		NamesOut[Idx] = GetName(DataSet->Model, IndexSets[Idx]);
 	}
 	
 	CHECK_ERROR_END
 }
 
 DLLEXPORT u64
-DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ParentGroupName)
+DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ModuleName)
 {
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	const mobius_model *Model = DataSet->Model;
 	
-	parameter_group_h ParentGroup = {0};
+	bool All = ModuleName && strcmp(ModuleName, "__all!!__") == 0;  //NOTE: Kind of stupid way to do it. Basically there are two default cases. Either we want groups not belonging to the top level or we want all parameter groups. Can't handle both using ModuleName==0
 	
-	if(ParentGroupName && strlen(ParentGroupName) > 0)
+	module_h Module = {0};
+	
+	if(ModuleName && strlen(ModuleName) > 0 && !All)
 	{
-		ParentGroup = GetParameterGroupHandle(Model, ParentGroupName);
+		Module = GetModuleHandle(Model, ModuleName);
 	}
 	
 	u64 Count = 0;
@@ -639,7 +679,7 @@ DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ParentGroupName)
 	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
 	{
 		const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
-		if(ParentGroup == Spec.ParentGroup) ++Count;
+		if(All || Module == Spec.Module) ++Count;
 	}
 	
 	return Count;
@@ -650,24 +690,26 @@ DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ParentGroupName)
 }
 
 DLLEXPORT void
-DllGetAllParameterGroups(void *DataSetPtr, const char **NamesOut, const char *ParentGroupName)
+DllGetAllParameterGroups(void *DataSetPtr, const char **NamesOut, const char *ModuleName)
 {
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	const mobius_model *Model = DataSet->Model;
 	
-	parameter_group_h ParentGroup = {0};
-	if(ParentGroupName && strlen(ParentGroupName) > 0)
+	bool All = ModuleName && strcmp(ModuleName, "__all!!__") == 0;
+	
+	module_h Module = {0};
+	if(ModuleName && strlen(ModuleName) > 0 && !All)
 	{
-		ParentGroup = GetParameterGroupHandle(Model, ParentGroupName);
+		Module = GetModuleHandle(Model, ModuleName);
 	}
 	
 	size_t Idx = 0;
 	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
 	{
 		const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
-		if(ParentGroup == Spec.ParentGroup)
+		if(All || Module == Spec.Module)
 		{
 			NamesOut[Idx] = Spec.Name;
 			++Idx;
@@ -737,12 +779,34 @@ DllGetAllParameters(void *DataSetPtr, const char **NamesOut, const char **TypesO
 }
 
 DLLEXPORT u64
-DllGetAllResultsCount(void *DataSetPtr)
+DllGetAllResultsCount(void *DataSetPtr, const char *ModuleName)
 {
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	return (u64)(DataSet->Model->Equations.Count() - 1);
+	
+	bool All = ModuleName && strcmp(ModuleName, "__all!!__") == 0; //See comment on parameter groups above
+	
+	module_h Module = {};
+	if(ModuleName && strlen(ModuleName) > 0 && !All)
+	{
+		Module = GetModuleHandle(DataSet->Model, ModuleName);
+	}
+	
+	
+	if(All)
+	{
+		return (u64)(DataSet->Model->Equations.Count() - 1);
+	}
+	else
+	{
+		u64 Count = 0;
+		for(entity_handle EquationHandle = 1; EquationHandle < DataSet->Model->Equations.Count(); ++EquationHandle)
+		{
+			if(DataSet->Model->Equations.Specs[EquationHandle].Module == Module) ++Count;
+		}
+		return Count;
+	}
 	
 	CHECK_ERROR_END
 	
@@ -750,17 +814,30 @@ DllGetAllResultsCount(void *DataSetPtr)
 }
 
 DLLEXPORT void
-DllGetAllResults(void *DataSetPtr, const char **NamesOut, const char **TypesOut)
+DllGetAllResults(void *DataSetPtr, const char **NamesOut, const char **TypesOut, const char *ModuleName)
 {
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	for(size_t Idx = 0; Idx < DataSet->Model->Equations.Count() - 1; ++Idx)
+	
+	bool All = ModuleName && strcmp(ModuleName, "__all!!__") == 0;
+	
+	module_h Module = {};
+	if(ModuleName && strlen(ModuleName) > 0 && !All)
 	{
-		entity_handle Handle = Idx + 1;
-		const equation_spec &Spec = DataSet->Model->Equations.Specs[Handle];
-		NamesOut[Idx] = Spec.Name;
-		TypesOut[Idx] = GetEquationTypeName(Spec.Type);
+		Module = GetModuleHandle(DataSet->Model, ModuleName);
+	}
+	
+	size_t Idx = 0;
+	for(entity_handle EquationHandle = 1; EquationHandle < DataSet->Model->Equations.Count(); ++EquationHandle)
+	{
+		const equation_spec &Spec = DataSet->Model->Equations.Specs[EquationHandle];
+		if(All || Spec.Module == Module)
+		{
+			NamesOut[Idx] = Spec.Name;
+			TypesOut[Idx] = GetEquationTypeName(Spec.Type);
+			++Idx;
+		}
 	}
 	
 	CHECK_ERROR_END

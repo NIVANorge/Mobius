@@ -78,6 +78,8 @@ ActivationControl(double X, double Threshold, double RelativeActivationDistance)
 static void
 AddSimplyPHydrologyModule(mobius_model *Model)
 {
+	BeginModule(Model, "SimplyP hydrology", "0.3");
+	
 	auto Degrees = RegisterUnit(Model, "°");
 	auto System = GetParameterGroupHandle(Model, "System");
 	RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
@@ -143,8 +145,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.05, 40.0, "Note: arable and improved grassland are grouped as 'agricultural' land, and only the arable soil hydrology parameters are used");
 	
 	// General parameters that vary by land class and reach
-	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", LandscapeUnits);
-	SetParentGroup(Model, SubcatchmentGeneral, ReachParams);
+	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", Reach, LandscapeUnits);
 	
 	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0, "Total proportion of land use in the sub-catchment. Include any newly-converted land in the total (any of this total that is newly-converted from another land class is accounted for later)");
 	
@@ -434,12 +435,16 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	EQUATION(Model, DailyMeanReachFlowMm,
 		return ConvertM3PerSecondToMmPerDay(RESULT(DailyMeanReachFlow), PARAMETER(CatchmentArea));
 	)
+	
+	EndModule(Model);
 }
 
 
 static void
 AddSimplyPSedimentModule(mobius_model *Model)
 {
+	BeginModule(Model, "SimplyP Sediment", "0.3");
+	
 	auto Dimensionless = RegisterUnit(Model);
 	auto Kg            = RegisterUnit(Model, "kg");
 	auto KgPerDay      = RegisterUnit(Model, "kg/day");
@@ -601,11 +606,15 @@ AddSimplyPSedimentModule(mobius_model *Model)
 		//Converting flow m3/s->m3/day, and converting kg/m3 to mg/l. TODO: make conversion functions
 		return 1e3 * SafeDivide(RESULT(DailyMeanSuspendedSedimentFlux), 86400.0 * RESULT(DailyMeanReachFlow));
 	)
+	
+	EndModule(Model);
 }
 
 static void
 AddSimplyPPhosphorusModule(mobius_model *Model)
 {
+	BeginModule(Model, "SimplyP phosphorous", "0.3");
+	
 	// UNITS
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Kg             = RegisterUnit(Model, "kg");
@@ -1084,11 +1093,15 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	EQUATION(Model, SRPConcentration,
 		return RESULT(TDPConcentration) * PARAMETER(SRPFraction);
 	)
+	
+	EndModule(Model);
 }
 
 static void
 AddSimplyPInputToWaterBodyModule(mobius_model *Model)
 {
+	BeginModule(Model, "SimplyP water body input", "0.3");
+	
 	auto M3PerSecond = RegisterUnit(Model, "m^3/s");
 	auto KgPerDay    = RegisterUnit(Model, "kg/day");
 	
@@ -1200,6 +1213,7 @@ AddSimplyPInputToWaterBodyModule(mobius_model *Model)
 		return sum;
 	)
 	
+	EndModule(Model);
 }
 
 

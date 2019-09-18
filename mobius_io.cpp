@@ -112,7 +112,14 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	
 	const mobius_model *Model = DataSet->Model;
 	
-	fprintf(File, "# Parameter file generated for %s V%s", Model->Name, Model->Version);
+	fprintf(File, "# Parameter file generated for model %s, containing modules (", Model->Name);
+	for(entity_handle ModuleHandle = 1; ModuleHandle < Model->Modules.Count(); ++ModuleHandle)
+	{
+		const module_spec &Module = Model->Modules.Specs[ModuleHandle];
+		fprintf(File, "%s V%s", Module.Name, Module.Version);
+		if(ModuleHandle != Model->Modules.Count()-1) fprintf(File, ", ");
+	}
+	fprintf(File, ") ");
 	
 	//NOTE: put_time is not implemented before gcc version 5
 #if defined(__GNUC__) && __GNUC__ >= 5
@@ -121,7 +128,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 		auto TM = *std::localtime(&T);
 		std::stringstream Oss;
 		Oss << std::put_time(&TM, "%Y-%m-%d %H:%M:%S");
-		fprintf(File, " at %s", Oss.str().data());
+		fprintf(File, "at %s", Oss.str().data());
 	}
 #endif
 	fprintf(File, "\n\n");

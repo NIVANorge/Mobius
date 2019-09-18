@@ -3,7 +3,7 @@
 static void
 AddSimplyCModel(mobius_model *Model)
 {
-	
+	BeginModule(Model, "SimplyC", "test_01")
 	// Inputs
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");
 
@@ -184,6 +184,6 @@ AddSimplyCModel(mobius_model *Model)
 		return 1000.0 * SafeDivide(RESULT(StreamDOCMass), RESULT(ReachVolume));
 	)
 	
-	
+	EndModule(Model);
 }
 

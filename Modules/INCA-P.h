@@ -24,6 +24,8 @@ SorptionComputation(double SorptionScalingFactor, double TDPConcentration, doubl
 static void
 AddINCAPModel(mobius_model *Model)
 {
+	BeginModule(Model, "INCA-P", "0.1");
+	
 	auto Dimensionless = RegisterUnit(Model);
 	auto GCPerM2       = RegisterUnit(Model, "gC/m^2");
 	auto GCPerM2PerDay = RegisterUnit(Model, "gC/m^2/day");
@@ -52,7 +54,9 @@ AddINCAPModel(mobius_model *Model)
 	
 	auto IncaSolver = RegisterSolver(Model, "Inca solver", 0.1, IncaDascru);
 	
+	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Soils = GetIndexSetHandle(Model, "Soils");
+	auto Reach = GetIndexSetHandle(Model, "Reaches");
 	
 	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
@@ -109,7 +113,7 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	
-	auto Land = GetParameterGroupHandle(Model, "Landscape units");
+	auto Land = RegisterParameterGroup(Model, "Phosphorous by land class", LandscapeUnits);
 	
 	
 	//TODO: As always, find good default/min/max values and descriptions for parameters.
@@ -474,10 +478,8 @@ AddINCAPModel(mobius_model *Model)
 	
 	
 	
-	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
+	auto Reaches = RegisterParameterGroup(Model, "Phosphorous by subcatchment and reach", Reach);
 	
-	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
-	auto Reach =          GetIndexSetHandle(Model, "Reaches");
 	auto SizeClass =      GetIndexSetHandle(Model, "Sediment size class");
 	
 	auto PPEnrichmentFactor = RegisterParameterDouble(Model, Reaches, "PP enrichment factor", Dimensionless, 1.0);
@@ -912,4 +914,6 @@ AddINCAPModel(mobius_model *Model)
 	EQUATION(Model, EpiphyteBiomass,
 		return RESULT(EpiphyteGrowthRate) - RESULT(EpiphyteDeathRate);
 	)
+	
+	EndModule(Model);
 }

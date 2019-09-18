@@ -3,7 +3,7 @@
 static void
 AddSimplyCModel(mobius_model *Model)
 {
-	
+	BeginModule(Model, "test_02")
 	// Inputs
 	auto SO4Deposition = RegisterInput(Model, "SO4 deposition");
 
@@ -179,6 +179,6 @@ AddSimplyCModel(mobius_model *Model)
 		return 1000.0 * SafeDivide(RESULT(StreamDOCMass), RESULT(ReachVolume));
 	)
 	
-	
+	EndModule(Model);
 }
 

@@ -14,7 +14,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("SimplyP", "0.3");
+	mobius_model *Model = BeginModelDefinition("SimplyP");
 	
 	AddSimplyPHydrologyModule(Model);
 	AddSimplyPSedimentModule(Model);

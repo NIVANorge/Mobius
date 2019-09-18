@@ -19,7 +19,7 @@ int main()
     const char *InputFile = "testinputs.dat";
 	const char *ParameterFile = "testparameters.dat";
 	
-	mobius_model *Model = BeginModelDefinition("INCA-Tox", "0.0");
+	mobius_model *Model = BeginModelDefinition("INCA-Tox");
 	
 	AddPersistModel(Model);
 	//AddINCAMicroplasticsModel(Model);

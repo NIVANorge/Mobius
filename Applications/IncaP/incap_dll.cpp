@@ -22,7 +22,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("INCA-P", "0.0");
+	mobius_model *Model = BeginModelDefinition("INCA-P");
 	
 	AddPersistModel(Model);
 	AddSoilTemperatureModel(Model);

@@ -14,6 +14,8 @@
 static void
 AddIncaToxDOCModule(mobius_model *Model)
 {
+	BeginModule(Model, "INCA-Tox DOC", "0.1");
+	
 	auto MgPerL   = RegisterUnit(Model, "mg/l");
 	auto Kg       = RegisterUnit(Model, "kg");
 	auto KgPerDay = RegisterUnit(Model, "kg/day");
@@ -30,8 +32,8 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
 	
 	
-	auto Land = GetParameterGroupHandle(Model, "Landscape units");
-	auto Reach = GetParameterGroupHandle(Model, "Reaches");
+	auto Land = RegisterParameterGroup(Model, "Carbon by land class", LandscapeUnits);
+	auto Reach = RegisterParameterGroup(Model, "Carbon by subcatchment", Reaches);
 	
 	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerKm2, 0.0, 0.0, 1e7);
 	auto SoilWaterBaselineDOCConcentration = RegisterParameterDouble(Model, Land, "Soil water baseline DOC concentration", MgPerL, 0.0, 0.0, 20.0);
@@ -121,4 +123,5 @@ AddIncaToxDOCModule(mobius_model *Model)
 		return SafeDivide(RESULT(ReachDOCMass), RESULT(ReachVolume)) * 1000.0; // Convert kg/m3 -> mg/l
 	)
 	
+	EndModule(Model);
 }

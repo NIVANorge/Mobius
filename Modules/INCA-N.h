@@ -11,6 +11,8 @@ static void
 AddIncaNModel(mobius_model *Model)
 {
 	//NOTE: Uses Persist, SoilTemperature, WaterTemperature
+	BeginModule(Model, "INCA-N", "1.2");
+	
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Reach          = GetIndexSetHandle(Model, "Reaches");
@@ -35,7 +37,7 @@ AddIncaNModel(mobius_model *Model)
 	auto KgPerM3            = RegisterUnit(Model, "kg/m3");
 	auto DegreesCelsius     = RegisterUnit(Model, "°C");
 	
-	auto Land = GetParameterGroupHandle(Model, "Landscape units");
+	auto Land = RegisterParameterGroup(Model, "Nitrate by land class", LandscapeUnits);
 	
 	auto DirectRunoffInitialNitrateConcentration      = RegisterParameterDouble(Model, Land, "Direct runoff initial nitrate concentration", MgPerL, 0.0, 0.0, 100.0, "Initial nitrate concentration in quick flow");
 	auto DirectRunoffInitialAmmoniumConcentration     = RegisterParameterDouble(Model, Land, "Direct runoff initial ammonium concentration", MgPerL, 0.0, 0.0, 100.0, "Initial ammonium concentration in quick flow");
@@ -64,7 +66,7 @@ AddIncaNModel(mobius_model *Model)
 	auto BaseTemperature                = RegisterParameterDouble(Model, Land, "Base temperature at which response is 1", DegreesCelsius, 20.0, -10.0, 50.0, "Base temperature for all processes at which the rate response is 1");
     
 	
-	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
+	auto Reaches = RegisterParameterGroup(Model, "Nitrate by subcatchment", Reach);
 	
 	auto GroundwaterInitialNitrateConcentration  = RegisterParameterDouble(Model, Reaches, "Groundwater initial nitrate concentration", MgPerL, 4.0, 0.0, 100.0, "Initial nitrate concentration in groundwater");
 	auto GroundwaterInitialAmmoniumConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial ammonium concentration", MgPerL, 0.0, 0.0, 100.0, "Initial ammonium concentration in groundwater");
@@ -718,6 +720,8 @@ AddIncaNModel(mobius_model *Model)
 	EQUATION(Model, ReachAmmoniumConcentration,
 		return SafeDivide(RESULT(ReachAmmonium), RESULT(ReachVolume)) * 1000.0;
 	)
+	
+	EndModule(Model);
 }
 
 #define INCAN_MODEL_H

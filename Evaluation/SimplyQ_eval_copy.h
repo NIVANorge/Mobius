@@ -39,6 +39,8 @@ ActivationControl(double X, double Threshold, double RelativeActivationDistance)
 static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
+	BeginModule(Model, "SimplyQ", "_eval_");
+	
 	auto Degrees = RegisterUnit(Model, "°");
 	auto System = GetParameterGroupHandle(Model, "System");
 	RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
@@ -102,8 +104,8 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.05, 40.0);
 	
 	// General parameters that vary by land class and reach
-	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", LandscapeUnits);
-	SetParentGroup(Model, SubcatchmentGeneral, ReachParams);
+	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", Reach, LandscapeUnits);
+	//SetParentGroup(Model, SubcatchmentGeneral, ReachParams);
 	
 	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0);
 	
@@ -379,4 +381,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	EQUATION(Model, DailyMeanReachFlowMm,
 		return ConvertM3PerSecondToMmPerDay(RESULT(DailyMeanReachFlow), PARAMETER(CatchmentArea));
 	)
+	
+	EndModule(Model);
 }

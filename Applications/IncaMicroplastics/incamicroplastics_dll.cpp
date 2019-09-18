@@ -18,7 +18,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
     
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("INCA-Microplastics", "1.0");
+	mobius_model *Model = BeginModelDefinition("INCA-Microplastics");
 	
 	AddPersistModel(Model);
 	AddINCAMicroplasticsModel(Model);

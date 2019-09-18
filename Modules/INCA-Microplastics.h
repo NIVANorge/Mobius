@@ -7,6 +7,7 @@
 static void
 AddINCAMicroplasticsModel(mobius_model *Model)
 {
+	BeginModule(Model, "INCA-Microplastics", "0.9.9");
 	//NOTE: Is designed to work with PERSiST
 	
 	auto Dimensionless = RegisterUnit(Model);
@@ -37,7 +38,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	
 	auto DirectRunoff = RequireIndex(Model, SoilBoxes, "Direct runoff");
 	
-	auto Reaches = GetParameterGroupHandle(Model, "Reaches");
+	auto Reaches = RegisterParameterGroup(Model, "Erosion and transport by subcatchment", Reach);
 	
 	//TODO : Find default/min/max/description for these
 	
@@ -64,11 +65,10 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto LargestDiameterOfClass         = RegisterParameterDouble(Model, GrainClass, "Largest diameter of grain in class", Metres, 2e-6);
 	auto DensityOfClass                 = RegisterParameterDouble(Model, GrainClass, "Density of grain class", KgPerM3, 1000.0);
 	
-	auto Land = GetParameterGroupHandle(Model, "Landscape units");
+	auto Land = RegisterParameterGroup(Model, "Erosion by land class", LandscapeUnits);
 	auto VegetationIndex                        = RegisterParameterDouble(Model, Land, "Vegetation index", Dimensionless, 1.0); //Could this be the same as the canopy interception though?
 	
-	auto SedimentLand = RegisterParameterGroup(Model, "Sediment land", LandscapeUnits);
-	SetParentGroup(Model, SedimentLand, GrainClass);
+	auto SedimentLand = RegisterParameterGroup(Model, "Erosion by grain and land class", Class, LandscapeUnits);
 	auto SplashDetachmentScalingFactor          = RegisterParameterDouble(Model, SedimentLand, "Splash detachment scaling factor", SPerM, 0.001);
 	auto FlowErosionPotential                   = RegisterParameterDouble(Model, SedimentLand, "Flow erosion potential", KgPerSPerKm2, 0.074);
 	auto SplashDetachmentSoilErodibility        = RegisterParameterDouble(Model, SedimentLand, "Splash detachment soil erodibility", KgPerM2PerS, 1.0);
@@ -77,8 +77,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto GrainInput                             = RegisterParameterDouble(Model, SedimentLand, "Grain input to land", KgPerKm2PerDay, 0.0);
 	
 	
-	auto TransferMatrix = RegisterParameterGroup(Model, "Transfer matrix", Class);
-	SetParentGroup(Model, TransferMatrix, GrainClass);
+	auto TransferMatrix = RegisterParameterGroup(Model, "Transfer matrix", Class, Class);
 	auto LandMassTransferRateBetweenClasses = RegisterParameterDouble(Model, TransferMatrix, "Mass transfer rate between classes on land", Dimensionless, 0.0, 0.0, 1.0);
 	
 	///////////// Erosion and transport ////////////////
@@ -249,8 +248,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	
 	auto InstreamSedimentSolver = RegisterSolver(Model, "In-stream sediment solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
 	
-	auto SedimentReach = RegisterParameterGroup(Model, "Sediment reach", Reach);
-	SetParentGroup(Model, SedimentReach, GrainClass);
+	auto SedimentReach = RegisterParameterGroup(Model, "Grain characteristics by subcatchment", Class, Reach);
 	
 	auto EffluentGrainConcentration       = RegisterParameterDouble(Model, SedimentReach, "Effluent grain concentration", MgPerL, 0.0);
 	auto InitialMassOfBedGrainPerUnitArea = RegisterParameterDouble(Model, SedimentReach, "Initial mass of bed grain per unit area", KgPerM2, 10);
@@ -456,6 +454,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		
 		return 0.0;
 	)
+	
+	EndModule(Model);
 }
 
 

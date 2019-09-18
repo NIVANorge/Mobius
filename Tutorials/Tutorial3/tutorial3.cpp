@@ -3,7 +3,7 @@
 
 int main()
 {
-	mobius_model *Model = BeginModelDefinition();
+	mobius_model *Model = BeginModelDefinition("Giblet-Thrasher model");  //You can name the model if you want to.
 	
 	AddGibletThrasherModel(Model);
 	

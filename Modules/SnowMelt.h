@@ -5,6 +5,8 @@
 static void
 AddSnowMeltModel(mobius_model *Model)
 {
+	BeginModule(Model, "INCA snow melt", "1.0");
+	
 	auto Mm 						= RegisterUnit(Model, "mm");
 	auto MmPerDegreeCelsiusPerDay 	= RegisterUnit(Model, "mm/°C/day");
 	auto Dimensionless 				= RegisterUnit(Model);
@@ -13,7 +15,7 @@ AddSnowMeltModel(mobius_model *Model)
 	auto Cm                         = RegisterUnit(Model, "cm");
 	
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
-	auto Land = RegisterParameterGroup(Model, "Landscape units", LandscapeUnits);
+	auto Land = RegisterParameterGroup(Model, "Snow", LandscapeUnits);
 	
 	auto InitialSnowPackDepth     = RegisterParameterDouble(Model, Land, "Initial snow pack depth",                           Mm,                       0.0);
 	auto DegreeDayFactorSnowmelt  = RegisterParameterDouble(Model, Land, "Degree-day factor for snowmelt",                    MmPerDegreeCelsiusPerDay, 0.0);
@@ -85,6 +87,7 @@ AddSnowMeltModel(mobius_model *Model)
             - RESULT(SnowEvaporation);
 	)
     
+	EndModule(Model);
 }
 
 

@@ -1,4 +1,4 @@
-# Parameter file generated for SimplyP V0.4 at 2019-09-06 15:24:30
+# Parameter file generated for model SimplyP, containing modules (SimplyQ V0.4, SimplySed V0.4, SimplyP V0.4) at 2019-09-17 14:24:44
 
 index_sets:
 "Reaches" : {"Coull"}
@@ -12,7 +12,7 @@ parameters:
 "Start date" :     # [1000-01-01, 3000-12-31]
 2004-01-01
 
-"Latitude" :     #(°) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
+"Latitude" :     #(°C) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
 59.6
 
 "Initial snow depth as water equivalent" :     #(mm) [0, 50000]

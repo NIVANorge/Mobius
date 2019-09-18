@@ -23,7 +23,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("SimplyC", "0.1");
+	mobius_model *Model = BeginModelDefinition("SimplyC");
 	
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel2(Model);

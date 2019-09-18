@@ -133,9 +133,11 @@ The model object contains all immutable information about the model that will no
 \centering
 \begin{tabular}{|>{\bf}l|p{10cm} |}
 \hline
+Modules & Parameter groups and equations can be organized under multiple modules. This is purely for organizational purposes and does not affect the internal workings of the model.\\
+\hline
 Index sets & Parameters, inputs and equation results can index over one or more index sets. For instance, you may want to evalute the same equations in multiple contexts, such as once per reach in a river, and in that case you want an index set for these reaches. \\
 \hline
-Parameter groups & Parameter groups are collections of parameters. A parameter group can vary with an index set, making each parameter have a separate value for each index in the index set. The parameter group can also be a child group of another parameter group. In that case, each parameter in the group has a separate value for each pair of indexes from the index set of its group and the parent group. This can be chained to make parameters vary with as many index sets as one wants. \\
+Parameter groups & Parameter groups are collections of parameters. A parameter group can vary with zero or more index sets, making each parameter have a separate value for each (tuple of) indexes in these index sets. \\
 \hline
 Parameters & Parameters are values used to tune the equations of the modell. Parameters do not vary over time. Currently four different types of parameters are supported: double precision floating point, unsigned integer, boolean and time. \\
 \hline
@@ -173,7 +175,7 @@ There are two types of index sets
 \end{enumerate}
 
 \subsection{Parameter structure}
-Each parameter belongs to a parameter group, which again can belong to another parameter group and so on. Moreover, each parameter group can index over an index set. This means that each parameter can in practice be viewed as a multidimensional array of parameter values, where each dimension in the array is indexed by one of the model's index sets. It is possible for a parameter to index over the same index set multiple times. For instance, the PERSiST hydrology model \cite{futter14} has a "Percolation matrix" parameter where both the row and column in the matrix is indexed by the soil box.
+Each parameter belongs to a parameter group. Moreover, each parameter group can index over index sets. This means that each parameter can in practice be viewed as a multidimensional array of parameter values, where each dimension in the array is indexed by one of the model's index sets. It is possible for a parameter to index over the same index set multiple times. For instance, the PERSiST hydrology model \cite{futter14} has a "Percolation matrix" parameter where both the row and column in the matrix is indexed by the soil box.
 
 \begin{example}
 A PERSiST "Percolation matrix", from a parameter file. (See separate documentation for a detailed description of the parameter file format).
@@ -334,6 +336,8 @@ mymodel.h
 static void
 AddTestModel(mobius_model *Model)
 {
+	BeginModule(Model, "Test", "0.1");
+
 	auto Days = RegisterUnit(Model, "days");
 	auto Dimensionless = RegisterUnit(Model);
 
@@ -347,6 +351,8 @@ AddTestModel(mobius_model *Model)
 	EQUATION(Model, AX,
 		return PARAMETER(A) * INPUT(X);
 	)
+
+	EndModule(Model);
 }
 \end{lstlisting}
 \end{example}
@@ -461,6 +467,8 @@ Say that one also wants a different initial snow depth and degree-day factor for
 \begin{example}
 Registration of model entities for the SimplyP snow module.
 \begin{lstlisting}[style=mycpp,mathescape]
+BeginModule(Model, "Simply Snow", "1.0");
+
 auto Mm                = RegisterUnit(Model, "mm");
 auto MmPerDegreePerDay = RegisterUnit(Model, "mm/$^\circ$C/day");
 auto MmPerDay          = RegisterUnit(Model, "mm/day");
@@ -483,6 +491,10 @@ auto SnowDepth                  = RegisterEquation(Model, "Snow depth", Mm);
 auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 
 SetInitialValue(Model, SnowDepth, InitialSnowDepth);
+
+//.... equation bodies
+
+EndModule(Model);
 \end{lstlisting}
 \end{example}
 
@@ -977,6 +989,15 @@ For each batch, the order of evaluating the initial value of each equation (eith
 The description given here does not give all the implementation details. To get a complete understanding you probably have to look up the implementation of the {\tt EndModelDefinition} function in {\tt mobius\_model.cpp}.
 \end{note}
 
+\subsection{Module organization}
+
+Every parameter group and equation that is registered between a {\tt BeginModule} and {\tt EndModule} call is considered a part of that module. This is purely for organization, and does not affect how the model works in any other way. There are a few benefits of doing this.
+
+\begin{enumerate}[i]
+\item You can e.g. reuse the same hydrology module for multiple catchment models and have other modules that build on top of that.
+\item Module organization shows up MobiView, and it makes it easier for the user to see what part of the model each parameter or equation belongs to.
+\item You can have separate version numbers for each module, and these are shown in MobiView and in generated parameter files.
+\end{enumerate}
 
 \section{Application building API}
 
@@ -1128,6 +1149,19 @@ TODO: There are some more procedures that should be documented here.
 \subsection{Registration procedures}\label{sec:registrationproc}
 
 The registration procedures can only be called on a {\tt mobius\_model} object that has not been finalized using {\tt EndModelDefinition}.
+
+\apientry{BeginModule}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Name}{The name of the module.}
+\apipar{const char *Version}{The current version of the module.}
+\apiret{A {\tt module\_h} handle to the newly registered module.}
+\apidesc{Every parameter group and equation that is registered between this call and an {\tt EndModule} call is considered a part of this module.}
+}
+
+\apientry{EndModule}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apidesc{Closes the current module. If you need to you can reopen it later using the same name.}
+}
 
 \apientry{RegisterUnit}{Registration procedure}{
 \apipar{mobius\_model *Model}{Pointer to the model object.}

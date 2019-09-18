@@ -18,7 +18,7 @@
 
 int main()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyQ", "0.1");
+	mobius_model *Model = BeginModelDefinition("SimplyQ");
 	
 	AddSimplyHydrologyModule(Model);
 	

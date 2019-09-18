@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	incaview_commandline_arguments Args;
 	ParseIncaviewCommandline(argc, argv, &Args);
 	
-	mobius_model *Model = BeginModelDefinition("INCA-N (Classic)", "1.0");
+	mobius_model *Model = BeginModelDefinition("INCA-N (Classic)");
 	
 	auto Days 	      = RegisterUnit(Model, "days");
 	auto System       = RegisterParameterGroup(Model, "System");
