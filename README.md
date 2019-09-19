@@ -187,4 +187,4 @@ Leah Jackson-Blake (Simply models, general testing)
 Jose-Luis Guerrero (Json format, general testing)
 Many others: General testing, feedback, ideas.
 
-For general questions and feedback, contact (magnus.norling@niva.no)
+For general questions and feedback, please contact (magnus.norling@niva.no)
