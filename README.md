@@ -66,9 +66,7 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 
 ## Compile a model, run it, and make some changes
 
-**If the idea of compiling is offputting, and you want to just have a go with one of the pre-existing models, please get in touch and we can supply a pre-compiled executable.** Email: [magnus.norling@niva.no*]
-
-**Note**: We know getting set up is cumbersome at the moment. We plan on creating a build and install system very soon which will make things much easier.
+If the idea of compiling is offputting, and you want to just have a go with one of the pre-existing models, you can download them from ftp://mobiserver.niva.no/ .
 
 ### First download a compiler
 
@@ -137,7 +135,7 @@ After understanding basic model building we recommended you explore the python w
 
 ### Getting MobiView
 
-For now, we recommend you email us ([magnus.norling@niva.no]) to get a pre-compiled version of MobiView. If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++. We will soon find a more reliable way of distributing MobiView.
+You can download a compiled version of MobiView from (ftp://mobiserver.niva.no/). If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++.
 
 ### Creating MobiView compatible .dlls
 
@@ -188,3 +186,5 @@ James Sample (statistics and auto-calibration, python utilities)
 Leah Jackson-Blake (Simply models, general testing)
 Jose-Luis Guerrero (Json format, general testing)
 Many others: General testing, feedback, ideas.
+
+For general questions and feedback, please contact (magnus.norling@niva.no)
