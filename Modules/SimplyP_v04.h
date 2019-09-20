@@ -66,10 +66,6 @@ AddSimplyPModel(mobius_model *Model)
 	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run.");
 	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0);
 	auto SoilInactivePConcentration     = RegisterParameterDouble(Model, Phosphorous, "Inactive soil P content", MgPerKg, 873, 0.0, 10000.0, "Is recommended to be about the same as the Initial total soil P content of seminatural land, but a little lower.");
-	
-	// Params that vary by reach and land class (add to existing group)
-	auto SubcatchmentGeneral = GetParameterGroupHandle(Model, "Subcatchment characteristics by land class");
-	//auto LandUseProportionsNC = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions from newly-converted", Dimensionless, 0.0, 0.0, 1.0, "Proportion of each land use class that has been newly-converted from another type. Only one of these should be >0");
 
 	// Add to global system parameter group
 	auto System = GetParameterGroupHandle(Model, "System");

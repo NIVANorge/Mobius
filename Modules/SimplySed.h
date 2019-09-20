@@ -29,20 +29,20 @@ AddSimplySedimentModule(mobius_model *Model)
 	auto DynamicErodibility                      = RegisterParameterBool(Model, System, "Dynamic erodibility", true, "If true, simulate the change in erodibility on arable land through the year due to cropping and harvesting practices");
 	
 	// Global sediment parameters (don't vary by land use/sub-catchment/reach
-	auto Sediment = RegisterParameterGroup(Model, "Sediment");
+	auto Sediment = RegisterParameterGroup(Model, "Erodibility and sediments");
 	
 	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 150.0, 0.0, 1000.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land");
 	auto SedimentInputNonlinearCoefficient = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0); 
 	auto DayOfYearWhenSoilErodibilityIsMaxSpring = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for spring-grown crops", JulianDay, 60, 30, 335, "Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment");
 	auto DayOfYearWhenSoilErodibilityIsMaxAutumn = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for autumn-grown crops", JulianDay, 304, 30, 335, "Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment");
 	
-	// Add more params to the general reach parameter group created in hydrol module
-	auto ReachParams = GetParameterGroupHandle(Model, "General subcatchment and reach parameters");
+
+	auto ReachParams = RegisterParameterGroup(Model, "Seasonal erodibility by subcatchment", Reach);
 	
 	auto ProportionOfSpringGrownCrops            = RegisterParameterDouble(Model, ReachParams, "Proportion of spring grown crops", Dimensionless, 0.65, 0.0, 1.0, "Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true");
 	
 	// Params that vary by land class and reach
-	auto SubcatchmentGeneral = GetParameterGroupHandle(Model, "Subcatchment characteristics by land class");
+	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land slope", Reach, LandscapeUnits);
 	auto MeanSlopeOfLand                         = RegisterParameterDouble(Model, SubcatchmentGeneral, "Mean slope of land in the subcatchment", Degrees, 4.0, 0.0, 90.0);
 	
 	auto LandUseProportions = GetParameterDoubleHandle(Model, "Land use proportions");

@@ -98,7 +98,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0);
 	
 	// General parameters that vary by land class and reach
-	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", Reach, LandscapeUnits);
+	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land cover", Reach, LandscapeUnits);
 	
 	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0);
 	
