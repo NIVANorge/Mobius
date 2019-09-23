@@ -66,7 +66,7 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 
 ## Compile a model, run it, and make some changes
 
-If the idea of compiling is offputting, and you want to just have a go with one of the pre-existing models, you can download them from ftp://mobiserver.niva.no/ .
+If the idea of compiling is offputting, and you want to just have a go with one of the pre-existing models, you can download them from ftp://mobiserver.niva.no/ (downloadable binaries are Windows only at the moment).
 
 ### First download a compiler
 
@@ -135,7 +135,7 @@ After understanding basic model building we recommended you explore the python w
 
 ### Getting MobiView
 
-You can download a compiled version of MobiView from (ftp://mobiserver.niva.no/). If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++.
+You can download a compiled version of MobiView from ftp://mobiserver.niva.no/ (downloadable binary is Windows only). If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++.
 
 ### Creating MobiView compatible .dlls
 
