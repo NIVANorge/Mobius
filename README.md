@@ -94,6 +94,7 @@ On Linux you should be able to get g++ using the command `sudo apt install g++` 
 
 ### Compiling
 
+#### Windows
 The basics of compiling are simple once you have a compiler installed:
 - Make a .bat file, which contains the command line instruction(s) for the compiler to compile the .cpp file into an executable or dll. All of the models already built using Mobius (in the Applications folder) have such .bat files.
 - Open the command line prompt (e.g. press the windows key and type 'cmd' and then hit enter)
@@ -101,6 +102,10 @@ The basics of compiling are simple once you have a compiler installed:
 - Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
 
 You could also set up a build system or IDE of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
+
+
+#### Linux
+We have only set up compilation scripts for SimplyP and PERSiST for Linux, but you can easily copy these to be able to compile other models.
 
 ### Run a model and explore the principles of building models using Mobius
 
