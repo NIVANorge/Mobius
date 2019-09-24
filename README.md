@@ -101,11 +101,11 @@ The basics of compiling are simple once you have a compiler installed:
 - From the command line, navigate to wherever your .bat file is located. To change drives (e.g. from C: to D:), just type the name of drive you want to be in and hit enter. When you're in the right drive, change to your desired folder by typing cd then the filepath, e.g. `cd C:\GitHub\Mobius\Applications\SimplyP`
 - Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
 
+You could also set up a build system or IDE of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
+
+
 #### Linux
 We have only set up compilation scripts for SimplyP and PERSiST for Linux, but you can easily copy these to be able to compile other models.
-
-
-You could also set up a build system or IDE of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
 
 ### Run a model and explore the principles of building models using Mobius
 
