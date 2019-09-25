@@ -20,6 +20,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto Kg       = RegisterUnit(Model, "kg");
 	auto KgPerDay = RegisterUnit(Model, "kg/day");
 	auto KgPerKm2 = RegisterUnit(Model, "kg/km2");
+	auto KgPerKg  = RegisterUnit(Model, "kg/kg");
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km2/day");
 	auto PerDay   = RegisterUnit(Model, "1/day");
 	auto M3PerKm2 = RegisterUnit(Model, "m3/km2");
@@ -27,6 +28,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Reaches      = GetIndexSetHandle(Model, "Reaches");
 	auto Soils        = GetIndexSetHandle(Model, "Soils");
+	auto Class        = GetIndexSetHandle(Model, "Grain class");
 	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
@@ -39,6 +41,11 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto SoilWaterBaselineDOCConcentration = RegisterParameterDouble(Model, Land, "Soil water baseline DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	auto MineralLayerDOCConcentration      = RegisterParameterDouble(Model, Reach, "Mineral layer DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	
+	auto GrainClass = RegisterParameterGroup(Model, "Carbon by grain class", Class);
+	
+	auto GrainSOCDensity                   = RegisterParameterDouble(Model, GrainClass, "Grain SOC density", KgPerKg, 0.0, 0.0, 1.0);
+	
+	
 	//PERSiST.h :
 	auto WaterDepth            = GetEquationHandle(Model, "Water depth");
 	auto RunoffToReach         = GetEquationHandle(Model, "Runoff to reach");   
@@ -46,6 +53,9 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto ReachFlow             = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume           = GetEquationHandle(Model, "Reach volume");
 	
+	//IncaMicroplastics.h :
+	auto GrainDeliveryToReach = GetEquationHandle(Model, "Grain delivery to reach");
+	auto SuspendedGrainMass   = GetEquationHandle(Model, "Suspended grain mass");
 	
 	auto Percent                  = GetParameterDoubleHandle(Model, "%");
 	auto TerrestrialCatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
@@ -59,6 +69,8 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto DiffuseDOCOutput          = RegisterEquation(Model, "Diffuse DOC output", KgPerDay);
 	auto TotalDiffuseDOCOutput     = RegisterEquationCumulative(Model, "Total diffuse DOC output", DiffuseDOCOutput, LandscapeUnits);
 	
+	auto SOCDeliveryToReach        = RegisterEquation(Model, "SOC delivery to reach by erosion", KgPerDay);
+	
 	auto ReachSolver = GetSolverHandle(Model, "Reach solver");
 	auto ReachDOCMass              = RegisterEquationODE(Model, "Reach DOC mass", Kg);
 	SetSolver(Model, ReachDOCMass, ReachSolver);
@@ -67,6 +79,8 @@ AddIncaToxDOCModule(mobius_model *Model)
 	SetSolver(Model, ReachDOCOutput, ReachSolver);
 	auto ReachDOCInput             = RegisterEquation(Model, "Reach DOC input", KgPerDay);
 	auto ReachDOCConcentration     = RegisterEquation(Model, "Reach DOC concentration", MgPerL);
+	auto ReachSuspendedSOCMass     = RegisterEquation(Model, "Reach suspended SOC mass", Kg);
+	
 	
 	EQUATION(Model, SoilWaterDOCConcentration,
 		//TODO: Temperature and SO4 controls?
@@ -91,6 +105,10 @@ AddIncaToxDOCModule(mobius_model *Model)
 	)
 	
 	//TODO: Transport by direct runoff (infiltration excess)?
+	
+	EQUATION(Model, SOCDeliveryToReach,
+		return RESULT(GrainDeliveryToReach) * PARAMETER(GrainSOCDensity);
+	)
 	
 	EQUATION(Model, DiffuseDOCOutput,
 		return PARAMETER(Percent) * 0.01 * PARAMETER(TerrestrialCatchmentArea) *
@@ -122,6 +140,13 @@ AddIncaToxDOCModule(mobius_model *Model)
 	EQUATION(Model, ReachDOCConcentration,
 		return SafeDivide(RESULT(ReachDOCMass), RESULT(ReachVolume)) * 1000.0; // Convert kg/m3 -> mg/l
 	)
+	
+	
+	EQUATION(Model, ReachSuspendedSOCMass,
+		return RESULT(SuspendedGrainMass) * PARAMETER(GrainSOCDensity);
+	)
+	
+	
 	
 	EndModule(Model);
 }

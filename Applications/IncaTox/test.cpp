@@ -8,7 +8,7 @@
 #include "../../mobius.h"
 
 #include "../../Modules/Persist.h"
-//#include "../../Modules/INCA-Microplastics.h"
+#include "../../Modules/INCA-Microplastics.h"
 #include "../../Modules/SoilTemperature.h"
 #include "../../Modules/WaterTemperature.h"
 #include "../../Modules/INCA-Tox-C.h"
@@ -22,7 +22,7 @@ int main()
 	mobius_model *Model = BeginModelDefinition("INCA-Tox");
 	
 	AddPersistModel(Model);
-	//AddINCAMicroplasticsModel(Model);
+	AddINCAMicroplasticsModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
