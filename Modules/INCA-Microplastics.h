@@ -7,7 +7,7 @@
 static void
 AddINCAMicroplasticsModel(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Microplastics", "0.9.9");
+	BeginModule(Model, "INCA-Microplastics", "0.9.10");
 	//NOTE: Is designed to work with PERSiST
 	
 	auto Dimensionless = RegisterUnit(Model);
@@ -286,10 +286,13 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	SetInitialValue(Model, MassOfBedGrainPerUnitArea, InitialMassOfBedGrainPerUnitArea);
 	SetSolver(Model, MassOfBedGrainPerUnitArea, InstreamSedimentSolver);
 	
+	auto TotalMassOfBedGrainPerUnitArea  = RegisterEquationCumulative(Model, "Total mass of bed grain per unit area", MassOfBedGrainPerUnitArea, Class);
+	
 	auto SuspendedGrainMass = RegisterEquationODE(Model, "Suspended grain mass", Kg);
 	SetInitialValue(Model, SuspendedGrainMass, InitialSuspendedGrainMass);
 	SetSolver(Model, SuspendedGrainMass, InstreamSedimentSolver);
 	
+	auto AverageBedGrainDiameter = RegisterEquation(Model, "Average bed grain diameter", Metres);
 	
 	
 	auto ReachWidth   = GetParameterDoubleHandle(Model, "Reach width");
@@ -390,6 +393,19 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 			- RESULT(ReachSuspendedGrainOutput)
 			- RESULT(GrainAbstraction)
 			+ PARAMETER(ReachLength) * PARAMETER(ReachWidth) * (RESULT(GrainEntrainment) - RESULT(GrainDeposition));
+	)
+	
+	//TODO: Could be factored out as a EquationCumulative for speedup..
+	EQUATION(Model, AverageBedGrainDiameter,
+		double avg = 0.0;
+		
+		for(index_t Grain = FIRST_INDEX(Class); Grain < INDEX_COUNT(Class); ++Grain)
+		{
+			double mediangrainsize = (PARAMETER(SmallestDiameterOfClass, Grain) + PARAMETER(LargestDiameterOfClass, Grain)) / 2.0;
+			avg += mediangrainsize * SafeDivide(RESULT(MassOfBedGrainPerUnitArea, Grain), RESULT(TotalMassOfBedGrainPerUnitArea));
+		}
+		
+		return avg;
 	)
 	
 	

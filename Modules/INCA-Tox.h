@@ -13,6 +13,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");
+	auto M                = RegisterUnit(Model, "m");
 	auto NgPerKm2         = RegisterUnit(Model, "ng/km2");
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerDay         = RegisterUnit(Model, "ng/day");
@@ -31,6 +32,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto PerDay           = RegisterUnit(Model, "1/day");
 	auto GPerMol          = RegisterUnit(Model, "g/mol");
 	auto Cm3PerMol        = RegisterUnit(Model, "cm3/mol");
+	auto GPerCmPerSPerHundred = RegisterUnit(Model, "10^-2 g/cm/s");
 	
 	auto AtmosphericDryDeposition = RegisterInput(Model, "Atmospheric dry contaminant deposition", NgPerM2PerDay);
 	auto AtmosphericWetDeposition = RegisterInput(Model, "Atmospheric wet contaminant deposition", NgPerM2PerDay);
@@ -79,6 +81,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
 	
+	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5); //Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
 	
 	
 	
@@ -93,9 +96,13 @@ AddIncaToxModule(mobius_model *Model)
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature"); //WaterTemperature.h
 	auto ReachFlow       = GetEquationHandle(Model, "Reach flow"); //PERSiST.h
 	auto ReachVolume     = GetEquationHandle(Model, "Reach volume"); //PERSiST.h
+	auto ReachVelocity   = GetEquationHandle(Model, "Reach velocity"); //PERSiST.h
+	auto ReachDepth      = GetEquationHandle(Model, "Reach depth");    //PERSiST.h
 	auto ReachDOCOutput  = GetEquationHandle(Model, "Reach DOC output"); //INCA-Tox-C.h
 	auto ReachDOCMass    = GetEquationHandle(Model, "Reach DOC mass");   //INCA-Tox-C.h
 	auto SOCDeliveryToReach = GetEquationHandle(Model, "SOC delivery to reach by erosion"); //INCA-Tox-C.h
+	auto AverageBedGrainDiameter = GetEquationHandle(Model, "Average bed grain diameter"); //INCA-Microplastics.h
+	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity"); //INCA-Microplastics.h
 	
 	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //PERSiST.h
 	auto Percent         = GetParameterDoubleHandle(Model, "%");                //PERSiST.h
@@ -324,8 +331,12 @@ AddIncaToxModule(mobius_model *Model)
 	auto MolecularDiffusivityOfWaterVapourInAir   = RegisterEquation(Model, "Molecular diffusivity of water vapour in air", M2PerS);
 	auto MolecularDiffusivityOfCompoundInWater    = RegisterEquation(Model, "Molecular diffusivity of compound in water", M2PerS);
 	auto ReachKinematicViscosity                  = RegisterEquation(Model, "Reach kinematic viscosity", M2PerS);
-	auto ReachDynamicViscosity                    = RegisterEquation(Model, "Reach dynamic viscosity", M2PerS);
+	auto ReachDynamicViscosity                    = RegisterEquation(Model, "Reach dynamic viscosity", GPerCmPerSPerHundred);
 	auto SchmidtNumber                            = RegisterEquation(Model, "Schmidt number", Dimensionless);
+	auto NonDimensionalRoughnessParameter         = RegisterEquation(Model, "Non-dimensional roughness parameter", Dimensionless);
+	auto ElementFroudeNumber                      = RegisterEquation(Model, "Element Froude number", Dimensionless);
+	
+	
 	auto ReachAirContaminantTransferVelocity      = RegisterEquation(Model, "Reach air contamninant transfer velocity", MPerDay);
 	auto ReachWaterContaminantTransferVelocity    = RegisterEquation(Model, "Reach water contaminant transfer velocity", MPerDay);
 	auto ReachOverallAirWaterContaminantTransferVelocity = RegisterEquation(Model, "Reach overall air-water transfer velocity", MPerDay);
@@ -385,7 +396,6 @@ AddIncaToxModule(mobius_model *Model)
 			- RESULT(ReachContaminantDegradation);
 			- RESULT(DiffusiveAirReachExchangeFlux);
 			// exchange with stream bed
-			// breakdown
 	)
 	
 	
@@ -459,26 +469,79 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(ReachKinematicViscosity) / RESULT(MolecularDiffusivityOfCompoundInWater);
 	)
 	
+	EQUATION(Model, NonDimensionalRoughnessParameter,
+		return RESULT(AverageBedGrainDiameter) * RESULT(ReachShearVelocity) / RESULT(ReachKinematicViscosity);
+	)
+	
+	EQUATION(Model, ElementFroudeNumber,
+		double earthsurfacegravity = 9.81;
+		double heightabovestones = RESULT(ReachDepth) - PARAMETER(HeightOfLargeStones);
+		return RESULT(ReachDepth) * SafeDivide(RESULT(ReachVelocity), std::sqrt(earthsurfacegravity * heightabovestones * heightabovestones * heightabovestones));
+	)
 	
 	EQUATION(Model, ReachWaterContaminantTransferVelocity,
-		
-		//NOTE: This is only CASE I for now.    CASE II-V TODO
+
 		double windspeed = INPUT(WindSpeed);
 		double asc = 0.5;
 		double vCO2;
 		
-		//TODO: Separate equations for these for easier debugging?
-		if(windspeed <= 4.2)
-		{
-			asc = 0.67;
-			vCO2 = 0.65e-3;
-		}
-		else if(windspeed <= 13.0)
-			vCO2 = (0.79*windspeed - 2.68)*1e-3;
-		else 
-			vCO2 = (1.64*windspeed - 13.69)*1e-3;
+		int Case = 1;
 		
-		return std::pow(RESULT(SchmidtNumber)/600.0, -asc) * vCO2 * 864.0;
+		double depth = RESULT(ReachDepth);
+		double velocity = RESULT(ReachVelocity);
+		double shearvelocity = RESULT(ReachShearVelocity);
+		double stonedepth = PARAMETER(HeightOfLargeStones);
+		
+		double schmidtnumber = RESULT(SchmidtNumber);
+		double froudenumber  = RESULT(ElementFroudeNumber);
+		double roughness     = RESULT(NonDimensionalRoughnessParameter);
+		
+		double kinematicviscosity = RESULT(ReachKinematicViscosity);
+		double moleculardiffusitivity = RESULT(MolecularDiffusivityOfCompoundInWater);
+		
+		double criticalvelocity = (windspeed < 5.0) ? 0.2*std::cbrt(depth) : 3.0*std::cbrt(depth);	
+		
+		if(depth < stonedepth) Case = 5;
+		else if(velocity < criticalvelocity) Case = 1;
+		else if(roughness > 136.0) Case = 2;
+		else if(froudenumber < 1.4) Case = 3;
+		else Case = 4;
+	
+		
+		if(Case == 1)
+		{
+			//TODO: Separate equations for these for easier debugging?
+			if(windspeed <= 4.2)
+			{
+				asc = 0.67;
+				vCO2 = 0.65e-3;
+			}
+			else if(windspeed <= 13.0)
+				vCO2 = (0.79*windspeed - 2.68)*1e-3;
+			else 
+				vCO2 = (1.64*windspeed - 13.69)*1e-3;
+			
+			return std::pow(schmidtnumber/600.0, -asc) * vCO2 * 864.0;
+		}
+		else if(Case == 2)
+		{
+			return (0.161 / std::sqrt(schmidtnumber)) * std::pow(SafeDivide(kinematicviscosity*shearvelocity, depth), 0.25) * 86400.0;
+		}
+		else if(Case == 3)
+		{
+			return std::sqrt(SafeDivide(moleculardiffusitivity * velocity, depth)) * 86400.0;
+		}
+		else if(Case == 4)
+		{
+			return (shearvelocity / std::sqrt(schmidtnumber)) * (0.0071 + 0.023*froudenumber) * 86400.0;
+		}
+		else if(Case == 5)
+		{
+			//NOTE: In this case the exchange flux should be computed differently, not using the transfer velocity. //TODO!
+			return 0.0;
+		}
+		
+		return 0.0; //Control flow will never reach here..
 	)
 	
 	EQUATION(Model, ReachOverallAirWaterContaminantTransferVelocity,

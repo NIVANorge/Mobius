@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.2, INCA-Microplastics V0.9.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox DOC V0.1, INCA-Tox V0.00.0.0.23) at 2019-09-26 12:36:57
+# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.2, INCA-Microplastics V0.9.10, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox DOC V0.1, INCA-Tox V0.00.0.0.23) at 2019-09-26 14:34:49
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -102,7 +102,7 @@ parameters:
 "Overall air-soil mass transfer coefficient" :     #(m/day) [0, 100]
 0.01 0.01
 
-"Initial contaminant mass in soil" :     #(ng) [0, 1000]
+"Initial contaminant mass in soil" :     #(ng/km2) [0, 1000]
 1 0
 
 ###################### "Landscape units" "Soils" "Soils" ######################
@@ -244,10 +244,13 @@ false
 "Mineral layer DOC concentration" :     #(mg/l) [0, 20]
 5
 
-"Initial contaminant mass in groundwater" :     #(ng) [0, 1000]
+"Initial contaminant mass in groundwater" :     #(ng/km2) [0, 1000]
 0
 
 "Initial contaminant mass in reach" :     #(ng) [0, 1000]
+0
+
+"Average height of large stones in the stream bed" :     #(m) [0, 0.5]
 0
 
 ###################### "Reaches" "Landscape units" ######################
