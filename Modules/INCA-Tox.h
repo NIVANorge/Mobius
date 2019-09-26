@@ -503,7 +503,7 @@ AddIncaToxModule(mobius_model *Model)
 		
 		if(depth < stonedepth) Case = 5;
 		else if(velocity < criticalvelocity) Case = 1;
-		else if(roughness > 136.0) Case = 2;
+		else if(roughness < 136.0) Case = 2;
 		else if(froudenumber < 1.4) Case = 3;
 		else Case = 4;
 	
