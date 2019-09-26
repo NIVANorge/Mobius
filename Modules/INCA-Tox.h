@@ -24,15 +24,21 @@ AddIncaToxModule(mobius_model *Model)
 	auto KiloJoulesPerMol = RegisterUnit(Model, "kJ/mol");
 	auto PascalM3PerMol   = RegisterUnit(Model, "Pa m3/mol");
 	auto MPerDay          = RegisterUnit(Model, "m/day");
+	auto MPerS            = RegisterUnit(Model, "m/s");
+	auto M2PerS           = RegisterUnit(Model, "m2/s");
 	auto PGPerM3          = RegisterUnit(Model, "pg/m3");
 	auto K                = RegisterUnit(Model, "K");
 	auto PerDay           = RegisterUnit(Model, "1/day");
+	auto GPerMol          = RegisterUnit(Model, "g/mol");
+	auto Cm3PerMol        = RegisterUnit(Model, "cm3/mol");
 	
 	auto AtmosphericDryDeposition = RegisterInput(Model, "Atmospheric dry contaminant deposition", NgPerM2PerDay);
 	auto AtmosphericWetDeposition = RegisterInput(Model, "Atmospheric wet contaminant deposition", NgPerM2PerDay);
 	auto LandManagementDeposition = RegisterInput(Model, "Land management conatminant deposition", NgPerM2PerDay);
 	auto LitterFallDeposition     = RegisterInput(Model, "Litter fall contaminant deposition",     NgPerM2PerDay);
 	
+	
+	auto WindSpeed = RegisterInput(Model, "Wind speed", MPerS);
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Soils          = GetIndexSetHandle(Model, "Soils");
@@ -43,23 +49,36 @@ AddIncaToxModule(mobius_model *Model)
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
 	
 	
+	
 	auto Chemistry = RegisterParameterGroup(Model, "Chemistry");
 	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits);
 
 	//TODO: As always, find better default, min, max values for parameters!
 	
+	auto ContaminantMolarMass                  = RegisterParameterDouble(Model, Chemistry, "Contaminant molar mass", GPerMol, 50.0, 0.0, 1000.0);
+	auto ContaminantMolecularVolume            = RegisterParameterDouble(Model, Chemistry, "Contaminant molecular volume at surface pressure", Cm3PerMol, 20.0, 0.0, 1000.0);
 	auto AirWaterPhaseTransferEnthalpy         = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase transfer between air and water", KiloJoulesPerMol, 0.0);
 	auto OctanolWaterPhaseTransferEntalphy     = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase tranfer between octanol and water", KiloJoulesPerMol, 0.0);
 	auto HenrysConstant25                      = RegisterParameterDouble(Model, Chemistry, "Henry's constant at 25°C", PascalM3PerMol, 0.0);
 	auto OctanolWaterPartitioningCoefficient25 = RegisterParameterDouble(Model, Chemistry, "Octanol-water partitioning coefficient at 25°C", Dimensionless, 0.0);
 	
-	auto AtmosphericContaminantConcentration   = RegisterParameterDouble(Model, Chemistry, "Atmospheric contaminant concentration", PGPerM3, 0.0, 0.0, 100.0);
-	auto ContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant", PerDay, 0.0, 0.0, 1.0);
+	auto AtmosphericContaminantConcentration   = RegisterParameterDouble(Model, Chemistry, "Atmospheric contaminant concentration", NgPerM3, 0.0, 0.0, 100.0);
+	auto SoilContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in soil", PerDay, 0.0, 0.0, 1.0);
+	auto GroundwaterContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in groundwater", PerDay, 0.0, 0.0, 1.0);
+	auto ReachContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream", PerDay, 0.0, 0.0, 1.0);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
 	
 	auto ContaminantsGrain = RegisterParameterGroup(Model, "Contaminants by grain class", Class);
 	auto ContaminantSOCScalingFactor = RegisterParameterDouble(Model, ContaminantsGrain, "Contaminant SOC scaling factor", Dimensionless, 1.0, 0.0, 1.0);
+	
+	
+	auto ContaminantReach = RegisterParameterGroup(Model, "Contaminants by reach", Reach);
+	
+	auto InitialContaminantMassInSoil  = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil", NgPerKm2, 0.0, 0.0, 1e3);
+	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
+	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
+	
 	
 	
 	
@@ -83,6 +102,9 @@ AddIncaToxModule(mobius_model *Model)
 	auto MaximumCapacity = GetParameterDoubleHandle(Model, "Maximum capacity"); //PERSiST.h
 	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");      //INCA-Tox-C.h
 	auto ReachSuspendedSOCMass = GetEquationHandle(Model, "Reach suspended SOC mass"); //INCA-Tox-C.h
+	auto ReachLength     = GetParameterDoubleHandle(Model, "Reach length"); //PERSiST.h
+	auto ReachWidth      = GetParameterDoubleHandle(Model, "Reach width"); //PERSiST.h
+	
 	
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
@@ -125,7 +147,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto ContaminantInputsToSoil           = RegisterEquation(Model, "Contaminant inputs to soil", NgPerKm2PerDay);
 	auto ContaminantMassInSoil             = RegisterEquationODE(Model, "Contaminant mass in soil", NgPerKm2);
 	SetSolver(Model, ContaminantMassInSoil, SoilSolver);
-	//SetInitialValue
+	SetInitialValue(Model, ContaminantMassInSoil, InitialContaminantMassInSoil);
 	auto SoilContaminantFluxToReach        = RegisterEquation(Model, "Soil contaminant flux to reach", NgPerKm2PerDay);
 	SetSolver(Model, SoilContaminantFluxToReach, SoilSolver);
 	auto SoilContaminantFluxToGroundwater  = RegisterEquation(Model, "Soil contaminant flux to groundwater", NgPerKm2PerDay);
@@ -133,11 +155,13 @@ AddIncaToxModule(mobius_model *Model)
 	auto SoilContaminantFluxToDirectRunoff = RegisterEquation(Model, "Soil contaminant flux to direct runoff", NgPerKm2PerDay);
 	SetSolver(Model, SoilContaminantFluxToDirectRunoff, SoilSolver);
 	
+	auto GroundwaterContaminantDegradation = RegisterEquation(Model, "Groundwater contaminant degradation", NgPerKm2PerDay);
+	SetSolver(Model, GroundwaterContaminantDegradation, SoilSolver);
 	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay);
 	SetSolver(Model, GroundwaterContaminantFluxToReach, SoilSolver);
 	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2);
 	SetSolver(Model, ContaminantMassInGroundwater, SoilSolver);
-	//SetInitialValue
+	SetInitialValue(Model, ContaminantMassInGroundwater, InitialContaminantMassInGroundwater);
 	
 	EQUATION(Model, HenrysConstant,
 		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
@@ -243,7 +267,7 @@ AddIncaToxModule(mobius_model *Model)
 		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
 		+ PARAMETER(SoilSOCMass)  * RESULT(SoilSOCContaminantConcentration);
 		
-		return PARAMETER(ContaminantDegradationRateConstant) * degradablemass;
+		return PARAMETER(SoilContaminantDegradationRateConstant) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInSoil,
@@ -262,11 +286,16 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(RunoffToReach, Groundwater) * SafeDivide(RESULT(ContaminantMassInGroundwater), RESULT(WaterDepth, Groundwater));
 	)
 	
+	EQUATION(Model, GroundwaterContaminantDegradation,
+		double degradablemass = RESULT(ContaminantMassInGroundwater);
+		return PARAMETER(GroundwaterContaminantDegradationRateConstant) * degradablemass;
+	)
+	
 	EQUATION(Model, ContaminantMassInGroundwater,
 		return
 		  RESULT(SoilContaminantFluxToGroundwater)
-		- RESULT(GroundwaterContaminantFluxToReach);
-		//TODO: degradation, probably
+		- RESULT(GroundwaterContaminantFluxToReach)
+		- RESULT(GroundwaterContaminantDegradation);
 	)
 
 	
@@ -279,15 +308,29 @@ AddIncaToxModule(mobius_model *Model)
 	auto ReachContaminantInput         = RegisterEquation(Model, "Reach contaminant input", NgPerDay);
 	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng);
 	SetSolver(Model, ContaminantMassInReach, ReachSolver);
-	//SetInitialValue
+	SetInitialValue(Model, ContaminantMassInReach, InitialContaminantMassInReach);
 	auto ReachContaminantFlux          = RegisterEquation(Model, "Reach contaminant flux", NgPerDay);
 	SetSolver(Model, ReachContaminantFlux, ReachSolver);
+	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay);
+	SetSolver(Model, ReachContaminantDegradation, ReachSolver);
 	
 	auto ReachHenrysConstant                      = RegisterEquation(Model, "Reach Henry's constant", PascalM3PerMol);
 	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Reach air-water partitioning coefficient", Dimensionless);
 	auto ReachOctanolWaterPartitioningCoefficient = RegisterEquation(Model, "Reach octanol-water partitioning coefficient", Dimensionless);
 	auto ReachWaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Reach water-SOC partitioning coefficient", M3PerKg);
 	auto ReachWaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Reach water-DOC partitioning coefficient", M3PerKg);
+	
+	auto MolecularDiffusivityOfCompoundInAir      = RegisterEquation(Model, "Molecular diffusivity of compound in air", M2PerS);
+	auto MolecularDiffusivityOfWaterVapourInAir   = RegisterEquation(Model, "Molecular diffusivity of water vapour in air", M2PerS);
+	auto MolecularDiffusivityOfCompoundInWater    = RegisterEquation(Model, "Molecular diffusivity of compound in water", M2PerS);
+	auto ReachKinematicViscosity                  = RegisterEquation(Model, "Reach kinematic viscosity", M2PerS);
+	auto ReachDynamicViscosity                    = RegisterEquation(Model, "Reach dynamic viscosity", M2PerS);
+	auto SchmidtNumber                            = RegisterEquation(Model, "Schmidt number", Dimensionless);
+	auto ReachAirContaminantTransferVelocity      = RegisterEquation(Model, "Reach air contamninant transfer velocity", MPerDay);
+	auto ReachWaterContaminantTransferVelocity    = RegisterEquation(Model, "Reach water contaminant transfer velocity", MPerDay);
+	auto ReachOverallAirWaterContaminantTransferVelocity = RegisterEquation(Model, "Reach overall air-water transfer velocity", MPerDay);
+	auto DiffusiveAirReachExchangeFlux            = RegisterEquation(Model, "Diffusive air reach exchange flux", NgPerDay);
+	SetSolver(Model, DiffusiveAirReachExchangeFlux, ReachSolver);
 	
 	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3);
 	SetSolver(Model, ReachWaterContaminantConcentration, ReachSolver);
@@ -329,14 +372,20 @@ AddIncaToxModule(mobius_model *Model)
 		// + suspended sediment stuff
 	)
 	
+	EQUATION(Model, ReachContaminantDegradation,
+		//TODO: May have to do this per compartment.
+		return RESULT(ContaminantMassInReach) * PARAMETER(ReachContaminantDegradationRateConstant);
+	)
+	
 	
 	EQUATION(Model, ContaminantMassInReach,
 		return
 			  RESULT(ReachContaminantInput)
-			- RESULT(ReachContaminantFlux);
+			- RESULT(ReachContaminantFlux)
+			- RESULT(ReachContaminantDegradation);
+			- RESULT(DiffusiveAirReachExchangeFlux);
 			// exchange with stream bed
 			// breakdown
-			// exchange with air
 	)
 	
 	
@@ -376,6 +425,77 @@ AddIncaToxModule(mobius_model *Model)
 		return std::pow(10.0, 0.93*std::log10(RESULT(ReachOctanolWaterPartitioningCoefficient)) - 0.45) / densityofDOC;
 	)
 	
+	
+	EQUATION(Model, MolecularDiffusivityOfCompoundInAir,
+		double C0 = std::cbrt(20.1) + std::cbrt(PARAMETER(ContaminantMolecularVolume));
+		double Constant = 1e-7 * std::sqrt(1.0/28.97 + 1.0/PARAMETER(ContaminantMolarMass)) / (C0*C0);
+		return Constant * std::pow(RESULT(WaterTemperatureKelvin), 1.75);
+	)
+	
+	EQUATION(Model, MolecularDiffusivityOfWaterVapourInAir,
+		double C0 = std::cbrt(20.1) + std::cbrt(18.0);
+		double Constant = 1e-7 * std::sqrt(1.0/28.97 + 1.0/18.0) / (C0*C0);
+		return Constant * std::pow(RESULT(WaterTemperatureKelvin), 1.75);
+	)
+	
+	EQUATION(Model, ReachKinematicViscosity,
+		return 0.00285 * std::exp(-0.027*RESULT(WaterTemperatureKelvin));
+	)
+	
+	EQUATION(Model, ReachDynamicViscosity,
+		return 2646.8*std::exp(-0.0268*RESULT(WaterTemperatureKelvin));
+	)
+	
+	EQUATION(Model, MolecularDiffusivityOfCompoundInWater,
+		return 13.26e-9 / (std::pow(RESULT(ReachDynamicViscosity), 1.14) * std::pow(PARAMETER(ContaminantMolecularVolume), 0.589));
+	)
+	
+	EQUATION(Model, ReachAirContaminantTransferVelocity,
+		double vH2O = (0.2 * INPUT(WindSpeed) + 0.3)*864.0;
+		return vH2O * std::pow( RESULT(MolecularDiffusivityOfCompoundInAir) / RESULT(MolecularDiffusivityOfWaterVapourInAir), 0.67);
+	)
+	
+	EQUATION(Model, SchmidtNumber,
+		return RESULT(ReachKinematicViscosity) / RESULT(MolecularDiffusivityOfCompoundInWater);
+	)
+	
+	
+	EQUATION(Model, ReachWaterContaminantTransferVelocity,
+		
+		//NOTE: This is only CASE I for now.    CASE II-V TODO
+		double windspeed = INPUT(WindSpeed);
+		double asc = 0.5;
+		double vCO2;
+		
+		//TODO: Separate equations for these for easier debugging?
+		if(windspeed <= 4.2)
+		{
+			asc = 0.67;
+			vCO2 = 0.65e-3;
+		}
+		else if(windspeed <= 13.0)
+			vCO2 = (0.79*windspeed - 2.68)*1e-3;
+		else 
+			vCO2 = (1.64*windspeed - 13.69)*1e-3;
+		
+		return std::pow(RESULT(SchmidtNumber)/600.0, -asc) * vCO2 * 864.0;
+	)
+	
+	EQUATION(Model, ReachOverallAirWaterContaminantTransferVelocity,
+		return 
+		1.0 / 
+		(
+			  1.0 / RESULT(ReachWaterContaminantTransferVelocity)
+			+ 1.0 / (RESULT(ReachAirWaterPartitioningCoefficient) * RESULT(ReachAirContaminantTransferVelocity)) 
+		);
+	)
+	
+	EQUATION(Model, DiffusiveAirReachExchangeFlux,
+		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - PARAMETER(AtmosphericContaminantConcentration)/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
+	)
+	
+	
+	
 	EQUATION(Model, ReachWaterContaminantConcentration,
 		return
 			RESULT(ContaminantMassInReach) /
@@ -389,8 +509,6 @@ AddIncaToxModule(mobius_model *Model)
 	EQUATION(Model, ReachSedimentContaminantFactor,
 		return RESULT(ReachWaterSOCPartitioningCoefficient) * RESULT(ReachSuspendedSOCMass) * PARAMETER(ContaminantSOCScalingFactor);
 	)
-	
-	
 	
 	
 	
