@@ -5,10 +5,9 @@ GenerateDataSet(mobius_model *Model)
 {
 	if(!Model->Finalized)
 	{
-		std::cout << "ERROR: Attempted to generate a data set before the model was finalized using an EndModelDefinition call." << std::endl;
-		return 0;
+		MOBIUS_FATAL_ERROR("ERROR: Attempted to generate a data set before the model was finalized using an EndModelDefinition call." << std::endl);
 	}
-	mobius_data_set *DataSet = new mobius_data_set {};  //NOTE: The {} ensures that all pointers are set to 0. This is important.
+	mobius_data_set *DataSet = new mobius_data_set {};  //NOTE: The {} ensures that all member pointers are set initialized to 0. This is important.
 	
 	DataSet->Model = Model;
 	

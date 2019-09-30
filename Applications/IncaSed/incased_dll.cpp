@@ -21,11 +21,11 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
 	mobius_model *Model = BeginModelDefinition("INCA-Sed");
 	
 	AddPersistModel(Model);
+	AddINCASedModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	
-	AddPersistModel(Model);
-	AddINCASedModel(Model);
+	EndModelDefinition(Model);
 	
 	mobius_data_set *DataSet = GenerateDataSet(Model);
 	
