@@ -1,4 +1,4 @@
-# Parameter file generated for INCA-N V1.0 at 2019-09-03 14:42:08
+# Parameter file generated for INCA-N V1.0 at 2019-10-01 13:08:10
 
 index_sets:
 "Landscape units" : {"Seminatural" "Agricultural"}
@@ -72,10 +72,10 @@ parameters:
 0.01 0.05
 
 "Growth curve offset" :     #(dimensionless) [0, 10] Vertical shift in the sine curve describing the seasonal N uptake coefficient. Must be greater than growth curve amplitude
-0.66 0.66
+1.3 0.66
 
 "Growth curve amplitude" :     #(dimensionless) [0, 5] Amplitude of sine curve describing the seasonal N uptake coefficient
-0.34 0.34
+0.1 0.34
 
 "Plant growth start day" :     #(Julian day) [1, 365] Day of year when N uptake begins, and also the horizontal shift in the seasonal plant N uptake coefficient
 95 55
@@ -84,16 +84,16 @@ parameters:
 185 180
 
 "Nitrate plant uptake rate" :     #(m/day) [0, 100] Coefficient to scale the NO3 plant uptake rate
-0.01 0.2
+0.008 0.2
 
 "Soil water denitrification rate" :     #(m/day) [0, 100] Rate coefficient to scale the loss of nitrate from the system by denitrification
-0.02 0.004
+0.021 0.004
 
 "Ammonium nitrification rate" :     #(m/day) [0, 100] Coefficient to scale the rate of conversion of ammonium to nitrate via nitrification in the soil water
-0.015 0.003
+0.011 0.003
 
 "Nitrogen fixation rate" :     #(kg/Ha/day) [0, 100] Coefficient to scale the rate of NO3 inputs to soilwater via N2 fixation
-0.007 0.01
+0.009 0.01
 
 "Maximum nitrogen uptake" :     #(kg/Ha/year) [0, 5000] Maximum annual nitrate plus ammonium plant uptake from the soilwater, above which uptake ceases
 300 300
@@ -111,10 +111,10 @@ parameters:
 0 0
 
 "Ammonium plant uptake rate" :     #(m/day) [0, 100] Rate coefficient to scale the rate of NH4 plant uptake
-0.35 0
+0.3 0
 
 "Ammonium immobilisation rate" :     #(m/day) [0, 100] Coefficient to scale the rate of ammonium loss from the soil water via immobilisation
-0.2 0
+0.3 0
 
 "Ammonium mineralisation rate" :     #(kg/Ha/day) [0, 100] Coefficient to scale the rate of ammonium input to the soil water via mineralisation
 0.01 0
@@ -238,7 +238,7 @@ true true true
 0 0 0
 
 "Water temperature lag factor" :     #(dimensionless) [1, 10]
-3 3 3
+2 3 3
 
 "Groundwater initial nitrate concentration" :     #(mg/l) [0, 100] Initial nitrate concentration in groundwater
 0.25 0.25 0.25
@@ -262,10 +262,10 @@ true true true
 0 0 0
 
 "Reach denitrification rate" :     #(/day) [0, 100] Coefficient to scale loss of nitrate from the reach via denitrification
-0.02 0.02 0.02
+0.044 0.02 0.02
 
 "Reach nitrification rate" :     #(/day) [0, 100] Coefficient to scale reach nitrification (conversion of ammonium to nitrate)
-0.01 0.01 0.01
+0.012 0.01 0.01
 
 "Reach effluent nitrate concentration" :     #(mg/l) [0, 1000] Concentration of nitrate in effluent inputs to reach
 0.1231 0.8211 0.3954
