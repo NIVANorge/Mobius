@@ -47,7 +47,7 @@ for var in vars :
 	print('', file=output)
 	print('"%s" :' % var, file=output)
 	initial_values = df['%s []' % var]
-	meanval = np.mean(initial_values)
+	meanval = np.mean(initial_values[-3:])
 	for year in range(1990, 2101) :
 		print('%d-01-01 to %d-12-31 %f' % (year, year, initial_values[year-1990] if year <= 2017 else meanval), file=output)
 
