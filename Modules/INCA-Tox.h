@@ -14,6 +14,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");
 	auto M                = RegisterUnit(Model, "m");
+	auto M3               = RegisterUnit(Model, "m3");
 	auto NgPerKm2         = RegisterUnit(Model, "ng/km2");
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerDay         = RegisterUnit(Model, "ng/day");
@@ -103,6 +104,8 @@ AddIncaToxModule(mobius_model *Model)
 	auto SOCDeliveryToReach = GetEquationHandle(Model, "SOC delivery to reach by erosion"); //INCA-Tox-C.h
 	auto AverageBedGrainDiameter = GetEquationHandle(Model, "Average bed grain diameter"); //INCA-Microplastics.h
 	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity"); //INCA-Microplastics.h
+	auto ReachSOCDeposition = GetEquationHandle(Model, "Reach SOC deposition"); //INCA-Tox-C.h
+	auto ReachSOCEntrainment = GetEquationHandle(Model, "Reach SOC entrainment"); //INCA-Tox-C.h
 	
 	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //PERSiST.h
 	auto Percent         = GetParameterDoubleHandle(Model, "%");                //PERSiST.h
@@ -347,11 +350,19 @@ AddIncaToxModule(mobius_model *Model)
 	SetSolver(Model, ReachWaterContaminantConcentration, ReachSolver);
 	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg);
 	SetSolver(Model, ReachDOCContaminantConcentration, ReachSolver);
+	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg);
+	//SetSolver(Model, ReachSOCContaminantConcentration, ReachSolver);
 	
-	auto ReachSedimentContaminantFactor = RegisterEquation(Model, "Reach sediment contaminant factor", Dimensionless); //TODO: Not actually dimensionless. M^3?
+	auto ReachSedimentContaminantFactor = RegisterEquation(Model, "Reach sediment contaminant factor", M3);
 	auto TotalReachSedimentContaminantFactor = RegisterEquationCumulative(Model, "Total reach sediment contaminant factor", ReachSedimentContaminantFactor, Class);
 	
+	auto ReachContaminantDeposition = RegisterEquation(Model, "Reach contaminant deposition", NgPerM2PerDay);
+	auto ReachContaminantEntrainment = RegisterEquation(Model, "Reach contaminant entrainment", NgPerM2PerDay);
 	
+	auto TotalReachContaminantDeposition = RegisterEquationCumulative(Model, "Total reach contaminant deposition", ReachContaminantDeposition, Class);
+	auto TotalReachContaminantEntrainment = RegisterEquationCumulative(Model, "Total reach contaminant entrainment", ReachContaminantEntrainment, Class);
+	
+	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Bed SOC contaminant concentration", NgPerKg);
 	
 	
 	EQUATION(Model, DiffuseContaminantOutput,
@@ -372,6 +383,7 @@ AddIncaToxModule(mobius_model *Model)
 			upstreamflux
 			+ RESULT(TotalDiffuseContaminantOutput)
 			+ RESULT(TotalContaminantDeliveryToReachByAllErosion)
+			//+ deposition
 			;
 	)
 	
@@ -380,7 +392,7 @@ AddIncaToxModule(mobius_model *Model)
 		return
 		  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration)
 		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration);
-		// + suspended sediment stuff
+		// + suspended sediment flux
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
@@ -393,8 +405,10 @@ AddIncaToxModule(mobius_model *Model)
 		return
 			  RESULT(ReachContaminantInput)
 			- RESULT(ReachContaminantFlux)
-			- RESULT(ReachContaminantDegradation);
+			- RESULT(ReachContaminantDegradation)
 			- RESULT(DiffusiveAirReachExchangeFlux);
+			- RESULT(TotalReachContaminantDeposition)
+			+ RESULT(TotalReachContaminantEntrainment);
 			// exchange with stream bed
 	)
 	
@@ -453,7 +467,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachDynamicViscosity,
-		return 2646.8*std::exp(-0.0268*RESULT(WaterTemperatureKelvin));
+		return 2646.8 * std::exp(-0.0268*RESULT(WaterTemperatureKelvin));
 	)
 	
 	EQUATION(Model, MolecularDiffusivityOfCompoundInWater,
@@ -558,7 +572,6 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	
-	
 	EQUATION(Model, ReachWaterContaminantConcentration,
 		return
 			RESULT(ContaminantMassInReach) /
@@ -573,7 +586,22 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(ReachWaterSOCPartitioningCoefficient) * RESULT(ReachSuspendedSOCMass) * PARAMETER(ContaminantSOCScalingFactor);
 	)
 	
+	EQUATION(Model, ReachSOCContaminantConcentration,
+		return RESULT(ReachWaterContaminantConcentration) * RESULT(ReachWaterSOCPartitioningCoefficient) * PARAMETER(ContaminantSOCScalingFactor);
+	)
 	
+	EQUATION(Model, ReachContaminantDeposition,
+		return RESULT(ReachSOCDeposition) * LAST_RESULT(ReachSOCContaminantConcentration);    //TODO: Unless we use LAST_RESULT we get a circular dependency among equations.. How to fix this??? Alternatively use LAST_RESULT(ReachWaterContaminantConcentration) in ReachSOCContaminantConcentration, but that is not much better...
+	)
+	
+	EQUATION(Model, ReachContaminantEntrainment,
+		return RESULT(ReachSOCEntrainment) * LAST_RESULT(BedSOCContaminantConcentration);
+	)
+	
+	
+	EQUATION(Model, BedSOCContaminantConcentration,
+		return 0.0; //TODO
+	)
 	
 	
 	
