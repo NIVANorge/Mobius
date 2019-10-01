@@ -396,7 +396,6 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
-		//TODO: May have to do this per compartment.
 		return RESULT(ContaminantMassInReach) * PARAMETER(ReachContaminantDegradationRateConstant);
 	)
 	
@@ -406,9 +405,9 @@ AddIncaToxModule(mobius_model *Model)
 			  RESULT(ReachContaminantInput)
 			- RESULT(ReachContaminantFlux)
 			- RESULT(ReachContaminantDegradation)
-			- RESULT(DiffusiveAirReachExchangeFlux);
-			- RESULT(TotalReachContaminantDeposition)
-			+ RESULT(TotalReachContaminantEntrainment);
+			- RESULT(DiffusiveAirReachExchangeFlux)
+			+
+			(- RESULT(TotalReachContaminantDeposition) + RESULT(TotalReachContaminantEntrainment)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
 			// exchange with stream bed
 	)
 	
