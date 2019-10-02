@@ -15,6 +15,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto Ng               = RegisterUnit(Model, "ng");
 	auto M                = RegisterUnit(Model, "m");
 	auto M3               = RegisterUnit(Model, "m3");
+	auto M3PerM2          = RegisterUnit(Model, "m3/m2");
 	auto NgPerKm2         = RegisterUnit(Model, "ng/km2");
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerDay         = RegisterUnit(Model, "ng/day");
@@ -22,6 +23,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto NgPerM2          = RegisterUnit(Model, "ng/m2");
 	auto NgPerM3          = RegisterUnit(Model, "ng/m3");
 	auto NgPerKg          = RegisterUnit(Model, "ng/kg");
+	auto KgPerM3          = RegisterUnit(Model, "kg/m3");
 	auto M3PerKg          = RegisterUnit(Model, "m3/kg");
 	auto M3PerKm2         = RegisterUnit(Model, "m3/km2");
 	auto KiloJoulesPerMol = RegisterUnit(Model, "kJ/mol");
@@ -84,7 +86,8 @@ AddIncaToxModule(mobius_model *Model)
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
 	
 	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5); //Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
-	
+	auto SedimentDryDensity = RegisterParameterDouble(Model, ContaminantReach, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
+	auto SedimentPorosity   = RegisterParameterDouble(Model, ContaminantReach, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
 	
 	
 	
@@ -104,6 +107,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto ReachDOCMass    = GetEquationHandle(Model, "Reach DOC mass");   //INCA-Tox-C.h
 	auto SOCDeliveryToReach = GetEquationHandle(Model, "SOC delivery to reach by erosion"); //INCA-Tox-C.h
 	auto AverageBedGrainDiameter = GetEquationHandle(Model, "Average bed grain diameter"); //INCA-Microplastics.h
+	auto TotalMassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Total mass of bed grain per unit area"); //INCA-Microplastics.h
 	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity"); //INCA-Microplastics.h
 	auto ReachSOCDeposition = GetEquationHandle(Model, "Reach SOC deposition"); //INCA-Tox-C.h
 	auto ReachSOCEntrainment = GetEquationHandle(Model, "Reach SOC entrainment"); //INCA-Tox-C.h
@@ -127,7 +131,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	
 	auto SoilSolver = RegisterSolver(Model, "Soil Solver", 0.1, IncaDascru);
-	//auto SoilSolver = RegisterSolver(Model, "Soil Solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
+	
 	
 	auto HenrysConstant = RegisterEquation(Model, "Henry's constant", PascalM3PerMol);
 	
@@ -312,6 +316,7 @@ AddIncaToxModule(mobius_model *Model)
 
 	
 	auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, IncaDascru); //NOTE: We can't use the reach solver from PERSiST, because we depend on the grain solver that again depends on the PERSiST reach solver.
+	//auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
 	
 	auto WaterTemperatureKelvin        = RegisterEquation(Model, "Water temperature in Kelvin", K);
 	
@@ -355,8 +360,8 @@ AddIncaToxModule(mobius_model *Model)
 	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg);
 	//SetSolver(Model, ReachSOCContaminantConcentration, ReachSolver);
 	
-	auto ReachSedimentContaminantFactor = RegisterEquation(Model, "Reach sediment contaminant factor", M3);
-	auto TotalReachSedimentContaminantFactor = RegisterEquationCumulative(Model, "Total reach sediment contaminant factor", ReachSedimentContaminantFactor, Class);
+	auto ReachSedimentContaminantFactor = RegisterEquation(Model, "Reach sediment SOC contaminant factor", M3);
+	auto TotalReachSedimentContaminantFactor = RegisterEquationCumulative(Model, "Total reach sediment SOC contaminant factor", ReachSedimentContaminantFactor, Class);
 	
 	auto ReachContaminantDeposition = RegisterEquation(Model, "Reach contaminant deposition", NgPerM2PerDay);
 	auto ReachContaminantEntrainment = RegisterEquation(Model, "Reach contaminant entrainment", NgPerM2PerDay);
@@ -364,10 +369,17 @@ AddIncaToxModule(mobius_model *Model)
 	auto TotalReachContaminantDeposition = RegisterEquationCumulative(Model, "Total reach contaminant deposition", ReachContaminantDeposition, Class);
 	auto TotalReachContaminantEntrainment = RegisterEquationCumulative(Model, "Total reach contaminant entrainment", ReachContaminantEntrainment, Class);
 	
-	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
+	auto PoreWaterVolume = RegisterEquation(Model, "Pore water volume", M3PerM2);
+	
 	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2);
 	SetSolver(Model, BedContaminantMass, ReachSolver);
 	//SetInitialValue
+	
+	auto BedSedimentContaminantFactor = RegisterEquation(Model, "Stream bed SOC contaminant factor", M3PerM2);
+	auto TotalBedSedimentContaminantFactor = RegisterEquationCumulative(Model, "Total stream bed SOC contaminant factor", BedSedimentContaminantFactor, Class);
+	auto BedWaterContaminantConcentration = RegisterEquation(Model, "Stream bed pore water contaminant concentration", NgPerM3);
+	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
+	
 	
 	EQUATION(Model, DiffuseContaminantOutput,
 		return
@@ -598,7 +610,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachContaminantEntrainment,
-		return RESULT(ReachSOCEntrainment) * LAST_RESULT(BedSOCContaminantConcentration);
+		return RESULT(ReachSOCEntrainment) * LAST_RESULT(BedSOCContaminantConcentration);     //TODO: Same as above
 	)
 	
 	
@@ -607,11 +619,26 @@ AddIncaToxModule(mobius_model *Model)
 		  RESULT(TotalReachContaminantDeposition)
 		- RESULT(TotalReachContaminantEntrainment);
 		// TODO: degradation
+		// TODO: diffusive exchange with stream
 	)
 	
+	EQUATION(Model, PoreWaterVolume,
+		//TODO: We could compute this based on the actual density of sediment classes (INCA-MP parameter) instead of having a separate parameter for it.
+		//TODO: Also, this should maybe be an output of INCA-MP instead of being computed by the contaminants module.
+		return (RESULT(TotalMassOfBedGrainPerUnitArea) / PARAMETER(SedimentDryDensity)) * std::pow(PARAMETER(SedimentPorosity), 2.0/3.0);
+	)
+	
+	EQUATION(Model, BedSedimentContaminantFactor,
+		return RESULT(ReachWaterSOCPartitioningCoefficient) * LAST_RESULT(BedSOCMass) * PARAMETER(ContaminantSOCScalingFactor);
+	)
+	
+	EQUATION(Model, BedWaterContaminantConcentration,
+		return RESULT(BedContaminantMass) /
+			(RESULT(TotalBedSedimentContaminantFactor) + RESULT(PoreWaterVolume)); //TODO: DOC in pore water, but is it necessary?
+	)	
 	
 	EQUATION(Model, BedSOCContaminantConcentration,
-		return 0.0; //TODO: need exchange with pore water etc.
+		return RESULT(BedWaterContaminantConcentration) * RESULT(ReachWaterSOCPartitioningCoefficient) * PARAMETER(ContaminantSOCScalingFactor);
 	)
 	
 	

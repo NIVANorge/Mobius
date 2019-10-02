@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.2, INCA-Microplastics V0.9.10, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox DOC V0.1, INCA-Tox V0.00.0.0.23) at 2019-09-26 14:34:49
+# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.2, INCA-Microplastics V0.9.10, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox DOC V0.1, INCA-Tox V0.00.0.0.23) at 2019-10-02 14:27:43
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -224,13 +224,13 @@ false
 1
 
 "Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+1e-05
 
 "Mean channel slope" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 2
 
 "Entrainment coefficient" :     #(s2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+1e-12
 
 "Initial water temperature" :     #(°C) [0, 40]
 20
@@ -252,6 +252,12 @@ false
 
 "Average height of large stones in the stream bed" :     #(m) [0, 0.5]
 0
+
+"Sediment dry density" :     #(kg/m3) [0, 10000]
+2000
+
+"Sediment porosity" :     #(dimensionless) [0, 0.99]
+0.1
 
 ###################### "Reaches" "Landscape units" ######################
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
