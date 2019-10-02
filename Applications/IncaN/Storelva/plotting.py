@@ -7,6 +7,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
+
 
 wrapper_fpath = (r'../../../PythonWrapper/mobius.py')
 mobius = imp.load_source('mobius', wrapper_fpath)
@@ -58,36 +61,37 @@ dataset.delete()
 
 df = pd.concat([df, obs_df], axis=1)
 
-aggr_df = df.resample('Y').mean()
+#aggr_df = df.resample('Y').mean()    # 'Y' for yearly, 'Q' for quarterly
+aggr = df.resample('QS-DEC').mean()
 
-#print(aggr_df)
 
-
-colors = ['red', 'blue']
-
-variables = ['Q', 'NO3', 'P', 'T']
-names = ['Flow [m3/s]', 'Nitrate [mg/l]', 'Precipitation [mm/day]', 'Air temperature [°C]']
-
-fig, ax = plt.subplots(len(variables), 1, figsize=(6,10))
-
-for idx_var, variable in enumerate(variables):
-	for idx_scn, scenario in enumerate(scenarios) :
-
-		cols = ['%s_%s_%s' % (variable, model, scenario) for model in models]
-
-		disp_df = aggr_df[cols]
-
-		ax[idx_var].fill_between(disp_df.index, disp_df.min(axis=1).values, disp_df.max(axis=1).values, facecolor=colors[idx_scn], alpha = 0.5)
-		ax[idx_var].plot(disp_df.index, disp_df.mean(axis=1).values, color=colors[idx_scn], label=scenario)
+for idx, season in enumerate(['DJF', 'MAM', 'JJA', 'SON']) :
 	
+	aggr_df = aggr.iloc[(idx+1)::4]
 	
-	ax[idx_var].plot(aggr_df.index, aggr_df['%s_obs' % variable].values, color='black', label='observed')
-	
-	ax[idx_var].set_ylabel(names[idx_var])
-	ax[idx_var].legend()
+	colors = ['red', 'blue']
 
-fig.savefig('plot.png')
+	variables = ['Q', 'NO3', 'P', 'T']
+	names = ['Flow [m3/s]', 'Nitrate [mg/l]', 'Precipitation [mm/day]', 'Air temperature [°C]']
 
-plt.show()
+	fig, ax = plt.subplots(len(variables), 1, figsize=(6,10))
+
+	for idx_var, variable in enumerate(variables):
+		for idx_scn, scenario in enumerate(scenarios) :
+
+			cols = ['%s_%s_%s' % (variable, model, scenario) for model in models]
+
+			disp_df = aggr_df[cols]
+
+			ax[idx_var].fill_between(disp_df.index, disp_df.min(axis=1).values, disp_df.max(axis=1).values, facecolor=colors[idx_scn], alpha = 0.5)
+			ax[idx_var].plot(disp_df.index, disp_df.mean(axis=1).values, color=colors[idx_scn], label=scenario)
+		
+		
+		ax[idx_var].plot(aggr_df.index, aggr_df['%s_obs' % variable].values, color='black', label='observed')
+		
+		ax[idx_var].set_ylabel(names[idx_var])
+		ax[idx_var].legend()
+
+	fig.savefig('plot_%s.png' % season)
 
 
