@@ -20,6 +20,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto Kg       = RegisterUnit(Model, "kg");
 	auto KgPerDay = RegisterUnit(Model, "kg/day");
 	auto KgPerKm2 = RegisterUnit(Model, "kg/km2");
+	auto KgPerM2  = RegisterUnit(Model, "kg/m2");
 	auto KgPerKg  = RegisterUnit(Model, "kg/kg");
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km2/day");
 	auto KgPerM2PerDay  = RegisterUnit(Model, "kg/m2/day");
@@ -59,6 +60,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto SuspendedGrainMass   = GetEquationHandle(Model, "Suspended grain mass");
 	auto GrainDeposition      = GetEquationHandle(Model, "Grain deposition");
 	auto GrainEntrainment     = GetEquationHandle(Model, "Grain entrainment");
+	auto MassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Mass of bed grain per unit area");
 	
 	
 	auto Percent                  = GetParameterDoubleHandle(Model, "%");
@@ -84,7 +86,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto ReachDOCInput             = RegisterEquation(Model, "Reach DOC input", KgPerDay);
 	auto ReachDOCConcentration     = RegisterEquation(Model, "Reach DOC concentration", MgPerL);
 	auto ReachSuspendedSOCMass     = RegisterEquation(Model, "Reach suspended SOC mass", Kg);
-	
+	auto BedSOCMass                = RegisterEquation(Model, "Stream bed SOC mass", KgPerM2);
 	auto ReachSOCDeposition        = RegisterEquation(Model, "Reach SOC deposition", KgPerM2PerDay);
 	auto ReachSOCEntrainment       = RegisterEquation(Model, "Reach SOC entrainment", KgPerM2PerDay);
 	
@@ -151,6 +153,10 @@ AddIncaToxDOCModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachSuspendedSOCMass,
 		return RESULT(SuspendedGrainMass) * PARAMETER(GrainSOCDensity);
+	)
+	
+	EQUATION(Model, BedSOCMass,
+		return RESULT(MassOfBedGrainPerUnitArea) * PARAMETER(GrainSOCDensity);
 	)
 	
 	EQUATION(Model, ReachSOCDeposition,

@@ -19,6 +19,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerDay         = RegisterUnit(Model, "ng/day");
 	auto NgPerM2PerDay    = RegisterUnit(Model, "ng/m2/day");
+	auto NgPerM2          = RegisterUnit(Model, "ng/m2");
 	auto NgPerM3          = RegisterUnit(Model, "ng/m3");
 	auto NgPerKg          = RegisterUnit(Model, "ng/kg");
 	auto M3PerKg          = RegisterUnit(Model, "m3/kg");
@@ -106,12 +107,13 @@ AddIncaToxModule(mobius_model *Model)
 	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity"); //INCA-Microplastics.h
 	auto ReachSOCDeposition = GetEquationHandle(Model, "Reach SOC deposition"); //INCA-Tox-C.h
 	auto ReachSOCEntrainment = GetEquationHandle(Model, "Reach SOC entrainment"); //INCA-Tox-C.h
+	auto ReachSuspendedSOCMass = GetEquationHandle(Model, "Reach suspended SOC mass"); //INCA-Tox-C.h
+	auto BedSOCMass       = GetEquationHandle(Model, "Stream bed SOC mass"); //INCA-Tox-C.h
 	
 	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //PERSiST.h
 	auto Percent         = GetParameterDoubleHandle(Model, "%");                //PERSiST.h
 	auto MaximumCapacity = GetParameterDoubleHandle(Model, "Maximum capacity"); //PERSiST.h
 	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");      //INCA-Tox-C.h
-	auto ReachSuspendedSOCMass = GetEquationHandle(Model, "Reach suspended SOC mass"); //INCA-Tox-C.h
 	auto ReachLength     = GetParameterDoubleHandle(Model, "Reach length"); //PERSiST.h
 	auto ReachWidth      = GetParameterDoubleHandle(Model, "Reach width"); //PERSiST.h
 	
@@ -362,8 +364,10 @@ AddIncaToxModule(mobius_model *Model)
 	auto TotalReachContaminantDeposition = RegisterEquationCumulative(Model, "Total reach contaminant deposition", ReachContaminantDeposition, Class);
 	auto TotalReachContaminantEntrainment = RegisterEquationCumulative(Model, "Total reach contaminant entrainment", ReachContaminantEntrainment, Class);
 	
-	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Bed SOC contaminant concentration", NgPerKg);
-	
+	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
+	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2);
+	SetSolver(Model, BedContaminantMass, ReachSolver);
+	//SetInitialValue
 	
 	EQUATION(Model, DiffuseContaminantOutput,
 		return
@@ -598,8 +602,16 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	
+	EQUATION(Model, BedContaminantMass,
+		return
+		  RESULT(TotalReachContaminantDeposition)
+		- RESULT(TotalReachContaminantEntrainment);
+		// TODO: degradation
+	)
+	
+	
 	EQUATION(Model, BedSOCContaminantConcentration,
-		return 0.0; //TODO
+		return 0.0; //TODO: need exchange with pore water etc.
 	)
 	
 	
