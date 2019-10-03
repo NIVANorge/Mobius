@@ -72,6 +72,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto SoilContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in soil", PerDay, 0.0, 0.0, 1.0);
 	auto GroundwaterContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in groundwater", PerDay, 0.0, 0.0, 1.0);
 	auto ReachContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream", PerDay, 0.0, 0.0, 1.0);
+	auto BedContaminantDegradationRateConstant      = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream bed", PerDay, 0.0, 0.0, 1.0);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
 	
@@ -371,6 +372,8 @@ AddIncaToxModule(mobius_model *Model)
 	
 	auto PoreWaterVolume = RegisterEquation(Model, "Pore water volume", M3PerM2);
 	
+	auto BedContaminantDegradation        = RegisterEquation(Model, "Stream bed contaminant degradation", NgPerM2PerDay);
+	SetSolver(Model, BedContaminantDegradation, ReachSolver);
 	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2);
 	SetSolver(Model, BedContaminantMass, ReachSolver);
 	//SetInitialValue
@@ -379,6 +382,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto TotalBedSedimentContaminantFactor = RegisterEquationCumulative(Model, "Total stream bed SOC contaminant factor", BedSedimentContaminantFactor, Class);
 	auto BedWaterContaminantConcentration = RegisterEquation(Model, "Stream bed pore water contaminant concentration", NgPerM3);
 	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
+	
 	
 	
 	EQUATION(Model, DiffuseContaminantOutput,
@@ -613,12 +617,15 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(ReachSOCEntrainment) * LAST_RESULT(BedSOCContaminantConcentration);     //TODO: Same as above
 	)
 	
+	EQUATION(Model, BedContaminantDegradation,
+		return RESULT(BedContaminantMass) * PARAMETER(BedContaminantDegradationRateConstant);
+	)
 	
 	EQUATION(Model, BedContaminantMass,
 		return
 		  RESULT(TotalReachContaminantDeposition)
-		- RESULT(TotalReachContaminantEntrainment);
-		// TODO: degradation
+		- RESULT(TotalReachContaminantEntrainment)
+		- RESULT(BedContaminantDegradation);
 		// TODO: diffusive exchange with stream
 	)
 	
