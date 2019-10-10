@@ -168,6 +168,9 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto SoilWaterFlow = RegisterEquation(Model, "Soil water flow", MmPerDay); // Total flow out of soil box (including that which then goes to GW)
 	SetSolver(Model, SoilWaterFlow, LandSolver);
 	
+	auto Evapotranspiration = RegisterEquation(Model, "Evapotranspiration", MmPerDay);
+	SetSolver(Model, Evapotranspiration, LandSolver);
+	
 	auto SoilWaterVolume = RegisterEquationODE(Model, "Soil water volume", Mm);
 	SetInitialValue(Model, SoilWaterVolume, SoilFieldCapacity);
 	SetSolver(Model, SoilWaterVolume, LandSolver);
@@ -181,10 +184,14 @@ AddSimplyHydrologyModule(mobius_model *Model)
 		return -smd * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
 	)
 	
+	EQUATION(Model, Evapotranspiration,
+		return PARAMETER(PETMultiplicationFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+	)
+	
 	EQUATION(Model, SoilWaterVolume,
 		return
 			  RESULT(Infiltration)
-			- PARAMETER(PETMultiplicationFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity))) //NOTE: Should 0.01 be a parameter?
+			- RESULT(Evapotranspiration)
 			- RESULT(SoilWaterFlow);	
 	)
 	
