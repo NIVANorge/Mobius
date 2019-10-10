@@ -171,7 +171,7 @@ enum parameter_type
 inline const char *
 GetParameterTypeName(parameter_type Type)
 {
-	//NOTE: It is important that this matches the above enum:
+	//NOTE: It is important that this matches the above parameter_type enum:
 	const char *Typenames[4] = {"double", "uint", "bool", "time"};
 	return Typenames[(size_t)Type];
 }
@@ -222,13 +222,11 @@ typedef MOBIUS_SOLVER_FUNCTION(mobius_solver_function);
 struct parameter_group_spec
 {
 	const char *Name;
-	//parameter_group_h ParentGroup;
 	std::vector<index_set_h> IndexSets;
 	
 	module_h Module;
 	
 	std::vector<entity_handle> Parameters;
-	//std::vector<parameter_group_h> ChildrenGroups;
 };
 
 enum index_set_type
@@ -307,17 +305,17 @@ struct equation_spec
 	
 	std::vector<result_dependency_registration> IndexedResultAndLastResultDependencies; //TODO: Maybe don't store these here, we could keep them separately just locally in EndModelDefinition.
 	
-	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies.
-	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies
+	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
+	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
 };
 
 struct solver_spec
 {
 	const char *Name;
 	
-	double h;
-	double RelErr;
-	double AbsErr;
+	double h;           //The desired step size of the solver when errors are tolerable (0.0 - 1.0)
+	double RelErr;      //Relative error tolerance (used by some solvers)
+	double AbsErr;      //Absolute error tolerance (used by some solvers)
 	
 	mobius_solver_function *SolverFunction;
 	
@@ -330,8 +328,8 @@ struct solver_spec
 	std::set<equation_h> DirectResultDependencies;
 	std::set<equation_h> CrossIndexResultDependencies;
 	
-	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies.
-	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies
+	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
+	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
 };
 
 struct input_spec
@@ -340,7 +338,7 @@ struct input_spec
 	
 	unit_h Unit;
 	
-	bool IsAdditional;
+	bool IsAdditional; //If it was user-specified in the input file, as opposed to being registered by a model building procedure.
 	
 	std::vector<index_set_h> IndexSetDependencies;
 };
@@ -423,7 +421,7 @@ template <typename spec_type>
 struct entity_registry
 {
 	std::vector<spec_type> Specs;
-	string_map NameToHandle;   // Specs[NameToHandle["MyName"]].Name = "MyName";
+	string_map NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
 	
 	entity_registry()
 	{
@@ -456,9 +454,7 @@ struct entity_registry
 
 struct mobius_model
 {
-	//TODO: It should probably instead have a list of versions of the submodules, and these should be set by the submodules instead during registration, not on application level.
 	const char *Name;
-	//const char *Version;
 	
 	module_h CurrentModule = {};
 	
@@ -906,22 +902,6 @@ RegisterParameterGroup(mobius_model *Model, const char *Name, T... IndexSets)
 	return {ParameterGroup};
 }
 
-/*
-inline void
-SetParentGroup(mobius_model *Model, parameter_group_h Child, parameter_group_h Parent)
-{
-	REGISTRATION_BLOCK(Model)
-	
-	parameter_group_spec &ChildSpec = Model->ParameterGroups.Specs[Child.Handle];
-	parameter_group_spec &ParentSpec = Model->ParameterGroups.Specs[Parent.Handle];
-	if(IsValid(ChildSpec.ParentGroup) && ChildSpec.ParentGroup.Handle != Parent.Handle)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Setting a parent group for the parameter group " << ChildSpec.Name << ", but it already has a different parent group " << GetName(Model, ChildSpec.ParentGroup) << ".");
-	}
-	ChildSpec.ParentGroup = Parent;
-	ParentSpec.ChildrenGroups.push_back(Child);
-}
-*/
 
 inline input_h
 RegisterInput(mobius_model *Model, const char *Name, unit_h Unit = {0}, bool IsAdditional = false)
@@ -1513,7 +1493,7 @@ RegisterLastResultDependency(value_set_accessor *ValueSet, equation_h Result, T.
 	return 0.0;
 }
 
-//TODO: SET_RESULT is not that nice, and can interfere with how the dependency system works if used incorrectly. It is included to get Persist and some other models to work, but should be used with care!
+//TODO: SET_RESULT is not that nice, and can interfere with how the dependency system works if used incorrectly. It is included to get PERSiST and some other models to work, but should be used with care!
 #define SET_RESULT(ResultH, Value, ...) {if(ValueSet__->Running){SetResult(ValueSet__, Value, ResultH, ##__VA_ARGS__);}}
 
 template<typename... T> void

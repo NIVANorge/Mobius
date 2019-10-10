@@ -284,8 +284,6 @@ EndModelDefinition(mobius_model *Model)
 		//Call the equation. Since we are in ValueSet.Running==false mode, the equation will register which values it tried to access.
 		Model->EquationBodies[EquationHandle](&ValueSet);
 		
-		//std::cout << GetName(Model, equation {EquationHandle}) << std::endl;
-		
 		Spec.IndexSetDependencies.insert(ValueSet.DirectIndexSetDependencies.begin(), ValueSet.DirectIndexSetDependencies.end());
 		
 		for(dependency_registration ParameterDependency : ValueSet.ParameterDependencies)
@@ -347,7 +345,7 @@ EndModelDefinition(mobius_model *Model)
 			else
 			{
 				Spec.CrossIndexResultDependencies.insert(equation_h {DepResultHandle}); //TODO: Do we really need to keep this separately?
-				Spec.IndexedResultAndLastResultDependencies.push_back(ResultDependency); //TODO: Maybe don't store these on the result spec? They are only needed in this algorithm..
+				Spec.IndexedResultAndLastResultDependencies.push_back(ResultDependency); //TODO: Maybe don't store these on the equation spec? They are only needed in this algorithm..
 			}
 		}
 		
@@ -371,7 +369,7 @@ EndModelDefinition(mobius_model *Model)
 		
 		//NOTE: Every equation always depends on its initial value equation if it has one.
 		//TODO: Right now we register it as a LastResultDependency, which is not technically correct, but it should give the desired result.
-		//TODO: Figure out if this may break somehting, and if we need a specialized system for this?
+		//TODO: Figure out if this may break something, and if we need a specialized system for this?
 		equation_h EqInitialValue = Model->Equations.Specs[EquationHandle].InitialValueEquation;
 		if(IsValid(EqInitialValue))
 		{
@@ -380,7 +378,7 @@ EndModelDefinition(mobius_model *Model)
 	}
 	
 	{
-		//NOTE: Check for computed parameters if their equation satisfies the requirements:
+		//NOTE: Check computed parameters to see if their equation satisfies the requirements specified in the documentation:
 		for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
 		{
 			parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
@@ -404,7 +402,7 @@ EndModelDefinition(mobius_model *Model)
 	
 	///////////////////// Resolve indirect dependencies of equations on index sets.
 	
-	//TODO: This is probably an inefficient way to do it, we should instead use some kind of graph traversal, but it is tricky. We need a way to do it properly with collapsing the dependency graph (including both results and lastresults) by its strongly connected components, then resolving the dependencies between the components.
+	//TODO: This is probably an inefficient way to do it, we should instead use some kind of graph traversal, but it is tricky. To do it properly one would have to collapse the dependency graph (including both results and lastresults) by its strongly connected components, then resolving the dependencies between the components.  However the current implementation has proven fast enough so far.
 	//NOTE: We stop the iteraton at 1000 so that if the dependencies are unresolvable, we don't go in an infinite loop. (they can probably never become unresolvable though??)
 	bool DependenciesWereResolved = false;
 	for(size_t It = 0; It < 1000; ++It)
