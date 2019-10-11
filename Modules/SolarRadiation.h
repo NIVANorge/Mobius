@@ -29,18 +29,24 @@ AddMaxSolarRadiationModule(mobius_model *Model)
 	auto Degrees        = RegisterUnit(Model, "°");
 	auto MJPerM2PerDay  = RegisterUnit(Model, "MJ/m2/day");
 	
+	//TODO: We COULD have this per subcatchment/reach, but is probably overkill in most instances...
 	auto Solar    = RegisterParameterGroup(Model, "Solar radiation");
 	
 	auto Latitude  = RegisterParameterDouble(Model, Solar, "Latitude", Degrees, 60.0, -90.0, 90.0);
-	auto Elevation = RegisterParameterDouble(Model, Solar, "Elevation", Metres, 0.0, 0.0, 8848.0);  //This is technically not used here, but is used by basically every other module that relies on this one.
+	auto Elevation = RegisterParameterDouble(Model, Solar, "Elevation", Metres, 0.0, 0.0, 8848.0);
 	
 	auto SolarRadiationMax = RegisterEquation(Model, "Solar radiation on a clear sky day", MJPerM2PerDay);
 	
 	EQUATION(Model, SolarRadiationMax,
+		//NOTE: Theoretically maximal surface downwelling shortwave radiation when there are no clouds.
+	
 		double latitude = PARAMETER(Latitude);
 	
 		s32 DOY = (s32)CURRENT_DAY_OF_YEAR();
-		return DailyExtraTerrestrialRadiation(latitude, DOY) * 0.8;	//NOTE: Multiplication by 0.8 is a rough estimate of loss of energy in atmosphere
+		
+		double detr = DailyExtraTerrestrialRadiation(latitude, DOY);
+		
+		return (0.75 + 2e-5*PARAMETER(Elevation))*detr; //NOTE: Rough estimate of loss of energy in atmosphere.
 	)
 	
 	EndModule(Model);
@@ -52,25 +58,21 @@ AddSolarRadiationModule(mobius_model *Model)
 	AddMaxSolarRadiationModule(Model);
 
 	BeginModule(Model, "Solar radiation", "0.1");  //NOTE: just add this into the same module as above
+	
 	//NOTE: This module is made primarily for use in INCA-C and INCA-P
+	//TODO: We should maybe use net radiation like Priestley-Taylor in PET.h ??
 	
 	auto WPerM2         = RegisterUnit(Model, "W/m^2");
 	
 	auto SolarRadiationTimeseries = RegisterInput(Model, "Solar radiation", WPerM2);
 	
-	auto Elevation = GetParameterDoubleHandle(Model, "Elevation");
-	
 	auto SolarRadiationMax = GetEquationHandle(Model, "Solar radiation on a clear sky day");
 	auto SolarRadiation    = RegisterEquation(Model,  "Solar radiation", WPerM2);
 	
 	EQUATION(Model, SolarRadiation,
-	
-		double elevation = PARAMETER(Elevation);
-		
-		double DETR = RESULT(SolarRadiationMax);
 		
 		//Short-wave radiation  //TODO: Estimate cloud cover based on some kind of proxy?
-		double SWR  = (0.75 + 2e-5*elevation)*DETR;
+		double SWR  = RESULT(SolarRadiationMax);
 		
 		double sradin = INPUT(SolarRadiationTimeseries);
 		

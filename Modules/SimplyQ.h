@@ -35,14 +35,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	auto Degrees = RegisterUnit(Model, "°C");
 	
-	
-	auto System = GetParameterGroupHandle(Model, "System");
-	RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
-	
-	//AddPreprocessingStep(Model, ComputeThornthwaitePET); //NOTE: The preprocessing step is called at the start of each model run.
-	
-	
-	
 	auto Dimensionless     = RegisterUnit(Model);
 	auto Mm                = RegisterUnit(Model, "mm");
 	auto MmPerDegreePerDay = RegisterUnit(Model, "mm/°C/day");
