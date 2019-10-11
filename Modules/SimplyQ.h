@@ -9,9 +9,6 @@
 // in order to have groundwater in the simulation.
 
 
-
-
-#include "Preprocessing/ThornthwaitePET.h"
 #include "UnitConversions.h"
 
 inline double
@@ -36,12 +33,15 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	BeginModule(Model, "SimplyQ", "0.4");
 	
-	
 	auto Degrees = RegisterUnit(Model, "°C");
+	
+	
 	auto System = GetParameterGroupHandle(Model, "System");
 	RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
 	
-	AddPreprocessingStep(Model, ComputeThornthwaitePET); //NOTE: The preprocessing step is called at the start of each model run.
+	//AddPreprocessingStep(Model, ComputeThornthwaitePET); //NOTE: The preprocessing step is called at the start of each model run.
+	
+	
 	
 	auto Dimensionless     = RegisterUnit(Model);
 	auto Mm                = RegisterUnit(Model, "mm");
@@ -143,7 +143,8 @@ AddSimplyHydrologyModule(mobius_model *Model)
 		return RESULT(SnowMelt) + RESULT(PrecipitationFallingAsRain);
 	)
 	
-	auto PotentialEvapoTranspiration = RegisterInput(Model, "Potential evapotranspiration", MmPerDay);
+	//auto PotentialEvapoTranspiration = RegisterInput(Model, "Potential evapotranspiration", MmPerDay);
+	auto PotentialEvapoTranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
 	
 	auto InfiltrationExcess = RegisterEquation(Model, "Infiltration excess", MmPerDay);
 	auto Infiltration       = RegisterEquation(Model, "Infiltration", MmPerDay);
@@ -184,8 +185,10 @@ AddSimplyHydrologyModule(mobius_model *Model)
 		return -smd * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
 	)
 	
+	
+	
 	EQUATION(Model, Evapotranspiration,
-		return PARAMETER(PETMultiplicationFactor) * INPUT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+		return PARAMETER(PETMultiplicationFactor) * RESULT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
 	)
 	
 	EQUATION(Model, SoilWaterVolume,

@@ -9,6 +9,7 @@
 
 #define SIMPLYQ_GROUNDWATER    //NOTE: #defining this before the inclusion of the SimplyQ.h file turns on groundwater in SimplyQ.
 
+#include "../../Modules/PET.h"
 #include "../../Modules/SimplyQ.h"
 
 #define READ_PARAMETER_FILE 1 //Read params from file? Or auto-generate using indexers defined below & defaults
@@ -17,6 +18,7 @@ int main()
 {
 	mobius_model *Model = BeginModelDefinition("SimplyQ");
 	
+	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	
 	ReadInputDependenciesFromFile(Model, "tarlandinputs.dat"); //NOTE: This has to happen here before EndModelDefinition

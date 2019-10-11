@@ -7,6 +7,9 @@
 
 #include "../../../mobius.h"
 
+
+#include "../../../Modules/PET.h"
+
 #define SIMPLYQ_GROUNDWATER
 #include "../../../Modules/SimplyQ.h"
 #include "../../../Modules/SimplySed.h"
@@ -16,6 +19,7 @@ int main()
 {
 	mobius_model *Model = BeginModelDefinition("SimplyP");
 	
+	AddThornthwaitePETModule(Model)
 	AddSimplyHydrologyModule(Model);
 	AddSimplySedimentModule(Model);
 	AddSimplyPModel(Model);

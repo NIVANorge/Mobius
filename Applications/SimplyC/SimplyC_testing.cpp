@@ -7,6 +7,7 @@
 #include "../../mobius.h"
 
 #include "../../Modules/UnitConversions.h"
+#include "../../Modules/PET.h"
 
 #define SIMPLYQ_GROUNDWATER
 #include "../../Modules/SimplyQ.h"
@@ -24,6 +25,7 @@ int main()
 	mobius_model *Model = BeginModelDefinition("SimplyC"); //Name, version
 	
 	//Call functions declared earlier
+	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);
