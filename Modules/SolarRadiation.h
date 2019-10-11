@@ -27,7 +27,7 @@ AddMaxSolarRadiationModule(mobius_model *Model)
 	
 	auto Metres         = RegisterUnit(Model, "m");
 	auto Degrees        = RegisterUnit(Model, "°");
-	auto MJPerM2PerDay  = RegisterUnit(Model, "MJ/M2/day");
+	auto MJPerM2PerDay  = RegisterUnit(Model, "MJ/m2/day");
 	
 	auto Solar    = RegisterParameterGroup(Model, "Solar radiation");
 	

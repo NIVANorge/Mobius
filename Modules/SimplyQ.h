@@ -143,8 +143,10 @@ AddSimplyHydrologyModule(mobius_model *Model)
 		return RESULT(SnowMelt) + RESULT(PrecipitationFallingAsRain);
 	)
 	
-	//auto PotentialEvapoTranspiration = RegisterInput(Model, "Potential evapotranspiration", MmPerDay);
-	auto PotentialEvapoTranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
+	//auto PotentialEvapotranspiration = RegisterInput(Model, "Potential evapotranspiration", MmPerDay);
+	
+	//Before adding SimplyQ to a model, add one of the PET modules from PET.h . It will provide a "Potential evapotranspiration" timeseries.
+	auto PotentialEvapotranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
 	
 	auto InfiltrationExcess = RegisterEquation(Model, "Infiltration excess", MmPerDay);
 	auto Infiltration       = RegisterEquation(Model, "Infiltration", MmPerDay);
@@ -188,7 +190,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	
 	EQUATION(Model, Evapotranspiration,
-		return PARAMETER(PETMultiplicationFactor) * RESULT(PotentialEvapoTranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+		return PARAMETER(PETMultiplicationFactor) * RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
 	)
 	
 	EQUATION(Model, SoilWaterVolume,
