@@ -12,20 +12,23 @@ AddThornthwaitePETModule(mobius_model *Model)
 {
 	BeginModule(Model, "Thornthwaite PET", "1.0");
 	
+	auto Dimensionless = RegisterUnit(Model);
 	auto MmPerDay = RegisterUnit(Model, "mm/day");
 	auto Degrees  = RegisterUnit(Model, "°C");
 	
-	auto System = GetParameterGroupHandle(Model, "System");
-	RegisterParameterDouble(Model, System, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
+	auto PETParams = RegisterParameterGroup(Model, "Potential evapotranspiration");
+	RegisterParameterDouble(Model, PETParams, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
+	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, PETParams, "PET multiplication factor", Dimensionless, 1.0, 0.0, 2.0, "Parameter to scale potential evapotranspiration. Should be set to 1 in most cases.");
 	
-	auto PET = RegisterInput(Model, "Potential evapotranspiration", MmPerDay); //This is overwritten by the ComputeThornthwaitePET step if needed.
+	
+	auto PET = RegisterInput(Model, "Potential evapotranspiration", MmPerDay); //This input timeseries is filled in by the ComputeThornthwaitePET preprocessing step if the timeseries is not provided in the input file.
 	
 	AddPreprocessingStep(Model, ComputeThornthwaitePET); //NOTE: The preprocessing step is called at the start of each model run.
 	
 	auto PotentialEvapotranspiration = RegisterEquation(Model, "Potential evapotranspiration", MmPerDay);
 	
 	EQUATION(Model, PotentialEvapotranspiration,
-		return INPUT(PET);
+		return PARAMETER(PETMultiplicationFactor) * INPUT(PET);
 	)
 	
 	EndModule(Model);
@@ -37,21 +40,22 @@ AddDegreeDayPETModule(mobius_model *Model)
 {
 	BeginModule(Model, "Degree-day PET", "0.1");
 	
-	auto AirTemperature  = RegisterInput(Model, "Air temperature");
-	
 	auto MmPerDay        = RegisterUnit(Model, "mm/day");
 	auto MmPerDegCPerDay = RegisterUnit(Model, "mm/°C/day");
+	auto Degrees  = RegisterUnit(Model, "°C");
+	
+	auto AirTemperature  = RegisterInput(Model, "Air temperature", Degrees);
 	
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	auto PETParams      = RegisterParameterGroup(Model, "Potential evapotranspiration", LandscapeUnits);
 	
 	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, PETParams, "Degree-day evapotranspiration", MmPerDegCPerDay, 0.12, 0.05, 0.2);
+	auto EtpTemperatureMin           = RegisterParameterDouble(Model, PETParams, "Minimal temperature for evapotranspiration", Degrees, 0.0, -5.0, 5.0);
 	
 	auto PotentialEvapotranspiration = RegisterEquation(Model, "Potential evapotranspiration", MmPerDay);
 	
-	//TODO: Maybe add an offset temperature.
 	EQUATION(Model, PotentialEvapotranspiration,
-		return PARAMETER(DegreeDayEvapotranspiration) * Max(0.0, INPUT(AirTemperature));
+		return PARAMETER(DegreeDayEvapotranspiration) * Max(0.0, INPUT(AirTemperature) - PARAMETER(EtpTemperatureMin));
 	)
 	
 	EndModule(Model);
@@ -62,7 +66,6 @@ static void
 AddPriestleyTaylorPETModule(mobius_model *Model)
 {
 	//NOTE: This is an adaptation of the Priestley-Taylor computations done by SWAT: https://swat.tamu.edu/media/99192/swat2009-theory.pdf
-	//TODO: It should be parametrized to allow for different conditions in emittance (they tend to vary around the earth).
 	
 	BeginModule(Model, "Priestley-Taylor PET", "0.1");
 	
@@ -72,22 +75,27 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	auto Dimensionless  = RegisterUnit(Model);
 	auto M              = RegisterUnit(Model, "m");
 	auto kPa            = RegisterUnit(Model, "kPa");
+	auto InvRootkPa     = RegisterUnit(Model, "kPa^{-1/2}");
 	auto kPaPerDegreesC = RegisterUnit(Model, "kPa/°C");
 	auto MJPerM2        = RegisterUnit(Model, "MJ/m2/day");
 	auto MJPerKg        = RegisterUnit(Model, "MJ/kg");
 	auto Mm             = RegisterUnit(Model, "mm");
 	
-	//NOTE: Since the hydrology module depends on this one being registered first, we have to register the equations we need from it. It does not matter, because when the hydrology module registers them later it will get the same handles.
 	
-	//auto SnowDepthAsWaterEquivalent = GetEquationHandle(Model, "Snow depth as water equivalent");
+	auto PETParams = RegisterParameterGroup(Model, "Potential evapotranspiration");
+	
+	auto CloudCoverOffset            = RegisterParameterDouble(Model, PETParams, "Cloud cover offset", Dimensionless, 0.1, 0.0, 1.0, "The a in the equation  cc = a + b(R/Rmax), where R is solar radiation and Rmax is solar radiation on a clear day");
+	auto CloudCoverScalingFactor     = RegisterParameterDouble(Model, PETParams, "Cloud cover scaling factor", Dimensionless, 0.9, 0.0, 1.0, "The b in the equation  cc = a + b(R/Rmax), where R is solar radiation and Rmax is solar radiation on a clear day");
+	
+	auto EmissivityAtZero            = RegisterParameterDouble(Model, PETParams, "Net emissivity at 0 vapor pressure", Dimensionless, 0.34, 0.0, 1.0);
+	auto PressureEmissivityChange    = RegisterParameterDouble(Model, PETParams, "Change in emissivity caused by vapor pressure", InvRootkPa, 0.139, 0.0, 0.5);
+	
+	//NOTE: Since the hydrology module depends on this one being registered first, we have to register the snow depth equation we need from it. It does not matter, because when the hydrology module registers it later it will refer to the same entity.
 	auto SnowDepthAsWaterEquivalent = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
-	
-	//auto AirTemperature             = GetInputHandle(Model, "Air temperature");
+
 	auto AirTemperature             = RegisterInput(Model, "Air temperature");
-	
-	//TODO: Provide ways to estimate these too?
-	auto RelativeHumidity     = RegisterInput(Model, "Relative humidity", Dimensionless);
-	auto SolarRadiation       = RegisterInput(Model, "Solar radiation", MJPerM2);
+	auto RelativeHumidity           = RegisterInput(Model, "Relative humidity", Dimensionless);
+	auto SolarRadiation             = RegisterInput(Model, "Solar radiation", MJPerM2);
 	
 	auto Elevation                      = GetParameterDoubleHandle(Model, "Elevation"); //From SolarRadiation.h : AddMaxSolarRadiationModule
 	
@@ -130,6 +138,8 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, NetShortwaveRadiation,
+		//TODO: Should this be parametrized?
+	
 		double sd   = RESULT(SnowDepthAsWaterEquivalent);
 		double srad = INPUT(SolarRadiation);
 		
@@ -140,13 +150,13 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	
 	EQUATION(Model, NetEmissivity,
 		//Brunt (1932)
-		return -(0.34 - 0.139 * std::sqrt(RESULT(ActualVaporPressure)));
+		return -(PARAMETER(EmissivityAtZero) - PARAMETER(PressureEmissivityChange) * std::sqrt(RESULT(ActualVaporPressure)));
 	)
 	
 	EQUATION(Model, CloudCoverFactor,
 		//Wright, Jensen (1972)
 		//TODO: Clamp this to 0-1 in case there is something strange in the solar radiation data?
-		return 0.9 * SafeDivide(INPUT(SolarRadiation), RESULT(SolarRadiationMax)) + 0.1;
+		return PARAMETER(CloudCoverScalingFactor) * SafeDivide(INPUT(SolarRadiation), RESULT(SolarRadiationMax)) + PARAMETER(CloudCoverOffset);
 	)
 	
 	EQUATION(Model, NetLongWaveRadiation,
@@ -160,6 +170,7 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, PotentialEvapotranspiration,
+		//TODO: We should look into subtracting energy going into heating the soil. SWAT set this to 0, but may not be correct in winter in cold climates.
 		double alphapet = 1.28;
 		double petday = 
 			  alphapet

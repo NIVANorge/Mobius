@@ -33,8 +33,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	BeginModule(Model, "SimplyQ", "0.4");
 	
-	auto Degrees = RegisterUnit(Model, "°C");
-	
+	auto Degrees           = RegisterUnit(Model, "°C");
 	auto Dimensionless     = RegisterUnit(Model);
 	auto Mm                = RegisterUnit(Model, "mm");
 	auto MmPerDegreePerDay = RegisterUnit(Model, "mm/°C/day");
@@ -63,7 +62,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
 	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0); //Max ok, or breaks model?
-	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, Hydrology, "PET multiplication factor", Dimensionless, 1.0, 0.0, 2.0);
 	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0);
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
@@ -182,7 +180,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	
 	EQUATION(Model, Evapotranspiration,
-		return PARAMETER(PETMultiplicationFactor) * RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+		return RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
 	)
 	
 	EQUATION(Model, SoilWaterVolume,
