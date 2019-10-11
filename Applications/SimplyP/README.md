@@ -35,30 +35,29 @@ The Mobius version offers dramatic performance improvements compared to the Pyth
   
 * three .dat files for setting up optimization and uncertainty analysis in C++, i.e. without use of the python wrapper. More info on this will come shortly.
 
-**NOTE: all files labelled _04 are beta versions, and not for stable release**
-
 
 ## Tutorials
 
-1. **Quick start: Run the Tarland or Morsa examples using the MobiView graphical user interface**
+**Tutorial 1: Quick start - Run the Tarland or Morsa examples using the MobiView graphical user interface**
  
 * Download/clone the GitHub Mobius repository onto your computer (see instructions [here](https://github.com/NIVANorge/Mobius#download-the-repository)), and familiarize yourself with the basics of the Mobius model building system and the contents of the repository (introductory documentation is [here](https://github.com/NIVANorge/Mobius#mobius)).
  
 * Follow the instructions [here](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) to:
-  - Get a MobiView executable
-  - Get/compile a simplyP dll: After [installing a compiler](https://github.com/NIVANorge/Mobius#first-download-a-compiler), from the command line `cd` into the Applications/SimplyP folder and run `compile_dll.bat`. simplyp.dll should be created. Alternatively, [contact us](magnus.norling@niva.no) and we can supply a pre-compiled dll.
-  - Open MobiView.exe, read in:
-      * The SimplyP dll
-	  * An input file, which contains precipitation and temperature data to drive the model, and optionally also potential evapotranspiration data and observed data to compare model output to. Example input files are in the Morsa and Tarland folders, e.g. TarlandInputs.dat
-	  * A parameter file. Example files are in the Morsa and Tarland folders, e.g. TarlandParameters_v0-3.dat
-  - Run the model, then explore the results. Try changing parameter values and re-running the model to see what happens. If you want to know more about what the results variables are or how they are calculated, you can look directly into the SimplyP.h file ([here](https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h)). See also the comments which accompany the parameters within the parameter.dat file or in MobiView.
+  - Download a MobiView executable from **ftp://mobiserver.niva.no/**
+  - Download or compile SimplyP: Pre-compiled stable releases of SimplyP are available for download from **ftp://mobiserver.niva.no/**. Alternatively, you can compile yourself, which you will need to be able to do if you want to make changes to the model equations. To compile: after [installing a compiler](https://github.com/NIVANorge/Mobius#first-download-a-compiler), from the command line `cd` into the Applications/SimplyP folder and run `compile_dll.bat`. simplyp.dll should be created.
+  - Open MobiView.exe and read in (more detailed instructions for using MobiView are [here](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface):
+  
+       * The compiled SimplyP dll
+	* An input file, which contains precipitation and temperature data to drive the model, and optionally also potential evapotranspiration data and observed data to compare model output to. Example input files are in the Morsa and Tarland folders, e.g. TarlandInputs.dat
+	* A parameter file. Example files are in the Morsa and Tarland folders, e.g. TarlandParameters_v0-3.dat. Note that the parameter file version must match the model version.
+More detailed descriptions of the structure of Mobius model input and parameter files are given in the [documentation](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf).
+  - Run the model, then explore the results. Try changing parameter values and re-running the model to see what happens. If you want to know more about what the results variables are or how they are calculated, you can look directly into the SimplyP.h file ([here](https://github.com/NIVANorge/Mobius/blob/master/Modules/SimplyP.h)), as well as in the model description paper. See also the comments which accompany the parameters within the parameter.dat file or in MobiView.
  
 **Notes:**
- * We are working on a build and distribution system which will make it possible to download MobiView and the various model dlls from a server. More coming soon!
- * Some people have issues installing software (e.g. the MingW compiler) on their system due to admin rights and/or over-zealous antivirus software. We recommend you beg your IT department to give you full admin rights at least temporarily, and disable your antivirus software during install if you're having troubles. This should all be sorted once we get a build system finished.
+ * Some people have issues installing software (e.g. the MingW compiler) on their system due to admin rights and/or over-zealous antivirus software. We recommend you beg your IT department to give you full admin rights at least temporarily, and disable your antivirus software during install if you're having troubles.
 
- 2. **[Auto-calibration and uncertainty estimation with the Python wrapper](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb)**. An example illustrating how to auto-calibrate SimplyP and explore parametric uncertainty using MCMC.
+ **Tutorial 2: [Auto-calibration and uncertainty estimation with the Python wrapper](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb)**. An example illustrating how to auto-calibrate SimplyP and explore parametric uncertainty using MCMC.
  
-    The Jupyter notebook used in Tutorial 2 is located within the PythonWrapper/SimplyP folder in the repository, and so will be available for you to work through interactively when you download the Mobius repository (instructions on how to do that are [here](https://github.com/NIVANorge/Mobius#download-the-repository)). Otherwise, you can just view it online. For instructions on getting started with Python, Jupyter notebooks and the python wrapper, see https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper#python-wrapper.
+The Jupyter notebook used in Tutorial 2 is located within the PythonWrapper/SimplyP folder in the repository, and so will be available for you to work through interactively when you download the Mobius repository (instructions on how to do that are [here](https://github.com/NIVANorge/Mobius#download-the-repository)). Otherwise, you can just view it online. For instructions on getting started with Python, Jupyter notebooks and the python wrapper, see https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper#python-wrapper.
 
 **More coming soon!**

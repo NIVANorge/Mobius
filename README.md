@@ -28,6 +28,7 @@ Mobius can produce standalone executables. There is also the option to compile t
 * [Available models](https://github.com/NIVANorge/Mobius#available-models)
 * [Documentation](https://github.com/NIVANorge/Mobius#documentation)
 * [Quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide)
+  - [Running existing pre-compiled models (e.g. INCA and Simply models)](https://github.com/NIVANorge/Mobius#use-existing-pre-compiled-mobius-models-eg-inca-and-simply-models)
   - [Download the repository](https://github.com/NIVANorge/Mobius#download-the-repository)
   - [Compile a model, run it, and make some changes](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes)
   - [Python wrapper](https://github.com/NIVANorge/Mobius#python-wrapper)
@@ -53,6 +54,10 @@ Documentation can be found in the [Documentation](https://github.com/NIVANorge/M
 
 # Quick start guide
 *This is a guide on how to get the tutorials running and to start building your own models. We also provide a quick introduction to the python wrapper, navigating around the repository, and to getting started with the MobiView Graphical User Interface.*
+
+## Use existing pre-compiled Mobius models (e.g. INCA and Simply models)
+
+Stable releases of available models are available for download, pre-compiled, from ftp://mobiserver.niva.no/ (downloadable binaries are Windows only at the moment). See the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for for further instructions on setting up and running individual models. We also recommend downloading [MobiView]((https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)), a graphical user interface for interacting with Mobius models. A pre-compiled version of MobiView is also available from ftp://mobiserver.niva.no/ (downloadable binary is Windows only).
 
 ## Download the repository
 
@@ -103,7 +108,6 @@ The basics of compiling are simple once you have a compiler installed:
 - Run the .bat file for the model of interest: from the command line, type in the name of the .bat file and hit enter. A new executable should appear, with whatever name and extension (e.g. .exe or .dll) is specified in the .bat file
 
 You could also set up a build system or IDE of your choice, however this is not really needed here since most models are set up to be easily compilable in a single command line instruction.
-
 
 #### Linux
 We have only set up compilation scripts for SimplyP and PERSiST for Linux, but you can easily copy these to be able to compile other models.
