@@ -28,7 +28,7 @@ Mobius can produce standalone executables. There is also the option to compile t
 * [Available models](https://github.com/NIVANorge/Mobius#available-models)
 * [Documentation](https://github.com/NIVANorge/Mobius#documentation)
 * [Quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide)
-  - [Running existing pre-compiled models (e.g. INCA and Simply models)]
+  - [Running existing pre-compiled models (e.g. INCA and Simply models)](https://github.com/NIVANorge/Mobius#use-existing-pre-compiled-mobius-models-eg-inca-and-simply-models)
   - [Download the repository](https://github.com/NIVANorge/Mobius#download-the-repository)
   - [Compile a model, run it, and make some changes](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes)
   - [Python wrapper](https://github.com/NIVANorge/Mobius#python-wrapper)
