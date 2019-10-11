@@ -61,7 +61,7 @@ AddDegreeDayPETModule(mobius_model *Model)
 static void
 AddPriestleyTaylorPETModule(mobius_model *Model)
 {
-	//NOTE: This is an adaption of the Priestley-Taylor computations done by SWAT: https://swat.tamu.edu/media/99192/swat2009-theory.pdf
+	//NOTE: This is an attempt at adapting the Priestley-Taylor computations done by SWAT: https://swat.tamu.edu/media/99192/swat2009-theory.pdf
 	//WARNING: This module has not yet been tested with real data.
 	
 	
