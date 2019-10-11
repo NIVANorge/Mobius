@@ -61,11 +61,8 @@ AddDegreeDayPETModule(mobius_model *Model)
 static void
 AddPriestleyTaylorPETModule(mobius_model *Model)
 {
-	//NOTE: This is an attempt at adapting the Priestley-Taylor computations done by SWAT: https://swat.tamu.edu/media/99192/swat2009-theory.pdf
-	//TODO: It could be parametrized to allow for different conditions in emittance (they tend to vary around the earth).
-	
-	//WARNING: This module has not yet been tested with real data.
-	
+	//NOTE: This is an adaptation of the Priestley-Taylor computations done by SWAT: https://swat.tamu.edu/media/99192/swat2009-theory.pdf
+	//TODO: It should be parametrized to allow for different conditions in emittance (they tend to vary around the earth).
 	
 	BeginModule(Model, "Priestley-Taylor PET", "0.1");
 	
@@ -124,7 +121,7 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ActualVaporPressure,
-		return INPUT(RelativeHumidity) * RESULT(SaturationVaporPressure);
+		return INPUT(RelativeHumidity)*0.01 * RESULT(SaturationVaporPressure);
 	)
 	
 	EQUATION(Model, SlopeOfSaturationPressureCurve,
@@ -142,16 +139,20 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, NetEmissivity,
-		return - (0.34 - 0.139 * std::sqrt(RESULT(ActualVaporPressure)));
+		//Brunt (1932)
+		return -(0.34 - 0.139 * std::sqrt(RESULT(ActualVaporPressure)));
 	)
 	
 	EQUATION(Model, CloudCoverFactor,
+		//Wright, Jensen (1972)
+		//TODO: Clamp this to 0-1 in case there is something strange in the solar radiation data?
 		return 0.9 * SafeDivide(INPUT(SolarRadiation), RESULT(SolarRadiationMax)) + 0.1;
 	)
 	
 	EQUATION(Model, NetLongWaveRadiation,
+		double boltzmannConst = 4.903e-9;
 		double tempKelvin = (INPUT(AirTemperature) + 273.15);
-		return RESULT(NetEmissivity) * RESULT(CloudCoverFactor) * 4.9e-9 * tempKelvin * tempKelvin * tempKelvin * tempKelvin; //i.e. pow(tempKelvin, 4.0), but this is probably faster.
+		return RESULT(NetEmissivity) * RESULT(CloudCoverFactor) * boltzmannConst * tempKelvin * tempKelvin * tempKelvin * tempKelvin; //i.e. pow(tempKelvin, 4.0), but this is probably faster.
 	)
 	
 	EQUATION(Model, NetRadiation,
