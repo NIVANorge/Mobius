@@ -59,6 +59,14 @@ SafeDivide(double A, double B)
 	return 0.0;
 }
 
+inline double
+Clamp01(double A)
+{
+	if(A < 0.0) return 0.0;
+	if(A > 1.0) return 1.0;
+	return A;
+}
+
 
 #define MOBIUS_MATH_H
 #endif

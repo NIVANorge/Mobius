@@ -57,7 +57,7 @@ AddSolarRadiationModule(mobius_model *Model)
 {
 	AddMaxSolarRadiationModule(Model);
 
-	BeginModule(Model, "Solar radiation", "0.1");  //NOTE: just add this into the same module as above
+	BeginModule(Model, "Solar radiation", "0.1");  //NOTE: just adds this into the same module as above
 	
 	//NOTE: This module is made primarily for use in INCA-C and INCA-P
 	//TODO: We should maybe use net radiation like Priestley-Taylor in PET.h ??

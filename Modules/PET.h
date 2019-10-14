@@ -155,8 +155,8 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	
 	EQUATION(Model, CloudCoverFactor,
 		//Wright, Jensen (1972)
-		//TODO: Clamp this to 0-1 in case there is something strange in the solar radiation data?
-		return PARAMETER(CloudCoverScalingFactor) * SafeDivide(INPUT(SolarRadiation), RESULT(SolarRadiationMax)) + PARAMETER(CloudCoverOffset);
+		double cc = PARAMETER(CloudCoverScalingFactor) * SafeDivide(INPUT(SolarRadiation), RESULT(SolarRadiationMax)) + PARAMETER(CloudCoverOffset);
+		return Clamp01(cc); //NOTE: Clamp to the interval [0, 1] in case there is something strange in the measured solar radiation data and it exceeds the theoretical max.
 	)
 	
 	EQUATION(Model, NetLongWaveRadiation,
@@ -170,7 +170,7 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, PotentialEvapotranspiration,
-		//TODO: We should look into subtracting energy going into heating the soil. SWAT set this to 0, but may not be correct in winter in cold climates.
+		//TODO: We should look into subtracting energy going into heating the soil. SWAT sets this to 0, but may not be correct in winter in cold climates.
 		double alphapet = 1.28;
 		double petday = 
 			  alphapet
