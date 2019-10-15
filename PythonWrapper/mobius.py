@@ -295,7 +295,7 @@ class DataSet :
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
 		Returns:
-			The value of the parameter (a floating point number).
+			The value of the parameter (a 64-bit floating point number).
 		'''
 		val = mobiusdll.DllGetParameterDouble(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes))
 		check_dll_error()
@@ -310,7 +310,7 @@ class DataSet :
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
 		Returns:
-			The value of the parameter (a nonzero integer).
+			The value of the parameter (a nonnegative integer).
 		'''
 		val = mobiusdll.DllGetParameterUInt(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes))
 		check_dll_error()
