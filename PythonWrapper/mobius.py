@@ -277,11 +277,11 @@ class DataSet :
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 			value            -- string or datetime. The value to write to the parameter. If provided as a string it must be on the format "YYYY-MM-dd", e.g. "1999-05-15"
 		'''
-		if value.type == datetime.datetime :
+		#TODO: we should probably also recognize datetime64 (used by pandas) and Timestamp value types.
+		if type(value) == dt.datetime :
 			strvalue = value.strftime('%Y-%m-%d')
 		else :
 			strvalue = value
-		#TODO: Maybe we just want to take a datetime value as value instead since that is what most people are going to use?
 		
 		mobiusdll.DllSetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), value.encode('utf-8'))
 		check_dll_error()
