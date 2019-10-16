@@ -33,7 +33,7 @@ struct token
 	token_type Type;
 	token_string StringValue;
 
-	//TODO: It is tempting to put these in a union, but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint (and the bit patterns of a double and a u64 don't encode the same number even if it is a whole number).
+	//TODO: It is tempting to put these in a union, but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint (and the bit patterns of a double and a u64 don't encode the same number).
 	u64 UIntValue;
 	double DoubleValue;
 	bool BoolValue;
@@ -140,7 +140,7 @@ private:
 	size_t FileDataLength;
 	s64    AtChar;
 	
-	std::vector<token> Tokens;
+	std::vector<token> Tokens;   //TODO: It is not really necessary to store all the tokens we have read, only the ones that are "ahead" and have not been consumed yet.
 	s64 AtToken;
 	
 	void ReadTokenInternal_();
@@ -231,8 +231,6 @@ token_stream::ReadTokenInternal_()
 		Token.Type = TokenType_EOF;
 		return;
 	}
-	
-	//assert(Token.StringValue.Length == 0);
 	
 	s32 NumericPos = 0;
 	bool IsNegative  = false;
@@ -578,8 +576,6 @@ token_stream::ReadTokenInternal_()
 			MOBIUS_FATAL_ERROR("The date " << Token.StringValue << " does not exist." << std::endl);
 		}
 	}
-	
-	//std::cout << StartLine << ": " << Token.StringValue << std::endl;
 	
 	return;
 }

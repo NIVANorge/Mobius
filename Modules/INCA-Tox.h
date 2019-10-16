@@ -648,7 +648,20 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(BedWaterContaminantConcentration) * RESULT(ReachWaterSOCPartitioningCoefficient) * PARAMETER(ContaminantSOCScalingFactor);
 	)
 	
+	/*
+	EQUATION(Model, WaterSedimentApparentViscosity,
+		double por = (1.0 - PARAMETER(SedimentPorosity)) / PARAMETER(SedimentPorosity);
+		return (RESULT(ReachKinematicViscosity) / (32.0 * 5.6e-3)) * 0.1 * por * por;
+	)
 	
+	EQUATION(Model, TurbulentReynoldsNumber,
+		double periodOfVelocityPulse = 1.0;
+		return RESULT(ReachShearVelocity) * RESULT(ReachShearVelocity) * periodOfVelocityPulse / RESULT(WaterSedimentApparentViscosity);
+	)
 	
+	EQUATION(Model, ReachBedWaterContaminantDiffusiveExchange,
+		return 
+	)
+	*/
 	EndModule(Model);
 }

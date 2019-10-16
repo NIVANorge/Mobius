@@ -182,7 +182,6 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	//std::vector<size_t> FastLastResultLookup;
 	//double *x0; //NOTE: Temporary storage for use by solvers
 	//double *wk; //NOTE: Temporary storage for use by solvers
-	//u64 TimestepsLastRun;
 	
 	return Copy;
 }
@@ -810,10 +809,6 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 					Unit.Handles.push_back(Equation.Handle);
 					return false;
 				});
-				
-				//FOR_ALL_BATCH_EQUATIONS(Batch,
-				//	Units[UnitIndex].Handles.push_back(Equation.Handle);
-				//)
 			}
 		}
 		
