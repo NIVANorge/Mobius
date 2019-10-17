@@ -15,7 +15,7 @@ One fairly up to date description of the model can be found in Wade et. al. 2002
 The Mobius version of INCA-N is different from earlier versions in that it is integrated with the PERSiST hydrology model (Futter et. al. 2014). This saves the user from running a separate hydrology model first and then port the results of that over to a format readable by INCA. A description of the PERSiST hydrology model can be found here: [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf)
 
 Other small differences are:
-- Wet depositions are currently not spread out with precipitation, but is instead delivered as a constant daily dose (or following an input timeseries if that is provided)
+- Wet depositions are currently not spread out with precipitation, but are instead delivered as constant daily doses (or following an input timeseries if that is provided)
 - Land cover that changes over time is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
 
 If you are a previous user of INCA-N, see this [guidance on switching to the Mobius version](https://github.com/NIVANorge/Mobius/blob/master/Applications/IncaN/Guidance_on_switching_to_framework_version.txt)
