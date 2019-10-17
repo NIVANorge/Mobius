@@ -2,7 +2,7 @@
 
 INCA-N is a Mobius continuation of the Integrated Nitrogen CAtchment model, previously coded by Dan Butterfield.
 
-INCA-N is a catchment model that simulates the [nitrogen cycle](https://en.wikipedia.org/wiki/Nitrogen_cycle) on a river basin (catchment) scale along with inputs from various sources, in-soil processes, and eventually transport of diluted nitrate and ammonium through the (possibly branched) river network.
+INCA-N simulates (parts of) the [nitrogen cycle](https://en.wikipedia.org/wiki/Nitrogen_cycle) on a river basin scale along with inputs from various sources, in-soil processes, and eventually transport of diluted nitrate and ammonium through the (possibly branched) river network.
 
 INCA-N was originally developed (under the name INCA) by Paul G. Whitehead in 1995 (Whitehead et. al. 1998). The model later received contributions by Andrew Wade, Kateri Rankinen and others.
 
