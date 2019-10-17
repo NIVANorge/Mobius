@@ -4,7 +4,7 @@ This is a Mobius adaptation of original software coded by Dan Butterfield.
 
 PERSiST (the Precipitation, Evapotranspiration and Runoff Simulator for Solute Transport) is described in the [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf) (Futter et. al. 2014)
 
-The model is a flexible, semi-distributed landscape-scale rainfall-runoff modelling toolkit suitable for simulating a broad range of user-specified perceptual models of runoff generation and stream flow occurring in different climatic regions and landscape types.
+The model is a flexible, semi-distributed landscape-scale rainfall-runoff modelling toolkit suitable for simulating a broad range of user-specified perceptual models of runoff generation and stream flow occurring in different climatic regions and landscape types. (Futter et. al. 2014)
 
 ## Difference from earlier versions
 
