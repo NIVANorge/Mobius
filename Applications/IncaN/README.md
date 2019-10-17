@@ -11,6 +11,8 @@ One description of the model can be found in Wade et. al. 2002, though there hav
 The Mobius version of INCA-N is different from earlier versions in that it is integrated with the PERSiST hydrology model (Futter et. al. 2014)
 A description of the PERSiST hydrology model can be found here: [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf)
 
+The version numbers found in this repository refer to the number of the Mobius version of the model only, and is not compatible with earlier version numbers.
+
 ## Other small differences in Mobius INCA-N:
 - Wet depositions are currently not spread out with precipitation, but is instead delivered as a constant daily dose (or following an input timeseries if that is provided)
 - Changing land cover is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
@@ -23,7 +25,7 @@ See also a short description of [input requirements to PERSiST and INCA-N](https
 
 ## Existing examples
 
-The Tarland example is roughly calibrated on Nitrate and Ammonium concentrations in the reach. The Storelva example is calibrated on Nitrate concentration only, but with a fairly good fit. The Tovdal example is not calibrated, but can serve as a starting point if you want to have an exercise at calibrating on a multi-reach setup.
+The *Tarland* example is roughly calibrated on Nitrate and Ammonium concentrations in the reach. The *Storelva* example is calibrated on Nitrate concentration only, but with a fairly good fit. The *Tovdal* example is not calibrated, but can serve as a starting point if you want to have an exercise at calibrating on a multi-reach setup.
 
 
 
