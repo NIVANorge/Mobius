@@ -16,7 +16,7 @@ The Mobius version of INCA-N is different from earlier versions in that it is in
 
 Other small differences are:
 - Wet depositions are currently not spread out with precipitation, but is instead delivered as a constant daily dose (or following an input timeseries if that is provided)
-- Changing land cover is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
+- Land cover that changes over time is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
 
 If you are a previous user of INCA-N, see this [guidance on switching to the Mobius version](https://github.com/NIVANorge/Mobius/blob/master/Applications/IncaN/Guidance_on_switching_to_framework_version.txt)
 
