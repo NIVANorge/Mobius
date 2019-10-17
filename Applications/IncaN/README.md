@@ -24,6 +24,8 @@ If you are a previous user of INCA-N, see this [guidance on switching to the Mob
 
 The version numbers found in this repository refer to the version number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
 
+![Illustration of the INCA-N processes taken from the 1.9.x user manual](https://github.com/NIVANorge/Mobius/tree/master/Documentation/img)
+
 ## Completely new users
 
 Unfortunately there is no comprehensive full description of this version of the model at the moment, but you can piece together the essentials from the listed papers, and also see the [module source code](https://github.com/NIVANorge/Mobius/blob/master/Modules/INCA-N.h), which is written to be as readable as possible.
