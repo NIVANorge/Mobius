@@ -8,7 +8,7 @@ INCA-N was originally developed (under the name INCA) by Paul G. Whitehead in 19
 
 INCA-N was an early attempt to assess the impact of point and diffuse nitrogen sources on in-stream chemistry in an integrated manner, simulating soil and stream water flow and nitrate and ammonium concentrations, as well as calculating nitrogen process loads (Whitehead et. al. 1998)
 
-One description of the model can be found in Wade et. al. 2002, though there have been some additions to the model since then.
+One fairly up to date description of the model can be found in Wade et. al. 2002, though there have been some additions to the model since then.
 
 ## Difference from earlier versions
 
