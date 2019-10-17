@@ -8,14 +8,19 @@ INCA-N was an early attempt to assess the impact of point and diffuse nitrogen s
 
 One description of the model can be found in Wade et. al. 2002, though there have been some additions to the model since then.
 
-The Mobius version of INCA-N is different from earlier versions in that it is integrated with the PERSiST hydrology model (Futter et. al. 2014)
-A description of the PERSiST hydrology model can be found here: [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf)
+## Difference from earlier versions
+
+The Mobius version of INCA-N is different from earlier versions in that it is integrated with the PERSiST hydrology model (Futter et. al. 2014). This saves the user from running a separate hydrology model first and then port the results of that over to a format readable by INCA. A description of the PERSiST hydrology model can be found here: [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf)
+
+Other small differences are:
+- Wet depositions are currently not spread out with precipitation, but is instead delivered as a constant daily dose (or following an input timeseries if that is provided)
+- Changing land cover is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
+
+If you are a previous user of INCA-N, see this [guidance on switching to the Mobius version](https://github.com/NIVANorge/Mobius/blob/master/Applications/IncaN/Guidance_on_switching_to_framework_version.txt)
+
 
 The version numbers found in this repository refer to the number of the Mobius version of the model only, and is not compatible with earlier version numbers.
 
-## Other small differences in Mobius INCA-N:
-- Wet depositions are currently not spread out with precipitation, but is instead delivered as a constant daily dose (or following an input timeseries if that is provided)
-- Changing land cover is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
 
 ## Parameter and input formats
 
