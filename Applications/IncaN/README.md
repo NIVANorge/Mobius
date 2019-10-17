@@ -2,6 +2,8 @@
 
 INCA-N is a Mobius continuation of the Integrated Nitrogen CAtchment model, previously coded by Dan Butterfield.
 
+INCA-N is a catchment model that simulates the [nitrogen cycle](https://en.wikipedia.org/wiki/Nitrogen_cycle) on a river basin (catchment) scale along with inputs from various sources, in-soil processes, and eventually transport of diluted nitrate and ammonium through the (possibly branched) river network.
+
 INCA-N was originally developed (under the name INCA) by Paul G. Whitehead in 1995 (Whitehead et. al. 1998). The model later received contributions by Andrew Wade, Kateri Rankinen and others.
 
 INCA-N was an early attempt to assess the impact of point and diffuse nitrogen sources on in-stream chemistry in an integrated manner, simulating soil and stream water flow and nitrate and ammonium concentrations, as well as calculating nitrogen process loads (Whitehead et. al. 1998)
@@ -18,8 +20,11 @@ Other small differences are:
 
 If you are a previous user of INCA-N, see this [guidance on switching to the Mobius version](https://github.com/NIVANorge/Mobius/blob/master/Applications/IncaN/Guidance_on_switching_to_framework_version.txt)
 
-
 The version numbers found in this repository refer to the number of the Mobius version of the model only, and is not compatible with earlier version numbers.
+
+## Completely new users:
+
+Unfortunately there is no comprehensive full description of this version of the model at the moment, but you can piece together the essentials from the listed papers, and also see the (module source code)[https://github.com/NIVANorge/Mobius/blob/master/Modules/INCA-N.h], which is written to be as readable as possible.
 
 
 ## Parameter and input formats
@@ -28,7 +33,7 @@ See the [general description of parameter and input formats in Mobius](https://g
 
 See also a short description of [input requirements to PERSiST and INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Documentation/ModelInputRequirements)
 
-## Existing examples
+## Existing application examples
 
 The *Tarland* example is roughly calibrated on Nitrate and Ammonium concentrations in the reach. The *Storelva* example is calibrated on Nitrate concentration only, but with a fairly good fit. The *Tovdal* example is not calibrated, but can serve as a starting point if you want to have an exercise at calibrating on a multi-reach setup.
 
