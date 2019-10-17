@@ -20,7 +20,7 @@ Other small differences are:
 
 If you are a previous user of INCA-N, see this [guidance on switching to the Mobius version](https://github.com/NIVANorge/Mobius/blob/master/Applications/IncaN/Guidance_on_switching_to_framework_version.txt)
 
-The version numbers found in this repository refer to the vrrsion number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
+The version numbers found in this repository refer to the version number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
 
 ## Completely new users:
 
