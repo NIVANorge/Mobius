@@ -317,6 +317,8 @@ struct solver_spec
 	double RelErr;      //Relative error tolerance (used by some solvers)
 	double AbsErr;      //Absolute error tolerance (used by some solvers)
 	
+	parameter_double_h hParam; //What parameter handle to read in h from (if this is provided).
+	
 	mobius_solver_function *SolverFunction;
 	
 	bool UsesErrorControl;
@@ -521,6 +523,8 @@ struct mobius_data_set
 	
 	parameter_value *ParameterData;
 	storage_structure ParameterStorageStructure;
+	
+	double *hSolver;
 	
 	double *InputData;
 	bool   *InputTimeseriesWasProvided;
@@ -1202,17 +1206,29 @@ ResetEveryTimestep(mobius_model *Model, equation_h Equation)
 #define MOBIUS_SOLVER_SETUP_FUNCTION(Name) void Name(solver_spec *SolverSpec)
 typedef MOBIUS_SOLVER_SETUP_FUNCTION(mobius_solver_setup_function);
 
+
+static solver_h
+RegisterSolver(mobius_model *Model, const char *Name, parameter_double_h hParam, mobius_solver_setup_function *SetupFunction)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	entity_handle Solver = Model->Solvers.Register(Name);
+	
+	solver_spec &Spec = Model->Solvers.Specs[Solver];
+	
+	SetupFunction(&Spec);
+	
+	Spec.hParam = hParam;
+	
+	return {Solver};
+}
+
 static solver_h
 RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_setup_function *SetupFunction)
 {
 	REGISTRATION_BLOCK(Model)
 	
 	entity_handle Solver = Model->Solvers.Register(Name);
-	
-	if(h <= 0.0 || h > 1.0)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: The timestep of the solver " << Name << " can not be smaller than 0.0 or larger than 1.0" << std::endl);
-	}
 	
 	solver_spec &Spec = Model->Solvers.Specs[Solver];
 	
@@ -1223,6 +1239,7 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	return {Solver};
 }
 
+//TODO: Make version of this that takes parametric h too.
 static solver_h
 RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_setup_function *SetupFunction, double RelErr, double AbsErr)
 {

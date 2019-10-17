@@ -1250,8 +1250,10 @@ INNER_LOOP_BODY(RunInnerLoop)
 					};
 				}
 				
+				double h = DataSet->hSolver[Batch.Solver.Handle]; // The desired solver step. (Error correction may increase or decrease the step).
+				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(SolverSpec.h, Batch.EquationsODE.size(), ValueSet->x0, ValueSet->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
+				SolverSpec.SolverFunction(h, Batch.EquationsODE.size(), ValueSet->x0, ValueSet->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
 				//NOTE: Store out the final results from this solver to the ResultData set.
 				for(equation_h Equation : Batch.Equations)
@@ -1527,6 +1529,42 @@ RunModel(mobius_data_set *DataSet)
 	for(const mobius_preprocessing_step &PreprocessingStep : Model->PreprocessingSteps)
 	{
 		PreprocessingStep(DataSet);
+	}
+	
+	
+	// If some solvers have parametrized step size, read in the actual value from the parameter set
+	
+	if(!DataSet->hSolver)
+	{
+		DataSet->hSolver = AllocClearedArray(double, Model->Solvers.Count());
+	}
+	
+	for(entity_handle SolverHandle = 1; SolverHandle < Model->Solvers.Count(); ++SolverHandle)
+	{
+		const solver_spec &Spec = Model->Solvers.Specs[SolverHandle];
+		
+		double hValue;
+		
+		if(IsValid(Spec.hParam))
+		{
+			if(Model->Parameters.Specs[Spec.hParam.Handle].IndexSetDependencies.size() > 0)
+			{
+				std::cout << "WARNING: The parameter " << GetName(Model, Spec.hParam) << " is used to control the step size of the solver " << Spec.Name << ". The parameter has one or more index set dependencies, but only the first value will be used." << std::endl;
+			}
+			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Spec.hParam.Handle);
+			hValue = DataSet->ParameterData[Offset].ValDouble;
+		}
+		else
+		{
+			hValue = Spec.h;
+		}
+		
+		if(hValue <= 0.0 || hValue > 1.0)
+		{
+			MOBIUS_FATAL_ERROR("The solver " << Spec.Name << " was given a step size that is smaller than 0 or larger than 1.");
+		}
+		
+		DataSet->hSolver[SolverHandle] = hValue;
 	}
 	
 	///////////// Setting up fast lookup ////////////////////
