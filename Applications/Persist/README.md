@@ -6,7 +6,7 @@ PERSiST (the Precipitation, Evapotranspiration and Runoff Simulator for Solute T
 
 The model is a flexible, semi-distributed landscape-scale rainfall-runoff modelling toolkit suitable for simulating a broad range of user-specified perceptual models of runoff generation and stream flow occurring in different climatic regions and landscape types.
 
-# Difference from earlier versions
+## Difference from earlier versions
 
 This version does not simulate inundation or infiltration from the stream to land.
 
