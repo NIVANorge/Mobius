@@ -2,13 +2,13 @@
 
 INCA-N is a Mobius continuation of the Integrated Nitrogen CAtchment model, previously coded by Dan Butterfield.
 
-INCA-N simulates (parts of) the [nitrogen cycle](https://en.wikipedia.org/wiki/Nitrogen_cycle) on a river basin scale along with inputs from various sources, in-soil processes, and eventually transport of diluted nitrate and ammonium through the (possibly branched) river network.
+INCA-N simulates (parts of) the [nitrogen cycle](https://en.wikipedia.org/wiki/Nitrogen_cycle) on a river basin scale along with inputs from various sources, in-soil processes, and eventually transport of diluted nitrate and ammonium through the (possibly branched) river network. The simulation is *semi-distributed* over different subcatchments and landscape units.
 
-INCA-N was originally developed (under the name INCA) by Paul G. Whitehead in 1995 (Whitehead et. al. 1998). The model later received contributions by Andrew Wade, Kateri Rankinen and others.
+INCA-N was originally developed (under the name INCA) by Paul G. Whitehead in 1995 (Whitehead et. al. 1998). It later received contributions by Andrew Wade, Kateri Rankinen and others.
 
-INCA-N was an early attempt to assess the impact of point and diffuse nitrogen sources on in-stream chemistry in an integrated manner, simulating soil and stream water flow and nitrate and ammonium concentrations, as well as calculating nitrogen process loads (Whitehead et. al. 1998)
+The model was an early attempt to assess the impact of point and diffuse nitrogen sources on in-stream chemistry in an integrated manner, simulating soil and stream water flow and nitrate and ammonium concentrations, as well as calculating nitrogen process loads (Whitehead et. al. 1998)
 
-One fairly up to date description of the model can be found in Wade et. al. 2002, though there have been some additions to the model since then.
+One fairly up to date description of the model can be found in Wade et. al. 2002, though there have been some additions to it since then.
 
 ## Difference from earlier versions
 
