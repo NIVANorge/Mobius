@@ -22,7 +22,7 @@ The framework lets you focus on specifying parameters, input timeseries (forcing
 
 Mobius can produce standalone executables. There is also the option to compile the models to .dll's that can be loaded in the graphical user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) or be called and interacted with from Python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots.
 
-![Alt text](Documentation/img/optimizer_MAP.png?raw=true "Example of a plot made using the framework and the python wrapper.")
+![Alt text](Documentation/img/plots.png?raw=true "Example of some plots made using Mobius and the python wrapper.")
 
 ## Contents
 * [Available models](https://github.com/NIVANorge/Mobius#available-models)
