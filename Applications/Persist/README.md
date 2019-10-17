@@ -1,6 +1,6 @@
 # PERSiST
 
-This is a Mobius continuation of original software coded by Dan Butterfield.
+This is a Mobius adaptation of original software coded by Dan Butterfield.
 
 PERSiST (the Precipitation, Evapotranspiration and Runoff Simulator for Solute Transport) is described in the [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf) (Futter et. al. 2014)
 
