@@ -35,7 +35,9 @@ See also a short description of [input requirements to PERSiST and INCA-N](https
 
 ## Existing application examples
 
-The *Tarland* example is roughly calibrated on Nitrate and Ammonium concentrations in the reach. The *Storelva* example is calibrated on Nitrate concentration only, but with a fairly good fit. The *Tovdal* example is not calibrated, but can serve as a starting point if you want to have an exercise at calibrating on a multi-reach setup.
+- The *Tarland* example is roughly calibrated on Nitrate and Ammonium concentrations in the reach.
+- The *Storelva* example is calibrated on Nitrate concentration only, but with a fairly good fit. It also features dynamic fertilization and deposition inputs that vary from year to year.
+- The *Tovdal* example is not calibrated, but can serve as a starting point if you want to have an exercise at calibrating on a multi-reach setup.
 
 
 
