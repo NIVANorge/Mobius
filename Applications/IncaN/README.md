@@ -10,6 +10,8 @@ The model was an early attempt to assess the impact of point and diffuse nitroge
 
 One fairly up to date description of the model can be found in Wade et. al. 2002, though there have been some additions to it since then.
 
+![Illustration of the INCA-N processes taken from the 1.9.x user manual](https://github.com/NIVANorge/Mobius/tree/master/Documentation/img/incan.png)
+
 ## Difference from earlier versions
 
 The Mobius version of INCA-N is different from earlier versions in that it is integrated with the PERSiST hydrology model (Futter et. al. 2014). This saves the user from running a separate hydrology model first and then port the results of that over to a format readable by INCA. A description of the PERSiST hydrology model can be found here: [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf)
@@ -23,8 +25,6 @@ Some small differences are:
 If you are a previous user of INCA-N, see this [guidance on switching to the Mobius version](https://github.com/NIVANorge/Mobius/blob/master/Applications/IncaN/Guidance_on_switching_to_framework_version.txt)
 
 The version numbers found in this repository refer to the version number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
-
-![Illustration of the INCA-N processes taken from the 1.9.x user manual](https://github.com/NIVANorge/Mobius/tree/master/Documentation/img)
 
 ## Completely new users
 
