@@ -10,7 +10,7 @@ The model was an early attempt to assess the impact of point and diffuse nitroge
 
 One fairly up to date description of the model can be found in Wade et. al. 2002, though there have been some additions to it since then.
 
-![Illustration of the INCA-N processes taken from the 1.9.x user manual](https://github.com/NIVANorge/Mobius/tree/master/Documentation/img/incan.png)
+![alt text](https://github.com/NIVANorge/Mobius/tree/master/Documentation/img/incan.png "Illustration of the INCA-N processes taken from the 1.9.x user manual")
 
 ## Difference from earlier versions
 
