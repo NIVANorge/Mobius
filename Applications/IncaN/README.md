@@ -10,6 +10,8 @@ The model was an early attempt to assess the impact of point and diffuse nitroge
 
 One fairly up to date description of the model can be found in Wade et. al. 2002, though there have been some additions to it since then.
 
+![alt text](../../Documentation/img/incan.png "Illustration of the INCA-N processes taken from the 1.9.x user manual")
+
 ## Difference from earlier versions
 
 The Mobius version of INCA-N is different from earlier versions in that it is integrated with the PERSiST hydrology model (Futter et. al. 2014). This saves the user from running a separate hydrology model first and then port the results of that over to a format readable by INCA. A description of the PERSiST hydrology model can be found here: [PERSiST paper](https://pdfs.semanticscholar.org/2e46/db20c4f6dfa1bcdb45f071ce784cc5a6a873.pdf)
