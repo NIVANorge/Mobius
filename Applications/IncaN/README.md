@@ -24,7 +24,7 @@ The version numbers found in this repository refer to the vrrsion number of the 
 
 ## Completely new users:
 
-Unfortunately there is no comprehensive full description of this version of the model at the moment, but you can piece together the essentials from the listed papers, and also see the (module source code)[https://github.com/NIVANorge/Mobius/blob/master/Modules/INCA-N.h], which is written to be as readable as possible.
+Unfortunately there is no comprehensive full description of this version of the model at the moment, but you can piece together the essentials from the listed papers, and also see the [module source code](https://github.com/NIVANorge/Mobius/blob/master/Modules/INCA-N.h), which is written to be as readable as possible.
 
 
 ## Parameter and input formats
