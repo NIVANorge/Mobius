@@ -190,7 +190,7 @@ void AddMagicModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilWaterNO3Concentration,
-		return RESULT(SoilWaterNO3) * PARAMETER(SoilPoreVolume);
+		return RESULT(SoilWaterNO3) / PARAMETER(SoilPoreVolume);
 	)
 	
 	EQUATION(Model, SoilWaterNH4,
@@ -206,7 +206,7 @@ void AddMagicModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilWaterNH4Concentration,
-		return RESULT(SoilWaterNH4) * PARAMETER(SoilPoreVolume);
+		return RESULT(SoilWaterNH4) / PARAMETER(SoilPoreVolume);
 	)
 	
 	
