@@ -128,7 +128,9 @@ Further instructions for running models using the MobiView graphical user interf
 
 After understanding basic model building we recommended you explore the python wrapper interface to e.g. do your own post-processing and plotting with the model results. See more in the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper), including examples of optimisation and auto-calibration.
 
-*Python functions to automate generation of the input .dat files from excel files will be added soon.*
+### Bindings to other languages
+
+Because of the popularity of the R language we have looked into also making R bindings for Mobius, but as it stands it would require us to rewrite parts of the C++ - end of the dll interface. It is currently not a priority, but we could make it one if we get many enough requests for it.
 
 ## Navigating around the repository
 
