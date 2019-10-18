@@ -11,7 +11,7 @@ BeginModelDefinition(const char *Name = "(unnamed model)")
 	auto Days 	      = RegisterUnit(Model, "days");
 	auto System       = RegisterParameterGroup(Model, "System");
 	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1999-1-1");
+	RegisterParameterDate(Model, System, "Start date", "1970-1-1");
 	
 	return Model;
 }
