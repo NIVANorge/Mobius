@@ -13,14 +13,20 @@ void AddMagicModel(mobius_model *Model)
 	auto Dimensionless   = RegisterUnit(Model);
 	auto MolPerM2        = RegisterUnit(Model, "mol/m2");
 	auto MolPerM2PerYear = RegisterUnit(Model, "mol/m2/year");
+	auto EqPerM2         = RegisterUnit(Model, "eq/m2");
 	auto EqPerM2PerYear  = RegisterUnit(Model, "eq/m2/year");
-	
+	auto M               = RegisterUnit(Model, "m");
+	auto MPerYear        = RegisterUnit(Model, "m/year");
+	auto EqPerM          = RegisterUnit(Model, "eq/m");
 	
 	auto SoilParams = RegisterParameterGroup(Model, "Soil"); //TODO: figure out group structure later. This should index over multiple soil boxes
 	
 	//TODO: Find good min, max, default values
 	
 	//TODO: Most of these parameters should have timeseries alternatives
+	
+	auto SoilDepth                 = RegisterParameterDouble(Model, SoilParams, "Soil depth", M, 1.0, 0.0, 100.0);
+	auto SoilPorosity              = RegisterParameterDouble(Model, SoilParams, "Soil porosity", Dimensionless, 0.5, 0.0, 1.0);
 	
 	auto SoilOrganicCInput         = RegisterParameterDouble(Model, SoilParams, "Soil organic C input", MolPerM2PerYear, 0.0, 0.0, 1e6); 
 	auto SoilOrganicCSink          = RegisterParameterDouble(Model, SoilParams, "Soil organic C sink", MolPerM2PerYear, 0.0, 0.0, 1e6);
@@ -39,6 +45,9 @@ void AddMagicModel(mobius_model *Model)
 	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, SoilParams, "Lower C/N threshold for NH4 immobilisation", Dimensionless, 0.5, 0.0, 5.0,
 	"C/N below this value - 0% NH4 immobilisation");
 	
+	auto InitialSoilWaterNO3       = RegisterParameterDouble(Model, SoilParams, "Initial soil water NO3", EqPerM2, 0.0, 0.0, 1000.0);
+	auto InitialSoilWaterNH4       = RegisterParameterDouble(Model, SoilParams, "Initial soil water NH4", EqPerM2, 0.0, 0.0, 1000.0);
+	
 	auto NO3PlantUptake            = RegisterParameterDouble(Model, SoilParams, "NO3 plant uptake", MolPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4PlantUptake            = RegisterParameterDouble(Model, SoilParams, "NH4 plant uptake", MolPerM2PerYear, 0.0, 0.0, 1000.0);
 
@@ -55,6 +64,25 @@ void AddMagicModel(mobius_model *Model)
 	auto Denitrification           = RegisterParameterDouble(Model, SoilParams, "Denitrification", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	
 	
+	
+	
+	auto SoilPoreVolume = RegisterParameterDouble(Model, SoilParams, "Soil pore volume", M, 0.5, 0.0, 100.0);
+	auto SoilPoreVolumeComputation = RegisterEquationInitialValue(Model, "Soil pore volume computation", M);
+	ParameterIsComputedBy(Model, SoilPoreVolume, SoilPoreVolumeComputation, true); //true signifies that the parameter should not be exposed in files and interfaces
+	
+	EQUATION(Model, SoilPoreVolumeComputation,
+		return PARAMETER(SoilDepth) * PARAMETER(SoilPorosity);
+	)
+	
+	
+	auto CatchmentDischarge        = RegisterInput(Model, "Catchment discharge", MPerYear);
+	
+	
+	
+	
+	
+	
+	
 	auto System = GetParameterGroupHandle(Model, "System");
 	auto SoilSolverStep = RegisterParameterDouble(Model, System, "Soil solver step size", Dimensionless, 0.1, 1e-6, 1.0);
 	
@@ -69,6 +97,20 @@ void AddMagicModel(mobius_model *Model)
 	auto SoilOrganicN = RegisterEquationODE(Model, "Soil organic N", MolPerM2);
 	SetSolver(Model, SoilOrganicN, SoilSolver);
 	SetInitialValue(Model, SoilOrganicN, InitialSoilOrganicN);
+	
+	auto SoilWaterNO3 = RegisterEquationODE(Model, "Soil water NO3", EqPerM2);
+	SetSolver(Model, SoilWaterNO3, SoilSolver);
+	SetInitialValue(Model, SoilWaterNO3, InitialSoilWaterNO3);
+	
+	auto SoilWaterNH4 = RegisterEquationODE(Model, "Soil water NH4", EqPerM2);
+	SetSolver(Model, SoilWaterNH4, SoilSolver);
+	SetInitialValue(Model, SoilWaterNH4, InitialSoilWaterNH4);
+	
+	auto SoilWaterNO3Concentration = RegisterEquation(Model, "Soil water NO3 concentration", EqPerM);
+	SetSolver(Model, SoilWaterNO3Concentration, SoilSolver);
+	
+	auto SoilWaterNH4Concentration = RegisterEquation(Model, "Soil water NH4 concentration", EqPerM);
+	SetSolver(Model, SoilWaterNH4Concentration, SoilSolver);
 	
 	auto SoilNO3ImmobilisationFraction = RegisterEquation(Model, "Soil NO3 immobilisation fraction", Dimensionless);
 	SetSolver(Model, SoilNO3ImmobilisationFraction, SoilSolver);
@@ -112,7 +154,7 @@ void AddMagicModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilNO3Immobilisation,
 		return
-			  RESULT(SoilNO3ImmobilisationFraction) *
+			RESULT(SoilNO3ImmobilisationFraction) *
 			(
 				  PARAMETER(NO3AtmosphericDeposition)
 				+ PARAMETER(NO3SourcesAndSinks)
@@ -124,7 +166,7 @@ void AddMagicModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilNH4Immobilisation,
 		return
-			  RESULT(SoilNH4ImmobilisationFraction) *
+			RESULT(SoilNH4ImmobilisationFraction) *
 			(
 				  PARAMETER(NH4AtmosphericDeposition)
 				+ PARAMETER(NH4SourcesAndSinks)
@@ -133,6 +175,38 @@ void AddMagicModel(mobius_model *Model)
 				- PARAMETER(Nitrification)
 				- PARAMETER(NH4PlantUptake)
 			);
+	)
+	
+	EQUATION(Model, SoilWaterNO3,
+		return
+			  PARAMETER(NO3AtmosphericDeposition)
+			+ PARAMETER(NO3WeatheringRate)
+			+ PARAMETER(NO3SourcesAndSinks)
+			+ PARAMETER(Nitrification)
+			- RESULT(SoilNO3Immobilisation)
+			- PARAMETER(NO3PlantUptake)
+			- PARAMETER(Denitrification)
+			- INPUT(CatchmentDischarge) * RESULT(SoilWaterNO3Concentration);
+	)
+	
+	EQUATION(Model, SoilWaterNO3Concentration,
+		return RESULT(SoilWaterNO3) * PARAMETER(SoilPoreVolume);
+	)
+	
+	EQUATION(Model, SoilWaterNH4,
+		return
+			  PARAMETER(NH4AtmosphericDeposition)
+			+ PARAMETER(NH4WeatheringRate)
+			+ PARAMETER(NH4SourcesAndSinks)
+			+ RESULT(SoilOrganicNMineralisation)
+			- RESULT(SoilNH4Immobilisation)
+			- PARAMETER(NH4PlantUptake)
+			- PARAMETER(Nitrification)
+			- INPUT(CatchmentDischarge) * RESULT(SoilWaterNH4Concentration);
+	)
+	
+	EQUATION(Model, SoilWaterNH4Concentration,
+		return RESULT(SoilWaterNH4) * PARAMETER(SoilPoreVolume);
 	)
 	
 	
