@@ -1,0 +1,81 @@
+# Parameter file generated for model MAGIC, containing modules (MAGIC V_dev) at 2019-10-18 13:29:08
+
+index_sets:
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days) [0, 18446744073709551615]
+100
+
+"Start date" :     # [1000-01-01, 3000-12-31]
+1999-01-01
+
+"Soil organic C input" :     #(mol/m2/year) [0, 1000000]
+0
+
+"Soil organic C sink" :     #(mol/m2/year) [0, 1000000]
+0
+
+"Soil organic C decomposition" :     #(mol/m2/year) [0, 1000000]
+0
+
+"Initial soil organic C" :     #(mol/m2) [0, 100000000]
+0
+
+"Soil organic C/N input ratio" :     #(dimensionless) [0.0001, 5]
+0.1
+
+"Soil organic C/N sink ratio" :     #(dimensionless) [0.0001, 5]
+0.1
+
+"Soil organic C/N decomposition ratio" :     #(dimensionless) [0.0001, 5]
+0.1
+
+"Initial soil organic N" :     #(mol/m2) [0, 100000000]
+0
+
+"Upper C/N threshold for NO3 immobilisation" :     #(dimensionless) [0, 5] C/N above this value - 100% NO3 immobilisation
+0.5
+
+"Upper C/N threshold for NH4 immobilisation" :     #(dimensionless) [0, 5] C/N above this value - 100% NH4 immobilisation
+0.5
+
+"Lower C/N threshold for HO3 immobilisation" :     #(dimensionless) [0, 5] C/N below this value - 0% NO3 immobilisation
+0.5
+
+"Lower C/N threshold for NH4 immobilisation" :     #(dimensionless) [0, 5] C/N below this value - 0% NH4 immobilisation
+0.5
+
+"NO3 plant uptake" :     #(mol/m2/year) [0, 1000]
+0
+
+"NH4 plant uptake" :     #(mol/m2/year) [0, 1000]
+0
+
+"NO3 atmospheric deposition" :     #(eq/m2/year) [0, 1000]
+0
+
+"NH4 atmospheric deposition" :     #(eq/m2/year) [0, 1000]
+0
+
+"NO3 sources and sinks" :     #(eq/m2/year) [0, 1000]
+0
+
+"NH4 sources and sinks" :     #(eq/m2/year) [0, 1000]
+0
+
+"NO3 weathering rate" :     #(eq/m2/year) [0, 1000]
+0
+
+"NH4 weathering rate" :     #(eq/m2/year) [0, 1000]
+0
+
+"Nitrification" :     #(eq/m2/year) [0, 1000]
+0
+
+"Denitrification" :     #(eq/m2/year) [0, 1000]
+0
+
+"Soil solver step size" :     #(dimensionless) [1e-06, 1]
+0.1
+
