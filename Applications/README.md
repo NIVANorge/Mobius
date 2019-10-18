@@ -13,7 +13,7 @@ The following model implementations are considered to be in "release quality", i
 - PERSiST
 - INCA-C
 
-The following model implementations are probably correct, but have not been rigorously tested on real datasets yet
+The following model implementations are probably correct, but have not been rigorously tested on real data yet
 - INCA-P
 - INCA-MP
 - INCA-Sed
