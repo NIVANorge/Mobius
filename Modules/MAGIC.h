@@ -17,7 +17,10 @@ void AddMagicModel(mobius_model *Model)
 	auto EqPerM2PerYear  = RegisterUnit(Model, "eq/m2/year");
 	auto M               = RegisterUnit(Model, "m");
 	auto MPerYear        = RegisterUnit(Model, "m/year");
-	auto EqPerM          = RegisterUnit(Model, "eq/m");
+	auto KgPerM2         = RegisterUnit(Model, "kg/m2");
+	auto KgPerM3         = RegisterUnit(Model, "kg/m3");
+	auto MolPerM3        = RegisterUnit(Model, "mol/m3");
+	auto EqPerKg         = RegisterUnit(Model, "eq/kg");
 	
 	auto SoilParams = RegisterParameterGroup(Model, "Soil"); //TODO: figure out group structure later. This should index over multiple soil boxes
 	
@@ -27,6 +30,8 @@ void AddMagicModel(mobius_model *Model)
 	
 	auto SoilDepth                 = RegisterParameterDouble(Model, SoilParams, "Soil depth", M, 1.0, 0.0, 100.0);
 	auto SoilPorosity              = RegisterParameterDouble(Model, SoilParams, "Soil porosity", Dimensionless, 0.5, 0.0, 1.0);
+	auto SoilBulkDensity           = RegisterParameterDouble(Model, SoilParams, "Soil bulk density", KgPerM3, 0.25, 0.0, 2.0);
+	auto CathionExchangeCapacity   = RegisterParameterDouble(Model, SoilParams, "Cathion-exchange capacity", EqPerKg, 9.0, 0.0, 50.0);
 	
 	auto SoilOrganicCInput         = RegisterParameterDouble(Model, SoilParams, "Soil organic C input", MolPerM2PerYear, 0.0, 0.0, 1e6); 
 	auto SoilOrganicCSink          = RegisterParameterDouble(Model, SoilParams, "Soil organic C sink", MolPerM2PerYear, 0.0, 0.0, 1e6);
@@ -47,18 +52,22 @@ void AddMagicModel(mobius_model *Model)
 	
 	auto InitialSoilWaterNO3       = RegisterParameterDouble(Model, SoilParams, "Initial soil water NO3", EqPerM2, 0.0, 0.0, 1000.0);
 	auto InitialSoilWaterNH4       = RegisterParameterDouble(Model, SoilParams, "Initial soil water NH4", EqPerM2, 0.0, 0.0, 1000.0);
+	auto InitialSoilWaterCa        = RegisterParameterDouble(Model, SoilParams, "Initial soil water Ca",  EqPerM2, 0.0, 0.0, 1000.0);
 	
 	auto NO3PlantUptake            = RegisterParameterDouble(Model, SoilParams, "NO3 plant uptake", MolPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4PlantUptake            = RegisterParameterDouble(Model, SoilParams, "NH4 plant uptake", MolPerM2PerYear, 0.0, 0.0, 1000.0);
 
 	auto NO3AtmosphericDeposition  = RegisterParameterDouble(Model, SoilParams, "NO3 atmospheric deposition", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4AtmosphericDeposition  = RegisterParameterDouble(Model, SoilParams, "NH4 atmospheric deposition", EqPerM2PerYear, 0.0, 0.0, 1000.0);
+	auto CaAtmosphericDeposition   = RegisterParameterDouble(Model, SoilParams, "Ca atmospheric deposition",  EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	
 	auto NO3SourcesAndSinks        = RegisterParameterDouble(Model, SoilParams, "NO3 sources and sinks", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4SourcesAndSinks        = RegisterParameterDouble(Model, SoilParams, "NH4 sources and sinks", EqPerM2PerYear, 0.0, 0.0, 1000.0);
+	auto CaSourcesAndSinks         = RegisterParameterDouble(Model, SoilParams, "Ca sources and sinks",  EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	
 	auto NO3WeatheringRate         = RegisterParameterDouble(Model, SoilParams, "NO3 weathering rate", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4WeatheringRate         = RegisterParameterDouble(Model, SoilParams, "NH4 weathering rate", EqPerM2PerYear, 0.0, 0.0, 1000.0);
+	auto CaWeatheringRate          = RegisterParameterDouble(Model, SoilParams, "Ca weathering rate",  EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	
 	auto Nitrification             = RegisterParameterDouble(Model, SoilParams, "Nitrification", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto Denitrification           = RegisterParameterDouble(Model, SoilParams, "Denitrification", EqPerM2PerYear, 0.0, 0.0, 1000.0);
@@ -74,6 +83,13 @@ void AddMagicModel(mobius_model *Model)
 		return PARAMETER(SoilDepth) * PARAMETER(SoilPorosity);
 	)
 	
+	auto SoilMass       = RegisterParameterDouble(Model, SoilParams, "Soil mass", KgPerM2, 0.0, 0.0, 0.0);
+	auto SoilMassComputation = RegisterEquationInitialValue(Model, "Soil mass computation", KgPerM2);
+	ParameterIsComputedBy(Model, SoilMass, SoilMassComputation, true);
+	
+	EQUATION(Model, SoilMassComputation,
+		return PARAMETER(SoilDepth) * PARAMETER(SoilBulkDensity);
+	)
 	
 	auto CatchmentDischarge        = RegisterInput(Model, "Catchment discharge", MPerYear);
 	
@@ -106,11 +122,19 @@ void AddMagicModel(mobius_model *Model)
 	SetSolver(Model, SoilWaterNH4, SoilSolver);
 	SetInitialValue(Model, SoilWaterNH4, InitialSoilWaterNH4);
 	
-	auto SoilWaterNO3Concentration = RegisterEquation(Model, "Soil water NO3 concentration", EqPerM);
-	SetSolver(Model, SoilWaterNO3Concentration, SoilSolver);
+	auto SoilWaterCa  = RegisterEquationODE(Model, "Soil water Ca", EqPerM2);
+	SetSolver(Model, SoilWaterCa, SoilSolver);
+	SetInitialValue(Model, SoilWaterCa, InitialSoilWaterCa);
 	
-	auto SoilWaterNH4Concentration = RegisterEquation(Model, "Soil water NH4 concentration", EqPerM);
+	auto SoilWaterNO3Concentration = RegisterEquation(Model, "Soil water NO3^- concentration", MolPerM3);
+	SetSolver(Model, SoilWaterNO3Concentration, SoilSolver);
+	auto SoilWaterNH4Concentration = RegisterEquation(Model, "Soil water NH4^+ concentration", MolPerM3);
 	SetSolver(Model, SoilWaterNH4Concentration, SoilSolver);
+	auto SoilWaterCaConcentration  = RegisterEquation(Model, "Soil water Ca^2+ concentration", MolPerM3);
+	SetSolver(Model, SoilWaterCaConcentration, SoilSolver);
+	
+	auto CaCathionExchangeableFraction = RegisterEquation(Model, "Ca cathion exchangeable fraction", Dimensionless);
+	SetSolver(Model, CaCathionExchangeableFraction, SoilSolver);
 	
 	auto SoilNO3ImmobilisationFraction = RegisterEquation(Model, "Soil NO3 immobilisation fraction", Dimensionless);
 	SetSolver(Model, SoilNO3ImmobilisationFraction, SoilSolver);
@@ -209,7 +233,21 @@ void AddMagicModel(mobius_model *Model)
 		return RESULT(SoilWaterNH4) / PARAMETER(SoilPoreVolume);
 	)
 	
+	EQUATION(Model, SoilWaterCa,
+		return
+			  PARAMETER(CaAtmosphericDeposition)
+			+ PARAMETER(CaWeatheringRate)
+			+ PARAMETER(CaSourcesAndSinks)
+			- INPUT(CatchmentDischarge) * 2.0 * RESULT(SoilWaterCaConcentration);
+	)
 	
+	EQUATION(Model, SoilWaterCaConcentration,
+		return (RESULT(SoilWaterCa) - PARAMETER(SoilMass)*PARAMETER(CathionExchangeCapacity)*RESULT(CaCathionExchangeableFraction)) / (2.0 * PARAMETER(SoilPoreVolume));
+	)
+	
+	EQUATION(Model, CaCathionExchangeableFraction,
+		return 1.0; //TODO: How to derive equation for this?
+	)
 	
 	EndModule(Model);
 }
