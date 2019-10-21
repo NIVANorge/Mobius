@@ -11,7 +11,7 @@
 static void
 AddPersistModel(mobius_model *Model)
 {
-	BeginModule(Model, "PERSiST", "1.2");
+	BeginModule(Model, "PERSiST", "1.3");
 	
 	auto Mm                = RegisterUnit(Model, "mm");
 	auto MmPerDay          = RegisterUnit(Model, "mm/day");
@@ -53,16 +53,10 @@ AddPersistModel(mobius_model *Model)
 	auto EvapotranspirationAdjustment = RegisterParameterDouble(Model, SoilsLand, "Evapotranspiration adjustment", Dimensionless, 1.0, 0.0, 10.0, "A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)");
 	auto RelativeEvapotranspirationIndex = RegisterParameterDouble(Model, SoilsLand, "Relative evapotranspiration index", Dimensionless, 1.0, 0.0, 1.0, "The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket");
 	auto MaximumCapacity = RegisterParameterDouble(Model, SoilsLand, "Maximum capacity", Mm, 1000.0, 0.0, 9999.0, "The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity");
-	//auto InundationThreshold = RegisterParameterDouble(Model, SoilsLand, "Inundation threshold", Mm, 1000.0, 0.0, 9999.0, "The depth of water in a bucket below which inundation from the stream can occur");
-	//auto Porosity = RegisterParameterDouble(Model, SoilsLand, "Porosity", Dimensionless,  0.2,    0.1, 1.0, "The void fraction of a box which is able to hold water");
-	//auto InundationOffset = RegisterParameterDouble(Model, SoilsLand,"Inundation offset", Mm, 0.0) ;
-    
+
 	auto BoxType = RegisterParameterGroup(Model, "Soil box type", SoilBoxes);
 	
 	auto ThisIsAQuickBox = RegisterParameterBool(Model, BoxType, "This is a quick box", true);
-	//auto AllowInundation = RegisterParameterBool(Model, Soils, "Allow inundation", false);
-	//auto AllowInfiltration = RegisterParameterBool(Model, Soils, "Allow infiltration", false);
-	//auto UseThisBoxInSMDCalculation = RegisterParameterBool(Model, Soils, "Use this box in SMD calculation", true);
 
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
 	auto Reaches = RegisterParameterGroup(Model, "Reach and subcatchment characteristics", Reach);
@@ -94,19 +88,9 @@ AddPersistModel(mobius_model *Model)
 
     auto Percent = RegisterParameterDouble(Model, LandUsePercentages, "%", PercentU, 25.0, 0.0, 100.0, "The percentage of a subcatchment occupied by a specific land cover type");
 
-
-	//TODO: Allow parameter groups to have multiple index sets so that the matrix does not have to be built in three group stages?
-	
 	auto Percolation = RegisterParameterGroup(Model, "Percolation", LandscapeUnits, SoilBoxes, SoilBoxes);
 	auto PercolationMatrix = RegisterParameterDouble(Model, Percolation, "Percolation matrix", Dimensionless, 0.05, 0.0, 1.0);
 	
-	/*
-	auto MatrixRow = RegisterParameterGroup(Model, "Percolation from", SoilBoxes);
-	SetParentGroup(Model, MatrixCol, MatrixRow);
-	
-	auto MatrixLand = RegisterParameterGroup(Model, "Percolation", LandscapeUnits);
-	SetParentGroup(Model, MatrixRow, MatrixLand);
-	*/
 	
 	auto SnowFall = RegisterEquation(Model, "Snow fall", MmPerDay);
 	auto SnowMelt = RegisterEquation(Model, "Snow melt", MmPerDay);
@@ -143,7 +127,6 @@ AddPersistModel(mobius_model *Model)
 	)
 
 	auto PercolationInput   = RegisterEquation(Model, "Percolation input", MmPerDay);
-	auto SaturationExcessInput = RegisterEquation(Model, "Saturation excess input", MmPerDay);
 	auto WaterInput         = RegisterEquation(Model, "Input", MmPerDay);
 	auto WaterDepth1        = RegisterEquation(Model, "Water depth 1", Mm);
 	auto SaturationExcess   = RegisterEquation(Model, "Saturation excess", MmPerDay);
@@ -155,6 +138,7 @@ AddPersistModel(mobius_model *Model)
 	auto TotalRunoff        = RegisterEquation(Model, "Total runoff", MmPerDay);
 	auto DroughtRunoff      = RegisterEquation(Model, "Drought runoff", MmPerDay);
 	auto PercolationOut     = RegisterEquation(Model, "Percolation out", MmPerDay);
+	auto SaturationExcessInput = RegisterEquation(Model, "Saturation excess input", MmPerDay);
 	auto WaterDepth4        = RegisterEquation(Model, "Water depth 4", Mm);
 	auto Runoff             = RegisterEquation(Model, "Runoff", MmPerDay);
 	auto RunoffToReach      = RegisterEquation(Model, "Runoff to reach", MmPerDay);
@@ -164,27 +148,15 @@ AddPersistModel(mobius_model *Model)
 	auto TotalRunoffToReach = RegisterEquationCumulative(Model, "Total runoff to reach", RunoffToReach, SoilBoxes);
 	
 	EQUATION(Model, PercolationInput,
+		//NOTE : The value of this state variable, instead of being computed by this equation, is set by earlier boxes' PercolationOut computation. See below.
+	
 		LAST_RESULT(WaterDepth2); //NOTE: To force index set dependencies
 		
 		return RESULT(PercolationInput, CURRENT_INDEX(SoilBoxes)); //NOTE: Hack to make it not overwrite the value that is set in PercolationOut.
 	)
-
-	EQUATION(Model, SaturationExcessInput,
-		double sumSaturationExcessInput = 0.0;
-		double relativeareaindex = PARAMETER(RelativeAreaIndex);
-		for(index_t OtherSoil = FIRST_INDEX(SoilBoxes); OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
-		{
-			sumSaturationExcessInput += LAST_RESULT(SaturationExcess, OtherSoil)
-							* PARAMETER(PercolationMatrix, OtherSoil, CURRENT_INDEX(SoilBoxes))
-							* PARAMETER(RelativeAreaIndex, OtherSoil, CURRENT_INDEX(LandscapeUnits))
-							/ relativeareaindex;
-		}
-		if(!PARAMETER(ThisIsAQuickBox)) sumSaturationExcessInput = 0.0;
-		return sumSaturationExcessInput;
-	)
     
 	EQUATION(Model, WaterInput,
-		double input = RESULT(PercolationInput) + RESULT(SaturationExcessInput);
+		double input = RESULT(PercolationInput);
 		double input2 = RESULT(SnowMelt) + RESULT(RainFall);
 		if(PARAMETER(ThisIsAQuickBox)) input += input2;
 		return input;
@@ -255,19 +227,16 @@ AddPersistModel(mobius_model *Model)
 		
 		for(index_t OtherSoil = CURRENT_INDEX(SoilBoxes) + 1; OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
 		{
-			//NOTE: (mdn 22.08.2019)  Commented out the following because if it was this way, no saturation excess would ever be generated. We SHOULD percolate to the other box exceeding their capacity, and then the saturation excess from that box will make sure it does not overflow.
+			//NOTE: (mdn 21.10.2019)  Here we should only check if we exceed the infiltration limit of the receiving box. We SHOULD overflow the saturation capacity (i.e. "Maximum capacity" parameter) of the receiving box. The receiving box then checks in its own SaturationExcess equation if it is overflowing and routs any saturation excess to the quick box.
 			
-			//double othersoildepth = LAST_RESULT(WaterDepth, OtherSoil) + RESULT(PercolationInput, OtherSoil);
-			//double othersoilremainingcap = PARAMETER(MaximumCapacity, OtherSoil, LU) - othersoildepth;
-			//double mpi = Min(PARAMETER(Infiltration, OtherSoil, LU), othersoilremainingcap);
-			
+			//NOTE: Infiltration limit of receiving box
 			double mpi = PARAMETER(Infiltration, OtherSoil, LU);
 			
 			double perc = Min(mpi * PARAMETER(RelativeAreaIndex, OtherSoil, LU) / relativeareaindex,
 				PARAMETER(PercolationMatrix, OtherSoil) * totalrunoff);
 			
-			perc = Min(perc + percolationOut, RESULT(WaterDepth3));
-			perc = Max(perc - percolationOut, 0.0);
+			//NOTE: Don't percolate more water than we have left (though this should not happen... TODO: find out if this check is really necessary)
+			perc = Min(perc, RESULT(WaterDepth3) - percolationOut);
 			
 			percolationOut += perc;
 			
@@ -278,17 +247,43 @@ AddPersistModel(mobius_model *Model)
 		}
 		return percolationOut;
 	)
+	
+	EQUATION(Model, SaturationExcessInput,
+		double sumSaturationExcessInput = 0.0;
+		double relativeareaindex = PARAMETER(RelativeAreaIndex);
+		for(index_t OtherSoil = FIRST_INDEX(SoilBoxes); OtherSoil < INDEX_COUNT(SoilBoxes); ++OtherSoil)
+		{
+			sumSaturationExcessInput += LAST_RESULT(SaturationExcess, OtherSoil)
+							* PARAMETER(PercolationMatrix, OtherSoil, CURRENT_INDEX(SoilBoxes))
+							* PARAMETER(RelativeAreaIndex, OtherSoil, CURRENT_INDEX(LandscapeUnits))
+							/ relativeareaindex;
+		}
+		if(!PARAMETER(ThisIsAQuickBox)) sumSaturationExcessInput = 0.0;
+		return sumSaturationExcessInput;
+	)
+
+	/*
+	Mdn (21.10.2019)
+	New change in version 1.3: We now add saturation excess input (something that is received by quick boxes) after percolation is determined. This is because otherwise water would move back and forth between the quick box and any overflowing soil boxes. We then make it so that saturation excess is always delivered to the stream.
+	NOTE: This means that saturation excess flow is not affected by the time constant of the quick box, however in PERSiST unless the tc of a box is above 1, it is effectively 1.
+	To make this all work more fluidly (pun intended), one would have to make this all into an ODE system, but it seems to work OK like it is now.
+	*/
 
 	EQUATION(Model, WaterDepth4,
-		return RESULT(WaterDepth3) - RESULT(PercolationOut);
+		return RESULT(WaterDepth3) - RESULT(PercolationOut) + RESULT(SaturationExcessInput);
 	)
 
 	EQUATION(Model, Runoff,
-		double runoff = Max(0.0, RESULT(TotalRunoff) - RESULT(PercolationOut));
+		double runoff = Max(0.0, RESULT(TotalRunoff) - RESULT(PercolationOut) + RESULT(SaturationExcessInput));
+		/*
+		//Mdn (21.10.2019): I don't see the purpose of the following code. We always have runoff==runoff2 unless there is infiltration excess. But infiltration excess should (as specified in the article) always go to the reach regardless of whether the box is a quick box or a regular box.
+		
+		double runoff2 = Min(runoff, PARAMETER(PercolationMatrix) * RESULT(TotalRunoff));
 		if(!PARAMETER(ThisIsAQuickBox))
 		{
-			runoff = Min(runoff, PARAMETER(PercolationMatrix) * RESULT(TotalRunoff));
+			runoff = runoff2;
 		}
+		*/
 		return runoff;
 	)
 	
