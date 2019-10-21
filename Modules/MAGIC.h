@@ -2,7 +2,7 @@
 
 
 // NOTE: This model is in a very early development stage.
-// This is an adaptation of MAGIC (the Model of Acidification of Groundwater In Catchments)
+// This will be an adaptation of MAGIC (the Model of Acidification of Groundwater In Catchments)
 // B.J Cosby, R. C. Ferrier, A. Jenkins and R. F. Wright, 2001, Modelling the effects of acid deposition: refinements, adjustments and inclusion of nitrogen dynamics in the MAGIC model. Hydrol. Earth Syst. Sci, 5(3), 499-517
 
 
@@ -50,9 +50,12 @@ void AddMagicModel(mobius_model *Model)
 	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, SoilParams, "Lower C/N threshold for NH4 immobilisation", Dimensionless, 0.5, 0.0, 5.0,
 	"C/N below this value - 0% NH4 immobilisation");
 	
+	
+	//TODO: These should be given as concentrations and computed over to equivalents.
 	auto InitialSoilWaterNO3       = RegisterParameterDouble(Model, SoilParams, "Initial soil water NO3", EqPerM2, 0.0, 0.0, 1000.0);
 	auto InitialSoilWaterNH4       = RegisterParameterDouble(Model, SoilParams, "Initial soil water NH4", EqPerM2, 0.0, 0.0, 1000.0);
 	auto InitialSoilWaterCa        = RegisterParameterDouble(Model, SoilParams, "Initial soil water Ca",  EqPerM2, 0.0, 0.0, 1000.0);
+	
 	
 	auto NO3PlantUptake            = RegisterParameterDouble(Model, SoilParams, "NO3 plant uptake", MolPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4PlantUptake            = RegisterParameterDouble(Model, SoilParams, "NH4 plant uptake", MolPerM2PerYear, 0.0, 0.0, 1000.0);
@@ -65,6 +68,7 @@ void AddMagicModel(mobius_model *Model)
 	auto NH4SourcesAndSinks        = RegisterParameterDouble(Model, SoilParams, "NH4 sources and sinks", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto CaSourcesAndSinks         = RegisterParameterDouble(Model, SoilParams, "Ca sources and sinks",  EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	
+	//TODO: Paper says weathering rates could be pH dependent. What is the equation for that?
 	auto NO3WeatheringRate         = RegisterParameterDouble(Model, SoilParams, "NO3 weathering rate", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4WeatheringRate         = RegisterParameterDouble(Model, SoilParams, "NH4 weathering rate", EqPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto CaWeatheringRate          = RegisterParameterDouble(Model, SoilParams, "Ca weathering rate",  EqPerM2PerYear, 0.0, 0.0, 1000.0);
@@ -77,7 +81,7 @@ void AddMagicModel(mobius_model *Model)
 	
 	auto SoilPoreVolume = RegisterParameterDouble(Model, SoilParams, "Soil pore volume", M, 0.5, 0.0, 100.0);
 	auto SoilPoreVolumeComputation = RegisterEquationInitialValue(Model, "Soil pore volume computation", M);
-	ParameterIsComputedBy(Model, SoilPoreVolume, SoilPoreVolumeComputation, true); //true signifies that the parameter should not be exposed in files and interfaces
+	ParameterIsComputedBy(Model, SoilPoreVolume, SoilPoreVolumeComputation, true); //'true' signifies that the parameter should not be exposed in files and interfaces
 	
 	EQUATION(Model, SoilPoreVolumeComputation,
 		return PARAMETER(SoilDepth) * PARAMETER(SoilPorosity);
@@ -126,11 +130,11 @@ void AddMagicModel(mobius_model *Model)
 	SetSolver(Model, SoilWaterCa, SoilSolver);
 	SetInitialValue(Model, SoilWaterCa, InitialSoilWaterCa);
 	
-	auto SoilWaterNO3Concentration = RegisterEquation(Model, "Soil water NO3^- concentration", MolPerM3);
+	auto SoilWaterNO3Concentration = RegisterEquation(Model, "Soil water NO3^- ionic concentration", MolPerM3);
 	SetSolver(Model, SoilWaterNO3Concentration, SoilSolver);
-	auto SoilWaterNH4Concentration = RegisterEquation(Model, "Soil water NH4^+ concentration", MolPerM3);
+	auto SoilWaterNH4Concentration = RegisterEquation(Model, "Soil water NH4^+ ionic concentration", MolPerM3);
 	SetSolver(Model, SoilWaterNH4Concentration, SoilSolver);
-	auto SoilWaterCaConcentration  = RegisterEquation(Model, "Soil water Ca^2+ concentration", MolPerM3);
+	auto SoilWaterCaConcentration  = RegisterEquation(Model, "Soil water Ca^2+ ionic concentration", MolPerM3);
 	SetSolver(Model, SoilWaterCaConcentration, SoilSolver);
 	
 	auto CaCathionExchangeableFraction = RegisterEquation(Model, "Ca cathion exchangeable fraction", Dimensionless);
@@ -233,6 +237,7 @@ void AddMagicModel(mobius_model *Model)
 		return RESULT(SoilWaterNH4) / PARAMETER(SoilPoreVolume);
 	)
 	
+	
 	EQUATION(Model, SoilWaterCa,
 		return
 			  PARAMETER(CaAtmosphericDeposition)
@@ -242,12 +247,26 @@ void AddMagicModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilWaterCaConcentration,
+		//TODO: Maybe factor out SM*CEC*ECa as a separate equation ("Soil solid Ca", or something like that)
+		//Also isn't what we call soilwaterca actually total soil ca?
 		return (RESULT(SoilWaterCa) - PARAMETER(SoilMass)*PARAMETER(CathionExchangeCapacity)*RESULT(CaCathionExchangeableFraction)) / (2.0 * PARAMETER(SoilPoreVolume));
 	)
 	
 	EQUATION(Model, CaCathionExchangeableFraction,
 		return 1.0; //TODO: How to derive equation for this?
 	)
+	
+	/*
+		How to do it:
+		pH is unknown, but if it was known one could obtain all other values.
+		- can obtain pAl from pH, then {Al^3+} and [Al^3+] (using Debye-Hückel), everything else from this
+		- Soution has to satisfy equilibrium constraints. Adjust pH until these constraints are satisfied (iterative scheme).
+		- Could use ODE to adjust pH, but how does that interact with time-based change of concentrations due to inputs/outputs ?
+	*/
+	
+	
+	
+	
 	
 	EndModule(Model);
 }
