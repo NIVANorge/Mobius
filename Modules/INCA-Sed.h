@@ -27,7 +27,7 @@ AddINCASedModel(mobius_model *Model)
 	auto KgPerM2       = RegisterUnit(Model, "kg/m^2");
 	auto KgPerM2PerDay = RegisterUnit(Model, "kg/m^2/day");
 	auto JPerSPerM2    = RegisterUnit(Model, "J/s/m^2");
-	auto MgPerL        = RegisterUnit(Model, "mg/L");
+	auto MgPerL        = RegisterUnit(Model, "mg/l");
 	auto Metres        = RegisterUnit(Model, "m");
 	auto KgPerM2PerM3SPerDay = RegisterUnit(Model, "kg/m^2/m^3 s/day");
 	auto S2PerKg       = RegisterUnit(Model, "s^2/kg");
@@ -327,6 +327,15 @@ AddINCASedModel(mobius_model *Model)
 			- RESULT(ReachSuspendedSedimentOutput) 
 			+ PARAMETER(ReachLength) * PARAMETER(ReachWidth) * (RESULT(SedimentEntrainment) + clayrelease - RESULT(SedimentDeposition));
 	)
+	
+	//NOTE: Mdn 21.10.2019: Adding in concentration readout for use in calibration
+	
+	auto SuspendedSedimentConcentration = RegisterEquation(Model, "Total suspended sediment concentration", MgPerL);
+	
+	EQUATION(Model, SuspendedSedimentConcentration,
+		return 1000.0 * SafeDivide(RESULT(TotalSuspendedSedimentMass), RESULT(ReachVolume));
+	)
+	
 	
 	EndModule(Model);
 }

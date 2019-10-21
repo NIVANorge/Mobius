@@ -241,11 +241,11 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialSoilLabilePMass,
-		return 1e-6 * RESULT(SoilMassInTheOAHorizon) * PARAMETER(InitialSoilLabilePRatio);
+		return RESULT(SoilMassInTheOAHorizon) * PARAMETER(InitialSoilLabilePRatio);
 	)
 	
 	EQUATION(Model, InitialSoilInactivePMass,
-		return 1e-6 * RESULT(SoilMassInTheOAHorizon) * PARAMETER(InitialSoilInactivePRatio);
+		return RESULT(SoilMassInTheOAHorizon) * PARAMETER(InitialSoilInactivePRatio);
 	)
 	
 	EQUATION(Model, InitialPMassInTheAquiferMatrix,
@@ -627,11 +627,11 @@ AddINCAPModel(mobius_model *Model)
 	auto PorewaterPControl   = RegisterEquation(Model, "Pore water P control", Dimensionless);
 	
 	EQUATION(Model, InitialWaterColumnTDPMass,
-		return PARAMETER(InitialWaterColumnTDPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //NOTE: I think we have to put CURRENT_INDEX(Reach) for it to get the correct value here, because otherwise it may not have been updated in the quickbuffer.... TODO: Fix initial value system!!!
+		return 1e-3 * PARAMETER(InitialWaterColumnTDPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //NOTE: I think we have to put CURRENT_INDEX(Reach) for it to get the correct value here, because otherwise it may not have been updated in the quickbuffer.... TODO: Fix initial value system!!!
 	)
 	
 	EQUATION(Model, InitialWaterColumnPPMass,
-		double value = PARAMETER(InitialWaterColumnPPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //See note above
+		double value = 1e-3 * PARAMETER(InitialWaterColumnPPConcentration) * RESULT(ReachVolume, CURRENT_INDEX(Reach)); //See note above
 		return value;
 	)
 	

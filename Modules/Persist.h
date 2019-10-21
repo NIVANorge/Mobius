@@ -264,8 +264,10 @@ AddPersistModel(mobius_model *Model)
 
 	/*
 	Mdn (21.10.2019)
-	New change in version 1.3: We now add saturation excess input (something that is received by quick boxes) after percolation is determined. This is because otherwise water would move back and forth between the quick box and any overflowing soil boxes. We then make it so that saturation excess is always delivered to the stream.
-	NOTE: This means that saturation excess flow is not affected by the time constant of the quick box, however in PERSiST unless the tc of a box is above 1, it is effectively 1.
+	New change in version 1.3: We now add saturation excess input (something that is received by quick boxes) after percolation is determined. This is because otherwise water would move back and forth between the quick box and any overflowing soil boxes. We then make it so that saturation excess is always delivered to the stream (at least when retention time in the quick box is <= 1).
+
+	Note that the computation of saturation excess runoff (i.e. the fraction of saturation excess input that then runs off to the reach) is a little edgy, but it will work unless somebody has a very strange parametrization of the model.
+
 	To make this all work more fluidly (pun intended), one would have to make this all into an ODE system, but it seems to work OK like it is now.
 	*/
 
@@ -274,7 +276,11 @@ AddPersistModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, Runoff,
-		double runoff = Max(0.0, RESULT(TotalRunoff) - RESULT(PercolationOut) + RESULT(SaturationExcessInput));
+		double satexrunoff = Min(RESULT(SaturationExcessInput) / PARAMETER(TimeConstant), RESULT(SaturationExcessInput)); //NOTE in case tc < 1
+	
+		double runoff = RESULT(TotalRunoff) - RESULT(PercolationOut) + satexrunoff;
+		
+		runoff = Min(runoff, RESULT(WaterDepth4));
 		/*
 		//Mdn (21.10.2019): I don't see the purpose of the following code. We always have runoff==runoff2 unless there is infiltration excess. But infiltration excess should (as specified in the article) always go to the reach regardless of whether the box is a quick box or a regular box.
 		

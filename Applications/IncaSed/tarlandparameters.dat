@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Sed, containing modules (PERSiST V1.2, INCA-Sed V0.1) at 2019-09-30 11:51:54
+# Parameter file generated for model INCA-Sed, containing modules (PERSiST V1.3, INCA-Sed V0.1) at 2019-10-21 15:01:01
 
 index_sets:
 "Landscape units" : {"All"}
@@ -40,31 +40,31 @@ parameters:
 0
 
 "Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
+0.12
 
 "Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
 "Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.15
+0.12
 
 "Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.01
+0.3
 
 "Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
 "Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.15
+0.1
 
 "Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.001
+1.2e-05
 
 "Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.003
+0.029
 
 "Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.01
+2
 
 "Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
@@ -131,8 +131,8 @@ true false false
 
 "Maximum capacity" :     #(mm) [0, 9999] The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity
 1000
-320
-300
+350
+1000
 
 ###################### "Reaches" ######################
 "Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
@@ -181,13 +181,13 @@ false
 1
 
 "Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-05
+6.5e-06
 
 "Mean channel slope" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.8
 
 "Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-2e-07
+9e-07
 
 ###################### "Reaches" "Landscape units" ######################
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
@@ -204,7 +204,7 @@ false
 2e-06 6e-05 0.0002 0.0006 0.002
 
 ###################### "Sediment size class" "Reaches" ######################
-"Effluent sediment concentration" :     #(mg/L) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Effluent sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 0
 0
@@ -218,7 +218,7 @@ false
 0.1
 0.1
 
-"Initial suspended sediment concentration" :     #(mg/L) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Initial suspended sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 0
 0
