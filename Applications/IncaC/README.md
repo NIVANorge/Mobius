@@ -8,7 +8,7 @@ INCA-C was originally developed by Martyn Futter and others in 2007 (Futter et. 
 
 INCA-C follows the same conceptual framework as INCA-N, and was the first landscape-scale model of catchment carbon processing suitable for predicting long-term changes in surface water DOC concentrations in forested, temperate and boreal environments.
 
-[alt text](../../Documentation/img/incac.png "Illustration of paths taken by carbon in INCA-C (Futter et. al. 2007)")
+![alt text](../../Documentation/img/incac.png "Illustration of paths taken by carbon in INCA-C (Futter et. al. 2007)")
 
 
 ## Difference from earlier versions
