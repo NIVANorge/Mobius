@@ -42,7 +42,7 @@ Mobius can produce standalone executables. There is also the option to compile t
 The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
  * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP/README.md), SimplyQ, SimplyC)
- * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), INCA-C, INCA-P, INCA-Sed, INCA-Microplastics, [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
+ * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), INCA-C, [INCA-P](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaP), INCA-Sed, INCA-Microplastics, [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
  * HBV
  
 Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA . INCA models are re-implementations (and sometimes slight modifications) of models developed by many other people and for most of them there exist other non-Mobius implementations by Dan Butterfield. Model/module version numbers refer to their Mobius implementations only and are not comparable with version numbers from other implementations.
