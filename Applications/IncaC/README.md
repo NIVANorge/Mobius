@@ -4,7 +4,7 @@ INCA-C is a Mobius continuation of the INtegrated CAtchment model for Carbon dyn
 
 INCA-C simulates sorption, desorption and mineralisation of dissolved organic carbon (DOC) in the soil, along with transport between different soil layers and into a (possibly branched) river network.
 
-INCA-C was originally developed by Martyn Futter and others in 2007 (Futter et. al. 2007). It later received contributions by Heleen De Wit and others, adding impacts of acidification on soil carbon processes. Moreover, solid organic carbon was divided into an easily accessible and a non-accessible fraction.
+INCA-C was originally developed by Martyn Futter and others in 2007 (Futter et. al. 2007). It later received contributions by Heleen de Wit and others, adding impacts of acidification on soil carbon processes. Moreover, solid organic carbon was divided into an easily accessible and a non-accessible fraction.
 
 INCA-C follows the same conceptual framework as INCA-N, and was the first landscape-scale model of catchment carbon processing suitable for predicting long-term changes in surface water DOC concentrations in forested, temperate and boreal environments.
 
