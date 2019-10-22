@@ -16,7 +16,7 @@ Simple hydrologic response unit comprised of three buckets, representing direct 
 
 This version does not simulate inundation or infiltration from the stream to land.
 
-Change in version 1.3: Infiltration excess input is added to the quick box after percolation to other boxes is considered. This is to avoid movement of water back and forth between boxes.
+Change in version 1.3: Saturation excess input is added to the quick box after percolation to other boxes is considered. This is to avoid movement of water back and forth between boxes.
 
 The version numbers found in this repository refer to the version number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
 
