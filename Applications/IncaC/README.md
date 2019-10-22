@@ -19,7 +19,7 @@ The Mobius version of INCA-C is different from earlier versions in that it is in
 Apart from that, Mobius INCA-C has mostly the same features as the final version of the original INCA-C.
 
 Some known small differences are:
-- We don't model PDC (non-dissolved carbon object floating in the river)
+- We don't model PDC (non-dissolved carbon objects floating in the direct runoff pathways and the river)
 - We lump all carbon inputs to the soil into the category 'litterfall'.
 
 The version numbers found in this repository refer to the version number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
