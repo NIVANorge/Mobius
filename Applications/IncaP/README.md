@@ -18,7 +18,7 @@ Some known small differences are:
 - Wet and dry depositions are currently not spread out with precipitation, but are instead delivered as constant daily doses (or following an input timeseries if that is provided).
 - Land cover that changes over time is not implemented until we find a way to do it that preserves stored quantities (but there may be workarounds. Take contact if you need this).
 
-![alt text](../../Documentation/img/incan.png "Illustration of INCA-P processes taken from (Jackson-Blake et. al. 2016)")
+![alt text](../../Documentation/img/incap.png "Illustration of INCA-P processes taken from (Jackson-Blake et. al. 2016)")
 
 The version numbers found in this repository refer to the version number of the Mobius implementation of the model only, and is not compatible with earlier version numbers.
 
