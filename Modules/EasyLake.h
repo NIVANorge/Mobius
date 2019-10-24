@@ -58,21 +58,21 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 	SetSolver(Model, Evaporation, LakeSolver);
 	
 	/*
-		Conceptual model for water balance:
+        Conceptual model for water balance:
 		
-	                          |   ^
-							  |   |
-							  P   E
-							  |   |
-	                          v   | 
+                              |   ^
+                              |   |
+                              P   E
+                              |   |
+                              v   | 
 ---Qin-->------ w ------*------------ L ------------* -- Qout -->
          \      |      /                           /  ----------
           \     |     /                           /   |
            \    |    /                           /    |
-	        \   h   /      V = 0.5 * w * L * h  /     h0
-	         \  |  /                           /      |
-	          \ | /                           /       |
-	           \|/___________________________/        |
+            \   h   /      V = 0.5 * w * L * h  /     h0
+             \  |  /                           /      |
+              \ | /                           /       |
+               \|/___________________________/        |
 	
 		w  - lake width (m)
 		h  - lake depth (m)
