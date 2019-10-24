@@ -12,9 +12,9 @@
 
 
 static void
-AddEasyLakePhysicalModel(mobius_model *Model)
+AddEasyLakeWaterBalanceModule(mobius_model *Model)
 {
-	BeginModule(Model, "Easy-Lake physical", "_dev");
+	BeginModule(Model, "Easy-Lake water balance", "_dev");
 	
 	auto Dimensionless = RegisterUnit(Model);
 	auto M        = RegisterUnit(Model, "m");
@@ -23,12 +23,12 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 	auto M3PerS   = RegisterUnit(Model, "m3/s");
 	auto MmPerDay = RegisterUnit(Model, "mm/day");
 	auto MPerM    = RegisterUnit(Model, "m/m");
-	
+	auto DegreesCelsius = RegisterUnit(Model, "°C");
 	
 	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters");
 	
 	auto LakeSurfaceArea                = RegisterParameterDouble(Model, PhysParams, "Lake surface area", M2, 1e3, 0.0, 371e9);
-	auto LakeLength                     = RegisterParameterDouble(Model, PhysParams, "Lake length", M, 300.0, 0.0, 1.03e6), "This parameter should be adjusted when calibrating lake outflow");
+	auto LakeLength                     = RegisterParameterDouble(Model, PhysParams, "Lake length", M, 300.0, 0.0, 1.03e6, "This parameter should be adjusted when calibrating lake outflow");
 	auto LakeShoreSlope                 = RegisterParameterDouble(Model, PhysParams, "Lake shore slope", MPerM, 0.2, 0.0, 4.0, "This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width");
 	auto WaterLevelAtWhichOutflowIsZero = RegisterParameterDouble(Model, PhysParams, "Water level at which outflow is 0", M, 10.0, 0.0, 1642.0);
 	auto OutflowRatingCurveShape        = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve shape", Dimensionless, 0.3, 0.0, 1.0, "0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.");
@@ -36,8 +36,9 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 	auto InitialWaterLevel              = RegisterParameterDouble(Model, PhysParams, "Initial water level", M, 10.0, 0.0, 1642.0);
 	
 	//TODO: We should make a flexible way for this to either be taken from (one or more) reach sections in a directly coupled model, OR be an input timeseries
-	auto LakeInflow    = RegisterInput(Model, "Lake inflow", M3PerS);
-	auto Precipitation = RegisterInput(Model, "Precipitation", MmPerDay);
+	auto LakeInflow     = RegisterInput(Model, "Lake inflow", M3PerS);
+	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);
+	auto AirTemperature = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.1, IncaDascru);
 	
@@ -109,7 +110,7 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, WaterLevel,
-		return 0.5 * (PARAMETER(LakeShoreSlope) / (PARAMETER(LakeLength) * RESULT(WaterLevel)) * RESULT(DVDT);
+		return 0.5 * (PARAMETER(LakeShoreSlope) / (PARAMETER(LakeLength) * RESULT(WaterLevel))) * RESULT(DVDT);
 	)
 	
 	
@@ -121,8 +122,22 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 	EQUATION(Model, LakeOutflow,
 		double excess = Max(0.0, RESULT(WaterLevel) - PARAMETER(WaterLevelAtWhichOutflowIsZero));
 		double C3 = PARAMETER(OutflowRatingCurveShape);
-		return std::pow10(PARAMETER(OutflowRatingCurveMagnitude)) * (C3*excess + (1.0 - C3)*excess*excess);
+		return std::pow(10.0, PARAMETER(OutflowRatingCurveMagnitude)) * (C3*excess + (1.0 - C3)*excess*excess);
 	)
+	
+	
+	EndModule(Model);
+}
+
+
+static void
+AddEasyLakeTemperatureAndIceModule(mobius_model *Model)
+{
+	BeginModule(Model, "Easy-Lake temperature and ice", "_dev");
+	
+	
+	
+	
 	
 	
 	EndModule(Model);
