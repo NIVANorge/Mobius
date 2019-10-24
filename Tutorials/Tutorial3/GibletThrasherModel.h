@@ -109,6 +109,7 @@ AddGibletThrasherModel(mobius_model *Model)
 	
 	EQUATION(Model, GibletTemporalBirthRate,
 		//TODO: This does not work that well if GibletBirthdayMean is too close to one of the edges of the year, and so we should make it wrap around in some way.
+		//TODO: This is not normalized!
 		double exponent = (double)((s64)CURRENT_DAY_OF_YEAR() - (s64)PARAMETER(GibletBirthdayMean)) / (double)PARAMETER(GibletBirthdayStandardDeviation);
 		return PARAMETER(GibletBirthRate) * std::exp(-Square(exponent) / 2.0 );
 	)
@@ -119,7 +120,7 @@ AddGibletThrasherModel(mobius_model *Model)
 	
 	EQUATION(Model, ThrasherPopulation,
 		return
-		  RESULT(GibletPopulation) * RESULT(ThrasherPopulation) * PARAMETER(PredationRate) * PARAMETER(ThrasherGrowthFromPredation) //Apparently Thrashers immediately spew out offspring when they get to eat.
+		  RESULT(GibletPopulation) * RESULT(ThrasherPopulation) * PARAMETER(PredationRate) * PARAMETER(ThrasherGrowthFromPredation) //Apparently Thrashers immediately spew out offspring when they get to eat. Also, lack of food doesn't immediately kill them (this model is maybe not that good with a daily timestep like we use here).
 		- RESULT(ThrasherPopulation) * (PARAMETER(ThrasherDeathRate) + INPUT(MeteorStrikes) * PARAMETER(ThrasherDeathFromMeteorStrikes))
 		+ RESULT(ThrasherMigration);
 	)
