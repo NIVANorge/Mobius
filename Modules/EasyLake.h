@@ -7,22 +7,27 @@
 // The water balance part of the model is conceptually based off of VEMALA
 // A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109
 
+// Air-lake fluxes are based off of
+// Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112
 
-//NOTE: This module is IN DEVELOPMENT
+
+//NOTE: This model is IN DEVELOPMENT
+
 
 
 static void
-AddEasyLakeWaterBalanceModule(mobius_model *Model)
+AddEasyLakePhysicalModule(mobius_model *Model)
 {
-	BeginModule(Model, "Easy-Lake water balance", "_dev");
+	BeginModule(Model, "Easy-Lake physical", "_dev");
 	
-	auto Dimensionless = RegisterUnit(Model);
-	auto M        = RegisterUnit(Model, "m");
-	auto M2       = RegisterUnit(Model, "m2");
-	auto M3       = RegisterUnit(Model, "m3");
-	auto M3PerS   = RegisterUnit(Model, "m3/s");
-	auto MmPerDay = RegisterUnit(Model, "mm/day");
-	auto MPerM    = RegisterUnit(Model, "m/m");
+	auto Dimensionless  = RegisterUnit(Model);
+	auto M              = RegisterUnit(Model, "m");
+	auto M2             = RegisterUnit(Model, "m2");
+	auto M3             = RegisterUnit(Model, "m3");
+	auto MPerS          = RegisterUnit(Model, "m/s");
+	auto M3PerS         = RegisterUnit(Model, "m3/s");
+	auto MmPerDay       = RegisterUnit(Model, "mm/day");
+	auto MPerM          = RegisterUnit(Model, "m/m");
 	auto DegreesCelsius = RegisterUnit(Model, "°C");
 	
 	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters");
@@ -39,6 +44,7 @@ AddEasyLakeWaterBalanceModule(mobius_model *Model)
 	auto LakeInflow     = RegisterInput(Model, "Lake inflow", M3PerS);
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature = RegisterInput(Model, "Air temperature", DegreesCelsius);
+	auto WindSpeed      = RegisterInput(Model, "Wind speed at 10m", MPerS);
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.1, IncaDascru);
 	
@@ -113,12 +119,6 @@ AddEasyLakeWaterBalanceModule(mobius_model *Model)
 		return 0.5 * (PARAMETER(LakeShoreSlope) / (PARAMETER(LakeLength) * RESULT(WaterLevel))) * RESULT(DVDT);
 	)
 	
-	
-	EQUATION(Model, Evaporation,
-		return 0.0; //TODO!!
-	)
-	
-	
 	EQUATION(Model, LakeOutflow,
 		double excess = Max(0.0, RESULT(WaterLevel) - PARAMETER(WaterLevelAtWhichOutflowIsZero));
 		double C3 = PARAMETER(OutflowRatingCurveShape);
@@ -126,15 +126,55 @@ AddEasyLakeWaterBalanceModule(mobius_model *Model)
 	)
 	
 	
-	EndModule(Model);
-}
-
-
-static void
-AddEasyLakeTemperatureAndIceModule(mobius_model *Model)
-{
-	BeginModule(Model, "Easy-Lake temperature and ice", "_dev");
+	/*
 	
+	//auto LakeSurfaceTemperature = RegisterEquation(Model, "Lake surface temperature", DegreesCelsius);
+
+
+	EQUATION(Model, Stability,
+		double WW = (INPUT(WindSpeed) + 1e-10)
+		double s0 = 0.25 * (RESULT(LakeSurfaceTemperature) - INPUT(AirTemperature)) / (WW * WW);
+		return s0 * std::abs(s0) / (std::abs(s0 + 0.01);
+	)
+	
+	EQUATION(Model, TransferCoefficientForLatentHeatFlux,
+		double W = INPUT(WindSpeed);
+		
+		double ae_e, be_e, ce_e, pe_e;
+		if(W < 2.2)        { ae_e = 0.0;   be_e = 1.23;    ce_e = 0.0;     pe_e = -0.16;}
+		else if (W < 5.0)  { ae_e = 0.969; be_e = 0.0521;  ce_e = 0.0;     pe_e = 1.0;  }
+		else if (W < 8.0)  { ae_e = 1.18;  be_e = 0.01;    ce_e = 0.0;     pe_e = 1.0;  }
+		else if (W < 25.0) { ae_e = 1.196; be_e = 0.008;   ce_e = -0.0004; pe_e = 1.0;  }
+		else               { ae_e = 1.68;  be_e = -0.016;  ce_e = 0.0;     pe_e = 1.0;  }
+	
+		double WM8 = (W - 8.0);
+		double ced = (ae_e + be_e*std::exp(pe_e * std::log(W + 1e-12)) + ce_e*WM8*WM8)*1e-3;
+		
+		double s = RESULT(Stability);
+		if(s < 0.0)
+		{
+			double x;
+			if(s > -3.3) 	x = 0.1 + 0.03*s + 0.9*std::exp(4.8 * s);
+			else            x = 0.0;
+			
+			ced *= x;
+		}
+		else
+			ced *= (1.0 + 0.63 * std::sqrt(s));
+		
+		return ced;
+	)
+	
+	
+	
+	*/
+	
+	EQUATION(Model, Evaporation,
+		//referencedensity is    rho_0, default 1025.0;   // [kg/m3]
+	
+		// return (RESULT(AirDensity) / PARAMETER(ReferenceDensity) * RESULT(TransferCoefficientForLatentHeatFlux) * INPUT(WindSpeed) * (PARAMETER(SpecificHumidity) - RESULT(SpecificSaturationHumidity));
+		return 0.0; //TODO!!
+	)
 	
 	
 	
