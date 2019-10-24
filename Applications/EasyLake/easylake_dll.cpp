@@ -20,8 +20,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	mobius_model *Model = BeginModelDefinition("Easy-Lake");
 	
-	AddEasyLakeWaterBalanceModule(Model);
-	AddEasyLakeTemperatureAndIceModule(Model);
+	AddEasyLakePhysicalModule(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	

@@ -18,7 +18,7 @@ int main()
 	
 	mobius_model *Model = BeginModelDefinition("Easy-Lake");
 	
-	AddEasyLakeWaterBalanceModule(Model);
+	AddEasyLakePhysicalModule(Model);
 	AddEasyLakeTemperatureAndIceModule(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFile);
