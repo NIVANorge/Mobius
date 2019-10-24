@@ -85,7 +85,7 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 		E  - evaporation (mm/day)
 		t  - lake slope                = 2 * h / w                    (1)
 		V  - volume                    = w * L * h                    (2)
-		dV/dt = (Qin - Qout)*86400 + 1e-3*(P - E)                     (3)
+		dV/dt = (Qin - Qout)*86400 + 1e-3*(P - E)*S                   (3)
 		=>
 		w = 2 * h / t                                                from (1)
 		V = 0.5 * L * h * (2 * h / t) = L * h^2 / t                  from (2)
@@ -99,7 +99,8 @@ AddEasyLakePhysicalModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DVDT,
-		//TODO: what to do about precipitation when there is ice?
+		//NOTE: We don't care about ice when it comes to the water balance. This is a simplification that should not matter too much.
+		//NOTE: In the conceptualisation, the surface area is actually not constant but varies with the water level. However, that is probably not important for precip & evaporation.
 		return (INPUT(LakeInflow) - RESULT(LakeOutflow)) * 86400.0 + 1e-3 * (INPUT(Precipitation) - RESULT(Evaporation)) * PARAMETER(LakeSurfaceArea);
 	)
 	
