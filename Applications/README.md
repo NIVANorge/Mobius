@@ -22,6 +22,7 @@ The following models are in development and are not finished
 - SimplyC
 - INCA-Tox
 - MAGIC
+- EasyLake
 
 INCA-N-classic is not supported by us and has some bugs in it. HBV is a leftover from a previous project that was not finished, and would probably need to be cleaned up a little before proper use.
 
