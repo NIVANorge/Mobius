@@ -18,7 +18,7 @@ Mobius is a general framework for running large sets of equations, both discrete
 
 Primarily Mobius was developed to model catchments (routing of precipitation through soil and groundwater into rivers and streams and assorted transport and reactions of chemical compounds and sediments), but can also be used to build e.g. biological population models.
 
-The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written directly in Matlab or python.
+The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written in a managed language like Matlab or python, and is close to the speed of models hard coded in C++ or Fortran.
 
 Mobius can produce standalone executables. There is also the option to compile the models to .dll's that can be loaded in the graphical user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) or be called and interacted with from Python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots.
 
@@ -42,7 +42,7 @@ Mobius can produce standalone executables. There is also the option to compile t
 The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
  * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP/README.md), SimplyQ, SimplyC)
- * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), INCA-C, [INCA-P](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaP), INCA-Sed, INCA-Microplastics, [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
+ * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), [INCA-C](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaC), [INCA-P](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaP), INCA-Sed, INCA-Microplastics, [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
  * HBV
  
 Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA . INCA models are re-implementations (and sometimes slight modifications) of models developed by many other people and for most of them there exist other non-Mobius implementations by Dan Butterfield. Model/module version numbers refer to their Mobius implementations only and are not comparable with version numbers from other implementations.

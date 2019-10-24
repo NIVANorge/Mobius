@@ -7,9 +7,11 @@ PERSiST (the Precipitation, Evapotranspiration and Runoff Simulator for Solute T
 The model is a flexible, semi-distributed landscape-scale rainfall-runoff modelling toolkit suitable for simulating a broad range of user-specified perceptual models of runoff generation and stream flow occurring in different climatic regions and landscape types. (Futter et. al. 2014)
 
 ![alt text](../../Documentation/img/persist.png "Figure taken from (Futter et. al. 2014)")
+
 Conceptual representation of the landscape in PERSiST adapted from Wate et. al. (2002). A watershed (level 1) is represented as one or more reach/subcatchments (level 2). Within each subcatchment, there are one ore more hydrologic response ynits (level 3). Each hydrologic response unit is made up of one or more buckets through which water is routed (level 4). (Futter et. al. 2014)
 
 ![alt text](../../Documentation/img/persist2.png "Figure taken from (Futter et. al. 2014)")
+
 Simple hydrologic response unit comprised of three buckets, representing direct runoff, soil water and groundwater (Futter et. al. 2014)
 
 ## Difference from earlier versions
