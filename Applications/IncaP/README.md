@@ -1,6 +1,6 @@
 # INCA-P
 
-INCA-P is a Mobius continuation of the INtegrated CAtchment model for phosphorous dynamics, previously coded by Dan Butterfield.
+INCA-P is a Mobius continuation of the INtegrated CAtchment model for Phosphorous dynamics, previously coded by Dan Butterfield.
 
 INCA-P simulates transport and reaction of phosphorous through soil and groundwater and into (a possibly branched) river system.
 
