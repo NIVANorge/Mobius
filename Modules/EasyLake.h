@@ -54,6 +54,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto M3PerS         = RegisterUnit(Model, "m3/s");
 	auto MmPerDay       = RegisterUnit(Model, "mm/day");
 	auto MPerM          = RegisterUnit(Model, "m/m");
+	auto Degrees        = RegisterUnit(Model, "°");
 	auto DegreesCelsius = RegisterUnit(Model, "°C");
 	auto KgPerKg        = RegisterUnit(Model, "kg/kg");
 	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
@@ -141,7 +142,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DVDT,
-		//NOTE: We don't care about ice when it comes to the water balance. This is a simplification that should not matter too much.
+		//NOTE: We don't care about ice when it comes to the water balance. We may figure out later if this matters for the computation of outflow.
 		//NOTE: In the conceptualisation, the surface area is actually not constant but varies with the water level. However, that is probably not important for precip & evaporation.
 		return (INPUT(LakeInflow) - RESULT(LakeOutflow)) * 86400.0 + 1e-3 * (INPUT(Precipitation) - RESULT(Evaporation)) * PARAMETER(LakeSurfaceArea);
 	)
@@ -165,7 +166,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	// Also, the units of it seem wrong??
 	auto ReferenceDensity = RegisterParameterDouble(Model, PhysParams, "Reference air density", KgPerM3, 1025.0, 1000.0, 1100.0);
 	auto Emissivity       = RegisterParameterDouble(Model, PhysParams, "Emissivity", Dimensionless, 0.97, 0.0, 1.0);
-	
+	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
 	
 	
 	
@@ -178,9 +179,10 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto TransferCoefficientForSensibleHeatFlux = RegisterEquation(Model, "Transfer coefficient for sensible heat flux", Dimensionless); // unit?
 	auto LatentHeatOfVaporization             = RegisterEquation(Model, "Latent heat of vaporization", Dimensionless); //TODO: Unit!
 	auto RainfallHeatfluxCorrection           = RegisterEquation(Model, "Rainfall heat flux correction", Dimensionless); //TODO: Unit!
-	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2);           //TODO: check Unit!
-	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2);         //TODO: check Unit!
-	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2);         //TODO: check Unit! 
+	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2);
+	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2);
+	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2);
+	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2);
 	
 	auto LakeSurfaceTemperature     = RegisterEquation(Model, "Lake surface temperature", DegreesCelsius);
 	//SetSolver(Model, LakeSurfaceTemperature, LakeSolver);
@@ -334,7 +336,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	EQUATION(Model, LongwaveRadiation,
 		//Net long-wave radiation. Berliand & Berliand (1952), as implemented by GOTM
-		//TODO: Should probably use different method since the cloud correction factor in this is not sophisticated.
+		//TODO: Should maybe use different method since the cloud correction factor in this is not sophisticated.
 		
 		auto airtkelv = INPUT(AirTemperature) + 273.15;
 		auto watertkelv = RESULT(LakeSurfaceTemperature) + 273.15;
@@ -347,18 +349,24 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		return - PARAMETER(Emissivity) * boltzmannConst * (x1*x2 + x3);
 	)
 	
-	/*
+
 	EQUATION(Model, ShortwaveRadiation,
 		//Net shortwave radiation (not albedo-corrected), partially based on Rosati & Miyaconda (1988), as implemented by GOTM
+		
+		//TODO: This is bugged, it returns way too low numbers.
 		
 		double SolarConstant = 1350.0;
 		double tau           = 0.7;
 		double eclipse       = 23.434 * Pi / 180.0;
 		double ozoneppm      = 0.09;
 		
-		double SolarDeclination = 0.409*sin(2.0*Pi*(double)DayOfYear / 365.0 - 1.39);
-	
+		double doy = (double)CURRENT_DAY_OF_YEAR();
+		double days = (double)DAYS_THIS_YEAR();
+		
 		double LatitudeRad = PARAMETER(Latitude) * Pi / 180.0;
+		
+		
+		double SolarDeclination = 0.409*sin(2.0*Pi*doy/days - 1.39);
 	
 		double SunsetHourAngle = acos(-tan(LatitudeRad)*tan(SolarDeclination));
 		
@@ -369,7 +377,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		if(cosZenitAngle <= 0.0)
 			cosZenitAngle = 0.0;
 		else
-			qatten = pow(tau, 1.0(cosZenitAngle);
+			qatten = pow(tau, 1.0/cosZenitAngle);
 		
 		double qzer = cosZenitAngle * SolarConstant;
 		double qdir = qzer * qatten;
@@ -377,7 +385,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		double qtot = qdir + qdiff;
 		
 		
-		double equinox = 2.0 * Pi * ((double)CURRENT_DAY_OF_YEAR() - 81.0) / (double)DAYS_THIS_YEAR();
+		double equinox = 2.0 * Pi * (doy - 81.0) / days;
 		double SinNoonAngle = sin(LatitudeRad)*sin(eclipse*sin(equinox)) + cos(LatitudeRad)*cos(eclipse*sin(equinox));
 		double NoonAngleDeg = asin(SinNoonAngle) * 180.0 / Pi;
 		
@@ -385,7 +393,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		if(qshort > qtot) qshort = qtot;
 		return qshort;
 	)
-	*/
+
 	
 	/*
 	
