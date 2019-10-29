@@ -10,13 +10,13 @@ DailyExtraTerrestrialRadiation(double Latitude, s32 DayOfYear)
 	
 	double InverseRelativeDistanceEarthSun = 1.0 + 0.033*cos(2.0*Pi*(double)DayOfYear / 365.0);
 	
-	double SolarDecimation = 0.409*sin(2.0*Pi*(double)DayOfYear / 365.0 - 1.39);
+	double SolarDeclination = 0.409*sin(2.0*Pi*(double)DayOfYear / 365.0 - 1.39);
 	
 	double LatitudeRad = Latitude * Pi / 180.0;
 	
-	double SunsetHourAngle = acos(-tan(LatitudeRad)*tan(SolarDecimation));
+	double SunsetHourAngle = acos(-tan(LatitudeRad)*tan(SolarDeclination));
 	
-	return (24.0 * 60.0 / Pi) * SolarConstant * InverseRelativeDistanceEarthSun * (SunsetHourAngle * sin(LatitudeRad) * sin(SolarDecimation) + cos(LatitudeRad) * cos(SolarDecimation) * sin(SunsetHourAngle));
+	return (24.0 * 60.0 / Pi) * SolarConstant * InverseRelativeDistanceEarthSun * (SunsetHourAngle * sin(LatitudeRad) * sin(SolarDeclination) + cos(LatitudeRad) * cos(SolarDeclination) * sin(SunsetHourAngle));
 }
 
 static void
