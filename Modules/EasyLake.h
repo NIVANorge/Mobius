@@ -52,6 +52,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto M3             = RegisterUnit(Model, "m3");
 	auto MPerS          = RegisterUnit(Model, "m/s");
 	auto M3PerS         = RegisterUnit(Model, "m3/s");
+	auto M3PerDay       = RegisterUnit(Model, "m3/day");
 	auto MmPerDay       = RegisterUnit(Model, "mm/day");
 	auto MPerM          = RegisterUnit(Model, "m/m");
 	auto Degrees        = RegisterUnit(Model, "°");
@@ -93,7 +94,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	SetSolver(Model, WaterLevel, LakeSolver);
 	SetInitialValue(Model, WaterLevel, InitialWaterLevel);
 	
-	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerS);
+	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerDay);
 	SetSolver(Model, DVDT, LakeSolver);
 	auto LakeOutflow = RegisterEquation(Model, "Lake outflow", M3PerS);
 	SetSolver(Model, LakeOutflow, LakeSolver);
