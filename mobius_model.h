@@ -557,7 +557,7 @@ struct mobius_data_set
 
 struct model_run_state
 {
-	// The purpose of the value set accessor is to store temporary state that is needed to run the model as well as providing an access point to data that is needed when evaluating equations.
+	// The purpose of the model_run_state is to store temporary state that is needed during a model run as well as providing an access point to data that is needed when evaluating equations.
 	// There are two use cases.
 	// If Running=false, this is a setup run, where the purpose is to register the accesses of all the equations to later determine their dependencies.
 	// If Running=true, this is the actual run of the model, where equations should have access to the actual parameter values and so on.
@@ -566,6 +566,7 @@ struct model_run_state
 	const mobius_model *Model;
 	mobius_data_set *DataSet;
 	
+	s32 Year;
 	s32 DayOfYear;
 	s32 DaysThisYear;
 	s64 Timestep; //NOTE: We make this a signed integer so that it can be set to -1 during the "initial value" step.
@@ -1302,6 +1303,7 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 
 #define CURRENT_DAY_OF_YEAR() (RunState__->DayOfYear)
 #define DAYS_THIS_YEAR() (RunState__->DaysThisYear)
+#define CURRENT_TIMESTEP() (RunState__->Timestep)
 
 #define EQUATION(Model, ResultH, Def) \
 SetEquation(Model, ResultH, \

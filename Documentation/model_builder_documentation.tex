@@ -768,8 +768,9 @@ The framework lets you access a few additional variables that tell you something
 \item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
 \item {\tt FIRST\_INDEX(IndexSetHandle)} Gives you an {\tt index\_t} corresponding to the first index of that index set. Registers no dependencies.
 \item {\tt INDEX\_NUMBER(IndexSetHandle, Number)} Gives you an {\tt index\_t} corresponding to the index of that number. However, be careful when using this that the index is smaller than {\tt INDEX\_COUNT(IndexSetHandle)}. Also, it is probably better to use a predeclared index, which guarantees you that what you are referring to has the right index name  (see Section \ref{sec:predeclared} below). Registers no dependencies.
-\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an unsigned integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is 1999-1-15, then during the first timestep, the current day of year will be 15.
-\item {\tt DAYS\_THIS\_YEAR()} Returns an unsigned integer that is either 365 (in a normal year) or 366 (in a leap year).
+\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is 1999-1-15, then during the first timestep, the current day of year will be 15.
+\item {\tt DAYS\_THIS\_YEAR()} Returns an integer that is either 365 (in a normal year) or 366 (in a leap year).
+\item {\tt CURRENT\_TIMESTEP()} Returns an integer saying what timestep we are on. A return value of -1 means that this is during an "initial value" computation, while 0 is the first proper timestep.
 \end{enumerate}
 
 \begin{note}
@@ -1421,14 +1422,20 @@ The following macros are only available inside the {\tt Decl} of an {\tt EQUATIO
 
 \apientry{CURRENT\_DAY\_OF\_YEAR}{Equation macro}{
 \apipar{}{None.}
-\apiret{A {\tt u64}.}
+\apiret{A {\tt s32}.}
 \apidesc{Returns the current day of the year in the context of the simulation. January 1st corresponds to a current day of year of 1. This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
 }
 
 \apientry{DAYS\_THIS\_YEAR}{Equation macro}{
 \apipar{}{None.}
-\apiret{A {\tt u64}.}
+\apiret{A {\tt s32}.}
 \apidesc{Returns the amount of days this year in the context of the simulation. Is either 365 (in a common year) or 366 (in a leap year). This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
+}
+
+\apientry{CURRENT\_TIMESTEP}{Equation macro}{
+\apipar{}{None.}
+\apiret{A {\tt s64}.}
+\apidesc{Returns what timestep the simulation is on. -1 corresponds to the "intial value" timestep, while 0 is the first proper timestep of the simulation. This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
 }
 
 \apientry{INDEX\_COUNT}{Equation macro}{

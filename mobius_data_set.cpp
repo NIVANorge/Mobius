@@ -177,7 +177,7 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 		}
 	}
 	
-	//NOTE: We don't copy any of the following as they will be generated when you try to run the DataSet.
+	//NOTE: We don't copy any of the following as they will be re-generated when you try to run the DataSet.
 	//std::vector<parameter_value> FastParameterLookup;
 	//std::vector<size_t> FastInputLookup;
 	//std::vector<size_t> FastResultLookup;
@@ -856,7 +856,7 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	
 	if(Model->Parameters.Specs[ParameterHandle].Type != Type)
 	{
-		std::cout << "WARNING: Tried to set the value of the parameter " << Name << " with a value that was of the wrong type. This can lead to undefined behaviour." << std::endl;
+		MOBIUS_FATAL_ERROR("ERROR: Tried to set the value of the parameter " << Name << " with a value that was of the wrong type." << std::endl);
 	}
 	
 	//TODO: Check that the value is in the Min-Max range. (issue warning only)
@@ -933,7 +933,7 @@ GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	
 	if(Model->Parameters.Specs[ParameterHandle].Type != Type)
 	{
-		std::cout << "WARNING: Tried to get the value of the parameter " << Name << " specifying the wrong type for the parameter. This can lead to undefined behaviour." << std::endl;
+		MOBIUS_FATAL_ERROR("ERROR: Tried to get the value of the parameter " << Name << " specifying the wrong value type." << std::endl);
 	}
 	
 	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];

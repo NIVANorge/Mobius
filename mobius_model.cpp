@@ -1470,7 +1470,7 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	
-	u64 Timesteps      = GetTimesteps(DataSet);
+	u64 Timesteps           = GetTimesteps(DataSet);
 	datetime ModelStartTime = GetStartDate(DataSet); //NOTE: This reads the "Start date" parameter.
 	
 #if MOBIUS_PRINT_TIMING_INFO
@@ -1615,9 +1615,8 @@ RunModel(mobius_data_set *DataSet)
 	RunState.AllLastResultsBase = DataSet->ResultData;
 	RunState.AllCurResultsBase = DataSet->ResultData;
 	
-	s32 Year;
-	ModelStartTime.DayOfYear(&RunState.DayOfYear, &Year);
-	RunState.DaysThisYear = YearLength(Year);
+	ModelStartTime.DayOfYear(&RunState.DayOfYear, &RunState.Year);
+	RunState.DaysThisYear = YearLength(RunState.Year);
 	
 	//NOTE: Set up initial values;
 	RunState.AtResult = RunState.AllCurResultsBase;
@@ -1641,15 +1640,17 @@ RunModel(mobius_data_set *DataSet)
 	RunState.EquationTotalCycles = AllocClearedArray(u64, Model->Equations.Count());
 #endif
 	
-	for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
+	//TODO: Timesteps is u64. Can cause problems if somebody have an unrealistically high amount of timesteps. Ideally we should move every parameter from u64 to s64 anyway? There is a similar problem a little earlier in this routine.
+	s64 MaxStep = (s64)Timesteps;
+	
+	for(RunState.Timestep = 0; RunState.Timestep < MaxStep; ++RunState.Timestep)
 	{
 		
 #if MOBIUS_TIMESTEP_VERBOSITY >= 1
-		std::cout << "Timestep: " << Timestep << std::endl;
+		std::cout << "Timestep: " << RunState.Timestep << std::endl;
 		//std::cout << "Day of year: " << RunState.DayOfYear << std::endl;
 #endif
 		
-		RunState.Timestep = (s64)Timestep;
 		RunState.AtResult = RunState.AllCurResultsBase;
 		RunState.AtLastResult = RunState.AllLastResultsBase;
 		
@@ -1675,11 +1676,11 @@ RunModel(mobius_data_set *DataSet)
 		RunState.AllCurInputsBase  += DataSet->InputStorageStructure.TotalCount;
 		
 		RunState.DayOfYear++;
-		if(RunState.DayOfYear == (365 + IsLeapYear(Year) + 1))
+		if(RunState.DayOfYear == (365 + IsLeapYear(RunState.Year) + 1))
 		{
 			RunState.DayOfYear = 1;
-			Year++;
-			RunState.DaysThisYear = 365 + IsLeapYear(Year);
+			RunState.Year++;
+			RunState.DaysThisYear = 365 + IsLeapYear(RunState.Year);
 		}
 	}
 	
