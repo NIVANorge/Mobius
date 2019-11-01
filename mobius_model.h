@@ -208,9 +208,9 @@ struct module_spec
 	const char *Version;
 };
 
-struct value_set_accessor;
+struct model_run_state;
 
-typedef std::function<double(value_set_accessor *)> mobius_equation;
+typedef std::function<double(model_run_state *)> mobius_equation;
 
 typedef std::function<void(double *, double *)> mobius_solver_equation_function;
 typedef std::function<void(size_t, size_t, double)> mobius_matrix_insertion_function;
@@ -555,7 +555,7 @@ struct mobius_data_set
 #define MOBIUS_EQUATION_PROFILING 0
 #endif
 
-struct value_set_accessor
+struct model_run_state
 {
 	// The purpose of the value set accessor is to store temporary state that is needed to run the model as well as providing an access point to data that is needed when evaluating equations.
 	// There are two use cases.
@@ -616,7 +616,7 @@ struct value_set_accessor
 #endif
 	
 	//NOTE: For dependency registration run:
-	value_set_accessor(const mobius_model *Model)
+	model_run_state(const mobius_model *Model)
 	{
 		Running = false;
 		DataSet = 0;
@@ -624,7 +624,7 @@ struct value_set_accessor
 	}
 	
 	//NOTE: For proper run:
-	value_set_accessor(mobius_data_set *DataSet)
+	model_run_state(mobius_data_set *DataSet)
 	{
 		Running = true;
 		this->DataSet = DataSet;
@@ -650,7 +650,7 @@ struct value_set_accessor
 		wk = 0;
 	}
 	
-	~value_set_accessor()
+	~model_run_state()
 	{
 		if(Running)
 		{
@@ -693,16 +693,16 @@ struct value_set_accessor
 };
 
 inline double
-CallEquation(const mobius_model *Model, value_set_accessor *ValueSet, equation_h Equation)
+CallEquation(const mobius_model *Model, model_run_state *RunState, equation_h Equation)
 {
 #if MOBIUS_EQUATION_PROFILING
 	u64 Begin = __rdtsc();
 #endif
-	double ResultValue = Model->EquationBodies[Equation.Handle](ValueSet);
+	double ResultValue = Model->EquationBodies[Equation.Handle](RunState);
 #if MOBIUS_EQUATION_PROFILING
 	u64 End = __rdtsc();
-	ValueSet->EquationHits[Equation.Handle]++;
-	ValueSet->EquationTotalCycles[Equation.Handle] += (End - Begin);
+	RunState->EquationHits[Equation.Handle]++;
+	RunState->EquationTotalCycles[Equation.Handle] += (End - Begin);
 #endif
 	return ResultValue;
 }
@@ -1129,18 +1129,18 @@ RegisterEquationCumulative(mobius_model *Model, const char *Name, equation_h Cum
 	if(IsValid(Weight))
 	{
 		SetEquation(Model, Equation,
-			[Cumulates, CumulatesOverIndexSet, Weight] (value_set_accessor *ValueSet) -> double
+			[Cumulates, CumulatesOverIndexSet, Weight] (model_run_state *RunState) -> double
 			{
-				return CumulateResult(ValueSet->DataSet, Cumulates, CumulatesOverIndexSet, ValueSet->CurrentIndexes, ValueSet->AllCurResultsBase, Weight);
+				return CumulateResult(RunState->DataSet, Cumulates, CumulatesOverIndexSet, RunState->CurrentIndexes, RunState->AllCurResultsBase, Weight);
 			}
 		);
 	}
 	else
 	{
 		SetEquation(Model, Equation,
-			[Cumulates, CumulatesOverIndexSet] (value_set_accessor *ValueSet) -> double
+			[Cumulates, CumulatesOverIndexSet] (model_run_state *RunState) -> double
 			{
-				return CumulateResult(ValueSet->DataSet, Cumulates, CumulatesOverIndexSet, ValueSet->CurrentIndexes, ValueSet->AllCurResultsBase);
+				return CumulateResult(RunState->DataSet, Cumulates, CumulatesOverIndexSet, RunState->CurrentIndexes, RunState->AllCurResultsBase);
 			}
 		);
 	}
@@ -1291,28 +1291,28 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 ////////////////////////////////////////////////
 
 
-#define PARAMETER(ParH, ...) (ValueSet__->Running ? GetCurrentParameter(ValueSet__, ParH, ##__VA_ARGS__) : RegisterParameterDependency(ValueSet__, ParH, ##__VA_ARGS__))
-#define INPUT(InputH) (ValueSet__->Running ? GetCurrentInput(ValueSet__, InputH) : RegisterInputDependency(ValueSet__, InputH))
-#define RESULT(ResultH, ...) (ValueSet__->Running ? GetCurrentResult(ValueSet__, ResultH, ##__VA_ARGS__) : RegisterResultDependency(ValueSet__, ResultH, ##__VA_ARGS__))
-#define LAST_RESULT(ResultH, ...) (ValueSet__->Running ? GetLastResult(ValueSet__, ResultH, ##__VA_ARGS__) : RegisterLastResultDependency(ValueSet__, ResultH, ##__VA_ARGS__))
-#define EARLIER_RESULT(ResultH, StepBack, ...) (ValueSet__->Running ? GetEarlierResult(ValueSet__, ResultH, (StepBack), ##__VA_ARGS__) : RegisterLastResultDependency(ValueSet__, ResultH, ##__VA_ARGS__))
-#define INPUT_WAS_PROVIDED(InputH) (ValueSet__->Running ? GetIfInputWasProvided(ValueSet__, InputH) : RegisterInputDependency(ValueSet__, InputH))
-#define IF_INPUT_ELSE_PARAMETER(InputH, ParameterH) (ValueSet__->Running ? GetCurrentInputOrParameter(ValueSet__, InputH, ParameterH) : RegisterInputAndParameterDependency(ValueSet__, InputH, ParameterH))
+#define PARAMETER(ParH, ...) (RunState__->Running ? GetCurrentParameter(RunState__, ParH, ##__VA_ARGS__) : RegisterParameterDependency(RunState__, ParH, ##__VA_ARGS__))
+#define INPUT(InputH) (RunState__->Running ? GetCurrentInput(RunState__, InputH) : RegisterInputDependency(RunState__, InputH))
+#define RESULT(ResultH, ...) (RunState__->Running ? GetCurrentResult(RunState__, ResultH, ##__VA_ARGS__) : RegisterResultDependency(RunState__, ResultH, ##__VA_ARGS__))
+#define LAST_RESULT(ResultH, ...) (RunState__->Running ? GetLastResult(RunState__, ResultH, ##__VA_ARGS__) : RegisterLastResultDependency(RunState__, ResultH, ##__VA_ARGS__))
+#define EARLIER_RESULT(ResultH, StepBack, ...) (RunState__->Running ? GetEarlierResult(RunState__, ResultH, (StepBack), ##__VA_ARGS__) : RegisterLastResultDependency(RunState__, ResultH, ##__VA_ARGS__))
+#define INPUT_WAS_PROVIDED(InputH) (RunState__->Running ? GetIfInputWasProvided(RunState__, InputH) : RegisterInputDependency(RunState__, InputH))
+#define IF_INPUT_ELSE_PARAMETER(InputH, ParameterH) (RunState__->Running ? GetCurrentInputOrParameter(RunState__, InputH, ParameterH) : RegisterInputAndParameterDependency(RunState__, InputH, ParameterH))
 
 
-#define CURRENT_DAY_OF_YEAR() (ValueSet__->DayOfYear)
-#define DAYS_THIS_YEAR() (ValueSet__->DaysThisYear)
+#define CURRENT_DAY_OF_YEAR() (RunState__->DayOfYear)
+#define DAYS_THIS_YEAR() (RunState__->DaysThisYear)
 
 #define EQUATION(Model, ResultH, Def) \
 SetEquation(Model, ResultH, \
- [=] (value_set_accessor *ValueSet__) { \
+ [=] (model_run_state *RunState__) { \
  Def \
  } \
 );
 
 #define EQUATION_OVERRIDE(Model, ResultH, Def) \
 SetEquation(Model, ResultH, \
- [=] (value_set_accessor *ValueSet__) { \
+ [=] (model_run_state *RunState__) { \
  Def \
  } \
  , true \
@@ -1322,21 +1322,21 @@ SetEquation(Model, ResultH, \
 //NOTE: These inline functions are used for type safety, which we don't get from macros.
 //NOTE: We don't provide direct access to Time parameters since we want to encapsulate their storage. Instead we have accessor macros like CURRENT_DAY_OF_YEAR.
 inline double
-GetCurrentParameter(value_set_accessor *ValueSet, parameter_double_h Parameter)
+GetCurrentParameter(model_run_state *RunState, parameter_double_h Parameter)
 {
-	return ValueSet->CurParameters[Parameter.Handle].ValDouble;
+	return RunState->CurParameters[Parameter.Handle].ValDouble;
 }
 
 inline u64
-GetCurrentParameter(value_set_accessor *ValueSet, parameter_uint_h Parameter)
+GetCurrentParameter(model_run_state *RunState, parameter_uint_h Parameter)
 {
-	return ValueSet->CurParameters[Parameter.Handle].ValUInt;
+	return RunState->CurParameters[Parameter.Handle].ValUInt;
 }
 
 inline bool
-GetCurrentParameter(value_set_accessor *ValueSet, parameter_bool_h Parameter)
+GetCurrentParameter(model_run_state *RunState, parameter_bool_h Parameter)
 {
-	return ValueSet->CurParameters[Parameter.Handle].ValBool;
+	return RunState->CurParameters[Parameter.Handle].ValBool;
 }
 
 
@@ -1345,226 +1345,226 @@ size_t OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndex
 
 
 template<typename... T> double
-GetCurrentParameter(value_set_accessor *ValueSet, parameter_double_h Parameter, T... Indexes)
+GetCurrentParameter(model_run_state *RunState, parameter_double_h Parameter, T... Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
 	return DataSet->ParameterData[Offset].ValDouble;
 }
 
 template<typename... T> u64
-GetCurrentParameter(value_set_accessor *ValueSet, parameter_uint_h Parameter, T... Indexes)
+GetCurrentParameter(model_run_state *RunState, parameter_uint_h Parameter, T... Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
 	return DataSet->ParameterData[Offset].ValUInt;
 }
 
 template<typename... T> bool
-GetCurrentParameter(value_set_accessor *ValueSet, parameter_bool_h Parameter, T... Indexes)
+GetCurrentParameter(model_run_state *RunState, parameter_bool_h Parameter, T... Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
 	return DataSet->ParameterData[Offset].ValBool;
 }
 
 
 inline double
-GetCurrentResult(value_set_accessor *ValueSet, equation_h Result)
+GetCurrentResult(model_run_state *RunState, equation_h Result)
 {
-	return ValueSet->CurResults[Result.Handle];
+	return RunState->CurResults[Result.Handle];
 }
 
 inline double 
-GetLastResult(value_set_accessor *ValueSet, equation_h LastResult)
+GetLastResult(model_run_state *RunState, equation_h LastResult)
 {
-	return ValueSet->LastResults[LastResult.Handle];
+	return RunState->LastResults[LastResult.Handle];
 }
 
 template<typename... T> double
-GetCurrentResult(value_set_accessor *ValueSet, equation_h Result, T... Indexes)
+GetCurrentResult(model_run_state *RunState, equation_h Result, T... Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
-	return ValueSet->AllCurResultsBase[Offset];
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	return RunState->AllCurResultsBase[Offset];
 }
 
 template<typename... T> double
-GetLastResult(value_set_accessor *ValueSet, equation_h Result, T... Indexes)
+GetLastResult(model_run_state *RunState, equation_h Result, T... Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
 
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
-	return ValueSet->AllLastResultsBase[Offset];
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	return RunState->AllLastResultsBase[Offset];
 }
 
 template<typename... T> double
-GetEarlierResult(value_set_accessor *ValueSet, equation_h Result, u64 StepBack, T...Indexes)
+GetEarlierResult(model_run_state *RunState, equation_h Result, u64 StepBack, T...Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
 	
 	//TODO: Make proper accessor for this that belongs to mobius_data_set.cpp so that this file does not need to have knowledge of the inner workings of the storage system.
 	double *Initial = DataSet->ResultData + Offset;
 	//NOTE: Initial points to the initial value (adding TotalCount once gives us timestep 0)
-	if(StepBack > ValueSet->Timestep)
+	if(StepBack > RunState->Timestep)
 	{
 		return *Initial;
 	}
-	return *(Initial + ( (ValueSet->Timestep+1) - StepBack)*(ValueSet->DataSet->ResultStorageStructure.TotalCount));
+	return *(Initial + ( (RunState->Timestep+1) - StepBack)*(RunState->DataSet->ResultStorageStructure.TotalCount));
 }
 
 inline double
-GetCurrentInput(value_set_accessor *ValueSet, input_h Input)
+GetCurrentInput(model_run_state *RunState, input_h Input)
 {
-	return ValueSet->CurInputs[Input.Handle];
+	return RunState->CurInputs[Input.Handle];
 }
 
 
 inline bool
-GetIfInputWasProvided(value_set_accessor * ValueSet, input_h Input)
+GetIfInputWasProvided(model_run_state * RunState, input_h Input)
 {
-	return ValueSet->CurInputWasProvided[Input.Handle];
+	return RunState->CurInputWasProvided[Input.Handle];
 }
 
 inline double
-GetCurrentInputOrParameter(value_set_accessor *ValueSet, input_h Input, parameter_double_h Parameter)
+GetCurrentInputOrParameter(model_run_state *RunState, input_h Input, parameter_double_h Parameter)
 {
-	if(GetIfInputWasProvided(ValueSet, Input)) return GetCurrentInput(ValueSet, Input);
-	return GetCurrentParameter(ValueSet, Parameter);
+	if(GetIfInputWasProvided(RunState, Input)) return GetCurrentInput(RunState, Input);
+	return GetCurrentParameter(RunState, Parameter);
 }
 
 
 
 
 template<typename... T> double
-RegisterParameterDependency(value_set_accessor *ValueSet, parameter_double_h Parameter, T... Indexes)
+RegisterParameterDependency(model_run_state *RunState, parameter_double_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
-	ValueSet->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
+	RunState->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
 	
 	return 0.0;
 }
 
 template<typename... T> double
-RegisterParameterDependency(value_set_accessor *ValueSet, parameter_uint_h Parameter, T... Indexes)
+RegisterParameterDependency(model_run_state *RunState, parameter_uint_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
-	ValueSet->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
+	RunState->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
 	
 	return 0.0;
 }
 
 template<typename... T> double
-RegisterParameterDependency(value_set_accessor *ValueSet, parameter_bool_h Parameter, T... Indexes)
+RegisterParameterDependency(model_run_state *RunState, parameter_bool_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
-	ValueSet->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
+	RunState->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
 	
 	return 0.0;
 }
 
 inline double
-RegisterInputDependency(value_set_accessor *ValueSet, input_h Input)
+RegisterInputDependency(model_run_state *RunState, input_h Input)
 {
-	ValueSet->InputDependencies.push_back({Input.Handle, 0});
+	RunState->InputDependencies.push_back({Input.Handle, 0});
 	return 0.0;
 }
 
 inline double
-RegisterInputAndParameterDependency(value_set_accessor *ValueSet, input_h Input, parameter_double_h Parameter)
+RegisterInputAndParameterDependency(model_run_state *RunState, input_h Input, parameter_double_h Parameter)
 {
-	RegisterInputDependency(ValueSet, Input);
-	RegisterParameterDependency(ValueSet, Parameter);
+	RegisterInputDependency(RunState, Input);
+	RegisterParameterDependency(RunState, Parameter);
 
 	return 0.0;
 }
 
 template<typename... T> double
-RegisterResultDependency(value_set_accessor *ValueSet, equation_h Result, T... Indexes)
+RegisterResultDependency(model_run_state *RunState, equation_h Result, T... Indexes)
 {
 	std::vector<index_t> IndexVec = {Indexes...};
-	ValueSet->ResultDependencies.push_back({Result.Handle, IndexVec});
+	RunState->ResultDependencies.push_back({Result.Handle, IndexVec});
 	
 	return 0.0;
 }
 
 template<typename... T> double
-RegisterLastResultDependency(value_set_accessor *ValueSet, equation_h Result, T... Indexes)
+RegisterLastResultDependency(model_run_state *RunState, equation_h Result, T... Indexes)
 {
 	std::vector<index_t> IndexVec = {Indexes...};
-	ValueSet->LastResultDependencies.push_back({Result.Handle, IndexVec});
+	RunState->LastResultDependencies.push_back({Result.Handle, IndexVec});
 	
 	return 0.0;
 }
 
 //TODO: SET_RESULT is not that nice, and can interfere with how the dependency system works if used incorrectly. It is included to get PERSiST and some other models to work, but should be used with care!
-#define SET_RESULT(ResultH, Value, ...) {if(ValueSet__->Running){SetResult(ValueSet__, Value, ResultH, ##__VA_ARGS__);}}
+#define SET_RESULT(ResultH, Value, ...) {if(RunState__->Running){SetResult(RunState__, Value, ResultH, ##__VA_ARGS__);}}
 
 template<typename... T> void
-SetResult(value_set_accessor *ValueSet, double Value, equation_h Result, T... Indexes)
+SetResult(model_run_state *RunState, double Value, equation_h Result, T... Indexes)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
+	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
-	ValueSet->AllCurResultsBase[Offset] = Value;
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	RunState->AllCurResultsBase[Offset] = Value;
 }
 
 void
-SetResult(value_set_accessor *ValueSet, double Value, equation_h Result)
+SetResult(model_run_state *RunState, double Value, equation_h Result)
 {
-	mobius_data_set *DataSet = ValueSet->DataSet;
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, nullptr, 0, Result.Handle);
-	ValueSet->AllCurResultsBase[Offset] = Value;
+	mobius_data_set *DataSet = RunState->DataSet;
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, nullptr, 0, Result.Handle);
+	RunState->AllCurResultsBase[Offset] = Value;
 }
 
 
-#define INDEX_COUNT(IndexSetH) (ValueSet__->Running ? (ValueSet__->DataSet->IndexCounts[IndexSetH.Handle]) : 1)
-#define CURRENT_INDEX(IndexSetH) (ValueSet__->Running ? GetCurrentIndex(ValueSet__, IndexSetH) : RegisterIndexSetDependency(ValueSet__, IndexSetH))
+#define INDEX_COUNT(IndexSetH) (RunState__->Running ? (RunState__->DataSet->IndexCounts[IndexSetH.Handle]) : 1)
+#define CURRENT_INDEX(IndexSetH) (RunState__->Running ? GetCurrentIndex(RunState__, IndexSetH) : RegisterIndexSetDependency(RunState__, IndexSetH))
 #define FIRST_INDEX(IndexSetH) (index_t(IndexSetH, 0))
 #define INDEX_NUMBER(IndexSetH, Index) (index_t(IndexSetH, (u32)Index))
-#define INPUT_COUNT(IndexSetH) (ValueSet__->Running ? GetInputCount(ValueSet__, IndexSetH) : 0)
+#define INPUT_COUNT(IndexSetH) (RunState__->Running ? GetInputCount(RunState__, IndexSetH) : 0)
 
 inline index_t
-RegisterIndexSetDependency(value_set_accessor *ValueSet, index_set_h IndexSet)
+RegisterIndexSetDependency(model_run_state *RunState, index_set_h IndexSet)
 {
-	ValueSet->DirectIndexSetDependencies.push_back(IndexSet);
+	RunState->DirectIndexSetDependencies.push_back(IndexSet);
 	return index_t(IndexSet, 0);
 }
 
 inline index_t
-GetCurrentIndex(value_set_accessor *ValueSet, index_set_h IndexSet)
+GetCurrentIndex(model_run_state *RunState, index_set_h IndexSet)
 {
-	return ValueSet->CurrentIndexes[IndexSet.Handle];
+	return RunState->CurrentIndexes[IndexSet.Handle];
 }
 
 inline size_t
-GetInputCount(value_set_accessor *ValueSet, index_set_h IndexSet)
+GetInputCount(model_run_state *RunState, index_set_h IndexSet)
 {
-	index_t Current = GetCurrentIndex(ValueSet, IndexSet);
-	return ValueSet->DataSet->BranchInputs[IndexSet.Handle][Current].Count;
+	index_t Current = GetCurrentIndex(RunState, IndexSet);
+	return RunState->DataSet->BranchInputs[IndexSet.Handle][Current].Count;
 }
 
 
 //TODO: The branch input iterator is more complicated than it needs to be. Could be redesigned.
 
 inline size_t
-BranchInputIteratorEnd(value_set_accessor *ValueSet, index_set_h IndexSet, index_t Branch)
+BranchInputIteratorEnd(model_run_state *RunState, index_set_h IndexSet, index_t Branch)
 {
-	return ValueSet->Running ? ValueSet->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1; //NOTE: The count is always one greater than the largest index, so it is guaranteed to not be a valid index.
+	return RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1; //NOTE: The count is always one greater than the largest index, so it is guaranteed to not be a valid index.
 }
 
 struct branch_input_iterator
@@ -1581,19 +1581,19 @@ struct branch_input_iterator
 };
 
 inline branch_input_iterator
-BranchInputIteratorBegin(value_set_accessor *ValueSet, index_set_h IndexSet, index_t Branch)
+BranchInputIteratorBegin(model_run_state *RunState, index_set_h IndexSet, index_t Branch)
 {
 	static index_t DummyData;
 	DummyData = index_t(IndexSet, 0);
 	
 	branch_input_iterator Iterator;
-	Iterator.InputIndexes = ValueSet->Running ? ValueSet->DataSet->BranchInputs[IndexSet.Handle][Branch].Inputs : &DummyData;
+	Iterator.InputIndexes = RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Inputs : &DummyData;
 	Iterator.CurrentInputIndexIndex = 0;
 	return Iterator;
 }
 
-#define BRANCH_INPUT_BEGIN(IndexSetH) (BranchInputIteratorBegin(ValueSet__, IndexSetH, CURRENT_INDEX(IndexSetH)))
-#define BRANCH_INPUT_END(IndexSetH) (BranchInputIteratorEnd(ValueSet__, IndexSetH, CURRENT_INDEX(IndexSetH)))
+#define BRANCH_INPUT_BEGIN(IndexSetH) (BranchInputIteratorBegin(RunState__, IndexSetH, CURRENT_INDEX(IndexSetH)))
+#define BRANCH_INPUT_END(IndexSetH) (BranchInputIteratorEnd(RunState__, IndexSetH, CURRENT_INDEX(IndexSetH)))
 
 #define FOREACH_INPUT(IndexSetH, Body) \
 for(auto Input = BRANCH_INPUT_BEGIN(IndexSetH); Input != BRANCH_INPUT_END(IndexSetH); ++Input) \

@@ -121,8 +121,8 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	}
 	fprintf(File, ") ");
 	
-	//NOTE: put_time is not implemented before gcc version 5
-#if defined(__GNUC__) && __GNUC__ >= 5
+	//NOTE: put_time is not implemented before gcc version 5. Caused a problem for a user at one point, but I don't know if we really need to do this check anymore.
+#if (defined(__GNUC__) && __GNUC__ >= 5) || !defined(__GNUC__)
 	{
 		auto T = std::time(nullptr);
 		auto TM = *std::localtime(&T);
@@ -167,9 +167,10 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	}
 	
 	fprintf(File, "\nparameters:\n");
-	for(size_t UnitIndex = 0; UnitIndex < DataSet->ParameterStorageStructure.Units.size(); ++UnitIndex)
+
+	for(storage_unit_specifier &Unit : DataSet->ParameterStorageStructure.Units)
 	{
-		std::vector<index_set_h> &IndexSets = DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets;
+		std::vector<index_set_h> &IndexSets = Unit.IndexSets;
 		fprintf(File, "######################");
 		if(IndexSets.empty()) fprintf(File, " (no index sets)");
 		for(index_set_h IndexSet : IndexSets)
@@ -178,7 +179,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 		}
 		fprintf(File, " ######################\n");
 		
-		for(entity_handle ParameterHandle: DataSet->ParameterStorageStructure.Units[UnitIndex].Handles)
+		for(entity_handle ParameterHandle : Unit.Handles)
 		{
 			const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 			

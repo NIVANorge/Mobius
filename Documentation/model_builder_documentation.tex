@@ -1360,7 +1360,7 @@ There are a lot of advanced rules governing the use cases of the macros in this 
 
 \begin{SaveVerbatim}{EqCode}
 SetEquation(Model, Handle,
-	[=](value_set_accessor *ValueSet__) -> double {
+	[=](model_run_state *RunState__) -> double {
 		Decl
 	}
 );
@@ -1379,36 +1379,36 @@ for(<every index in that is a branch input to CURRENT_INDEX(IndexSet)>)
 \apipar{Decl}{The code for the equation body.}
 \apidesc{{\tt EQUATION(Model, Handle, Decl)} expands to}
 \multicolumn{2}{|z|}{\BUseVerbatim{EqCode}}\\
-\multicolumn{2}{|z|}{where {\tt Decl} stands for possibly multiple lines of code of an equation body. These lines of code always have to return a {\tt double}. The {\tt value\_set\_accessor} is an object that can be used by other macros (such as {\tt PARAMETER} or {\tt RESULT}) inside the {\tt Decl} to extract values.}\\
+\multicolumn{2}{|z|}{where {\tt Decl} stands for possibly multiple lines of code of an equation body. These lines of code always have to return a {\tt double}. The {\tt model\_run\_state} is an object that can be used by other macros (such as {\tt PARAMETER} or {\tt RESULT}) inside the {\tt Decl} to extract values.}\\
 }
 
-The following macros are only available inside the {\tt Decl} of an {\tt EQUATION}. This is because they expand to something that refer to the {\tt value\_set\_accessor} that is given as an argument in the lambda inside the expansion of the {\tt EQUATION} macro.
+The following macros are only available inside the {\tt Decl} of an {\tt EQUATION}. This is because they expand to something that refer to the {\tt model\_run\_state} that is given as an argument in the lambda inside the expansion of the {\tt EQUATION} macro.
 
 \apientry{PARAMETER}{Equation macro}{
 \apipar{parameter\_\emph{x}\_h ParameterHandle}{Handle to a parameter that you wish to extract the value of, where {\tt x} is either {\tt double}, {\tt uint} or {\tt bool}.}
 \apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
 \apiret{Either a {\tt double}, a {\tt u64} or a {\tt bool} depending on what type of handle was passed in.}
-\apidesc{Returns the value of the parameter, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this parameter, depending on the context of the evaluation.}
+\apidesc{Returns the value of the parameter, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt model\_run\_state} or registers a dependency of the surrounding {\tt Equation} on this parameter, depending on the context of the evaluation.}
 }
 
 \apientry{INPUT}{Equation macro}{
 \apipar{input\_h InputHandle}{Handle to an input that you wish to extract the value of.}
 \apiret{A {\tt double}.}
-\apidesc{Returns the current timestep value of the input timeseries, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this input, depending on the context of the evaluation.}
+\apidesc{Returns the current timestep value of the input timeseries, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt model\_run\_state} or registers a dependency of the surrounding {\tt Equation} on this input, depending on the context of the evaluation.}
 }
 
 \apientry{RESULT}{Equation macro}{
 \apipar{equation\_h EquationHandle}{Handle to an equation that you wish to extract the value of.}
 \apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
 \apiret{A {\tt double}.}
-\apidesc{Returns the value of the current timestep result of the equation, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this equation, depending on the context of the evaluation.}
+\apidesc{Returns the value of the current timestep result of the equation, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt model\_run\_state} or registers a dependency of the surrounding {\tt Equation} on this equation, depending on the context of the evaluation.}
 }
 
 \apientry{LAST\_RESULT}{Equation macro}{
 \apipar{equation\_h EquationHandle}{Handle to an equation that you wish to extract the previous-timestep value of.}
 \apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
 \apiret{A {\tt double}.}
-\apidesc{Returns the value of the previous timestep result of the equation, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt value\_set\_accessor} or registers a (last-result) dependency of the surrounding {\tt Equation} on this equation, depending on the context of the evaluation.}
+\apidesc{Returns the value of the previous timestep result of the equation, depending on the current state of the index sets. This is a macro that expands to an expression which either extracts a value from the {\tt model\_run\_state} or registers a (last-result) dependency of the surrounding {\tt Equation} on this equation, depending on the context of the evaluation.}
 }
 
 \apientry{EARLIER\_RESULT}{Equation macro}{
@@ -1422,25 +1422,25 @@ The following macros are only available inside the {\tt Decl} of an {\tt EQUATIO
 \apientry{CURRENT\_DAY\_OF\_YEAR}{Equation macro}{
 \apipar{}{None.}
 \apiret{A {\tt u64}.}
-\apidesc{Returns the current day of the year in the context of the simulation. January 1st corresponds to a current day of year of 1. This is a macro that expands to an expression that extracts the value from the {\tt value\_set\_accessor}.}
+\apidesc{Returns the current day of the year in the context of the simulation. January 1st corresponds to a current day of year of 1. This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
 }
 
 \apientry{DAYS\_THIS\_YEAR}{Equation macro}{
 \apipar{}{None.}
 \apiret{A {\tt u64}.}
-\apidesc{Returns the amount of days this year in the context of the simulation. Is either 365 (in a common year) or 366 (in a leap year). This is a macro that expands to an expression that extracts the value from the {\tt value\_set\_accessor}.}
+\apidesc{Returns the amount of days this year in the context of the simulation. Is either 365 (in a common year) or 366 (in a leap year). This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
 }
 
 \apientry{INDEX\_COUNT}{Equation macro}{
 \apipar{index\_set\_h IndexSet}{Handle to an index set.}
 \apiret{A {\tt size\_t}.}
-\apidesc{Returns the amount of indexes in this index set. This is a macro that expands to an expression that extracts the value from the {\tt value\_set\_accessor}.}
+\apidesc{Returns the amount of indexes in this index set. This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
 }
 
 \apientry{CURRENT\_INDEX}{Equation macro}{
 \apipar{index\_set\_h IndexSet}{Handle to an index set.}
 \apiret{A {\tt index\_t}.}
-\apidesc{Returns the current (numeric) index of the given index set. This is a macro that expands to an expression that either extracts the value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
+\apidesc{Returns the current (numeric) index of the given index set. This is a macro that expands to an expression that either extracts the value from the {\tt model\_run\_state} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
 }
 
 \apientry{FOREACH\_INPUT}{Equation macro}{
@@ -1454,7 +1454,7 @@ The following macros are only available inside the {\tt Decl} of an {\tt EQUATIO
 \apientry{INPUT\_COUNT}{Equation macro}{
 \apipar{index\_set\_h IndexSet}{Handle to a branched index set.}
 \apiret{A {\tt size\_t}.}
-\apidesc{Returns the amount of branch input indexes to the current index in the index set. This is a macro that expands to an expression that either extracts the value from the {\tt value\_set\_accessor} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
+\apidesc{Returns the amount of branch input indexes to the current index in the index set. This is a macro that expands to an expression that either extracts the value from the {\tt model\_run\_state} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
 }
 
 \bibliographystyle{plain}

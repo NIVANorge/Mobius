@@ -261,7 +261,7 @@ EndModelDefinition(mobius_model *Model)
 	
 	/////////////////////// Find all dependencies of equations on parameters, inputs and other results /////////////////////
 	
-	value_set_accessor ValueSet(Model);
+	model_run_state RunState(Model);
 	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
 		equation_spec &Spec = Model->Equations.Specs[EquationHandle];
@@ -279,14 +279,14 @@ EndModelDefinition(mobius_model *Model)
 		}
 		
 		// Clear dependency registrations from evaluation of previous equation.
-		ValueSet.Clear();
+		RunState.Clear();
 		
-		//Call the equation. Since we are in ValueSet.Running==false mode, the equation will register which values it tried to access.
-		Model->EquationBodies[EquationHandle](&ValueSet);
+		//Call the equation. Since we are in RunState.Running==false mode, the equation will register which values it tried to access.
+		Model->EquationBodies[EquationHandle](&RunState);
 		
-		Spec.IndexSetDependencies.insert(ValueSet.DirectIndexSetDependencies.begin(), ValueSet.DirectIndexSetDependencies.end());
+		Spec.IndexSetDependencies.insert(RunState.DirectIndexSetDependencies.begin(), RunState.DirectIndexSetDependencies.end());
 		
-		for(dependency_registration ParameterDependency : ValueSet.ParameterDependencies)
+		for(dependency_registration ParameterDependency : RunState.ParameterDependencies)
 		{
 			entity_handle ParameterHandle = ParameterDependency.Handle;
 			
@@ -311,7 +311,7 @@ EndModelDefinition(mobius_model *Model)
 			}
 		}
 		
-		for(dependency_registration InputDependency : ValueSet.InputDependencies)
+		for(dependency_registration InputDependency : RunState.InputDependencies)
 		{
 			//TODO: This block has to be updated to match the parameter registration above if we later allow for explicitly indexed inputs.
 			entity_handle InputHandle = InputDependency.Handle;
@@ -329,7 +329,7 @@ EndModelDefinition(mobius_model *Model)
 			Spec.ParameterDependencies.insert(Spec.InitialValue.Handle);
 		}
 		
-		for(const result_dependency_registration &ResultDependency : ValueSet.ResultDependencies)
+		for(const result_dependency_registration &ResultDependency : RunState.ResultDependencies)
 		{
 			entity_handle DepResultHandle = ResultDependency.Handle;
 			
@@ -349,7 +349,7 @@ EndModelDefinition(mobius_model *Model)
 			}
 		}
 		
-		for(const result_dependency_registration &ResultDependency : ValueSet.LastResultDependencies)
+		for(const result_dependency_registration &ResultDependency : RunState.LastResultDependencies)
 		{
 			entity_handle DepResultHandle = ResultDependency.Handle;
 			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
@@ -839,7 +839,7 @@ EndModelDefinition(mobius_model *Model)
 		free(Counts);
 	}
 	
-	///////////////// Find out which parameters, results and last_results that need to be hotloaded into the CurParameters, CurInputs etc. buffers in the value_set_accessor at each iteration stage during model run. /////////////////
+	///////////////// Find out which parameters, results and last_results that need to be hotloaded into the CurParameters, CurInputs etc. buffers in the model_run_state at each iteration stage during model run. /////////////////
 	
 	{
 		size_t BatchGroupIdx = 0;
@@ -974,11 +974,11 @@ EndModelDefinition(mobius_model *Model)
 }
 
 //NOTE: It is kind of superfluous to both provide the batch group and the batch group index... But it does probably not harm either?
-#define INNER_LOOP_BODY(Name) void Name(mobius_data_set *DataSet, value_set_accessor *ValueSet, const equation_batch_group &BatchGroup, size_t BatchGroupIdx, s32 CurrentLevel)
+#define INNER_LOOP_BODY(Name) void Name(mobius_data_set *DataSet, model_run_state *RunState, const equation_batch_group &BatchGroup, size_t BatchGroupIdx, s32 CurrentLevel)
 typedef INNER_LOOP_BODY(mobius_inner_loop_body);
 
 static void
-ModelLoop(mobius_data_set *DataSet, value_set_accessor *ValueSet, mobius_inner_loop_body InnerLoopBody)
+ModelLoop(mobius_data_set *DataSet, model_run_state *RunState, mobius_inner_loop_body InnerLoopBody)
 {
 	const mobius_model *Model = DataSet->Model;
 	size_t BatchGroupIdx = 0;
@@ -986,7 +986,7 @@ ModelLoop(mobius_data_set *DataSet, value_set_accessor *ValueSet, mobius_inner_l
 	{	
 		if(BatchGroup.IndexSets.empty())
 		{
-			InnerLoopBody(DataSet, ValueSet, BatchGroup, BatchGroupIdx, -1);
+			InnerLoopBody(DataSet, RunState, BatchGroup, BatchGroupIdx, -1);
 			BatchGroupIdx++;
 			continue;
 		}
@@ -998,23 +998,23 @@ ModelLoop(mobius_data_set *DataSet, value_set_accessor *ValueSet, mobius_inner_l
 		{
 			index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
 			
-			if(ValueSet->CurrentIndexes[CurrentIndexSet.Handle] != DataSet->IndexCounts[CurrentIndexSet.Handle])
-				InnerLoopBody(DataSet, ValueSet, BatchGroup, BatchGroupIdx, CurrentLevel);
+			if(RunState->CurrentIndexes[CurrentIndexSet.Handle] != DataSet->IndexCounts[CurrentIndexSet.Handle])
+				InnerLoopBody(DataSet, RunState, BatchGroup, BatchGroupIdx, CurrentLevel);
 			
 			if(CurrentLevel == BottomLevel)
-				++ValueSet->CurrentIndexes[CurrentIndexSet.Handle];
+				++RunState->CurrentIndexes[CurrentIndexSet.Handle];
 			
 			//NOTE: We need to check again because currentindex may have changed.
-			if(ValueSet->CurrentIndexes[CurrentIndexSet.Handle] == DataSet->IndexCounts[CurrentIndexSet.Handle])
+			if(RunState->CurrentIndexes[CurrentIndexSet.Handle] == DataSet->IndexCounts[CurrentIndexSet.Handle])
 			{
 				//NOTE: We are at the end of this index set
 				
-				ValueSet->CurrentIndexes[CurrentIndexSet.Handle] = {CurrentIndexSet, 0};
+				RunState->CurrentIndexes[CurrentIndexSet.Handle] = {CurrentIndexSet, 0};
 				//NOTE: Traverse up the tree
 				if(CurrentLevel == 0) break; //NOTE: We are finished with this batch group.
 				CurrentLevel--;
 				CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-				++ValueSet->CurrentIndexes[CurrentIndexSet.Handle]; //Advance the index set above us so that we don't walk down the same branch again.
+				++RunState->CurrentIndexes[CurrentIndexSet.Handle]; //Advance the index set above us so that we don't walk down the same branch again.
 				continue;
 			}
 			else if(CurrentLevel != BottomLevel)
@@ -1036,17 +1036,17 @@ ModelLoop(mobius_data_set *DataSet, value_set_accessor *ValueSet, mobius_inner_l
 #endif
 
 inline void
-NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultValue, equation_h Equation)
+NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue, equation_h Equation)
 {
 	if(!std::isfinite(ResultValue))
 	{
 		//TODO: We should be able to report the timestep here.
-		MOBIUS_PARTIAL_ERROR("ERROR: Got a NaN or Inf value as the result of the equation " << GetName(Model, Equation) << " at timestep " << ValueSet->Timestep << std::endl);
+		MOBIUS_PARTIAL_ERROR("ERROR: Got a NaN or Inf value as the result of the equation " << GetName(Model, Equation) << " at timestep " << RunState->Timestep << std::endl);
 		const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 		MOBIUS_PARTIAL_ERROR("Indexes:" << std::endl);
 		for(index_set_h IndexSet : Spec.IndexSetDependencies)
 		{
-			const char *IndexName = ValueSet->DataSet->IndexNames[IndexSet.Handle][ValueSet->CurrentIndexes[IndexSet.Handle]];
+			const char *IndexName = RunState->DataSet->IndexNames[IndexSet.Handle][RunState->CurrentIndexes[IndexSet.Handle]];
 			MOBIUS_PARTIAL_ERROR(GetName(Model, IndexSet) << ": " << IndexName << std::endl);
 		}
 		for(entity_handle Par : Spec.ParameterDependencies )
@@ -1055,21 +1055,21 @@ NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultVa
 			const parameter_spec &ParSpec = Model->Parameters.Specs[Par];
 			if(ParSpec.Type == ParameterType_Double)
 			{
-				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << ValueSet->CurParameters[Par].ValDouble << std::endl);
+				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << RunState->CurParameters[Par].ValDouble << std::endl);
 			}
 			else if(ParSpec.Type == ParameterType_UInt)
 			{
-				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << ValueSet->CurParameters[Par].ValUInt << std::endl);
+				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << RunState->CurParameters[Par].ValUInt << std::endl);
 			}
 			else if(ParSpec.Type == ParameterType_Bool)
 			{
-				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << ValueSet->CurParameters[Par].ValBool << std::endl);
+				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << RunState->CurParameters[Par].ValBool << std::endl);
 			}
 		}
 		for(input_h In : Spec.InputDependencies)
 		{
-			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, In) << " was " << ValueSet->CurInputs[In.Handle]);
-			if(!ValueSet->CurInputWasProvided[In.Handle])
+			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, In) << " was " << RunState->CurInputs[In.Handle]);
+			if(!RunState->CurInputWasProvided[In.Handle])
 			{
 				MOBIUS_PARTIAL_ERROR(" (Not provided in dataset)");
 			}
@@ -1077,11 +1077,11 @@ NaNTest(const mobius_model *Model, value_set_accessor *ValueSet, double ResultVa
 		}
 		for(equation_h Res : Spec.DirectResultDependencies )
 		{
-			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, Res) << " was " << ValueSet->CurResults[Res.Handle] << std::endl);
+			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, Res) << " was " << RunState->CurResults[Res.Handle] << std::endl);
 		}
 		for(equation_h Res : Spec.DirectLastResultDependencies )
 		{
-			MOBIUS_PARTIAL_ERROR("Last value of " << GetName(Model, Res) << " was " << ValueSet->LastResults[Res.Handle] << std::endl);
+			MOBIUS_PARTIAL_ERROR("Last value of " << GetName(Model, Res) << " was " << RunState->LastResults[Res.Handle] << std::endl);
 		}
 		MOBIUS_FATAL_ERROR("");
 	}
@@ -1099,44 +1099,44 @@ INNER_LOOP_BODY(RunInnerLoop)
 		const iteration_data &IterationData = BatchGroup.IterationData[CurrentLevel];
 		for(entity_handle ParameterHandle : IterationData.ParametersToRead)
 		{
-			ValueSet->CurParameters[ParameterHandle] = *ValueSet->AtParameterLookup; //NOTE: Parameter values are stored directly in the lookup since they don't change with the timestep.
-			++ValueSet->AtParameterLookup;
+			RunState->CurParameters[ParameterHandle] = *RunState->AtParameterLookup; //NOTE: Parameter values are stored directly in the lookup since they don't change with the timestep.
+			++RunState->AtParameterLookup;
 		}
 		for(input_h Input : IterationData.InputsToRead)
 		{
-			size_t Offset = *ValueSet->AtInputLookup;
-			++ValueSet->AtInputLookup;
-			ValueSet->CurInputs[Input.Handle] = ValueSet->AllCurInputsBase[Offset];
-			ValueSet->CurInputWasProvided[Input.Handle] = DataSet->InputTimeseriesWasProvided[Offset];
+			size_t Offset = *RunState->AtInputLookup;
+			++RunState->AtInputLookup;
+			RunState->CurInputs[Input.Handle] = RunState->AllCurInputsBase[Offset];
+			RunState->CurInputWasProvided[Input.Handle] = DataSet->InputTimeseriesWasProvided[Offset];
 		
 		}
 		for(equation_h Result : IterationData.ResultsToRead)
 		{
-			size_t Offset = *ValueSet->AtResultLookup;
-			++ValueSet->AtResultLookup;
-			ValueSet->CurResults[Result.Handle] = ValueSet->AllCurResultsBase[Offset];
+			size_t Offset = *RunState->AtResultLookup;
+			++RunState->AtResultLookup;
+			RunState->CurResults[Result.Handle] = RunState->AllCurResultsBase[Offset];
 		}
 		for(equation_h Result : IterationData.LastResultsToRead)
 		{
-			size_t Offset = *ValueSet->AtLastResultLookup;
-			++ValueSet->AtLastResultLookup;
-			ValueSet->LastResults[Result.Handle] = ValueSet->AllLastResultsBase[Offset];
+			size_t Offset = *RunState->AtLastResultLookup;
+			++RunState->AtLastResultLookup;
+			RunState->LastResults[Result.Handle] = RunState->AllLastResultsBase[Offset];
 		}
 	}
 	else
 	{
 		for(equation_h Result : BatchGroup.LastResultsToReadAtBase)
 		{
-			size_t Offset = *ValueSet->AtLastResultLookup;
-			++ValueSet->AtLastResultLookup;
-			ValueSet->LastResults[Result.Handle] = ValueSet->AllLastResultsBase[Offset];
+			size_t Offset = *RunState->AtLastResultLookup;
+			++RunState->AtLastResultLookup;
+			RunState->LastResults[Result.Handle] = RunState->AllLastResultsBase[Offset];
 		}
 	}
 
 #if MOBIUS_TIMESTEP_VERBOSITY >= 2
 	index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
 	for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-	index_t CurrentIndex = ValueSet->CurrentIndexes[CurrentIndexSet.Handle];
+	index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
 	std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
 #endif
 	
@@ -1144,16 +1144,16 @@ INNER_LOOP_BODY(RunInnerLoop)
 	{
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
-			//NOTE: Write LastResult values into the ValueSet for fast lookup.
+			//NOTE: Write LastResult values into the RunState for fast lookup.
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			
 			//TODO: We should maybe watch this and see if it causes performance problems and in that case expand the for loops.
 			ForAllBatchEquations(Batch,
-			[ValueSet](equation_h Equation)
+			[RunState](equation_h Equation)
 			{
-				double LastResultValue = *ValueSet->AtLastResult;
-				++ValueSet->AtLastResult;
-				ValueSet->LastResults[Equation.Handle] = LastResultValue;
+				double LastResultValue = *RunState->AtLastResult;
+				++RunState->AtLastResult;
+				RunState->LastResults[Equation.Handle] = LastResultValue;
 				return false;
 			});
 		}
@@ -1166,13 +1166,13 @@ INNER_LOOP_BODY(RunInnerLoop)
 				//NOTE: Basic discrete timestep evaluation of equations.
 				for(equation_h Equation : Batch.Equations) 
 				{	
-					double ResultValue = CallEquation(Model, ValueSet, Equation);
+					double ResultValue = CallEquation(Model, RunState, Equation);
 #if MOBIUS_TEST_FOR_NAN
-					NaNTest(Model, ValueSet, ResultValue, Equation);
+					NaNTest(Model, RunState, ResultValue, Equation);
 #endif
-					*ValueSet->AtResult = ResultValue;
-					++ValueSet->AtResult;
-					ValueSet->CurResults[Equation.Handle] = ResultValue;
+					*RunState->AtResult = ResultValue;
+					++RunState->AtResult;
+					RunState->CurResults[Equation.Handle] = ResultValue;
 				
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
 					for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
@@ -1189,11 +1189,11 @@ INNER_LOOP_BODY(RunInnerLoop)
 					//NOTE: Reading the Equations.Specs vector here may be slightly inefficient since each element of the vector is large. We could copy out an array of the ResetEveryTimestep bools instead beforehand.
 					if(Model->Equations.Specs[Equation.Handle].ResetEveryTimestep)
 					{
-						ValueSet->x0[EquationIdx] = 0;
+						RunState->x0[EquationIdx] = 0;
 					}
 					else
 					{
-						ValueSet->x0[EquationIdx] = ValueSet->LastResults[Equation.Handle]; //NOTE: ValueSet.LastResult is set up above already.
+						RunState->x0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState.LastResult is set up above already.
 					}
 					++EquationIdx;
 				}
@@ -1203,7 +1203,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				
 				//NOTE: This lambda is the "equation function" of the solver. It solves the set of equations once given the values in the working sets x0 and wk. It can be run by the SolverFunction many times.
 				auto EquationFunction =
-				[ValueSet, Model, &Batch](double *x0, double* wk)
+				[RunState, Model, &Batch](double *x0, double* wk)
 				{	
 					size_t EquationIdx = 0;
 					//NOTE: Read in initial values of the ODE equations to the CurResults buffer to be accessible from within the batch equations using RESULT(H).
@@ -1211,27 +1211,27 @@ INNER_LOOP_BODY(RunInnerLoop)
 					for(equation_h Equation : Batch.EquationsODE)
 					{
 #if MOBIUS_TEST_FOR_NAN
-						NaNTest(Model, ValueSet, x0[EquationIdx], Equation);
+						NaNTest(Model, RunState, x0[EquationIdx], Equation);
 #endif
-						ValueSet->CurResults[Equation.Handle] = x0[EquationIdx];
+						RunState->CurResults[Equation.Handle] = x0[EquationIdx];
 						++EquationIdx;
 					}
 					
 					//NOTE: Solving basic equations tied to the solver. Values should NOT be written to the working set. They can instead be accessed from inside other equations in the solver batch using RESULT(H)
 					for(equation_h Equation : Batch.Equations)
 					{
-						double ResultValue = CallEquation(Model, ValueSet, Equation);
+						double ResultValue = CallEquation(Model, RunState, Equation);
 #if MOBIUS_TEST_FOR_NAN
-						NaNTest(Model, ValueSet, ResultValue, Equation);
+						NaNTest(Model, RunState, ResultValue, Equation);
 #endif
-						ValueSet->CurResults[Equation.Handle] = ResultValue;
+						RunState->CurResults[Equation.Handle] = ResultValue;
 					}
 					
 					//NOTE: Solving ODE equations tied to the solver. These values should be written to the working set.
 					EquationIdx = 0;
 					for(equation_h Equation : Batch.EquationsODE)
 					{
-						double ResultValue = CallEquation(Model, ValueSet, Equation);
+						double ResultValue = CallEquation(Model, RunState, Equation);
 						wk[EquationIdx] = ResultValue;
 						
 						++EquationIdx;
@@ -1242,25 +1242,25 @@ INNER_LOOP_BODY(RunInnerLoop)
 				if(SolverSpec.UsesJacobian)
 				{
 					JacobiFunction =
-					[ValueSet, Model, DataSet, &Batch](double *X, mobius_matrix_insertion_function & MatrixInserter)
+					[RunState, Model, DataSet, &Batch](double *X, mobius_matrix_insertion_function & MatrixInserter)
 					{
 						//TODO: Have to see if it is safe to use DataSet->wk here. It is ok for the boost solvers since they use their own working memory.
 						// It is not really safe design to do this, and so we should instead preallocate different working memory for the Jacobian estimation..
-						EstimateJacobian(X, MatrixInserter, ValueSet->wk, Model, ValueSet, Batch);
+						EstimateJacobian(X, MatrixInserter, RunState->wk, Model, RunState, Batch);
 					};
 				}
 				
 				double h = DataSet->hSolver[Batch.Solver.Handle]; // The desired solver step. (Error correction may increase or decrease the step).
 				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(h, Batch.EquationsODE.size(), ValueSet->x0, ValueSet->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
+				SolverSpec.SolverFunction(h, Batch.EquationsODE.size(), RunState->x0, RunState->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
 				//NOTE: Store out the final results from this solver to the ResultData set.
 				for(equation_h Equation : Batch.Equations)
 				{
-					double ResultValue = ValueSet->CurResults[Equation.Handle];
-					*ValueSet->AtResult = ResultValue;
-					++ValueSet->AtResult;
+					double ResultValue = RunState->CurResults[Equation.Handle];
+					*RunState->AtResult = ResultValue;
+					++RunState->AtResult;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
 					for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
@@ -1269,10 +1269,10 @@ INNER_LOOP_BODY(RunInnerLoop)
 				EquationIdx = 0;
 				for(equation_h Equation : Batch.EquationsODE)
 				{
-					double ResultValue = ValueSet->x0[EquationIdx];
-					ValueSet->CurResults[Equation.Handle] = ResultValue;
-					*ValueSet->AtResult = ResultValue;
-					++ValueSet->AtResult;
+					double ResultValue = RunState->x0[EquationIdx];
+					RunState->CurResults[Equation.Handle] = ResultValue;
+					*RunState->AtResult = ResultValue;
+					++RunState->AtResult;
 					++EquationIdx;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
 					for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
@@ -1291,42 +1291,42 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 		for(entity_handle ParameterHandle : BatchGroup.IterationData[CurrentLevel].ParametersToRead)
 		{
 			//NOTE: Parameters are special here in that we can just store the value in the fast lookup, instead of the offset. This is because they don't change with the timestep.
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, ParameterHandle);
+			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, ParameterHandle);
 			parameter_value Value = DataSet->ParameterData[Offset];
-			ValueSet->FastParameterLookup.push_back(Value);
+			RunState->FastParameterLookup.push_back(Value);
 		}
 		
 		for(input_h Input : BatchGroup.IterationData[CurrentLevel].InputsToRead)
 		{
-			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Input.Handle);
-			ValueSet->FastInputLookup.push_back(Offset);
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Input.Handle);
+			RunState->FastInputLookup.push_back(Offset);
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].ResultsToRead)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			ValueSet->FastResultLookup.push_back(Offset);
+			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
+			RunState->FastResultLookup.push_back(Offset);
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].LastResultsToRead)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			ValueSet->FastLastResultLookup.push_back(Offset);
+			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
+			RunState->FastLastResultLookup.push_back(Offset);
 		}
 	}
 	else
 	{
 		for(equation_h Equation : BatchGroup.LastResultsToReadAtBase)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			ValueSet->FastLastResultLookup.push_back(Offset);
+			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
+			RunState->FastLastResultLookup.push_back(Offset);
 		}
 	}
 }
 
 
 inline void
-SetupInitialValue(mobius_data_set *DataSet, value_set_accessor *ValueSet, equation_h Equation)
+SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_h Equation)
 {
 	
 	const mobius_model *Model = DataSet->Model;
@@ -1335,7 +1335,7 @@ SetupInitialValue(mobius_data_set *DataSet, value_set_accessor *ValueSet, equati
 	double Initial = 0.0;
 	if(IsValid(Spec.InitialValue))
 	{
-		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, Spec.InitialValue.Handle);
+		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Spec.InitialValue.Handle);
 		//NOTE: We should not get a type mismatch here since we only allow for registering initial values using handles of type parameter_double_h. Thus we do not need to test for which type it is.
 		Initial = DataSet->ParameterData[Offset].ValDouble;
 	}
@@ -1345,24 +1345,24 @@ SetupInitialValue(mobius_data_set *DataSet, value_set_accessor *ValueSet, equati
 	}
 	else if(IsValid(Spec.InitialValueEquation))
 	{
-		Initial = Model->EquationBodies[Spec.InitialValueEquation.Handle](ValueSet);
+		Initial = Model->EquationBodies[Spec.InitialValueEquation.Handle](RunState);
 	}
 	else
 	{
 		//NOTE: Equations without any type of initial value act as their own initial value equation
-		Initial = Model->EquationBodies[Equation.Handle](ValueSet);
+		Initial = Model->EquationBodies[Equation.Handle](RunState);
 	}
 	
 	//std::cout << "Initial value of " << GetName(Model, Equation) << " is " << Initial << std::endl;
  	
 	size_t ResultStorageLocation = DataSet->ResultStorageStructure.LocationOfHandleInUnit[Equation.Handle];
 	
-	ValueSet->AtResult[ResultStorageLocation] = Initial;
-	ValueSet->CurResults[Equation.Handle] = Initial;
-	ValueSet->LastResults[Equation.Handle] = Initial;
+	RunState->AtResult[ResultStorageLocation] = Initial;
+	RunState->CurResults[Equation.Handle] = Initial;
+	RunState->LastResults[Equation.Handle] = Initial;
 }
 
-INNER_LOOP_BODY(InitialValueSetupInnerLoop)
+INNER_LOOP_BODY(InitialRunStateupInnerLoop)
 {
 	// TODO: IMPORTANT!! If an initial value equation depends on the result of an equation from a different batch than itself, that is not guaranteed to work correctly.
 	// TODO: Currently we don't report an error if that happens!
@@ -1373,8 +1373,8 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 	{
 		for(entity_handle ParameterHandle : BatchGroup.IterationData[CurrentLevel].ParametersToRead)
 		{
-			ValueSet->CurParameters[ParameterHandle] = *ValueSet->AtParameterLookup;
-			++ValueSet->AtParameterLookup;
+			RunState->CurParameters[ParameterHandle] = *RunState->AtParameterLookup;
+			++RunState->AtParameterLookup;
 		}
 	}
 	
@@ -1386,16 +1386,16 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			for(equation_h Equation : Batch.InitialValueOrder)
 			{
-				SetupInitialValue(DataSet, ValueSet, Equation);
+				SetupInitialValue(DataSet, RunState, Equation);
 			}
 		}
 		
-		ValueSet->AtResult += DataSet->ResultStorageStructure.Units[BatchGroupIdx].Handles.size(); //NOTE: This works because we set the storage structure up to mirror the batch group structure.
+		RunState->AtResult += DataSet->ResultStorageStructure.Units[BatchGroupIdx].Handles.size(); //NOTE: This works because we set the storage structure up to mirror the batch group structure.
 	}
 }
 
 static void
-ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet)
+ProcessComputedParameters(mobius_data_set *DataSet, model_run_state *RunState)
 {
 	//NOTE: Preprocessing of computed parameters.
 	for(entity_handle ParameterHandle = 1; ParameterHandle < DataSet->Model->Parameters.Count(); ++ParameterHandle)
@@ -1407,24 +1407,24 @@ ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet
 			const equation_spec &EqSpec = DataSet->Model->Equations.Specs[Equation.Handle];
 			
 			ForeachParameterInstance(DataSet, ParameterHandle,
-				[DataSet, ParameterHandle, Equation, &EqSpec, &Spec, ValueSet](index_t *Indexes, size_t IndexesCount)
+				[DataSet, ParameterHandle, Equation, &EqSpec, &Spec, RunState](index_t *Indexes, size_t IndexesCount)
 				{
 					//NOTE: We have to set the value set accessor into the right state.
 					
 					for(size_t IdxIdx = 0; IdxIdx < IndexesCount; ++IdxIdx)
 					{
 						index_t Index = Indexes[IdxIdx];
-						ValueSet->CurrentIndexes[Index.IndexSetHandle] = Index;
+						RunState->CurrentIndexes[Index.IndexSetHandle] = Index;
 					}
 					
 					for(entity_handle DependentParameter : EqSpec.ParameterDependencies)
 					{
-						size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, DataSet->IndexCounts, DependentParameter);
-						ValueSet->CurParameters[DependentParameter] = DataSet->ParameterData[Offset];
+						size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, DependentParameter);
+						RunState->CurParameters[DependentParameter] = DataSet->ParameterData[Offset];
 					}
 					
 					size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, ParameterHandle);
-					double ValD = DataSet->Model->EquationBodies[Equation.Handle](ValueSet);
+					double ValD = DataSet->Model->EquationBodies[Equation.Handle](RunState);
 					parameter_value Value;
 					if(Spec.Type == ParameterType_Double)
 					{
@@ -1442,7 +1442,7 @@ ProcessComputedParameters(mobius_data_set *DataSet, value_set_accessor *ValueSet
 }
 
 static void
-PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet);
+PrintEquationProfiles(mobius_data_set *DataSet, model_run_state *RunState);
 
 static void
 RunModel(mobius_data_set *DataSet)
@@ -1519,11 +1519,11 @@ RunModel(mobius_data_set *DataSet)
 	
 	AllocateResultStorage(DataSet, Timesteps);
 	
-	value_set_accessor ValueSet(DataSet);
+	model_run_state RunState(DataSet);
 	
-	ProcessComputedParameters(DataSet, &ValueSet);
+	ProcessComputedParameters(DataSet, &RunState);
 	
-	ValueSet.Clear();
+	RunState.Clear();
 	
 	
 	for(const mobius_preprocessing_step &PreprocessingStep : Model->PreprocessingSteps)
@@ -1569,8 +1569,8 @@ RunModel(mobius_data_set *DataSet)
 	
 	///////////// Setting up fast lookup ////////////////////
 	
-	ModelLoop(DataSet, &ValueSet, FastLookupSetupInnerLoop);
-	ValueSet.Clear();
+	ModelLoop(DataSet, &RunState, FastLookupSetupInnerLoop);
+	RunState.Clear();
 	
 	//NOTE: Temporary storage for use by solvers:
 	size_t MaxODECount = 0;
@@ -1586,8 +1586,8 @@ RunModel(mobius_data_set *DataSet)
 			}
 		}
 	}
-	ValueSet.x0 = AllocClearedArray(double, MaxODECount);
-	ValueSet.wk = AllocClearedArray(double, 4*MaxODECount); //TODO: This size is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
+	RunState.x0 = AllocClearedArray(double, MaxODECount);
+	RunState.wk = AllocClearedArray(double, 4*MaxODECount); //TODO: This size is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
 	
 	
 
@@ -1598,7 +1598,7 @@ RunModel(mobius_data_set *DataSet)
 		for(entity_handle ParameterHandle : DataSet->ParameterStorageStructure.Units[0].Handles)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ParameterHandle);
-			ValueSet.CurParameters[ParameterHandle] = DataSet->ParameterData[Offset];
+			RunState.CurParameters[ParameterHandle] = DataSet->ParameterData[Offset];
 		}
 	}
 	
@@ -1608,23 +1608,23 @@ RunModel(mobius_data_set *DataSet)
 		for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
 		{
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, InputHandle);
-			ValueSet.CurInputWasProvided[InputHandle] = DataSet->InputTimeseriesWasProvided[Offset];
+			RunState.CurInputWasProvided[InputHandle] = DataSet->InputTimeseriesWasProvided[Offset];
 		}
 	}
 	
-	ValueSet.AllLastResultsBase = DataSet->ResultData;
-	ValueSet.AllCurResultsBase = DataSet->ResultData;
+	RunState.AllLastResultsBase = DataSet->ResultData;
+	RunState.AllCurResultsBase = DataSet->ResultData;
 	
 	s32 Year;
-	ModelStartTime.DayOfYear(&ValueSet.DayOfYear, &Year);
-	ValueSet.DaysThisYear = YearLength(Year);
+	ModelStartTime.DayOfYear(&RunState.DayOfYear, &Year);
+	RunState.DaysThisYear = YearLength(Year);
 	
 	//NOTE: Set up initial values;
-	ValueSet.AtResult = ValueSet.AllCurResultsBase;
-	ValueSet.AtLastResult = ValueSet.AllLastResultsBase;
-	ValueSet.AtParameterLookup = ValueSet.FastParameterLookup.data();
-	ValueSet.Timestep = -1;
-	ModelLoop(DataSet, &ValueSet, InitialValueSetupInnerLoop);
+	RunState.AtResult = RunState.AllCurResultsBase;
+	RunState.AtLastResult = RunState.AllLastResultsBase;
+	RunState.AtParameterLookup = RunState.FastParameterLookup.data();
+	RunState.Timestep = -1;
+	ModelLoop(DataSet, &RunState, InitialRunStateupInnerLoop);
 	
 #if MOBIUS_PRINT_TIMING_INFO
 	u64 SetupDuration = GetTimerMilliseconds(&SetupTimer);
@@ -1632,13 +1632,13 @@ RunModel(mobius_data_set *DataSet)
 	u64 BeforeC = __rdtsc();
 #endif
 	
-	ValueSet.AllLastResultsBase = DataSet->ResultData;
-	ValueSet.AllCurResultsBase = DataSet->ResultData + DataSet->ResultStorageStructure.TotalCount;
-	ValueSet.AllCurInputsBase = DataSet->InputData + ((size_t)InputDataStartOffsetTimesteps)*DataSet->InputStorageStructure.TotalCount;
+	RunState.AllLastResultsBase = DataSet->ResultData;
+	RunState.AllCurResultsBase = DataSet->ResultData + DataSet->ResultStorageStructure.TotalCount;
+	RunState.AllCurInputsBase = DataSet->InputData + ((size_t)InputDataStartOffsetTimesteps)*DataSet->InputStorageStructure.TotalCount;
 	
 #if MOBIUS_EQUATION_PROFILING
-	ValueSet.EquationHits        = AllocClearedArray(size_t, Model->Equations.Count());
-	ValueSet.EquationTotalCycles = AllocClearedArray(u64, Model->Equations.Count());
+	RunState.EquationHits        = AllocClearedArray(size_t, Model->Equations.Count());
+	RunState.EquationTotalCycles = AllocClearedArray(u64, Model->Equations.Count());
 #endif
 	
 	for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
@@ -1646,17 +1646,17 @@ RunModel(mobius_data_set *DataSet)
 		
 #if MOBIUS_TIMESTEP_VERBOSITY >= 1
 		std::cout << "Timestep: " << Timestep << std::endl;
-		//std::cout << "Day of year: " << ValueSet.DayOfYear << std::endl;
+		//std::cout << "Day of year: " << RunState.DayOfYear << std::endl;
 #endif
 		
-		ValueSet.Timestep = (s64)Timestep;
-		ValueSet.AtResult = ValueSet.AllCurResultsBase;
-		ValueSet.AtLastResult = ValueSet.AllLastResultsBase;
+		RunState.Timestep = (s64)Timestep;
+		RunState.AtResult = RunState.AllCurResultsBase;
+		RunState.AtLastResult = RunState.AllLastResultsBase;
 		
-		ValueSet.AtParameterLookup  = ValueSet.FastParameterLookup.data();
-		ValueSet.AtInputLookup      = ValueSet.FastInputLookup.data();
-		ValueSet.AtResultLookup     = ValueSet.FastResultLookup.data();
-		ValueSet.AtLastResultLookup = ValueSet.FastLastResultLookup.data();
+		RunState.AtParameterLookup  = RunState.FastParameterLookup.data();
+		RunState.AtInputLookup      = RunState.FastInputLookup.data();
+		RunState.AtResultLookup     = RunState.FastResultLookup.data();
+		RunState.AtLastResultLookup = RunState.FastLastResultLookup.data();
 		
 		//NOTE: We have to update the inputs that don't depend on any index sets here, as that is not handled by the "fast lookup system".
 		if(!DataSet->InputStorageStructure.Units.empty() && DataSet->InputStorageStructure.Units[0].IndexSets.empty())
@@ -1664,22 +1664,22 @@ RunModel(mobius_data_set *DataSet)
 			for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
 			{
 				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, InputHandle);
-				ValueSet.CurInputs[InputHandle] = ValueSet.AllCurInputsBase[Offset];
+				RunState.CurInputs[InputHandle] = RunState.AllCurInputsBase[Offset];
 			}
 		}
 		
-		ModelLoop(DataSet, &ValueSet, RunInnerLoop);
+		ModelLoop(DataSet, &RunState, RunInnerLoop);
 		
-		ValueSet.AllLastResultsBase = ValueSet.AllCurResultsBase;
-		ValueSet.AllCurResultsBase += DataSet->ResultStorageStructure.TotalCount;
-		ValueSet.AllCurInputsBase  += DataSet->InputStorageStructure.TotalCount;
+		RunState.AllLastResultsBase = RunState.AllCurResultsBase;
+		RunState.AllCurResultsBase += DataSet->ResultStorageStructure.TotalCount;
+		RunState.AllCurInputsBase  += DataSet->InputStorageStructure.TotalCount;
 		
-		ValueSet.DayOfYear++;
-		if(ValueSet.DayOfYear == (365 + IsLeapYear(Year) + 1))
+		RunState.DayOfYear++;
+		if(RunState.DayOfYear == (365 + IsLeapYear(Year) + 1))
 		{
-			ValueSet.DayOfYear = 1;
+			RunState.DayOfYear = 1;
 			Year++;
-			ValueSet.DaysThisYear = 365 + IsLeapYear(Year);
+			RunState.DaysThisYear = 365 + IsLeapYear(Year);
 		}
 	}
 	
@@ -1697,9 +1697,9 @@ RunModel(mobius_data_set *DataSet)
 #endif
 
 #if MOBIUS_EQUATION_PROFILING
-	PrintEquationProfiles(DataSet, &ValueSet);
-	free(ValueSet.EquationHits);
-	free(ValueSet.EquationTotalCycles);
+	PrintEquationProfiles(DataSet, &RunState);
+	free(RunState.EquationHits);
+	free(RunState.EquationTotalCycles);
 #endif
 	
 	DataSet->HasBeenRun = true;
@@ -1831,7 +1831,7 @@ PrintInputStorageStructure(mobius_data_set *DataSet)
 }
 
 static void
-PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
+PrintEquationProfiles(mobius_data_set *DataSet, model_run_state *RunState)
 {
 #if MOBIUS_EQUATION_PROFILING
 	const mobius_model *Model = DataSet->Model;
@@ -1856,7 +1856,7 @@ PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 			if(Batch.Type == BatchType_Solver) std::cout << " (SOLVER: " << GetName(Model, Batch.Solver) << ")";
 			
 			ForAllBatchEquations(Batch,
-			[Model, ValueSet, &TotalHits, &SumCc](equation_h Equation)
+			[Model, RunState, &TotalHits, &SumCc](equation_h Equation)
 			{
 				int PrintCount = 0;
 				printf("\n\t");
@@ -1864,8 +1864,8 @@ PrintEquationProfiles(mobius_data_set *DataSet, value_set_accessor *ValueSet)
 				else if(Model->Equations.Specs[Equation.Handle].Type == EquationType_ODE) PrintCount += printf("(ODE) ");
 				PrintCount += printf("%s: ", GetName(Model, Equation));
 				
-				u64 Cc = ValueSet->EquationTotalCycles[Equation.Handle];
-				size_t Hits = ValueSet->EquationHits[Equation.Handle];
+				u64 Cc = RunState->EquationTotalCycles[Equation.Handle];
+				size_t Hits = RunState->EquationHits[Equation.Handle];
 				double CcPerHit = (double)Cc / (double)Hits;
 				
 				char FormatString[100];

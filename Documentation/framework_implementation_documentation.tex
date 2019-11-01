@@ -145,7 +145,7 @@ The purpose of returning the handle of a registered entity is that you should be
 Say that this was a very simplified model building system where each parameter only had a single value and did not index over index sets. Then you could organize your parameter values into a single array {\tt ParameterData} and put the value of a parameter with handle {\tt Handle} at location {\tt ParameterData[Handle]}. Then inside an {\tt EQUATION}, the value lookup {\tt PARAMETER(MyParameter)} could just essentially return {\tt ParameterData[MyParameter.Handle]}. Unfortunately things are not that simple, and so the implementation is a little bit more complicated, but more about this later. This is the basic idea that the value access system is built from, and so it is important to understand this idea. The entire design of the Mobius framework was built starting with this basic idea. What this achieves is that accessing the value of a parameter is just a very cheap array lookup.
 \end{example}
 
-\subsection{Equation bodies and the value set accessor}
+\subsection{Equation bodies and the model run stater}
 
 An equation body is a (C++11) lambda function that is tied to a registered equation (i.e. to an equation handle). If evaluated, this lambda will give the value of this equation given the values of parameters, and other things the equation accesses to produce its value.
 
@@ -159,7 +159,7 @@ EQUATION(Model, MyEquationHandle,
 the {\tt EQUATION} macro will expand this to
 \begin{lstlisting}[style=mycpp]
 SetEquation(Model, MyEquationHandle,
-[=](value_set_accessor *ValueSet__)
+[=](model_run_state *RunState__)
 {
 <some code..>
 }
@@ -168,7 +168,7 @@ SetEquation(Model, MyEquationHandle,
 \end{example}
 The {\tt SetEquation} function just stores the lambda in {\tt Model->EquationBodies[MyEquationHandle.Handle]}. This way the model knows what equation lambda is tied to what equation handle, and it can evaluate this lambda later during the model run.
 
-The {\tt value\_set\_accessor *ValueSet\_\_} is an object that contains whatever information the equation needs to look up in order to find the values it needs (more on this below). The model has to set up this value set accessor with the right information when it wants to evaluate the equation lambda, and this will typically change when indexes or timesteps are changed.
+The {\tt model\_run\_state *RunState\_\_} is an object that contains whatever information the equation needs to look up in order to find the values it needs (more on this below). The model has to set up this value set accessor with the right information when it wants to evaluate the equation lambda, and this will typically change when indexes or timesteps are changed.
 
 \begin{example}
 The code
@@ -180,14 +180,14 @@ EQUATION(Model, MyEquationHandle,
 expands to
 \begin{lstlisting}[style=mycpp]
 SetEquation(Model, MyEquationHandle,
-[=](value_set_accessor *ValueSet__)
+[=](model_run_state *RunState__)
 {
-	return (ValueSet__->Running ? GetCurrentParameter(ValueSet__, MyParameter) : RegisterParameterDependency(ValueSet__, MyParameter));
+	return (RunState__->Running ? GetCurrentParameter(RunState__, MyParameter) : RegisterParameterDependency(RunState__, MyParameter));
 }
 );
 \end{lstlisting}
 \end{example}
-We will get back to what {\tt ValueSet\_\_->Running} and {\tt RegisterParameterDependency} do later. What is important is that when the lambda is called, the model has set up the {\tt ValueSet\_\_} object so that {\tt GetCurrentParameter} returns the value associated to the {\tt MyParameter} handle given the status of the index sets that the equation is evaluated under.
+We will get back to what {\tt RunState\_\_->Running} and {\tt RegisterParameterDependency} do later. What is important is that when the lambda is called, the model has set up the {\tt RunState\_\_} object so that {\tt GetCurrentParameter} returns the value associated to the {\tt MyParameter} handle given the status of the index sets that the equation is evaluated under.
 
 The reason why we use macros instead of just making the model builder type this code straight up is that we want to hide the value set accessor as an implementation detail. It is also easier  to make sure the values are accessed in a correct manner this way.
 
@@ -199,11 +199,11 @@ This already showcases why we wanted to wrap the entity handles in typed structs
 
 This section is about what happens when you call {\tt EndModelDefinition} on a model.
 
-First it sets up a {\tt value\_set\_accessor *ValueSet} with {\tt ValueSet->Running = false}. For each equation handle {\tt Handle} it will then call the lambda tied to this handle using
+First it sets up a {\tt model\_run\_state *RunState} with {\tt RunState->Running = false}. For each equation handle {\tt Handle} it will then call the lambda tied to this handle using
 \begin{lstlisting}[style=mycpp]
-Model->EquationBodies[Handle](ValueSet)
+Model->EquationBodies[Handle](RunState)
 \end{lstlisting}
-Since {\tt ValueSet->Running == false} we are in registration mode, and all the accesses the equation body does using e.g. {\tt PARAMETER}, {\tt INPUT} or {\tt RESULT} will instead of extracting those values for use in the evaluation of the equation, call a registration function such as {\tt RegisterParameterDependency}. The registration functions store information in the ValueSet about what accesses were made. This means that the {\tt ValueSet} now contains information about what parameters, results and inputs etc. this equation accessed, and how it accessed them (implicit or explicit indexing and with what explicit indexes). This will then be used to set up the batch structure of the model.
+Since {\tt RunState->Running == false} we are in registration mode, and all the accesses the equation body does using e.g. {\tt PARAMETER}, {\tt INPUT} or {\tt RESULT} will instead of extracting those values for use in the evaluation of the equation, call a registration function such as {\tt RegisterParameterDependency}. The registration functions store information in the RunState about what accesses were made. This means that the {\tt RunState} now contains information about what parameters, results and inputs etc. this equation accessed, and how it accessed them (implicit or explicit indexing and with what explicit indexes). This will then be used to set up the batch structure of the model.
 
 After storing such information for every equation, we can now figure out the dependencies of every equation. First one can let each equation inherit the index set dependencies of the parameters and inputs it accesses. Then they have to inherit dependencies from other equations. This step has to be run potentially many times since index set dependencies could be inherited down many steps of equations depending on each other.
 
@@ -211,7 +211,7 @@ Next, the model batch structure is determined. This is a complex many-step proce
 
 TODO: Give a short description of the chosen algorithm here.
 
-Finally, {\tt EndModelDefinition} stores some data with the batch structure that allows {\tt RunModel} to be more efficient with how it updates the {\tt ValueSet} during the main model run. More about that later.
+Finally, {\tt EndModelDefinition} stores some data with the batch structure that allows {\tt RunModel} to be more efficient with how it updates the {\tt RunState} during the main model run. More about that later.
 
 \subsection{The main value storage in the dataset}
 
@@ -232,17 +232,17 @@ TODO: More details!
 
 \subsection{More on the value set accessor system}
 
-The {\tt value\_set\_accessor} has four buffers {\tt CurParameters}, {\tt CurResults}, {\tt LastResults}, {\tt CurInputs}. During the model run, the main model loop ({\tt RunInnerLoop}) function will make sure that for each timestep and for each change of indexes, these buffers will be set up so that for instance for the parameter handle {\tt H}, {\tt CurParameters[H]} is the value of that parameter for the given indexes. This makes it so that if you use {\tt PARAMETER(H)} to look up the value of this parameter inside an {\tt EQUATION}, that will only be an array lookup, which is fast.
+The {\tt model\_run\_state} has four buffers {\tt CurParameters}, {\tt CurResults}, {\tt LastResults}, {\tt CurInputs}. During the model run, the main model loop ({\tt RunInnerLoop}) function will make sure that for each timestep and for each change of indexes, these buffers will be set up so that for instance for the parameter handle {\tt H}, {\tt CurParameters[H]} is the value of that parameter for the given indexes. This makes it so that if you use {\tt PARAMETER(H)} to look up the value of this parameter inside an {\tt EQUATION}, that will only be an array lookup, which is fast.
 
 First one can think of a very simple algorithm to achieve this:
 \begin{example}
 Pseudocode for a very simple way to update all the parameter values
 \begin{lstlisting}[style = mycpp]
 for each parameter handle H :
-	memory_location = OffsetForHandle(DataSet->ParameterStorageStructure, ValueSet->CurrentIndexes, H)
-	ValueSet->CurParameters[H] = DataSet->ParameterData[memory_location]
+	memory_location = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, H)
+	RunState->CurParameters[H] = DataSet->ParameterData[memory_location]
 \end{lstlisting}
-Here {\tt ValueSet->CurrentIndexes} must first be updated with the current state of the index sets so that we retrieve the right values corresponding to the right indexes.
+Here {\tt RunState->CurrentIndexes} must first be updated with the current state of the index sets so that we retrieve the right values corresponding to the right indexes.
 \end{example}
 
 However, this would be slow for a few reasons
@@ -251,23 +251,23 @@ However, this would be slow for a few reasons
 \item The OffsetForHandle computation is relatively slow.
 \end{enumerate}
 
-To address (i), remember that we actually know all the handles that are going to be accessed by each equation, because this was registered during the {\tt EndModelDefinition} step. So at the end of {\tt EndModelDefinition} we store with each batch group all the handles that are looked up by equations in that batch. Moreover, since some of these handles can be to entities that don't index over as many index sets as the batch itself, we also store at which index change we need to look up the value again. This means that not all values have to be loaded in again at every index change. In detail, if an equation batch group indexes over the index sets in {\tt BatchGroup->IndexSets}, then what parameters, results and inputs to update in the {\tt ValueSet} are stored in {\tt BatchGroup->IterationData}. In pseudocode, running the batch group (See {\tt ModelLoop} and {\tt RunInnerLoop} in {\tt mobius\_model.cpp}.)
+To address (i), remember that we actually know all the handles that are going to be accessed by each equation, because this was registered during the {\tt EndModelDefinition} step. So at the end of {\tt EndModelDefinition} we store with each batch group all the handles that are looked up by equations in that batch. Moreover, since some of these handles can be to entities that don't index over as many index sets as the batch itself, we also store at which index change we need to look up the value again. This means that not all values have to be loaded in again at every index change. In detail, if an equation batch group indexes over the index sets in {\tt BatchGroup->IndexSets}, then what parameters, results and inputs to update in the {\tt RunState} are stored in {\tt BatchGroup->IterationData}. In pseudocode, running the batch group (See {\tt ModelLoop} and {\tt RunInnerLoop} in {\tt mobius\_model.cpp}.)
 
 \begin{example}
 Pseudocode for how one could evaluate one batch group of the model for one given timestep.
 \begin{lstlisting}[style = mycpp]
 for each Index corresponding to the index set BatchGroup->IndexSets[0] :
-	ValueSet->CurrentIndexes[IndexSets[0]] = Index
-	update the ValueSet with all values specified by BatchGroup->IterationData[0]
+	RunState->CurrentIndexes[IndexSets[0]] = Index
+	update the RunState with all values specified by BatchGroup->IterationData[0]
 	for each Index corresponding to the index set BatchGroup->IndexSets[1] :
-		ValueSet->CurrentIndexes[IndexSets[1]] = Index
-		update the ValueSet with all values specified by BatchGroup->IterationData[1]
+		RunState->CurrentIndexes[IndexSets[1]] = Index
+		update the RunState with all values specified by BatchGroup->IterationData[1]
 			.
 			.
 			.
 			for each Index corresponding to the index set BatchGroup->IndexSets[N] :
-				ValueSet->CurrentIndexes[IndexSets[N]] = Index
-				update the ValueSet with all values specified by BatchGroup->IterationData[N]
+				RunState->CurrentIndexes[IndexSets[N]] = Index
+				update the RunState with all values specified by BatchGroup->IterationData[N]
 				for each Batch in the BatchGroup :
 					solve/evaluate all equations in the Batch
 
@@ -275,9 +275,9 @@ for each Index corresponding to the index set BatchGroup->IndexSets[0] :
 In practice the structure of this code is implemented a little differently since the number of index set dependencies per batch group is variable.
 \end{example}
 
-To address (ii), since we know that for each timestep, it is going to look up the same parameters in the same order as in the last timestep, we cheat and go through this process just once before we start the main model run. This is the {\tt FastLookupSetupInnerLoop}. This gives us a list of parameter values in the order that they are going to be looked up. When we are executing the main model run, we can then just read from this list in order each timestep instead of re-computing the memory indexes and looking up the values from main storage. The lists are called {\tt ValueSet->FastParameterLookup} etc.
+To address (ii), since we know that for each timestep, it is going to look up the same parameters in the same order as in the last timestep, we cheat and go through this process just once before we start the main model run. This is the {\tt FastLookupSetupInnerLoop}. This gives us a list of parameter values in the order that they are going to be looked up. When we are executing the main model run, we can then just read from this list in order each timestep instead of re-computing the memory indexes and looking up the values from main storage. The lists are called {\tt RunState->FastParameterLookup} etc.
 
-For results and inputs it is a little more complicated: Since we have a different value for each timestep, we store a memory offset in the fast lookup list instead of a value. This is a memory offset from the start of the storage of the current timestep (or previous timestep if you are looking at last-results). Moreover, the {\tt ValueSet} will always be updated by the {\tt RunModel} procedure at each timestep to have a pointer to the start of the storage of the current (and previous) timestep. This allows for looking up the needed values.
+For results and inputs it is a little more complicated: Since we have a different value for each timestep, we store a memory offset in the fast lookup list instead of a value. This is a memory offset from the start of the storage of the current timestep (or previous timestep if you are looking at last-results). Moreover, the {\tt RunState} will always be updated by the {\tt RunModel} procedure at each timestep to have a pointer to the start of the storage of the current (and previous) timestep. This allows for looking up the needed values.
 
 \subsection{Storage of result values}
 

@@ -69,7 +69,7 @@ BuildJacobianInfo(mobius_model *Model)
 #define USE_JACOBIAN_OPTIMIZATION 1          //Ooops, don't turn this off if you don't know what you are doing. It could break some solvers.
 
 static void
-EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, double *FBaseVec, const mobius_model *Model, value_set_accessor *ValueSet, const equation_batch &Batch)
+EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, double *FBaseVec, const mobius_model *Model, model_run_state *RunState, const equation_batch &Batch)
 {
 	//NOTE: This is not a very numerically accurate estimation of the Jacobian, it is mostly optimized for speed. We'll see if it is good enough..
 
@@ -78,20 +78,20 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 	for(size_t Idx = 0; Idx < N; ++Idx)
 	{
 		equation_h Equation = Batch.EquationsODE[Idx];
-		ValueSet->CurResults[Equation.Handle] = X[Idx];
+		RunState->CurResults[Equation.Handle] = X[Idx];
 	}
 	
 	//NOTE: Evaluation of the ODE system at base point. TODO: We should find a way to reuse the calculation we already do at the basepoint, however it is done by a separate callback, so that is tricky..
 	for(equation_h Equation : Batch.Equations)
 	{
-		double ResultValue = CallEquation(Model, ValueSet, Equation);
-		ValueSet->CurResults[Equation.Handle] = ResultValue;
+		double ResultValue = CallEquation(Model, RunState, Equation);
+		RunState->CurResults[Equation.Handle] = ResultValue;
 	}
 	
 	for(size_t Idx = 0; Idx < N; ++Idx)
 	{
 		equation_h EquationToCall = Batch.EquationsODE[Idx];
-		FBaseVec[Idx] = CallEquation(Model, ValueSet, EquationToCall);
+		FBaseVec[Idx] = CallEquation(Model, RunState, EquationToCall);
 	}
 	
 #if USE_JACOBIAN_OPTIMIZATION
@@ -109,7 +109,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 		double H0 = 1e-6;  //TODO: This should definitely be sensitive to the size of the base values. But how to do that?
 		volatile double Temp = X[Col] + H0;
 		double H = Temp - X[Col];
-		ValueSet->CurResults[EquationToPermute.Handle] = X[Col] + H; //TODO: Do it numerically correct
+		RunState->CurResults[EquationToPermute.Handle] = X[Col] + H; //TODO: Do it numerically correct
 		
 		//TODO: We should do some optimization here too to not have to call all the non-ode equations, but in that case we have to remember to reset the values at the end.
 #if USE_JACOBIAN_OPTIMIZATION		
@@ -119,10 +119,10 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 #endif
 		{
 #if USE_JACOBIAN_OPTIMIZATION
-			Backup[Equation.Handle] = ValueSet->CurResults[Equation.Handle];
+			Backup[Equation.Handle] = RunState->CurResults[Equation.Handle];
 #endif
-			double ResultValue = CallEquation(Model, ValueSet, Equation);
-			ValueSet->CurResults[Equation.Handle] = ResultValue;
+			double ResultValue = CallEquation(Model, RunState, Equation);
+			RunState->CurResults[Equation.Handle] = ResultValue;
 		}
 		
 #if USE_JACOBIAN_OPTIMIZATION
@@ -135,7 +135,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 		
 			double FBase = FBaseVec[Row]; //NOTE: The value of the EquationToCall at the base point.
 			
-			double FPermute = CallEquation(Model, ValueSet, EquationToCall);
+			double FPermute = CallEquation(Model, RunState, EquationToCall);
 			
 			double Derivative = (FPermute - FBase) / H; //TODO: Numerical correctness
 			
@@ -145,12 +145,12 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 		}
 		//printf("\n");
 		
-		ValueSet->CurResults[EquationToPermute.Handle] = X[Col];  //NOTE: Reset the value so that it is correct for the next column.
+		RunState->CurResults[EquationToPermute.Handle] = X[Col];  //NOTE: Reset the value so that it is correct for the next column.
 		
 #if USE_JACOBIAN_OPTIMIZATION
 		for(equation_h Equation : Batch.ODEIsDependencyOfNonODE[Col])
 		{
-			ValueSet->CurResults[Equation.Handle] = Backup[Equation.Handle];
+			RunState->CurResults[Equation.Handle] = Backup[Equation.Handle];
 		}
 #endif
 	}

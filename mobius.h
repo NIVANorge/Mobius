@@ -7,7 +7,7 @@
 /*
 TODOs:
 	- PrintPartialDependencyTrace gives incorrect information sometimes about what equation is involved when a solver is the one having a dependency.
-	- Better encapsulation of the value_set_accessor subsystem. Unify lookup systems for parameters, inputs, results, last_results
+	- Better encapsulation of the model_run_state subsystem. Unify lookup systems for parameters, inputs, results, last_results
 	- Have to figure out if the initial value equation system we have currently is good.
 	- Clean up the input tokenizer. Maybe just use fscanf for reading numbers, but it is actually a little complicated since we have to figure out the type in any case.
 	- Remove units as model entities entirely and only store / input them as strings? They seem like an unnecessary step right now.
