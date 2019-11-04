@@ -182,8 +182,6 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	//std::vector<size_t> FastInputLookup;
 	//std::vector<size_t> FastResultLookup;
 	//std::vector<size_t> FastLastResultLookup;
-	//double *x0; //NOTE: Temporary storage for use by solvers
-	//double *wk; //NOTE: Temporary storage for use by solvers
 	
 	return Copy;
 }

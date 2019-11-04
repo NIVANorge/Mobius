@@ -69,11 +69,14 @@ BuildJacobianInfo(mobius_model *Model)
 #define USE_JACOBIAN_OPTIMIZATION 1          //Ooops, don't turn this off if you don't know what you are doing. It could break some solvers.
 
 static void
-EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, double *FBaseVec, const mobius_model *Model, model_run_state *RunState, const equation_batch &Batch)
+EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, const mobius_model *Model, model_run_state *RunState, const equation_batch &Batch)
 {
 	//NOTE: This is not a very numerically accurate estimation of the Jacobian, it is mostly optimized for speed. We'll see if it is good enough..
 
 	size_t N = Batch.EquationsODE.size();
+	
+	double *FBaseVec = RunState->JacobianTempStorage;
+	double *Backup   = FBaseVec + N;
 	
 	for(size_t Idx = 0; Idx < N; ++Idx)
 	{
@@ -93,11 +96,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 		equation_h EquationToCall = Batch.EquationsODE[Idx];
 		FBaseVec[Idx] = CallEquation(Model, RunState, EquationToCall);
 	}
-	
-#if USE_JACOBIAN_OPTIMIZATION
-	double *Backup = (double *)malloc(sizeof(double) * Model->Equations.Count());
-#endif
-	
+
 	//printf("begin matrix\n");
 	
 	//TODO: This is a naive way of doing it. We should instead use pre-recorded info about which equations depend on which and skip evaluation in the case where there is no dependency.
@@ -154,10 +153,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, d
 		}
 #endif
 	}
-	
-#if USE_JACOBIAN_OPTIMIZATION
-	free(Backup);
-#endif
+
 	//printf("end matrix\n");
 }
 

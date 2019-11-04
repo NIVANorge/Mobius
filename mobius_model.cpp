@@ -1189,11 +1189,11 @@ INNER_LOOP_BODY(RunInnerLoop)
 					//NOTE: Reading the Equations.Specs vector here may be slightly inefficient since each element of the vector is large. We could copy out an array of the ResetEveryTimestep bools instead beforehand.
 					if(Model->Equations.Specs[Equation.Handle].ResetEveryTimestep)
 					{
-						RunState->x0[EquationIdx] = 0;
+						RunState->SolverTempX0[EquationIdx] = 0;
 					}
 					else
 					{
-						RunState->x0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState.LastResult is set up above already.
+						RunState->SolverTempX0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState.LastResult is set up above already.
 					}
 					++EquationIdx;
 				}
@@ -1244,16 +1244,14 @@ INNER_LOOP_BODY(RunInnerLoop)
 					JacobiFunction =
 					[RunState, Model, DataSet, &Batch](double *X, mobius_matrix_insertion_function & MatrixInserter)
 					{
-						//TODO: Have to see if it is safe to use DataSet->wk here. It is ok for the boost solvers since they use their own working memory.
-						// It is not really safe design to do this, and so we should instead preallocate different working memory for the Jacobian estimation..
-						EstimateJacobian(X, MatrixInserter, RunState->wk, Model, RunState, Batch);
+						EstimateJacobian(X, MatrixInserter, Model, RunState, Batch);
 					};
 				}
 				
 				double h = DataSet->hSolver[Batch.Solver.Handle]; // The desired solver step. (Error correction may increase or decrease the step).
 				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(h, Batch.EquationsODE.size(), RunState->x0, RunState->wk, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
+				SolverSpec.SolverFunction(h, Batch.EquationsODE.size(), RunState->SolverTempX0, RunState->SolverTempWorkStorage, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
 				//NOTE: Store out the final results from this solver to the ResultData set.
 				for(equation_h Equation : Batch.Equations)
@@ -1269,7 +1267,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				EquationIdx = 0;
 				for(equation_h Equation : Batch.EquationsODE)
 				{
-					double ResultValue = RunState->x0[EquationIdx];
+					double ResultValue = RunState->SolverTempX0[EquationIdx];
 					RunState->CurResults[Equation.Handle] = ResultValue;
 					*RunState->AtResult = ResultValue;
 					++RunState->AtResult;
@@ -1409,7 +1407,7 @@ ProcessComputedParameters(mobius_data_set *DataSet, model_run_state *RunState)
 			ForeachParameterInstance(DataSet, ParameterHandle,
 				[DataSet, ParameterHandle, Equation, &EqSpec, &Spec, RunState](index_t *Indexes, size_t IndexesCount)
 				{
-					//NOTE: We have to set the value set accessor into the right state.
+					//NOTE: We have to set the RunState into the right state.
 					
 					for(size_t IdxIdx = 0; IdxIdx < IndexesCount; ++IdxIdx)
 					{
@@ -1532,8 +1530,7 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	
-	// If some solvers have parametrized step size, read in the actual value from the parameter set
-	
+	// If some solvers have parametrized step size, read in the actual value of the parameter from the parameter data, then store it for use when running the model.
 	if(!DataSet->hSolver)
 	{
 		DataSet->hSolver = AllocClearedArray(double, Model->Solvers.Count());
@@ -1573,6 +1570,7 @@ RunModel(mobius_data_set *DataSet)
 	RunState.Clear();
 	
 	//NOTE: Temporary storage for use by solvers:
+	//TODO: This code should probably be a member function of model_run_state or similar.
 	size_t MaxODECount = 0;
 	for(const equation_batch_group& BatchGroup : Model->BatchGroups)
 	{
@@ -1581,13 +1579,18 @@ RunModel(mobius_data_set *DataSet)
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			if(Batch.Type == BatchType_Solver)
 			{
-				size_t ODECount = Batch.EquationsODE.size();
-				MaxODECount = Max(MaxODECount, ODECount);
+				size_t ODECount    = Batch.EquationsODE.size();
+				MaxODECount        = Max(MaxODECount, ODECount);
 			}
 		}
 	}
-	RunState.x0 = AllocClearedArray(double, MaxODECount);
-	RunState.wk = AllocClearedArray(double, 4*MaxODECount); //TODO: This size is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
+	size_t SolverTempWorkSpace = 4*MaxODECount; //TODO: 4*MaxODECount is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
+	size_t JacobiTempWorkSpace = MaxODECount + Model->Equations.Count();//MaxNonODECount;
+	size_t SolverSpaceNeeded   = MaxODECount + SolverTempWorkSpace + JacobiTempWorkSpace; 
+	double *SolverTempStorage  = AllocClearedArray(double, SolverSpaceNeeded);
+	RunState.SolverTempX0          = SolverTempStorage;
+	RunState.SolverTempWorkStorage = RunState.SolverTempX0 + MaxODECount;
+	RunState.JacobianTempStorage   = RunState.SolverTempX0 + SolverTempWorkSpace;
 	
 	
 
@@ -1711,28 +1714,33 @@ RunModel(mobius_data_set *DataSet)
 static void
 PrintEquationDependencies(mobius_model *Model)
 {
-	std::cout << std::endl << "**** Equation Dependencies ****" << std::endl;
-	if(Model->Finalized)
-	{	
-		for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
-		{
-			std::cout << GetName(Model, equation_h {EquationHandle}) << "\n\t";
-			for(index_set_h IndexSet : Model->Equations.Specs[EquationHandle].IndexSetDependencies)
-			{
-				std::cout << "[" << GetName(Model, IndexSet) << "]";
-			}
-			std::cout << std::endl;
-		}
-	}
-	else
+	if(!Model->Finalized)
 	{
 		std::cout << "WARNING: Tried to print equation dependencies before the model was finalized" << std::endl;
+		return;
+	}
+	
+	std::cout << std::endl << "**** Equation Dependencies ****" << std::endl;
+	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
+	{
+		std::cout << GetName(Model, equation_h {EquationHandle}) << "\n\t";
+		for(index_set_h IndexSet : Model->Equations.Specs[EquationHandle].IndexSetDependencies)
+		{
+			std::cout << "[" << GetName(Model, IndexSet) << "]";
+		}
+		std::cout << std::endl;
 	}
 }
 
 static void
 PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 {
+	if(!Model->Finalized)
+	{
+		std::cout << "WARNING: Tried to print result structure before the model was finalized" << std::endl;
+		return;
+	}
+	
 	Out << std::endl << "**** Result Structure ****" << std::endl;
 	//Out << "Number of batches: " << Model->ResultStructure.size() << std::endl;
 	for(const equation_batch_group &BatchGroup : Model->BatchGroups)

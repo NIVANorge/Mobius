@@ -594,8 +594,9 @@ struct model_run_state
 	std::vector<size_t> FastResultLookup;
 	std::vector<size_t> FastLastResultLookup;
 	
-	double *x0; //NOTE: Temporary storage for use by solvers
-	double *wk; //NOTE: Temporary storage for use by solvers
+	double *SolverTempX0;          //NOTE: Temporary storage for use by solvers
+	double *SolverTempWorkStorage; //NOTE: Temporary storage for use by solvers
+	double *JacobianTempStorage;   //NOTE: Temporary storage for use by Jacobian estimation
 	
 	parameter_value *AtParameterLookup;
 	size_t *AtInputLookup;
@@ -647,8 +648,9 @@ struct model_run_state
 		DaysThisYear = 365;
 		Timestep = 0;
 		
-		x0 = 0;
-		wk = 0;
+		SolverTempX0 = 0;
+		SolverTempWorkStorage = 0;
+		JacobianTempStorage = 0;
 	}
 	
 	~model_run_state()
@@ -661,8 +663,8 @@ struct model_run_state
 			free(CurResults);
 			free(LastResults);
 			free(CurrentIndexes);
-			if(x0) free(x0);
-			if(wk) free(wk);
+			if(SolverTempX0) free(SolverTempX0);
+			//if(wk) free(wk); //Don't free SolverTempWorkStorage or JacobianTempStorage since they are allocated together with SolverTempX0!
 		}
 	}
 	
