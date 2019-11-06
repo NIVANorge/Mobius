@@ -153,7 +153,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 				fprintf(File, "\"%s\"", DataSet->IndexNames[IndexSetHandle][IndexIndex]);
 				for(size_t InputIdx = 0; InputIdx < InputCount; ++InputIdx)
 				{
-					index_t InputIndexIndex = DataSet->BranchInputs[IndexSetHandle][IndexIndex].Inputs[InputIdx];
+					index_t InputIndexIndex = DataSet->BranchInputs[IndexSetHandle][IndexIndex][InputIdx];
 					fprintf(File, " \"%s\"", DataSet->IndexNames[IndexSetHandle][InputIndexIndex]);
 				}
 				if(InputCount > 0) fprintf(File, "}");
@@ -170,9 +170,9 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 
 	for(storage_unit_specifier &Unit : DataSet->ParameterStorageStructure.Units)
 	{
-		std::vector<index_set_h> &IndexSets = Unit.IndexSets;
+		array<index_set_h> &IndexSets = Unit.IndexSets;
 		fprintf(File, "######################");
-		if(IndexSets.empty()) fprintf(File, " (no index sets)");
+		if(IndexSets.Count == 0) fprintf(File, " (no index sets)");
 		for(index_set_h IndexSet : IndexSets)
 		{
 			fprintf(File, " \"%s\"", GetName(Model, IndexSet));
@@ -209,10 +209,10 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 			}
 			fprintf(File, "\n");
 			
-			size_t IndexSetCount = IndexSets.size();
+			size_t IndexSetCount = IndexSets.Count;
 			index_t *CurrentIndexes = AllocClearedArray(index_t, IndexSetCount);
 			
-			WriteParameterValues(File, ParameterHandle, Spec.Type, DataSet, IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
+			WriteParameterValues(File, ParameterHandle, Spec.Type, DataSet, IndexSets.Data, CurrentIndexes, IndexSetCount, 0);
 			
 			fprintf(File, "\n\n");
 			free(CurrentIndexes);

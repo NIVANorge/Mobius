@@ -45,6 +45,8 @@ struct bucket_allocator
 	template<typename T> T*
 	Allocate(size_t Count)
 	{
+		if(Count == 0) return nullptr;
+		
 		if(BucketSize == 0)
 		{
 			MOBIUS_FATAL_ERROR("ERROR (internal): Tried to allocate from an uninitialized bucket allocator.\n");
@@ -76,11 +78,7 @@ struct bucket_allocator
 				// Otherwise, create a new bucket
 				size_t AllocSize = sizeof(memory_bucket) + BucketSize;
 				u8 *Memory = AllocClearedArray(u8, AllocSize);     //TODO: Should clearing be optional?
-       
-				if(!Memory)
-				{
-					MOBIUS_FATAL_ERROR("ERROR (internal): Unable to allocate enough memory (bucket allocator)\n.");
-				}
+
 				NewBucket = (memory_bucket *)Memory;
 				NewBucket->Data = Memory + sizeof(memory_bucket);
 				NewBucket->Next = nullptr;
@@ -102,6 +100,7 @@ struct bucket_allocator
 	template<typename T> T *
 	Copy(const T* Source, size_t Count)
 	{
+		if(Count == 0) return nullptr;
 		T *Result = Allocate<T>(Count);
 		memcpy(Result, Source, Count*sizeof(T));
 		return Result;
@@ -142,8 +141,8 @@ struct bucket_allocator
 
 
 
-/*
-//Want to have an array that does not own its data, but instead lives in "bucket memory". For later use when improving memory locality in some data structures, right now not used anywhere.
+
+//Array that does not own its data, but instead lives in "bucket memory".
 
 template<typename T>
 struct array
@@ -153,13 +152,15 @@ struct array
 	
 	array() : Data(nullptr), Count(0) {};
 	
+	void
 	Allocate(bucket_allocator *Allocator, size_t Count)
 	{
-		Allocator->Allocate<T>(Count);
+		Data = Allocator->Allocate<T>(Count);
 		this->Count = Count;
 	}
 	
-	array<T> Copy(bucket_allocator *Allocator)
+	array<T>
+	Copy(bucket_allocator *Allocator) const
 	{
 		array<T> Result;
 		Result.Count = Count;
@@ -168,10 +169,22 @@ struct array
 	}
 	
 	inline T& operator[](size_t Index) { return Data[Index]; }
+	inline const T& operator[](size_t Index) const { return Data[Index]; }
 	
-	//TODO: C++ - style iterator for convenient for loops?
-}
+	//NOTE: For C++ - style iteration
+	inline T* begin() { return Data; }
+	inline T* end()   { return Data + Count; }
+	inline const T* begin() const { return Data; }
+	inline const T* end()   const { return Data + Count; }
+};
 
-*/
+template<typename T>
+array<T> CopyDataToArray(bucket_allocator *Allocator, const T *Data, size_t Count)
+{
+	array<T> Result;
+	Result.Count = Count;
+	Result.Data  = Allocator->Copy(Data, Count);
+	return Result;
+}
 
 

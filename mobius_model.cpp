@@ -4,7 +4,7 @@ BeginModelDefinition(const char *Name = "(unnamed model)")
 {
 	mobius_model *Model = new mobius_model {};
 	
-	Model->BucketMemory.Initialize(1024);
+	Model->BucketMemory.Initialize(1024*1024);
 	
 	Model->DefinitionTimer = BeginTimer();
 	
@@ -188,13 +188,13 @@ struct equation_batch_template
 };
 
 static bool
-IsTopIndexSetForThisDependency(std::vector<index_set_h> &IndexSetDependencies, std::vector<index_set_h> &BatchGroupIndexSets, size_t IndexSetLevel)
+IsTopIndexSetForThisDependency(std::vector<index_set_h> &IndexSetDependencies, array<index_set_h> &BatchGroupIndexSets, size_t IndexSetLevel)
 {
 	index_set_h CurrentLevelIndexSet = BatchGroupIndexSets[IndexSetLevel];
 	bool DependsOnCurrentLevel = (std::find(IndexSetDependencies.begin(), IndexSetDependencies.end(), CurrentLevelIndexSet) != IndexSetDependencies.end());
 	if(!DependsOnCurrentLevel) return false;
 	
-	for(size_t LevelAbove = IndexSetLevel + 1; LevelAbove < BatchGroupIndexSets.size(); ++LevelAbove)
+	for(size_t LevelAbove = IndexSetLevel + 1; LevelAbove < BatchGroupIndexSets.Count; ++LevelAbove)
 	{
 		index_set_h IndexSetAtLevelAbove = BatchGroupIndexSets[LevelAbove];
 		if(std::find(IndexSetDependencies.begin(), IndexSetDependencies.end(), IndexSetAtLevelAbove) != IndexSetDependencies.end())
@@ -782,22 +782,40 @@ EndModelDefinition(mobius_model *Model)
 			}
 		}
 		
-		Model->EquationBatches.resize(BatchBuild.size(), {});
-		
+		//Model->EquationBatches.resize(BatchBuild.size(), {});
+		Model->EquationBatches.Allocate(&Model->BucketMemory, BatchBuild.size());
+		//NOTE: Determine the number of batch groups
+		size_t BatchGroupCount = 0;
 		size_t BatchIdx = 0;
+		while(BatchIdx != BatchBuild.size())
+		{
+			BatchGroupCount++;
+			std::set<index_set_h> IndexSets = BatchBuild[BatchIdx].IndexSetDependencies; //NOTE: set copy.
+			while(BatchIdx != BatchBuild.size() && BatchBuild[BatchIdx].IndexSetDependencies == IndexSets) ++BatchIdx;
+		}
+		
+		Model->BatchGroups.Allocate(&Model->BucketMemory, BatchGroupCount);
+		
+		BatchIdx = 0;
 		size_t BatchGroupIdx = 0;
 		while(BatchIdx != BatchBuild.size())
 		{
-			Model->BatchGroups.push_back({});
-			equation_batch_group &BatchGroup = Model->BatchGroups[Model->BatchGroups.size() - 1];
+			//Model->BatchGroups.push_back({});
+			equation_batch_group &BatchGroup = Model->BatchGroups[BatchGroupIdx];
 			
-			equation_batch_template &FirstBatchOfGroup = BatchBuild[BatchIdx];
-			std::set<index_set_h> IndexSets = FirstBatchOfGroup.IndexSetDependencies; //NOTE: set copy.
+			std::set<index_set_h> IndexSets = BatchBuild[BatchIdx].IndexSetDependencies; //NOTE: set copy.
+
+			BatchGroup.IndexSets.Allocate(&Model->BucketMemory, IndexSets.size());
+			size_t Idx = 0;
+			for(index_set_h IndexSet: IndexSets)
+			{
+				BatchGroup.IndexSets[Idx] = IndexSet;
+				++Idx;
+			}
 			
-			BatchGroup.IndexSets.insert(BatchGroup.IndexSets.end(), IndexSets.begin(), IndexSets.end());
 			std::sort(BatchGroup.IndexSets.begin(), BatchGroup.IndexSets.end(),
-				[Counts] (index_set_h	A, index_set_h B) { return ((Counts[A.Handle] == Counts[B.Handle]) ? (A.Handle > B.Handle) : (Counts[A.Handle] > Counts[B.Handle])); }
-			);
+				[Counts] (index_set_h A, index_set_h B) { return ((Counts[A.Handle] == Counts[B.Handle]) ? (A.Handle > B.Handle) : (Counts[A.Handle] > Counts[B.Handle])); }
+			);    //Sort index sets so that the ones with more equations depending on them are higher up. This empirically gives a better batch structure.
 			
 			BatchGroup.FirstBatch = BatchIdx;
 			
@@ -807,10 +825,10 @@ EndModelDefinition(mobius_model *Model)
 				equation_batch &Batch = Model->EquationBatches[BatchIdx];
 				
 				Batch.Type = BatchTemplate.Type;
-				Batch.Equations = BatchTemplate.Equations; //NOTE: vector copy
+				Batch.Equations = CopyDataToArray(&Model->BucketMemory, BatchTemplate.Equations.data(), BatchTemplate.Equations.size());
 				if(Batch.Type == BatchType_Solver)
 				{
-					Batch.EquationsODE = BatchTemplate.EquationsODE;
+					Batch.EquationsODE = CopyDataToArray(&Model->BucketMemory, BatchTemplate.EquationsODE.data(), BatchTemplate.EquationsODE.size());
 					Batch.Solver = BatchTemplate.Solver;
 				}
 				
@@ -881,10 +899,14 @@ EndModelDefinition(mobius_model *Model)
 				});
 			}
 			
-			BatchGroup.IterationData.resize(BatchGroup.IndexSets.size(), {});
+			BatchGroup.IterationData.Allocate(&Model->BucketMemory, BatchGroup.IndexSets.Count);
 			
-			for(size_t IndexSetLevel = 0; IndexSetLevel < BatchGroup.IndexSets.size(); ++IndexSetLevel)
+			for(size_t IndexSetLevel = 0; IndexSetLevel < BatchGroup.IndexSets.Count; ++IndexSetLevel)
 			{
+				std::vector<entity_handle> ParametersToRead;
+				std::vector<input_h>       InputsToRead;
+				std::vector<equation_h>    ResultsToRead;
+				std::vector<equation_h>    LastResultsToRead;
 				//NOTE: Gather up all the parameters that need to be updated at this stage of the execution tree. By updated we mean that they need to be read into the CurParameters buffer during execution.
 				//TODO: We do a lot of redundant checks here. We could store temporary information to speed this up.
 				for(entity_handle ParameterHandle : AllParameterDependenciesForBatchGroup)
@@ -892,18 +914,22 @@ EndModelDefinition(mobius_model *Model)
 					std::vector<index_set_h> &ThisParDependsOn = Model->Parameters.Specs[ParameterHandle].IndexSetDependencies;
 					if(IsTopIndexSetForThisDependency(ThisParDependsOn, BatchGroup.IndexSets, IndexSetLevel))
 					{
-						BatchGroup.IterationData[IndexSetLevel].ParametersToRead.push_back(ParameterHandle);
+						ParametersToRead.push_back(ParameterHandle);
 					}
 				}
+				
+				BatchGroup.IterationData[IndexSetLevel].ParametersToRead = CopyDataToArray(&Model->BucketMemory, ParametersToRead.data(), ParametersToRead.size());
 				
 				for(input_h Input : AllInputDependenciesForBatchGroup)
 				{
 					std::vector<index_set_h> &ThisInputDependsOn = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 					if(IsTopIndexSetForThisDependency(ThisInputDependsOn, BatchGroup.IndexSets, IndexSetLevel))
 					{
-						BatchGroup.IterationData[IndexSetLevel].InputsToRead.push_back(Input);
+						InputsToRead.push_back(Input);
 					}
 				}
+				
+				BatchGroup.IterationData[IndexSetLevel].InputsToRead = CopyDataToArray(&Model->BucketMemory, InputsToRead.data(), InputsToRead.size());
 				
 				for(equation_h Equation : AllResultDependenciesForBatchGroup)
 				{
@@ -913,15 +939,19 @@ EndModelDefinition(mobius_model *Model)
 						size_t ResultBatchGroupIndex = EquationBelongsToBatchGroup[Equation.Handle];
 						if(ResultBatchGroupIndex < BatchGroupIdx) //NOTE: Results in the current batch group will be correct any way, and by definition we can not depend on any batches that are after this one.
 						{
-							std::vector<index_set_h> &ThisResultDependsOn = Model->BatchGroups[ResultBatchGroupIndex].IndexSets;
+							std::vector<index_set_h> ThisResultDependsOn;
+							//ugh, we should probably use array everywhere to not have to do this:
+							ThisResultDependsOn.insert(ThisResultDependsOn.end(), Model->BatchGroups[ResultBatchGroupIndex].IndexSets.begin(), Model->BatchGroups[ResultBatchGroupIndex].IndexSets.end());
 							
 							if(IsTopIndexSetForThisDependency(ThisResultDependsOn, BatchGroup.IndexSets, IndexSetLevel))
 							{
-								BatchGroup.IterationData[IndexSetLevel].ResultsToRead.push_back(Equation);
+								ResultsToRead.push_back(Equation);
 							}
 						} 
 					}
 				}
+				
+				BatchGroup.IterationData[IndexSetLevel].ResultsToRead = CopyDataToArray(&Model->BucketMemory, ResultsToRead.data(), ResultsToRead.size());
 				
 				for(equation_h Equation : AllLastResultDependenciesForBatchGroup)
 				{
@@ -931,16 +961,22 @@ EndModelDefinition(mobius_model *Model)
 						size_t ResultBatchGroupIndex = EquationBelongsToBatchGroup[Equation.Handle];
 						if(ResultBatchGroupIndex != BatchGroupIdx) //NOTE: LAST_RESULTs in the current batch group are loaded using a different mechanism.
 						{
-							std::vector<index_set_h> &ThisResultDependsOn = Model->BatchGroups[ResultBatchGroupIndex].IndexSets;
+							std::vector<index_set_h> ThisResultDependsOn;
+							//ugh, we should probably use array everywhere to not have to do this:
+							ThisResultDependsOn.insert(ThisResultDependsOn.end(), Model->BatchGroups[ResultBatchGroupIndex].IndexSets.begin(), Model->BatchGroups[ResultBatchGroupIndex].IndexSets.end());
 							
 							if(IsTopIndexSetForThisDependency(ThisResultDependsOn, BatchGroup.IndexSets, IndexSetLevel))
 							{
-								BatchGroup.IterationData[IndexSetLevel].LastResultsToRead.push_back(Equation);
+								LastResultsToRead.push_back(Equation);
 							}
 						}
 					}
 				}
+				
+				BatchGroup.IterationData[IndexSetLevel].LastResultsToRead = CopyDataToArray(&Model->BucketMemory, LastResultsToRead.data(), LastResultsToRead.size());
 			}
+			
+			std::vector<equation_h> LastResultsToReadAtBase;
 			
 			for(equation_h Equation : AllLastResultDependenciesForBatchGroup)    //NOTE: We need a separate system for last_results with no index set dependencies, unfortunately.
 			{
@@ -950,15 +986,17 @@ EndModelDefinition(mobius_model *Model)
 					size_t ResultBatchGroupIndex = EquationBelongsToBatchGroup[Equation.Handle];
 					if(ResultBatchGroupIndex != BatchGroupIdx) //NOTE: LAST_RESULTs in the current batch group are loaded using a different mechanism.
 					{
-						std::vector<index_set_h> &ThisResultDependsOn = Model->BatchGroups[ResultBatchGroupIndex].IndexSets;
+						array<index_set_h> &ThisResultDependsOn = Model->BatchGroups[ResultBatchGroupIndex].IndexSets;
 						
-						if(ThisResultDependsOn.empty())
+						if(ThisResultDependsOn.Count == 0)
 						{
-							BatchGroup.LastResultsToReadAtBase.push_back(Equation);
+							LastResultsToReadAtBase.push_back(Equation);
 						}
 					}
 				}
 			}
+			
+			BatchGroup.LastResultsToReadAtBase = CopyDataToArray(&Model->BucketMemory, LastResultsToReadAtBase.data(), LastResultsToReadAtBase.size());
 			
 			++BatchGroupIdx;
 		}
@@ -989,14 +1027,14 @@ ModelLoop(mobius_data_set *DataSet, model_run_state *RunState, mobius_inner_loop
 	size_t BatchGroupIdx = 0;
 	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
 	{	
-		if(BatchGroup.IndexSets.empty())
+		if(BatchGroup.IndexSets.Count == 0)
 		{
 			InnerLoopBody(DataSet, RunState, BatchGroup, BatchGroupIdx, -1);
 			BatchGroupIdx++;
 			continue;
 		}
 		
-		s32 BottomLevel = (s32)BatchGroup.IndexSets.size() - 1;
+		s32 BottomLevel = (s32)BatchGroup.IndexSets.Count - 1;
 		s32 CurrentLevel = 0;
 		
 		while (true)
@@ -1096,7 +1134,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 {
 	const mobius_model *Model = DataSet->Model;
 	
-	s32 BottomLevel = (s32)BatchGroup.IndexSets.size() - 1;
+	s32 BottomLevel = (s32)BatchGroup.IndexSets.Count - 1;
 	
 	//NOTE: Reading in to the Cur-buffers data that need to be updated at this iteration stage.
 	if(CurrentLevel >= 0)
@@ -1253,10 +1291,10 @@ INNER_LOOP_BODY(RunInnerLoop)
 					};
 				}
 				
-				double h = DataSet->hSolver[Batch.Solver.Handle]; // The desired solver step. (Error correction may increase or decrease the step).
+				double h = DataSet->hSolver[Batch.Solver.Handle]; // The desired solver step. (Guideline only, solver is free to its step during error correction).
 				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(h, Batch.EquationsODE.size(), RunState->SolverTempX0, RunState->SolverTempWorkStorage, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
+				SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
 				//NOTE: Store out the final results from this solver to the ResultData set.
 				for(equation_h Equation : Batch.Equations)
@@ -1287,6 +1325,21 @@ INNER_LOOP_BODY(RunInnerLoop)
 	}
 }
 
+INNER_LOOP_BODY(FastLookupCounter)
+{
+	if(CurrentLevel >= 0)
+	{
+		RunState->FastParameterLookup.Count  += BatchGroup.IterationData[CurrentLevel].ParametersToRead.Count;
+		RunState->FastInputLookup.Count      += BatchGroup.IterationData[CurrentLevel].InputsToRead.Count;
+		RunState->FastResultLookup.Count     += BatchGroup.IterationData[CurrentLevel].ResultsToRead.Count;
+		RunState->FastLastResultLookup.Count += BatchGroup.IterationData[CurrentLevel].LastResultsToRead.Count;
+	}
+	else
+	{
+		RunState->FastLastResultLookup.Count += BatchGroup.LastResultsToReadAtBase.Count;
+	}
+}
+
 INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 {
 	if(CurrentLevel >= 0)
@@ -1296,25 +1349,25 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 			//NOTE: Parameters are special here in that we can just store the value in the fast lookup, instead of the offset. This is because they don't change with the timestep.
 			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, ParameterHandle);
 			parameter_value Value = DataSet->ParameterData[Offset];
-			RunState->FastParameterLookup.push_back(Value);
+			RunState->FastParameterLookup[RunState->FastParameterLookup.Count++] = Value;
 		}
 		
 		for(input_h Input : BatchGroup.IterationData[CurrentLevel].InputsToRead)
 		{
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Input.Handle);
-			RunState->FastInputLookup.push_back(Offset);
+			RunState->FastInputLookup[RunState->FastInputLookup.Count++] = Offset;
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].ResultsToRead)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			RunState->FastResultLookup.push_back(Offset);
+			RunState->FastResultLookup[RunState->FastResultLookup.Count++] = Offset;
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].LastResultsToRead)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			RunState->FastLastResultLookup.push_back(Offset);
+			RunState->FastLastResultLookup[RunState->FastLastResultLookup.Count++] = Offset;
 		}
 	}
 	else
@@ -1322,7 +1375,7 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 		for(equation_h Equation : BatchGroup.LastResultsToReadAtBase)
 		{
 			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
-			RunState->FastLastResultLookup.push_back(Offset);
+			RunState->FastLastResultLookup[RunState->FastLastResultLookup.Count++] = Offset;
 		}
 	}
 }
@@ -1381,7 +1434,7 @@ INNER_LOOP_BODY(InitialRunStateupInnerLoop)
 		}
 	}
 	
-	s32 BottomLevel = BatchGroup.IndexSets.size() - 1;
+	s32 BottomLevel = BatchGroup.IndexSets.Count - 1;
 	if(CurrentLevel == BottomLevel)
 	{
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
@@ -1393,7 +1446,7 @@ INNER_LOOP_BODY(InitialRunStateupInnerLoop)
 			}
 		}
 		
-		RunState->AtResult += DataSet->ResultStorageStructure.Units[BatchGroupIdx].Handles.size(); //NOTE: This works because we set the storage structure up to mirror the batch group structure.
+		RunState->AtResult += DataSet->ResultStorageStructure.Units[BatchGroupIdx].Handles.Count; //NOTE: This works because we set the storage structure up to mirror the batch group structure.
 	}
 }
 
@@ -1513,11 +1566,11 @@ RunModel(mobius_data_set *DataSet)
 	
 	//std::cout << "Input data start offset timesteps was " << InputDataStartOffsetTimesteps << std::endl;
 	
-	if(DataSet->HasBeenRun)
+	if(DataSet->ResultData)
 	{
 		//NOTE: This is in case somebody wants to re-run the same dataset after e.g. changing a few parameters.
 		free(DataSet->ResultData);
-		DataSet->ResultData = 0;
+		DataSet->ResultData = nullptr;
 	}
 	
 	AllocateResultStorage(DataSet, Timesteps);
@@ -1571,6 +1624,23 @@ RunModel(mobius_data_set *DataSet)
 	
 	///////////// Setting up fast lookup ////////////////////
 	
+	
+	
+	//NOTE: This is a hack, where we first set the count in FastLookupCounter, then allocate, then set it to 0 to use it as an iterator in FastLookupSetupInnerLoop
+	ModelLoop(DataSet, &RunState, FastLookupCounter);
+	RunState.Clear();
+
+	RunState.FastParameterLookup.Allocate(&RunState.BucketMemory, RunState.FastParameterLookup.Count);
+	RunState.FastInputLookup.Allocate(&RunState.BucketMemory, RunState.FastInputLookup.Count);
+	RunState.FastResultLookup.Allocate(&RunState.BucketMemory, RunState.FastResultLookup.Count);
+	RunState.FastLastResultLookup.Allocate(&RunState.BucketMemory, RunState.FastLastResultLookup.Count);
+
+	RunState.FastParameterLookup.Count  = 0;
+	RunState.FastInputLookup.Count      = 0;
+	RunState.FastResultLookup.Count     = 0;
+	RunState.FastLastResultLookup.Count = 0;
+	
+	//Technically we also really only need to rebuild the parameter lookup, but it shouldn't matter that much.
 	ModelLoop(DataSet, &RunState, FastLookupSetupInnerLoop);
 	RunState.Clear();
 	
@@ -1584,8 +1654,7 @@ RunModel(mobius_data_set *DataSet)
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			if(Batch.Type == BatchType_Solver)
 			{
-				size_t ODECount    = Batch.EquationsODE.size();
-				MaxODECount        = Max(MaxODECount, ODECount);
+				MaxODECount = Max(MaxODECount, Batch.EquationsODE.Count);
 			}
 		}
 	}
@@ -1600,7 +1669,7 @@ RunModel(mobius_data_set *DataSet)
 
 	//NOTE: System parameters (i.e. parameters that don't depend on index sets) are going to be the same during the entire run, so we just load them into CurParameters once and for all.
 	//NOTE: If any system parameters exist, the storage units are sorted such that the system parameters have to belong to storage unit [0].
-	if(!DataSet->ParameterStorageStructure.Units.empty() && DataSet->ParameterStorageStructure.Units[0].IndexSets.empty())
+	if(DataSet->ParameterStorageStructure.Units.Count != 0 && DataSet->ParameterStorageStructure.Units[0].IndexSets.Count == 0)
 	{
 		for(entity_handle ParameterHandle : DataSet->ParameterStorageStructure.Units[0].Handles)
 		{
@@ -1610,7 +1679,7 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	//NOTE: Similarly we have to set which of the unindexed inputs were provided.
-	if(!DataSet->InputStorageStructure.Units.empty() && DataSet->InputStorageStructure.Units[0].IndexSets.empty())
+	if(DataSet->InputStorageStructure.Units.Count != 0 && DataSet->InputStorageStructure.Units[0].IndexSets.Count == 0)
 	{
 		for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
 		{
@@ -1628,7 +1697,7 @@ RunModel(mobius_data_set *DataSet)
 	//NOTE: Set up initial values;
 	RunState.AtResult = RunState.AllCurResultsBase;
 	RunState.AtLastResult = RunState.AllLastResultsBase;
-	RunState.AtParameterLookup = RunState.FastParameterLookup.data();
+	RunState.AtParameterLookup = RunState.FastParameterLookup.Data;
 	RunState.Timestep = -1;
 	ModelLoop(DataSet, &RunState, InitialRunStateupInnerLoop);
 	
@@ -1661,13 +1730,13 @@ RunModel(mobius_data_set *DataSet)
 		RunState.AtResult = RunState.AllCurResultsBase;
 		RunState.AtLastResult = RunState.AllLastResultsBase;
 		
-		RunState.AtParameterLookup  = RunState.FastParameterLookup.data();
-		RunState.AtInputLookup      = RunState.FastInputLookup.data();
-		RunState.AtResultLookup     = RunState.FastResultLookup.data();
-		RunState.AtLastResultLookup = RunState.FastLastResultLookup.data();
+		RunState.AtParameterLookup  = RunState.FastParameterLookup.Data;
+		RunState.AtInputLookup      = RunState.FastInputLookup.Data;
+		RunState.AtResultLookup     = RunState.FastResultLookup.Data;
+		RunState.AtLastResultLookup = RunState.FastLastResultLookup.Data;
 		
 		//NOTE: We have to update the inputs that don't depend on any index sets here, as that is not handled by the "fast lookup system".
-		if(!DataSet->InputStorageStructure.Units.empty() && DataSet->InputStorageStructure.Units[0].IndexSets.empty())
+		if(DataSet->InputStorageStructure.Units.Count != 0 && DataSet->InputStorageStructure.Units[0].IndexSets.Count == 0)
 		{
 			for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
 			{
@@ -1722,6 +1791,8 @@ PrintEquationDependencies(mobius_model *Model)
 		return;
 	}
 	
+	//Ooops, this one may not be correct for equations that are on solvers!!
+	
 	std::cout << std::endl << "**** Equation Dependencies ****" << std::endl;
 	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
@@ -1747,7 +1818,7 @@ PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 	//Out << "Number of batches: " << Model->ResultStructure.size() << std::endl;
 	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
 	{
-		if(BatchGroup.IndexSets.empty()) Out << "[]";
+		if(BatchGroup.IndexSets.Count == 0) Out << "[]";
 		for(index_set_h IndexSet : BatchGroup.IndexSets)
 		{
 			Out << "[" << GetName(Model, IndexSet) << "]";
@@ -1787,11 +1858,11 @@ PrintParameterStorageStructure(mobius_data_set *DataSet)
 	const mobius_model *Model = DataSet->Model;
 	
 	std::cout << std::endl << "**** Parameter storage structure ****" << std::endl;
-	size_t StorageCount = DataSet->ParameterStorageStructure.Units.size();
+	size_t StorageCount = DataSet->ParameterStorageStructure.Units.Count;
 	for(size_t StorageIdx = 0; StorageIdx < StorageCount; ++StorageIdx)
 	{
-		std::vector<index_set_h> &IndexSets = DataSet->ParameterStorageStructure.Units[StorageIdx].IndexSets;
-		if(IndexSets.empty())
+		array<index_set_h> &IndexSets = DataSet->ParameterStorageStructure.Units[StorageIdx].IndexSets;
+		if(IndexSets.Count == 0)
 		{
 			std::cout << "[]";
 		}
@@ -1820,11 +1891,11 @@ PrintInputStorageStructure(mobius_data_set *DataSet)
 	const mobius_model *Model = DataSet->Model;
 	
 	std::cout << std::endl << "**** Input storage structure ****" << std::endl;
-	size_t StorageCount = DataSet->InputStorageStructure.Units.size();
+	size_t StorageCount = DataSet->InputStorageStructure.Units.Count;
 	for(size_t StorageIdx = 0; StorageIdx < StorageCount; ++StorageIdx)
 	{
-		std::vector<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageIdx].IndexSets;
-		if(IndexSets.empty())
+		array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageIdx].IndexSets;
+		if(IndexSets.Count == 0)
 		{
 			std::cout << "[]";
 		}

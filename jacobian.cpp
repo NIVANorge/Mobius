@@ -32,7 +32,7 @@ BuildJacobianInfo(mobius_model *Model)
 	{
 		if(Batch.Type == BatchType_Solver && Model->Solvers.Specs[Batch.Solver.Handle].UsesJacobian)
 		{	
-			size_t N = Batch.EquationsODE.size();
+			size_t N = Batch.EquationsODE.Count;
 			Batch.ODEIsDependencyOfODE.resize(N);
 			Batch.ODEIsDependencyOfNonODE.resize(N);
 			
@@ -73,7 +73,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 {
 	//NOTE: This is not a very numerically accurate estimation of the Jacobian, it is mostly optimized for speed. We'll see if it is good enough..
 
-	size_t N = Batch.EquationsODE.size();
+	size_t N = Batch.EquationsODE.Count;
 	
 	double *FBaseVec = RunState->JacobianTempStorage;
 	double *Backup   = FBaseVec + N;

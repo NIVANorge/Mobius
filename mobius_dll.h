@@ -476,7 +476,7 @@ DllGetParameterIndexSetsCount(void *DataSetPtr, char *ParameterName)
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	entity_handle ParameterHandle = GetParameterHandle(DataSet->Model, ParameterName);
 	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
-	return DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets.size();
+	return DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets.Count;
 	
 	CHECK_ERROR_END
 	
@@ -512,7 +512,7 @@ DllGetResultIndexSetsCount(void *DataSetPtr, char *ResultName)
 	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
 	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
-	return DataSet->ResultStorageStructure.Units[UnitIndex].IndexSets.size();
+	return DataSet->ResultStorageStructure.Units[UnitIndex].IndexSets.Count;
 	
 	CHECK_ERROR_END
 	
@@ -551,7 +551,7 @@ DllGetInputIndexSetsCount(void *DataSetPtr, char *InputName)
 	
 	input_h Input = GetInputHandle(DataSet->Model, InputName);
 	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	return DataSet->InputStorageStructure.Units[UnitIndex].IndexSets.size();
+	return DataSet->InputStorageStructure.Units[UnitIndex].IndexSets.Count;
 	
 	CHECK_ERROR_END
 	
@@ -922,7 +922,7 @@ DllGetBranchInputs(void *DataSetPtr, const char *IndexSetName, const char *Index
 	size_t Count = DataSet->BranchInputs[IndexSet.Handle][Index].Count;
 	for(size_t Idx = 0; Idx < Count; ++Idx)
 	{
-		index_t IdxIdx = DataSet->BranchInputs[IndexSet.Handle][Index].Inputs[Idx];
+		index_t IdxIdx = DataSet->BranchInputs[IndexSet.Handle][Index][Idx];
 		BranchInputsOut[Idx] = DataSet->IndexNames[IndexSet.Handle][IdxIdx];
 	}
 	

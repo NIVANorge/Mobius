@@ -355,10 +355,10 @@ struct input_spec
 //TODO: Find a better name for this struct?
 struct iteration_data
 {
-	std::vector<entity_handle> ParametersToRead;
-	std::vector<input_h>       InputsToRead;
-	std::vector<equation_h>    ResultsToRead;
-	std::vector<equation_h>    LastResultsToRead;
+	array<entity_handle> ParametersToRead;
+	array<input_h>       InputsToRead;
+	array<equation_h>    ResultsToRead;
+	array<equation_h>    LastResultsToRead;
 };
 
 enum equation_batch_type
@@ -369,43 +369,42 @@ enum equation_batch_type
 
 struct equation_batch
 {
-	//TODO: We should improve the memory locality of this entire thing (each equation_batch, equation_batch_group and their storage in the Model object). Unfortunately, it is built dynamically, so we may need to do a full copy of it at the end to pack it tight again if we are going to try to do that.
-	
 	equation_batch_type Type;
-	std::vector<equation_h> Equations;
-	
-	solver_h Solver;                      //NOTE: Only for Type==BatchType_Solver.
-	std::vector<equation_h> EquationsODE; //NOTE: Only for Type==BatchType_Solver.
-	
-	std::vector<equation_h> InitialValueOrder; //NOTE: The initial value setup of equations happens in a different order than the execution order during model run because the intial value equations may have different dependencies than the equations they are initial values for.
+	solver_h Solver;                //NOTE: Only for Type==BatchType_Solver.
+	array<equation_h> Equations;
+	array<equation_h> EquationsODE; //NOTE: Only for Type==BatchType_Solver.
 	
 	//NOTE: These are used for optimizing estimation of the Jacobian in case that is needed by a solver.
-	std::vector<std::vector<size_t>> ODEIsDependencyOfODE;
+	
+	//TODO: Convert the remaining ones to array<T>
+	std::vector<std::vector<size_t>>     ODEIsDependencyOfODE;
 	std::vector<std::vector<equation_h>> ODEIsDependencyOfNonODE;
+	
+	std::vector<equation_h> InitialValueOrder; //NOTE: The initial value setup of equations happens in a different order than the execution order during model run because the intial value equations may have different dependencies than the equations they are initial values for.
 };
 
 struct equation_batch_group
 {
-	std::vector<index_set_h> IndexSets;
+	array<index_set_h> IndexSets;
 	
-	std::vector<equation_h>     LastResultsToReadAtBase;  //Unfortunately we need this for LAST_RESULTs of equations with 0 index set dependencies.
-	std::vector<iteration_data> IterationData;
+	array<equation_h>     LastResultsToReadAtBase;  //Unfortunately we need this for LAST_RESULTs of equations with 0 index set dependencies.
+	array<iteration_data> IterationData;
 	size_t FirstBatch;
 	size_t LastBatch;
 };
 
+
 struct storage_unit_specifier
 {
-	std::vector<index_set_h> IndexSets;
-	std::vector<entity_handle> Handles;
+	array<index_set_h> IndexSets;
+	array<entity_handle> Handles;
 };
 
 struct mobius_model;
 
 struct storage_structure
 {
-	//TODO: We should improve the memory locality of the Units array too!
-	std::vector<storage_unit_specifier> Units;
+	array<storage_unit_specifier> Units;
 	
 	size_t *TotalCountForUnit;
 	size_t *OffsetForUnit;
@@ -465,7 +464,7 @@ struct mobius_model
 {
 	const char *Name;
 	
-	bucket_allocator BucketMemory;  //NOTE; Currently only used for some string copies. Maybe a little superfluous.
+	bucket_allocator BucketMemory;  //NOTE: Used for batch group structure and some string copies.
 	
 	module_h CurrentModule = {};
 	
@@ -486,9 +485,10 @@ struct mobius_model
 	
 	entity_registry<unit_spec> Units;
 	
-	
-	std::vector<equation_batch> EquationBatches;
-	std::vector<equation_batch_group> BatchGroups;
+	array<equation_batch> EquationBatches;
+	array<equation_batch_group> BatchGroups;
+	//std::vector<equation_batch> EquationBatches;
+	//std::vector<equation_batch_group> BatchGroups;
 	
 	std::vector<mobius_preprocessing_step> PreprocessingSteps;
 	
@@ -522,11 +522,13 @@ ForAllBatchEquations(const batch_like &Batch, std::function<bool(equation_h)> Do
 
 //TODO: The name "inputs" here is confusing, since there is already a different concept called input.
 //TODO: Couldn't this just be a std::vector?
+/*
 struct branch_inputs
 {
 	size_t Count;
 	index_t *Inputs;
 };
+*/
 
 struct mobius_data_set
 {
@@ -554,7 +556,8 @@ struct mobius_data_set
 	std::vector<string_map> IndexNamesToHandle;
 	bool AllIndexesHaveBeenSet;
 	
-	branch_inputs **BranchInputs; //BranchInputs[ReachIndexSet][ReachIndex] ...
+	//TODO: could make this array<array<array<index_t>>>, but I don't know if it improves the code..
+	array<index_t> **BranchInputs; //BranchInputs[ReachIndexSet][ReachIndex] ...
 
 	bool HasBeenRun;
 	u64 TimestepsLastRun;
@@ -604,10 +607,10 @@ struct model_run_state
 	double *AtResult;
 	double *AtLastResult;
 	
-	std::vector<parameter_value> FastParameterLookup;
-	std::vector<size_t> FastInputLookup;
-	std::vector<size_t> FastResultLookup;
-	std::vector<size_t> FastLastResultLookup;
+	array<parameter_value> FastParameterLookup;
+	array<size_t>          FastInputLookup;
+	array<size_t>          FastResultLookup;
+	array<size_t>          FastLastResultLookup;
 	
 	parameter_value *AtParameterLookup;
 	size_t *AtInputLookup;
@@ -1580,7 +1583,7 @@ GetInputCount(model_run_state *RunState, index_set_h IndexSet)
 }
 
 
-//TODO: The branch input iterator is more complicated than it needs to be. Could be redesigned.
+//TODO: The branch input iterator is way more complicated than it needs to be. Could be redesigned to just iterate over the BranchInputs[IndexSet.Handle][Branch] array. The only complicated part is that it can't do that in the registration run, and instead has to iterate over another object that has just one index.
 
 inline size_t
 BranchInputIteratorEnd(model_run_state *RunState, index_set_h IndexSet, index_t Branch)
@@ -1607,7 +1610,7 @@ BranchInputIteratorBegin(model_run_state *RunState, index_set_h IndexSet, index_
 	DummyData = index_t(IndexSet, 0);
 	
 	branch_input_iterator Iterator;
-	Iterator.InputIndexes = RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Inputs : &DummyData;
+	Iterator.InputIndexes = RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Data : &DummyData;
 	Iterator.CurrentInputIndexIndex = 0;
 	return Iterator;
 }
