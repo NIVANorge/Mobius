@@ -13,7 +13,7 @@ struct token_string
 	size_t Length;
 	
 	bool Equals(const char *) const;
-	token_string Copy() const;
+	token_string Copy(bucket_allocator *Allocator = nullptr) const;
 };
 
 token_string::token_string(const char *DataIn)
@@ -52,13 +52,21 @@ bool token_string::Equals(const char *Str) const
 	return true;
 }
 
-token_string token_string::Copy() const
+token_string token_string::Copy(bucket_allocator *Allocator) const
 {
 	token_string Result;
-	char *NewData = (char *)malloc(Length + 1);
+	char *NewData;
+	if(Allocator)
+	{
+		NewData = Allocator->Allocate<char>(Length + 1);
+	}
+	else
+	{
+		NewData = (char *)malloc(Length + 1);
+	}
 	Result.Data = NewData;
 	Result.Length = Length;
-	NewData[Length] = '\0'; //NOTE: In case people want a 0-terminated string
+	NewData[Length] = '\0'; //NOTE: In case people want a 0-terminated string. This is sometimes used in the current code, but it is not that clean...
 	for(size_t At = 0; At < Length; ++At)
 	{
 		NewData[At] = Data[At];

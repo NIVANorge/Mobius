@@ -650,6 +650,9 @@ token_stream::ReadQuotedStringList(std::vector<token_string> &ListOut)
 	}
 }
 
+/*
+//NOTE: removed this for now as we don't use it in active code, and it leaks. Should take a bucket allocator for the Copy()
+
 void
 token_stream::ReadQuotedStringList(std::vector<const char *> &ListOut)
 {
@@ -679,6 +682,7 @@ token_stream::ReadQuotedStringList(std::vector<const char *> &ListOut)
 		}
 	}
 }
+*/
 
 void
 token_stream::ReadDoubleSeries(std::vector<double> &ListOut)

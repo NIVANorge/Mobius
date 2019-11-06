@@ -70,6 +70,7 @@ typedef int8_t s8;
 
 #include "mobius_math.h"
 #include "mobius_util.h"
+#include "bucket_allocator.cpp"
 #include "datetime.h"
 #include "token_string.h"
 #include "mobius_model.h"

@@ -11,12 +11,14 @@ GenerateDataSet(mobius_model *Model)
 	
 	DataSet->Model = Model;
 	
-	DataSet->IndexCounts = AllocClearedArray(index_t, Model->IndexSets.Count());
+	DataSet->BucketMemory.Initialize(1024*1024);
+	
+	DataSet->IndexCounts = DataSet->BucketMemory.Allocate<index_t>(Model->IndexSets.Count());
 	DataSet->IndexCounts[0] = index_t({0}, 1);
-	DataSet->IndexNames = AllocClearedArray(const char **, Model->IndexSets.Count());
+	DataSet->IndexNames =  DataSet->BucketMemory.Allocate<const char **>(Model->IndexSets.Count());
 	DataSet->IndexNamesToHandle.resize(Model->IndexSets.Count());
 	
-	DataSet->BranchInputs = AllocClearedArray(branch_inputs *, Model->IndexSets.Count());
+	DataSet->BranchInputs = DataSet->BucketMemory.Allocate<branch_inputs *>(Model->IndexSets.Count());
 	
 	if(Model->IndexSets.Count() == 1) // NOTE: In case there are no index sets, all index sets have had their indexes set.
 	{
@@ -42,66 +44,26 @@ mobius_data_set::~mobius_data_set()
 	if(ParameterData) free(ParameterData);
 	if(InputData) free(InputData);
 	if(ResultData) free(ResultData);
-	if(InputTimeseriesWasProvided) free(InputTimeseriesWasProvided);
 	
-	if(hSolver) free(hSolver);
-	
-	//TODO: This destructor should not have to look up Model->IndexSets.Count(), because we want to allow people to delete the model and datasets in arbitrary order.
-	
-	if(IndexCounts)
-	{
-		if(IndexNames)
-		{
-			for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
-			{
-				if(IndexNames[IndexSetHandle])
-				{
-					for(index_t Index = {IndexSetHandle, 0}; Index < IndexCounts[IndexSetHandle]; ++Index)
-					{
-						if(IndexNames[IndexSetHandle][Index]) free((void *)IndexNames[IndexSetHandle][Index]); //NOTE: We free this const char * because we know that it was set using SetIndexes(), which always allocates copies of the index names it receives.
-					}
-					free(IndexNames[IndexSetHandle]);
-				}
-			}
-			free(IndexNames);
-		}
-		
-		if(BranchInputs)
-		{
-			for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
-			{
-				if(BranchInputs[IndexSetHandle])
-				{
-					for(index_t Index = {IndexSetHandle, 0}; Index < IndexCounts[IndexSetHandle]; ++Index)
-					{
-						if(BranchInputs[IndexSetHandle][Index].Inputs) free(BranchInputs[IndexSetHandle][Index].Inputs);
-					}
-					free(BranchInputs[IndexSetHandle]);
-				}
-			}
-			free(BranchInputs);
-		}
-		
-		free(IndexCounts);
-	}
+	BucketMemory.DeallocateAll();
 }
 
 static void
-CopyStorageStructure(storage_structure &Source, storage_structure &Dest, size_t FirstUnusedHandle)
+CopyStorageStructure(const storage_structure *Source, storage_structure *Dest, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
 {
-	Dest.Units = Source.Units; //NOTE: Nested vector copy.
+	Dest->Units = Source->Units; //NOTE: Nested vector copy.
 	
-	size_t UnitCount = Dest.Units.size();
+	size_t UnitCount = Dest->Units.size();
 	
 	//TODO: It may be ok to have these as std::vector<size_t> instead of size_t*, in which case we would not have to do all this work doing explicit copies.
-	if(Source.TotalCountForUnit) Dest.TotalCountForUnit = CopyArray(size_t, UnitCount, Source.TotalCountForUnit);
-	if(Source.OffsetForUnit)     Dest.OffsetForUnit     = CopyArray(size_t, UnitCount, Source.OffsetForUnit);
-	if(Source.UnitForHandle)     Dest.UnitForHandle     = CopyArray(size_t, FirstUnusedHandle, Source.UnitForHandle);
-	if(Source.LocationOfHandleInUnit) Dest.LocationOfHandleInUnit = CopyArray(size_t, FirstUnusedHandle, Source.LocationOfHandleInUnit);
-	Dest.TotalCount = Source.TotalCount;
-	Dest.HasBeenSetUp = Source.HasBeenSetUp;
+	if(Source->TotalCountForUnit) Dest->TotalCountForUnit           = BucketMemory->Copy(Source->TotalCountForUnit, UnitCount);
+	if(Source->OffsetForUnit)     Dest->OffsetForUnit               = BucketMemory->Copy(Source->OffsetForUnit, UnitCount);
+	if(Source->UnitForHandle)     Dest->UnitForHandle               = BucketMemory->Copy(Source->UnitForHandle, FirstUnusedHandle);
+	if(Source->LocationOfHandleInUnit) Dest->LocationOfHandleInUnit = BucketMemory->Copy(Source->LocationOfHandleInUnit, FirstUnusedHandle);
+	Dest->TotalCount   = Source->TotalCount;
+	Dest->HasBeenSetUp = Source->HasBeenSetUp;
 	
-	Dest.Model = Source.Model;
+	Dest->Model = Source->Model;
 }
 
 static mobius_data_set *
@@ -113,21 +75,23 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	
 	Copy->Model = Model;
 	
+	Copy->BucketMemory.Initialize(1024*1024);
+	
 	if(DataSet->ParameterData) Copy->ParameterData = CopyArray(parameter_value, DataSet->ParameterStorageStructure.TotalCount, DataSet->ParameterData);
-	CopyStorageStructure(DataSet->ParameterStorageStructure, Copy->ParameterStorageStructure, Model->Parameters.Count());
+	CopyStorageStructure(&DataSet->ParameterStorageStructure, &Copy->ParameterStorageStructure, Model->Parameters.Count(), &Copy->BucketMemory);
 	
 	if(DataSet->InputData) Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
-	CopyStorageStructure(DataSet->InputStorageStructure, Copy->InputStorageStructure, Model->Inputs.Count());
+	CopyStorageStructure(&DataSet->InputStorageStructure, &Copy->InputStorageStructure, Model->Inputs.Count(), &Copy->BucketMemory);
 	Copy->InputDataStartDate = DataSet->InputDataStartDate;
 	Copy->InputDataHasSeparateStartDate = DataSet->InputDataHasSeparateStartDate;
 	Copy->InputDataTimesteps = DataSet->InputDataTimesteps;
 	
-	if(DataSet->InputTimeseriesWasProvided) Copy->InputTimeseriesWasProvided = CopyArray(bool, DataSet->InputStorageStructure.TotalCount, DataSet->InputTimeseriesWasProvided);
+	if(DataSet->InputTimeseriesWasProvided) Copy->InputTimeseriesWasProvided = Copy->BucketMemory.Copy(DataSet->InputTimeseriesWasProvided, DataSet->InputStorageStructure.TotalCount);
 	
 	if(CopyResults)
 	{
 		if(DataSet->ResultData) Copy->ResultData = CopyArray(double, DataSet->ResultStorageStructure.TotalCount * (DataSet->TimestepsLastRun + 1), DataSet->ResultData);
-		CopyStorageStructure(DataSet->ResultStorageStructure, Copy->ResultStorageStructure, Model->Equations.Count());
+		CopyStorageStructure(&DataSet->ResultStorageStructure, &Copy->ResultStorageStructure, Model->Equations.Count(), &Copy->BucketMemory);
 		Copy->TimestepsLastRun = DataSet->TimestepsLastRun;
 		Copy->StartDateLastRun = DataSet->StartDateLastRun;
 		Copy->HasBeenRun = DataSet->HasBeenRun;
@@ -137,19 +101,19 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 		Copy->HasBeenRun = false;
 	}
 	
-	if(DataSet->IndexCounts) Copy->IndexCounts = CopyArray(index_t, Model->IndexSets.Count(), DataSet->IndexCounts);
-	//TODO: This could probably be a std::vector<std::vector<std::string>>
+	if(DataSet->IndexCounts) Copy->IndexCounts = Copy->BucketMemory.Copy(DataSet->IndexCounts, Model->IndexSets.Count());
+	
 	if(DataSet->IndexNames)
 	{
-		Copy->IndexNames = AllocClearedArray(const char **, Model->IndexSets.Count());
+		Copy->IndexNames = Copy->BucketMemory.Allocate<const char **>(Model->IndexSets.Count());
 		for(entity_handle IndexSetHandle = 0; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 		{
 			if(DataSet->IndexNames[IndexSetHandle])
 			{
-				Copy->IndexNames[IndexSetHandle] = AllocClearedArray(const char *, DataSet->IndexCounts[IndexSetHandle]);
+				Copy->IndexNames[IndexSetHandle] = Copy->BucketMemory.Allocate<const char *>(DataSet->IndexCounts[IndexSetHandle]);
 				for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
 				{
-					Copy->IndexNames[IndexSetHandle][Index] = CopyString(DataSet->IndexNames[IndexSetHandle][Index]);
+					Copy->IndexNames[IndexSetHandle][Index] = Copy->BucketMemory.CopyString(DataSet->IndexNames[IndexSetHandle][Index]);
 				}
 			}
 		}
@@ -159,19 +123,17 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	
 	if(DataSet->BranchInputs)
 	{
-		Copy->BranchInputs = AllocClearedArray(branch_inputs *, Model->IndexSets.Count());
+		Copy->BranchInputs = Copy->BucketMemory.Allocate<branch_inputs *>(Model->IndexSets.Count());
 		for(entity_handle IndexSetHandle = 0; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 		{
 			if(DataSet->BranchInputs[IndexSetHandle])
 			{
-				Copy->BranchInputs[IndexSetHandle] = AllocClearedArray(branch_inputs, DataSet->IndexCounts[IndexSetHandle]);
+				Copy->BranchInputs[IndexSetHandle] = Copy->BucketMemory.Allocate<branch_inputs>(DataSet->IndexCounts[IndexSetHandle]);
 				for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
 				{
-					//yeahh.. this could also be a std::vector
 					branch_inputs &Inputs = DataSet->BranchInputs[IndexSetHandle][Index];
-					size_t Count = Inputs.Count;
-					Copy->BranchInputs[IndexSetHandle][Index].Count = Count;
-					Copy->BranchInputs[IndexSetHandle][Index].Inputs = CopyArray(index_t, Count, Inputs.Inputs);
+					Copy->BranchInputs[IndexSetHandle][Index].Count =  Inputs.Count;
+					Copy->BranchInputs[IndexSetHandle][Index].Inputs = Copy->BucketMemory.Copy(Inputs.Inputs, Inputs.Count);
 				}
 			}
 		}
@@ -187,52 +149,45 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 }
 
 static void
-SetupStorageStructureSpecifer(storage_structure &Structure, index_t *IndexCounts, size_t FirstUnusedHandle)
+SetupStorageStructureSpecifer(storage_structure *Structure, index_t *IndexCounts, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
 {
-	size_t UnitCount = Structure.Units.size();
-	Structure.TotalCountForUnit = AllocClearedArray(size_t, UnitCount);
-	Structure.OffsetForUnit     = AllocClearedArray(size_t, UnitCount);
-	Structure.UnitForHandle     = AllocClearedArray(size_t, FirstUnusedHandle);
-	Structure.LocationOfHandleInUnit = AllocClearedArray(size_t, FirstUnusedHandle);
-	Structure.TotalCount = 0;
+	// Call FirstUnusedHandle   HandleCount or something like that instead?
+	
+	size_t UnitCount = Structure->Units.size();
+	Structure->TotalCountForUnit = BucketMemory->Allocate<size_t>(UnitCount);
+	Structure->OffsetForUnit     = BucketMemory->Allocate<size_t>(UnitCount);
+	Structure->UnitForHandle     = BucketMemory->Allocate<size_t>(FirstUnusedHandle);
+	Structure->LocationOfHandleInUnit = BucketMemory->Allocate<size_t>(FirstUnusedHandle);
+	Structure->TotalCount = 0;
 	
 	size_t UnitIndex = 0;
 	size_t OffsetForUnitSoFar = 0;
-	for(storage_unit_specifier &Unit : Structure.Units)
+	for(storage_unit_specifier &Unit : Structure->Units)
 	{
-		Structure.TotalCountForUnit[UnitIndex] = Unit.Handles.size();
+		Structure->TotalCountForUnit[UnitIndex] = Unit.Handles.size();
 		for(index_set_h IndexSet : Unit.IndexSets)
 		{
-			Structure.TotalCountForUnit[UnitIndex] *= IndexCounts[IndexSet.Handle];
+			Structure->TotalCountForUnit[UnitIndex] *= IndexCounts[IndexSet.Handle];
 		}
 		
 		size_t HandleIdx = 0;
 		for(entity_handle Handle : Unit.Handles)
 		{
-			Structure.UnitForHandle[Handle] = UnitIndex;
-			Structure.LocationOfHandleInUnit[Handle] = HandleIdx;
+			Structure->UnitForHandle[Handle] = UnitIndex;
+			Structure->LocationOfHandleInUnit[Handle] = HandleIdx;
 			++HandleIdx;
 		}
 		
-		Structure.OffsetForUnit[UnitIndex] = OffsetForUnitSoFar;
-		OffsetForUnitSoFar += Structure.TotalCountForUnit[UnitIndex];
-		Structure.TotalCount += Structure.TotalCountForUnit[UnitIndex];
+		Structure->OffsetForUnit[UnitIndex] = OffsetForUnitSoFar;
+		OffsetForUnitSoFar += Structure->TotalCountForUnit[UnitIndex];
+		Structure->TotalCount += Structure->TotalCountForUnit[UnitIndex];
 		++UnitIndex;
 	}
 	
-	Structure.HasBeenSetUp = true;
+	Structure->HasBeenSetUp = true;
 }
 
-storage_structure::~storage_structure()
-{
-	if(HasBeenSetUp)
-	{
-		free(TotalCountForUnit);
-		free(OffsetForUnit);
-		free(UnitForHandle);
-		free(LocationOfHandleInUnit);
-	}
-}
+
 
 //NOTE: The following functions are very similar, but it would incur a performance penalty to try to merge them.
 //NOTE: The OffsetForHandle functions are meant to be internal functions that can be used by other wrappers that do more error checking.
@@ -571,11 +526,11 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 	}
 	
 	DataSet->IndexCounts[IndexSetHandle] = {IndexSetHandle, (u32)IndexNames.size()};
-	DataSet->IndexNames[IndexSetHandle] = AllocClearedArray(const char *, IndexNames.size());
+	DataSet->IndexNames[IndexSetHandle] = DataSet->BucketMemory.Allocate<const char *>(IndexNames.size());
 	
 	for(size_t IndexIndex = 0; IndexIndex < IndexNames.size(); ++IndexIndex)
 	{
-		const char *IndexName = IndexNames[IndexIndex].Copy().Data; //NOTE: Leaks unless we free it.
+		const char *IndexName = IndexNames[IndexIndex].Copy(&DataSet->BucketMemory).Data;
 		DataSet->IndexNames[IndexSetHandle][IndexIndex] = IndexName;
 		DataSet->IndexNamesToHandle[IndexSetHandle][IndexName] = IndexIndex;
 	}
@@ -621,13 +576,13 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 	}
 	
 	DataSet->IndexCounts[IndexSetHandle] = {IndexSetHandle, (u32)Inputs.size()};
-	DataSet->IndexNames[IndexSetHandle] = AllocClearedArray(const char *, Inputs.size());
+	DataSet->IndexNames[IndexSetHandle] = DataSet->BucketMemory.Allocate<const char *>(Inputs.size());
 
-	DataSet->BranchInputs[IndexSetHandle] = AllocClearedArray(branch_inputs, Inputs.size());
+	DataSet->BranchInputs[IndexSetHandle] = DataSet->BucketMemory.Allocate<branch_inputs>(Inputs.size());
 	index_t IndexIndex = {IndexSetHandle, 0};
 	for(const auto &InputData : Inputs)
 	{
-		const char *IndexName = InputData.first.Copy().Data; //NOTE: Leaks unless we free it.
+		const char *IndexName = InputData.first.Copy(&DataSet->BucketMemory).Data;
 
 		const std::vector<token_string> &InputNames = InputData.second;
 		if(DataSet->IndexNamesToHandle[IndexSetHandle].find(IndexName) != DataSet->IndexNamesToHandle[IndexSetHandle].end())
@@ -639,7 +594,7 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 		DataSet->IndexNames[IndexSetHandle][IndexIndex] = IndexName;
 		
 		DataSet->BranchInputs[IndexSetHandle][IndexIndex].Count = InputNames.size();
-		DataSet->BranchInputs[IndexSetHandle][IndexIndex].Inputs = AllocClearedArray(index_t, InputNames.size());
+		DataSet->BranchInputs[IndexSetHandle][IndexIndex].Inputs = DataSet->BucketMemory.Allocate<index_t>(InputNames.size());
 		
 		index_t InputIdxIdx = {IndexSetHandle, 0};
 		for(token_string InputName : InputNames)
@@ -701,7 +656,7 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 		
 		++UnitIndex;
 	}
-	SetupStorageStructureSpecifer(DataSet->ParameterStorageStructure, DataSet->IndexCounts, Model->Parameters.Count());
+	SetupStorageStructureSpecifer(&DataSet->ParameterStorageStructure, DataSet->IndexCounts, Model->Parameters.Count(), &DataSet->BucketMemory);
 	
 	DataSet->ParameterData = AllocClearedArray(parameter_value, DataSet->ParameterStorageStructure.TotalCount);
 	
@@ -763,13 +718,13 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 		
 		++UnitIndex;
 	}
-	SetupStorageStructureSpecifer(DataSet->InputStorageStructure, DataSet->IndexCounts, Model->Inputs.Count());
+	SetupStorageStructureSpecifer(&DataSet->InputStorageStructure, DataSet->IndexCounts, Model->Inputs.Count(), &DataSet->BucketMemory);
 
 	
 	DataSet->InputData = AllocClearedArray(double, DataSet->InputStorageStructure.TotalCount * Timesteps);
 	DataSet->InputDataTimesteps = Timesteps;
 	
-	DataSet->InputTimeseriesWasProvided = AllocClearedArray(bool, DataSet->InputStorageStructure.TotalCount);
+	DataSet->InputTimeseriesWasProvided = DataSet->BucketMemory.Allocate<bool>(DataSet->InputStorageStructure.TotalCount);
 }
 
 static void
@@ -812,7 +767,7 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 			}
 		}
 		
-		SetupStorageStructureSpecifer(DataSet->ResultStorageStructure, DataSet->IndexCounts, Model->Equations.Count());
+		SetupStorageStructureSpecifer(&DataSet->ResultStorageStructure, DataSet->IndexCounts, Model->Equations.Count(), &DataSet->BucketMemory);
 	}
 
 	DataSet->ResultData = AllocClearedArray(double, DataSet->ResultStorageStructure.TotalCount * (Timesteps + 1)); //NOTE: We add one to timesteps since we also need space for the initial values.

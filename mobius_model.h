@@ -36,13 +36,6 @@ MODEL_ENTITY_HANDLE(parameter_group_h)
 #undef MODEL_ENTITY_HANDLE
 
 
-enum entity_type   //NOTE: Is currently only used so that the storage_structure knows what it is storing and can ask the Model for the name associated to a handle if an error occurs.
-{
-	EntityType_Parameter,
-	EntityType_Input,
-	EntityType_Equation,
-};
-
 
 /*
 //NOTE: This alternative code (which complies more to certain standards of C++) produces the same result and is about as fast to compile, but it produces less legible error messages when the user makes a mistake.
@@ -91,6 +84,13 @@ typedef handle_type<EntityType_Unit> unit_h;
 typedef handle_type<EntityType_IndexSet> index_set_h;
 typedef handle_type<EntityType_ParameterGroup> parameter_group_h;
 */
+
+enum entity_type   //NOTE: Is currently only used so that the storage_structure knows what it is storing and can ask the Model for the name associated to a handle if an error occurs.
+{
+	EntityType_Parameter,
+	EntityType_Input,
+	EntityType_Equation,
+};
 
 inline const char *
 GetEntityTypeName(entity_type Type)
@@ -193,6 +193,7 @@ struct parameter_spec
 	parameter_group_h Group;
 	
 	//NOTE: This not set before EndModelDefinition:
+	//TODO: Should not really store it here though.
 	std::vector<index_set_h> IndexSetDependencies;
 };
 
@@ -294,6 +295,9 @@ struct equation_spec
 	parameter_double_h CumulationWeight; //NOTE: Only used for Type == EquationType_Cumulative.
 	
 	solver_h Solver;
+		
+		
+	//NOTE: It would be nice to remove the following from the equation_spec and instead just store it in a temporary structure in EndModelDefinition, however it is reused in debug printouts etc. in the model run, so we have to store it in the model object somewhere anyway.
 	
 	//NOTE: The below are built during EndModelDefinition:
 	std::set<index_set_h> IndexSetDependencies;          //NOTE: If the equation is run on a solver, the final index set dependencies of the equation will be those of the solver, not the ones stored here. You should generally use the storage structure to determine the final dependencies rather than this vector unless you are doing something specific in EndModelDefinition.
@@ -303,7 +307,8 @@ struct equation_spec
 	std::set<equation_h>  DirectLastResultDependencies;
 	std::set<equation_h>  CrossIndexResultDependencies;
 	
-	std::vector<result_dependency_registration> IndexedResultAndLastResultDependencies; //TODO: Maybe don't store these here, we could keep them separately just locally in EndModelDefinition.
+	//TODO: The following should probably just be stored separately in a temporary structure in the EndModelDefinition procedure, as it is not reused outside of that procedure.
+	std::vector<result_dependency_registration> IndexedResultAndLastResultDependencies;
 	
 	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
 	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
@@ -330,7 +335,8 @@ struct solver_spec
 	std::set<equation_h> DirectResultDependencies;
 	std::set<equation_h> CrossIndexResultDependencies;
 	
-	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
+	//TODO: The following should probably just be stored separately in a temporary structure in the EndModelDefinition procedure, as it is not reused outside of that procedure.
+	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition. 
 	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
 };
 
@@ -362,7 +368,9 @@ enum equation_batch_type
 };
 
 struct equation_batch
-{ 
+{
+	//TODO: We should improve the memory locality of this entire thing (each equation_batch, equation_batch_group and their storage in the Model object). Unfortunately, it is built dynamically, so we may need to do a full copy of it at the end to pack it tight again if we are going to try to do that.
+	
 	equation_batch_type Type;
 	std::vector<equation_h> Equations;
 	
@@ -396,6 +404,7 @@ struct mobius_model;
 
 struct storage_structure
 {
+	//TODO: We should improve the memory locality of the Units array too!
 	std::vector<storage_unit_specifier> Units;
 	
 	size_t *TotalCountForUnit;
@@ -409,8 +418,6 @@ struct storage_structure
 	//NOTE: The following two are only here in case we need to look up the name of an index set or handle when reporting an error about misindexing if the MOBIUS_INDEX_BOUNDS_TESTS is turned on. It is not that clean to have this information here, though :(
 	const mobius_model *Model;
 	entity_type Type;
-	
-	~storage_structure();
 };
 
 typedef std::unordered_map<token_string, entity_handle, token_string_hash_function> string_map;
@@ -458,6 +465,8 @@ struct mobius_model
 {
 	const char *Name;
 	
+	bucket_allocator BucketMemory;  //NOTE; Currently only used for some string copies. Maybe a little superfluous.
+	
 	module_h CurrentModule = {};
 	
 	entity_registry<module_spec> Modules;
@@ -485,6 +494,8 @@ struct mobius_model
 	
 	timer DefinitionTimer;
 	bool Finalized;
+	
+	~mobius_model();
 };
 
 
@@ -520,6 +531,8 @@ struct branch_inputs
 struct mobius_data_set
 {
 	const mobius_model *Model;
+	
+	bucket_allocator BucketMemory;   //NOTE: Important! This should only be used for storage of "small" arrays such as IndexCounts or IndexNames, NOT the large arrays such as InputData or ResultData.
 	
 	parameter_value *ParameterData;
 	storage_structure ParameterStorageStructure;
@@ -572,6 +585,8 @@ struct model_run_state
 	s64 Timestep; //NOTE: We make this a signed integer so that it can be set to -1 during the "initial value" step.
 
 
+	bucket_allocator BucketMemory;
+
 	//NOTE: For use during model execution		
 	parameter_value *CurParameters;
 	double          *CurResults;
@@ -594,14 +609,15 @@ struct model_run_state
 	std::vector<size_t> FastResultLookup;
 	std::vector<size_t> FastLastResultLookup;
 	
-	double *SolverTempX0;          //NOTE: Temporary storage for use by solvers
-	double *SolverTempWorkStorage; //NOTE: Temporary storage for use by solvers
-	double *JacobianTempStorage;   //NOTE: Temporary storage for use by Jacobian estimation
-	
 	parameter_value *AtParameterLookup;
 	size_t *AtInputLookup;
 	size_t *AtResultLookup;
 	size_t *AtLastResultLookup;
+	
+	double *SolverTempX0;          //NOTE: Temporary storage for use by solvers
+	double *SolverTempWorkStorage; //NOTE: Temporary storage for use by solvers
+	double *JacobianTempStorage;   //NOTE: Temporary storage for use by Jacobian estimation
+	
 
 	
 	//NOTE: For use during dependency registration:
@@ -632,13 +648,15 @@ struct model_run_state
 		this->DataSet = DataSet;
 		this->Model = DataSet->Model;
 
-		CurInputs      = AllocClearedArray(double, Model->Inputs.Count());
-		CurParameters  = AllocClearedArray(parameter_value, Model->Parameters.Count());
-		CurResults     = AllocClearedArray(double, Model->Equations.Count());
-		LastResults    = AllocClearedArray(double, Model->Equations.Count());
-		CurInputWasProvided = AllocClearedArray(bool, Model->Inputs.Count());
+		BucketMemory.Initialize(1024*1024);
+
+		CurInputs      = BucketMemory.Allocate<double>(Model->Inputs.Count());
+		CurParameters  = BucketMemory.Allocate<parameter_value>(Model->Parameters.Count());
+		CurResults     = BucketMemory.Allocate<double>(Model->Equations.Count());
+		LastResults    = BucketMemory.Allocate<double>(Model->Equations.Count());
+		CurInputWasProvided = BucketMemory.Allocate<bool>(Model->Inputs.Count());
 		
-		CurrentIndexes = AllocClearedArray(index_t, Model->IndexSets.Count());
+		CurrentIndexes = BucketMemory.Allocate<index_t>(Model->IndexSets.Count());
 		for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 		{
 			CurrentIndexes[IndexSetHandle].IndexSetHandle = IndexSetHandle;
@@ -648,23 +666,16 @@ struct model_run_state
 		DaysThisYear = 365;
 		Timestep = 0;
 		
-		SolverTempX0 = 0;
-		SolverTempWorkStorage = 0;
-		JacobianTempStorage = 0;
+		SolverTempX0 = nullptr;
+		SolverTempWorkStorage = nullptr;
+		JacobianTempStorage = nullptr;
 	}
 	
 	~model_run_state()
 	{
 		if(Running)
 		{
-			free(CurParameters);
-			free(CurInputs);
-			free(CurInputWasProvided);
-			free(CurResults);
-			free(LastResults);
-			free(CurrentIndexes);
-			if(SolverTempX0) free(SolverTempX0);
-			//if(wk) free(wk); //Don't free SolverTempWorkStorage or JacobianTempStorage since they are allocated together with SolverTempX0!
+			BucketMemory.DeallocateAll();
 		}
 	}
 	
@@ -1021,6 +1032,8 @@ RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *
 inline void
 ParameterIsComputedBy(mobius_model *Model, parameter_double_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
 {
+	REGISTRATION_BLOCK(Model)
+	
 	parameter_spec &Spec  = Model->Parameters.Specs[Parameter.Handle];
 	equation_spec &EqSpec = Model->Equations.Specs[Equation.Handle];
 	if(EqSpec.Type != EquationType_InitialValue)
@@ -1039,6 +1052,8 @@ ParameterIsComputedBy(mobius_model *Model, parameter_double_h Parameter, equatio
 inline void
 ParameterIsComputedBy(mobius_model *Model, parameter_uint_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
 {
+	REGISTRATION_BLOCK(Model)
+	
 	parameter_spec &Spec  = Model->Parameters.Specs[Parameter.Handle];
 	equation_spec &EqSpec = Model->Equations.Specs[Equation.Handle];
 	if(EqSpec.Type != EquationType_InitialValue)
@@ -1246,6 +1261,8 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 static solver_h
 RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_setup_function *SetupFunction, double RelErr, double AbsErr)
 {
+	REGISTRATION_BLOCK(Model)
+	
 	solver_h Solver = RegisterSolver(Model, Name, h, SetupFunction);
 	
 	solver_spec &Spec = Model->Solvers.Specs[Solver.Handle];
@@ -1568,7 +1585,7 @@ GetInputCount(model_run_state *RunState, index_set_h IndexSet)
 inline size_t
 BranchInputIteratorEnd(model_run_state *RunState, index_set_h IndexSet, index_t Branch)
 {
-	return RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1; //NOTE: The count is always one greater than the largest index, so it is guaranteed to not be a valid index.
+	return RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1;
 }
 
 struct branch_input_iterator
@@ -1581,7 +1598,6 @@ struct branch_input_iterator
 	const index_t& operator*(){ return InputIndexes[CurrentInputIndexIndex]; }
 
 	bool operator!=(const size_t& Idx) { return CurrentInputIndexIndex != Idx; }
-	
 };
 
 inline branch_input_iterator

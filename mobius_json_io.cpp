@@ -185,7 +185,7 @@ ReadInputDependenciesFromJson(mobius_model *Model, const char *Filename)
 		
 		for(std::string &Str : AdditionalTimeseries)
 		{
-			const char *InputName = CopyString(Str.c_str());
+			const char *InputName = Model->BucketMemory.CopyString(Str.c_str());
 			RegisterInput(Model, InputName, {0}, true);
 		}
     }

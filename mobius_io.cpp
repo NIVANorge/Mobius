@@ -773,7 +773,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 				if(Token.Type == TokenType_QuotedString)
 				{
 					Token = Stream.ReadToken();
-					token_string InputName = Token.StringValue.Copy(); //TODO: Leaks.
+					token_string InputName = Token.StringValue.Copy(&Model->BucketMemory);
 					
 					unit_h Unit = {0};
 					Token = Stream.PeekToken();
@@ -782,7 +782,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 						if(Token.StringValue.Equals("unit"))
 						{
 							Stream.ReadToken();
-							token_string UnitName = Stream.ExpectQuotedString().Copy(); //TODO: Leaks.
+							token_string UnitName = Stream.ExpectQuotedString().Copy(&Model->BucketMemory);
 							Unit = RegisterUnit(Model, UnitName.Data);
 						}
 					}

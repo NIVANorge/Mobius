@@ -4,6 +4,8 @@ BeginModelDefinition(const char *Name = "(unnamed model)")
 {
 	mobius_model *Model = new mobius_model {};
 	
+	Model->BucketMemory.Initialize(1024);
+	
 	Model->DefinitionTimer = BeginTimer();
 	
 	Model->Name = Name;
@@ -14,6 +16,11 @@ BeginModelDefinition(const char *Name = "(unnamed model)")
 	RegisterParameterDate(Model, System, "Start date", "1970-1-1");
 	
 	return Model;
+}
+
+mobius_model::~mobius_model()
+{
+	BucketMemory.DeallocateAll();
 }
 
 
@@ -248,6 +255,9 @@ EndModelDefinition(mobius_model *Model)
 		MOBIUS_FATAL_ERROR("ERROR: Called EndModelDefinition twice on the same model." << std::endl);
 	}
 	
+	bucket_allocator TemporaryBucket;
+	TemporaryBucket.Initialize(1024*1024);  //NOTE: It would be very strange if we need more space than this for each temporary array.
+	
 	///////////// Find out what index sets each parameter depends on /////////////
 	
 	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
@@ -256,7 +266,7 @@ EndModelDefinition(mobius_model *Model)
 		parameter_group_h CurrentGroup = Spec.Group;
 		const parameter_group_spec &GroupSpec = Model->ParameterGroups.Specs[CurrentGroup.Handle];
 		
-		Spec.IndexSetDependencies = GroupSpec.IndexSets;
+		Spec.IndexSetDependencies = GroupSpec.IndexSets;  //NOTE: vector copy.
 	}
 	
 	/////////////////////// Find all dependencies of equations on parameters, inputs and other results /////////////////////
@@ -477,7 +487,7 @@ EndModelDefinition(mobius_model *Model)
 	
 	std::vector<equation_h> EquationsToSort;
 	
-	bool *SolverHasBeenHitOnce = AllocClearedArray(bool, Model->Solvers.Count());
+	bool *SolverHasBeenHitOnce = TemporaryBucket.Allocate<bool>(Model->Solvers.Count());
 	
 	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
@@ -510,8 +520,6 @@ EndModelDefinition(mobius_model *Model)
 			EquationsToSort.push_back(equation_h {EquationHandle});
 		}
 	}
-	
-	free(SolverHasBeenHitOnce);
 	
 	TopologicalSortEquations(Model, EquationsToSort, TopologicalSortEquationsVisit);
 	
@@ -755,7 +763,7 @@ EndModelDefinition(mobius_model *Model)
 	
 	/////////////// Process the batches into a finished result structure ////////////////////////
 	
-	size_t *EquationBelongsToBatchGroup = AllocClearedArray(size_t, Model->Equations.Count());
+	size_t *EquationBelongsToBatchGroup = TemporaryBucket.Allocate<size_t>(Model->Equations.Count());
 	
 	{
 		//NOTE: We have to clear sorting flags from previous sortings since we have to do a new sorting for the initial value equations.
@@ -765,7 +773,7 @@ EndModelDefinition(mobius_model *Model)
 			Model->Equations.Specs[EquationHandle].Visited = false;
 		}
 		
-		size_t *Counts = AllocClearedArray(size_t, Model->IndexSets.Count());
+		size_t *Counts = TemporaryBucket.Allocate<size_t>(Model->IndexSets.Count());
 		for(auto& BatchTemplate : BatchBuild)
 		{
 			for(index_set_h IndexSet : BatchTemplate.IndexSetDependencies)
@@ -835,8 +843,6 @@ EndModelDefinition(mobius_model *Model)
 			
 			++BatchGroupIdx;
 		}
-		
-		free(Counts);
 	}
 	
 	///////////////// Find out which parameters, results and last_results that need to be hotloaded into the CurParameters, CurInputs etc. buffers in the model_run_state at each iteration stage during model run. /////////////////
@@ -958,12 +964,11 @@ EndModelDefinition(mobius_model *Model)
 		}
 	}
 	
-	free(EquationBelongsToBatchGroup);
-	
 	
 	//////////////////////// Gather about (in-) direct equation dependencies to be used by the Jacobian estimation used by some implicit solvers //////////////////////////////////
 	BuildJacobianInfo(Model);
 	
+	TemporaryBucket.DeallocateAll();
 
 	Model->Finalized = true;
 	
@@ -1533,7 +1538,7 @@ RunModel(mobius_data_set *DataSet)
 	// If some solvers have parametrized step size, read in the actual value of the parameter from the parameter data, then store it for use when running the model.
 	if(!DataSet->hSolver)
 	{
-		DataSet->hSolver = AllocClearedArray(double, Model->Solvers.Count());
+		DataSet->hSolver = DataSet->BucketMemory.Allocate<double>(Model->Solvers.Count());
 	}
 	
 	for(entity_handle SolverHandle = 1; SolverHandle < Model->Solvers.Count(); ++SolverHandle)
@@ -1586,11 +1591,10 @@ RunModel(mobius_data_set *DataSet)
 	}
 	size_t SolverTempWorkSpace = 4*MaxODECount; //TODO: 4*MaxODECount is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
 	size_t JacobiTempWorkSpace = MaxODECount + Model->Equations.Count();//MaxNonODECount;
-	size_t SolverSpaceNeeded   = MaxODECount + SolverTempWorkSpace + JacobiTempWorkSpace; 
-	double *SolverTempStorage  = AllocClearedArray(double, SolverSpaceNeeded);
-	RunState.SolverTempX0          = SolverTempStorage;
-	RunState.SolverTempWorkStorage = RunState.SolverTempX0 + MaxODECount;
-	RunState.JacobianTempStorage   = RunState.SolverTempX0 + SolverTempWorkSpace;
+	
+	RunState.SolverTempX0          = RunState.BucketMemory.Allocate<double>(MaxODECount);
+	RunState.SolverTempWorkStorage = RunState.BucketMemory.Allocate<double>(SolverTempWorkSpace);
+	RunState.JacobianTempStorage   = RunState.BucketMemory.Allocate<double>(JacobiTempWorkSpace);
 	
 	
 
@@ -1639,8 +1643,8 @@ RunModel(mobius_data_set *DataSet)
 	RunState.AllCurInputsBase = DataSet->InputData + ((size_t)InputDataStartOffsetTimesteps)*DataSet->InputStorageStructure.TotalCount;
 	
 #if MOBIUS_EQUATION_PROFILING
-	RunState.EquationHits        = AllocClearedArray(size_t, Model->Equations.Count());
-	RunState.EquationTotalCycles = AllocClearedArray(u64, Model->Equations.Count());
+	RunState.EquationHits        = RunState.BucketMemory.Allocate<size_t>(Model->Equations.Count());
+	RunState.EquationTotalCycles = RunState.BucketMemory.Allocate<u64>(Model->Equations.Count());
 #endif
 	
 	//TODO: Timesteps is u64. Can cause problems if somebody have an unrealistically high amount of timesteps. Ideally we should move every parameter from u64 to s64 anyway? There is a similar problem a little earlier in this routine.
@@ -1702,8 +1706,6 @@ RunModel(mobius_data_set *DataSet)
 
 #if MOBIUS_EQUATION_PROFILING
 	PrintEquationProfiles(DataSet, &RunState);
-	free(RunState.EquationHits);
-	free(RunState.EquationTotalCycles);
 #endif
 	
 	DataSet->HasBeenRun = true;

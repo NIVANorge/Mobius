@@ -26,15 +26,6 @@ CopyArray_(size_t ElementSize, size_t VecLen, void *Data)
 }
 #define CopyArray(Type, ArrayLen, Array) (Type *)CopyArray_(sizeof(Type), ArrayLen, Array)
 
-inline char *
-CopyString(const char *Str)
-{
-	size_t Len = strlen(Str);
-	char *Result = (char *)CopyArray_(1, Len + 1, (void *)Str);
-	Result[Len] = 0;
-	return Result;
-}
-
 struct timer
 {
 	std::chrono::time_point<std::chrono::high_resolution_clock> Begin;
