@@ -96,6 +96,8 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerDay);
 	SetSolver(Model, DVDT, LakeSolver);
+	auto OutletWaterLevel = RegisterEquation(Model, "Outlet water level", M);
+	SetSolver(Model, OutletWaterLevel, LakeSolver);
 	auto LakeOutflow = RegisterEquation(Model, "Lake outflow", M3PerS);
 	SetSolver(Model, LakeOutflow, LakeSolver);
 	auto Evaporation = RegisterEquation(Model, "Evaporation", MmPerDay);
@@ -156,10 +158,14 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		return 0.5 * (PARAMETER(LakeShoreSlope) / (PARAMETER(LakeLength) * RESULT(WaterLevel))) * RESULT(DVDT);
 	)
 	
+	EQUATION(Model, OutletWaterLevel,
+		return Max(0.0, RESULT(WaterLevel) - PARAMETER(WaterLevelAtWhichOutflowIsZero));
+	)
+	
 	EQUATION(Model, LakeOutflow,
-		double excess = Max(0.0, RESULT(WaterLevel) - PARAMETER(WaterLevelAtWhichOutflowIsZero));
+		double outletlevel = RESULT(OutletWaterLevel);
 		double C3 = PARAMETER(OutflowRatingCurveShape);
-		return std::pow(10.0, PARAMETER(OutflowRatingCurveMagnitude)) * (C3*excess + (1.0 - C3)*excess*excess);
+		return std::pow(10.0, PARAMETER(OutflowRatingCurveMagnitude)) * (C3*outletlevel + (1.0 - C3)*outletlevel*outletlevel);
 	)
 	
 	
