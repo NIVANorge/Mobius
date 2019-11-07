@@ -843,16 +843,20 @@ EndModelDefinition(mobius_model *Model)
 				//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch A depends on the (initial) value of an equation in batch B and batch A is before batch B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
 				//TODO: We should report an error if that happens!
 				//NOTE: Currently we only allow for initial value equations to be sorted differently than their parent equations within the same batch (this was needed in some of the example models).
+				std::vector<equation_h> InitialValueOrder;
+				
 				ForAllBatchEquations(Batch,
-				[Model, &Batch](equation_h Equation)
+				[Model, &Batch, &InitialValueOrder](equation_h Equation)
 				{
 					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the visit)
 					{
-						TopologicalSortEquationsInitialValueVisit(Model, Equation, Batch.InitialValueOrder);
+						TopologicalSortEquationsInitialValueVisit(Model, Equation, InitialValueOrder);
 					}
 					return false;
 				});
+				
+				Batch.InitialValueOrder = CopyDataToArray(&Model->BucketMemory, InitialValueOrder.data(), InitialValueOrder.size());
 				
 				++BatchIdx;
 			}

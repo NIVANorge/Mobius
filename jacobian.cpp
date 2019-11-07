@@ -33,8 +33,11 @@ BuildJacobianInfo(mobius_model *Model)
 		if(Batch.Type == BatchType_Solver && Model->Solvers.Specs[Batch.Solver.Handle].UsesJacobian)
 		{	
 			size_t N = Batch.EquationsODE.Count;
-			Batch.ODEIsDependencyOfODE.resize(N);
-			Batch.ODEIsDependencyOfNonODE.resize(N);
+			
+			Batch.ODEIsDependencyOfODE.Allocate(&Model->BucketMemory, N);
+			Batch.ODEIsDependencyOfNonODE.Allocate(&Model->BucketMemory, N);
+			
+			std::vector<std::vector<size_t>> ODEIsDependencyOfODE(N);
 			
 			for(size_t Idx = 0; Idx < N; ++Idx)
 			{
@@ -46,9 +49,16 @@ BuildJacobianInfo(mobius_model *Model)
 				
 				for(size_t Dep : ODEDependencies)
 				{
-					Batch.ODEIsDependencyOfODE[Dep].push_back(Idx);  //NOTE: Signifies that the equation with index Dep is a dependency of the equation with index Idx.
+					ODEIsDependencyOfODE[Dep].push_back(Idx);  //NOTE: Signifies that the equation with index Dep is a dependency of the equation with index Idx.
 				}
 			}
+			
+			for(size_t Idx = 0; Idx < N; ++Idx)
+			{
+				Batch.ODEIsDependencyOfODE[Idx] = CopyDataToArray(&Model->BucketMemory, ODEIsDependencyOfODE[Idx].data(), ODEIsDependencyOfODE[Idx].size());
+			}
+			
+			std::vector<std::vector<equation_h>> ODEIsDependencyOfNonODE(N);
 			
 			for(equation_h Equation : Batch.Equations)
 			{
@@ -58,8 +68,13 @@ BuildJacobianInfo(mobius_model *Model)
 				
 				for(size_t Dep : ODEDependencies)
 				{
-					Batch.ODEIsDependencyOfNonODE[Dep].push_back(Equation);
+					ODEIsDependencyOfNonODE[Dep].push_back(Equation);
 				}
+			}
+			
+			for(size_t Idx = 0; Idx < N; ++Idx)
+			{
+				Batch.ODEIsDependencyOfNonODE[Idx] = CopyDataToArray(&Model->BucketMemory, ODEIsDependencyOfNonODE[Idx].data(), ODEIsDependencyOfNonODE[Idx].size());
 			}
 		}
 	}
