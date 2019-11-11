@@ -6,7 +6,7 @@ To learn the basics of how to build and compile models, see the [quick start gui
 
 The C++-end code of the C++-python interface is in mobius_dll.h, while the python-end of it is in mobius.py.
 
-To use a model with the python wrapper, create your own .cpp file along the lines of Persist/persistwrapper.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of compilepersist.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded within Python using mobius.initialize('name_of_dll.dll')
+To use a model with the python wrapper, create your own .cpp file along the lines of Applications/Persist/persist.cpp, and replace the model building part of it with the modules you want. Then make a .bat file along the lines of Applications/Persist/compile.bat that compiles your .cpp file. The C++ code compiles to a .dll (dynamically linked library) that can be loaded within Python using mobius.initialize('name_of_dll.dll')
 
 We have already built some examples atop of mobius.py to show you how you can interact with the models through the interface. See e.g. the SimplyP example [here](https://nbviewer.jupyter.org/github/NIVANorge/Mobius/blob/master/PythonWrapper/SimplyP/simplyp_calibration.ipynb). There is also docstring documentation in mobius.py, and we have made some calibration utilities available through mobius_calib_uncert_lmfit.py (mobius_calibration.py is older code, but can also serve as a good example of what you can do).
 
