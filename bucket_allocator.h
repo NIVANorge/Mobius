@@ -10,7 +10,6 @@
 	Note, this is a very memory-inefficient implementation if it overflows the buckets a lot, as it does not go back to earlier buckets to see if they have space for a smaller allocation if they have overflowed once. So you typically want large bucket sizes compared to the allocation sizes.
 */
 
-
 struct memory_bucket
 {
 	u8 *Data;

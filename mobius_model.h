@@ -329,6 +329,8 @@ struct solver_spec
 	bool UsesErrorControl;
 	bool UsesJacobian;
 	
+	//NOTE: It would be nice to remove the following from the solver_spec and instead just store it in a temporary structure in EndModelDefinition, however it is reused in debug printouts etc. in the model run, so we have to store it in the model object somewhere anyway.
+	
 	//NOTE: These are built during EndModelDefinition:
 	std::set<index_set_h> IndexSetDependencies;
 	std::vector<equation_h> EquationsToSolve;
@@ -375,8 +377,6 @@ struct equation_batch
 	array<equation_h> EquationsODE; //NOTE: Only for Type==BatchType_Solver.
 	
 	//NOTE: These are used for optimizing estimation of the Jacobian in case that is needed by a solver.
-	
-	//TODO: Convert the remaining ones to array<T>
 	array<array<size_t>>     ODEIsDependencyOfODE;
 	array<array<equation_h>> ODEIsDependencyOfNonODE;
 	

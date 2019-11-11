@@ -81,11 +81,13 @@ BuildJacobianInfo(mobius_model *Model)
 }
 
 
-#define USE_JACOBIAN_OPTIMIZATION 1          //Ooops, don't turn this off if you don't know what you are doing. It could break some solvers.
+#define USE_JACOBIAN_OPTIMIZATION 1          //Ooops! Don't turn this off unless know what you are doing. It could break some solvers.
 
 static void
 EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, const mobius_model *Model, model_run_state *RunState, const equation_batch &Batch)
 {
+	// Using a callback to insert into the matrix is not optimal, but the problem is that we can't know the implementation every solver has of their linear algebra stuff.
+	
 	//NOTE: This is not a very numerically accurate estimation of the Jacobian, it is mostly optimized for speed. We'll see if it is good enough..
 
 	size_t N = Batch.EquationsODE.Count;
@@ -114,18 +116,16 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 
 	//printf("begin matrix\n");
 	
-	//TODO: This is a naive way of doing it. We should instead use pre-recorded info about which equations depend on which and skip evaluation in the case where there is no dependency.
 	for(size_t Col = 0; Col < N; ++Col)
 	{
 		equation_h EquationToPermute = Batch.EquationsODE[Col];
 		
 		//Hmm. here we assume we can use the same H for all Fs which may not be a good idea?? But it makes things significantly faster because then we don't have to recompute the non-odes in all cases.
 		double H0 = 1e-6;  //TODO: This should definitely be sensitive to the size of the base values. But how to do that?
-		volatile double Temp = X[Col] + H0;
+		volatile double Temp = X[Col] + H0;   //NOTE: volatile to make sure the optimizer doesn't optimize this away. We do it to improve numerical accuracy.
 		double H = Temp - X[Col];
-		RunState->CurResults[EquationToPermute.Handle] = X[Col] + H; //TODO: Do it numerically correct
+		RunState->CurResults[EquationToPermute.Handle] = X[Col] + H;
 		
-		//TODO: We should do some optimization here too to not have to call all the non-ode equations, but in that case we have to remember to reset the values at the end.
 #if USE_JACOBIAN_OPTIMIZATION		
 		for(equation_h Equation : Batch.ODEIsDependencyOfNonODE[Col])
 #else
@@ -151,7 +151,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 			
 			double FPermute = CallEquation(Model, RunState, EquationToCall);
 			
-			double Derivative = (FPermute - FBase) / H; //TODO: Numerical correctness
+			double Derivative = (FPermute - FBase) / H;
 			
 			MatrixInserter(Row, Col, Derivative);
 			
