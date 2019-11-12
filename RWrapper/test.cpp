@@ -52,9 +52,6 @@ mobius_setup_from_parameter_and_input_file(std::string ParameterFileName, std::s
 	ReadInputsFromFile(DataSet, InputFileName.data());
 	
 	RunModel(DataSet);
-	
-	
-	return;
 }
 
 // [[Rcpp::export]]
@@ -72,11 +69,7 @@ mobius_get_result_series(std::string Name, Rcpp::StringVector IndexesIn)
 {
 	if(!DataSet) return {};
 	
-	std::vector<const char *> Indexes;
-	for(int Idx = 0; Idx < IndexesIn.size(); ++Idx)
-	{
-		Indexes.push_back(IndexesIn[Idx]);
-	}
+	std::vector<const char *> Indexes(IndexesIn.begin(), IndexesIn.end());
 	
 	u64 Timesteps = GetTimesteps(DataSet);
 	
@@ -94,13 +87,40 @@ mobius_set_parameter_double(std::string Name, Rcpp::StringVector IndexesIn, doub
 {
 	if(!DataSet) return;
 	
-	std::vector<const char *> Indexes;
-	for(int Idx = 0; Idx < IndexesIn.size(); ++Idx)
-	{
-		Indexes.push_back(IndexesIn[Idx]);
-	}
+	std::vector<const char *> Indexes(IndexesIn.begin(), IndexesIn.end());
 	
 	SetParameterValue(DataSet, Name.data(), Indexes, Value);
+}
+
+// [[Rcpp::export]]
+void
+mobius_set_parameter_uint(std::string Name, Rcpp::StringVector IndexesIn, u64 Value)
+{
+	if(!DataSet) return;
 	
-	return;
+	std::vector<const char *> Indexes(IndexesIn.begin(), IndexesIn.end());
+	
+	SetParameterValue(DataSet, Name.data(), Indexes, Value);
+}
+
+// [[Rcpp::export]]
+void
+mobius_set_parameter_bool(std::string Name, Rcpp::StringVector IndexesIn, bool Value)
+{
+	if(!DataSet) return;
+	
+	std::vector<const char *> Indexes(IndexesIn.begin(), IndexesIn.end());
+	
+	SetParameterValue(DataSet, Name.data(), Indexes, Value);
+}
+
+// [[Rcpp::export]]
+void
+mobius_set_parameter_time(std::string Name, Rcpp::StringVector IndexesIn, std::string Value)
+{
+	if(!DataSet) return;
+	
+	std::vector<const char *> Indexes(IndexesIn.begin(), IndexesIn.end());
+	
+	SetParameterValue(DataSet, Name.data(), Indexes, Value.data());
 }
