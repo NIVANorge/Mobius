@@ -128,9 +128,9 @@ Further instructions for running models using the MobiView graphical user interf
 
 After understanding basic model building we recommended you explore the python wrapper interface to e.g. do your own post-processing and plotting with the model results. See more in the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper), including examples of optimisation and auto-calibration.
 
-### Bindings to other languages
+## R wrapper
 
-Because of the popularity of the R language we have looked into also making R bindings for Mobius, but as it stands it would require us to rewrite parts of the C++ - end of the dll interface. It is currently not a priority, but we could make it one if we get many enough requests for it.
+We have also started making a simple wrapper of Mobius to the R language, but this is so far not as developed as the Python wrapper. See the [R wrapper readme](https://github.com/NIVANorge/Mobius/tree/master/RWrapper)
 
 ## Navigating around the repository
 
