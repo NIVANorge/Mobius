@@ -25,14 +25,14 @@ mobius_model    *Model   = nullptr;;
 mobius_data_set *DataSet = nullptr;
 
 
-// [[Rcpp::export]]
-void
-mobius_setup_from_parameter_and_input_file(std::string ParameterFileName, std::string InputFileName)
+void BuildModel()
 {
-	if(DataSet)
+	if(Model)
 	{
-		//TODO: Free previous dataset and model
+		//TODO: free previous model (and potentially dataset)
 	}
+	
+	//The following has to be switched out if you want to use a different model.
 	
 	Model = BeginModelDefinition("SimplyP");
 	
@@ -40,6 +40,14 @@ mobius_setup_from_parameter_and_input_file(std::string ParameterFileName, std::s
 	AddSimplyPSedimentModule(Model);
 	AddSimplyPPhosphorusModule(Model);
 	AddSimplyPInputToWaterBodyModule(Model);
+}
+
+
+// [[Rcpp::export]]
+void
+mobius_setup_from_parameter_and_input_file(std::string ParameterFileName, std::string InputFileName)
+{
+	BuildModel();
 	
 	ReadInputDependenciesFromFile(Model, InputFileName.data());
 	
@@ -50,9 +58,28 @@ mobius_setup_from_parameter_and_input_file(std::string ParameterFileName, std::s
 	ReadParametersFromFile(DataSet, ParameterFileName.data());
 
 	ReadInputsFromFile(DataSet, InputFileName.data());
-	
-	RunModel(DataSet);
 }
+
+// [[Rcpp::export]]
+void
+mobius_setup_from_parameter_file_and_input_series(std::string ParameterFileName, std::string InputDataStartDate, std::vector<double> AirTemperature, std::vector<double> Precipitation)
+{
+	BuildModel();
+	EndModelDefinition(Model);
+	
+	DataSet = GenerateDataSet(Model);
+	
+	ReadParametersFromFile(DataSet, ParameterFileName.data());
+	
+	bool Success;
+	DataSet->InputDataStartDate = datetime(InputDataStartDate.data(), &Success);
+	if(!Success) Rcpp::stop("Erroneous date format provided. Expected yyyy-mm-dd");
+	DataSet->InputDataHasSeparateStartDate = true;
+	
+	SetInputSeries(DataSet, "Air temperature", {}, AirTemperature.data(), AirTemperature.size());
+	SetInputSeries(DataSet, "Precipitation", {}, Precipitation.data(), Precipitation.size());
+}
+
 
 // [[Rcpp::export]]
 void
