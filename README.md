@@ -20,7 +20,7 @@ Primarily Mobius was developed to model catchments (routing of precipitation thr
 
 The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written in a managed language like Matlab or python, and is close to the speed of models hard coded in C++ or Fortran.
 
-Mobius can produce standalone executables. There is also the option to compile the models to .dll's that can be loaded in the graphical user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) or be called and interacted with from Python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots.
+Mobius can produce standalone executables. There is also the option to compile the models to .dll's that can be loaded in the graphical user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) or be called and interacted with from Python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots. We are also developing an [R wrapper](https://github.com/NIVANorge/Mobius/tree/master/RWrapper).
 
 ![Alt text](Documentation/img/plots.png?raw=true "Example of some plots made using Mobius and the python wrapper.")
 
