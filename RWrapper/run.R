@@ -2,7 +2,7 @@
 
 library('Rcpp')
 setwd('Mobius/RWrapper')
-sourceCpp('test.cpp')
+sourceCpp('mobius_r.cpp')
 
 none <- vector(mode='character', lenght=0)
 
