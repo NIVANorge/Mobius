@@ -4,7 +4,7 @@ library('Rcpp')
 setwd('Mobius/RWrapper')
 sourceCpp('mobius_r.cpp')
 
-none <- vector(mode='character', lenght=0)
+none <- vector(mode='character', length=0)
 
 
 mobius_setup_from_parameter_and_input_file('../Applications/SimplyP/Tarland/TarlandParameters_v0-3.dat', '../Applications/SimplyP/Tarland/TarlandInputs.dat')
