@@ -4,7 +4,7 @@ library('Rcpp')
 setwd('Mobius/RWrapper')
 sourceCpp('mobius_r.cpp')
 
-none <- vector(mode='character', length=0)
+none <- vector(mode='character', length=0) #It would be nice to use NULL or NA instead, but that does not interface well with C++ it seems
 
 
 mobius_setup_from_parameter_and_input_file('../Applications/SimplyP/Tarland/TarlandParameters_v0-3.dat', '../Applications/SimplyP/Tarland/TarlandInputs.dat')
