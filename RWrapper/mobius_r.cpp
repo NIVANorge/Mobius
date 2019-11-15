@@ -151,3 +151,61 @@ mobius_set_parameter_time(std::string Name, Rcpp::StringVector IndexesIn, std::s
 	
 	SetParameterValue(DataSet, Name.data(), Indexes, Value.data());
 }
+
+
+//NOTE: This one is thread safe and does not modify the global dataset:
+
+// [[Rcpp::export]]
+Rcpp::DataFrame
+mobius_run_with(Rcpp::StringVector ParNames, Rcpp::List ParIndexes, std::vector<double> ParValues, Rcpp::StringVector ResultNames, Rcpp::List ResultIndexes)
+{
+	if(!DataSet) return;
+	
+	mobius_data_set *Copy = CopyDataSet(DataSet);
+	
+	if(ParNames.size() != ParIndexes.size() || ParNames.size() != ParValues.size())
+	{
+		Rcpp::stop("The number of parameter names, index tuples and values must be the same.");
+	}
+	
+	if(ResultNames.size() != ResultIndexes.size())
+	{
+		Rcpp::stop("The number of result names must be the same as the number of result index tuples");
+	}
+	
+	for(size_t Idx = 0; Idx < ParNames.size(); ++Idx)
+	{
+		const char *Name = ParNames[Idx];
+		Rcpp::StringVector Ind = ParIndexes[Idx];
+		std::vector<const char *> Indexes(Ind.begin(), Ind.end());
+		double Value = ParValues[Idx];
+		
+		SetParameterValue(Copy, Name, Indexes, Value);
+	}
+	
+	RunModel(Copy);
+	
+	u64 Timesteps = GetTimesteps(Copy);
+	std::vector<double> Result(Timesteps);
+	
+	Rcpp::DataFrame Results;
+	for(size_t Idx = 0; Idx < ResultNames.size(); ++Idx)
+	{
+		const char *Name = ResultNames[Idx];
+		Rcpp::StringVector Ind = ResultIndexes[Idx];
+		std::vector<const char *> Indexes(Ind.begin(), Ind.end());
+		
+		GetResultSeries(Copy, Name, Indexes, Result.data(), Result.size());
+		
+		Results.push_back(Result);
+	}
+	
+	
+	delete Copy;
+	
+	return Results;
+}
+
+
+
+

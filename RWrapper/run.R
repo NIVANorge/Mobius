@@ -16,13 +16,19 @@ mobius_setup_from_parameter_and_input_file('../Applications/SimplyP/Tarland/Tarl
 # mobius_setup_from_parameter_file_and_input_series('../Applications/SimplyP/Tarland/TarlandParameters_v0-3.dat', input_data_start_date, airt, precip)
 
 
+# This does not modify the global dataset and is thread safe:
+df<-mobius_run_with(c('PET multiplication factor', 'Baseflow index'), list(none, none), c(2.0, 0.7), c('Reach flow (daily mean, cumecs)', 'Agricultural soil water flow'), list(c('Coull'), c('Coull')))
+reachflow<-df[[1]]
+soilflow<-df[[2]]
 
+
+
+# This does modify the global dataset and is NOT thread safe:
 mobius_set_parameter_time('Start date', none, '2003-01-01')
 mobius_set_parameter_uint('Timesteps', none, 1000)
 mobius_run_model()
 flow <- mobius_get_result_series('Reach flow (daily mean, cumecs)', c('Coull'))
 plot(flow, type='l', col='blue')
-
 
 mobius_set_parameter_double('PET multiplication factor', none, 5.0)
 mobius_run_model()
