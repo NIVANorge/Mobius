@@ -70,7 +70,7 @@ MobiView is a graphical user interface that can load any model built using the M
 
 \section{Goodness of fit statistics}
 
-Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various measures can be found in that paper.
+Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various statistics are discussed in that paper.
 
 Let $o=\{o_i\}_{i\in I}$ be the observed timeseries, and let $m=\{m_i\}_{i\in I}$ be the modelled timeseries. The set $I$ of comparison points is the set of all timesteps in the GOF interval where both series have a valid value. For instance, the observed timeseries can have missing values, so the timesteps corresponding to the missing values will not be considered when evaluating goodness-of-fit. The GOF interval is the entire model run interval unless something else is specified by the user. Let
 \[
