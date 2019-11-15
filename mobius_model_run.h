@@ -1422,7 +1422,7 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 	RunState->LastResults[Equation.Handle] = Initial;
 }
 
-INNER_LOOP_BODY(InitialRunStateupInnerLoop)
+INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 {
 	// TODO: IMPORTANT!! If an initial value equation depends on the result of an equation from a different batch than itself, that is not guaranteed to work correctly.
 	// TODO: Currently we don't report an error if that happens!
@@ -1630,7 +1630,7 @@ RunModel(mobius_data_set *DataSet)
 	
 	
 	
-	//NOTE: This is a hack, where we first set the count in FastLookupCounter, then allocate, then set it to 0 to use it as an iterator in FastLookupSetupInnerLoop
+	//NOTE: This is a hack, where we first set the Count for each array in the FastLookupCounter routine, then allocate, then set it to 0 to use it as an iterator in FastLookupSetupInnerLoop
 	ModelLoop(DataSet, &RunState, FastLookupCounter);
 	RunState.Clear();
 
@@ -1644,7 +1644,7 @@ RunModel(mobius_data_set *DataSet)
 	RunState.FastResultLookup.Count     = 0;
 	RunState.FastLastResultLookup.Count = 0;
 	
-	//Technically we also really only need to rebuild the parameter lookup, but it shouldn't matter that much.
+	//Technically we really only need to rebuild the parameter lookup, not the three others, but it is very fast anyway.
 	ModelLoop(DataSet, &RunState, FastLookupSetupInnerLoop);
 	RunState.Clear();
 	
@@ -1693,17 +1693,17 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	RunState.AllLastResultsBase = DataSet->ResultData;
-	RunState.AllCurResultsBase = DataSet->ResultData;
+	RunState.AllCurResultsBase  = DataSet->ResultData;
 	
 	ModelStartTime.DayOfYear(&RunState.DayOfYear, &RunState.Year);
 	RunState.DaysThisYear = YearLength(RunState.Year);
 	
 	//NOTE: Set up initial values;
-	RunState.AtResult = RunState.AllCurResultsBase;
-	RunState.AtLastResult = RunState.AllLastResultsBase;
+	RunState.AtResult          = RunState.AllCurResultsBase;
+	RunState.AtLastResult      = RunState.AllLastResultsBase;
 	RunState.AtParameterLookup = RunState.FastParameterLookup.Data;
 	RunState.Timestep = -1;
-	ModelLoop(DataSet, &RunState, InitialRunStateupInnerLoop);
+	ModelLoop(DataSet, &RunState, InitialValueSetupInnerLoop);
 	
 #if MOBIUS_PRINT_TIMING_INFO
 	u64 SetupDuration = GetTimerMilliseconds(&SetupTimer);
@@ -1731,8 +1731,8 @@ RunModel(mobius_data_set *DataSet)
 		//std::cout << "Day of year: " << RunState.DayOfYear << std::endl;
 #endif
 		
-		RunState.AtResult = RunState.AllCurResultsBase;
-		RunState.AtLastResult = RunState.AllLastResultsBase;
+		RunState.AtResult           = RunState.AllCurResultsBase;
+		RunState.AtLastResult       = RunState.AllLastResultsBase;
 		
 		RunState.AtParameterLookup  = RunState.FastParameterLookup.Data;
 		RunState.AtInputLookup      = RunState.FastInputLookup.Data;
