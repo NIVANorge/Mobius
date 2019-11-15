@@ -26,6 +26,8 @@ SaturationVaporPressure(double Temperature)
 
 	//TODO: Could some of this be unified with code in PET.h ?
 	
+	//TODO: There should be a separate formula for Temperature < 0.0
+	
 	// Takes temperature in celsius
 	// Returns saturation vapor pressure in millibar=hectopascal.
 	
@@ -78,10 +80,14 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto LakeInflow       = RegisterInput(Model, "Lake inflow", M3PerS);
 	auto Precipitation    = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature   = RegisterInput(Model, "Air temperature", DegreesCelsius);
+	
+	
+	//NOTE: Some of these may be hard to come by in some instances. We should provide ways to estimate them such as in PET.h
 	auto WindSpeed        = RegisterInput(Model, "Wind speed at 10m", MPerS);
 	auto RelativeHumidity = RegisterInput(Model, "Relative humidity", Percent);
 	auto AirPressure      = RegisterInput(Model, "Air pressure", HPa);
 	auto CloudCover       = RegisterInput(Model, "Cloud cover", Dimensionless);
+	auto GlobalRadiation  = RegisterInput(Model, "Global radiation", WPerM2); // Net shortwave radiation falling at earth surface.
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.1, IncaDascru);
 	
@@ -170,32 +176,66 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	
 	//TODO: Does reference density have to be a parameter, or could it be constant?
-	// Also, the units of it seem wrong??
-	auto ReferenceDensity = RegisterParameterDouble(Model, PhysParams, "Reference air density", KgPerM3, 1025.0, 1000.0, 1100.0);
+	auto ReferenceDensity = RegisterParameterDouble(Model, PhysParams, "Reference air density", KgPerM3, 1025.0, 1000.0, 1100.0); //TODO: What is this actually? Density of water at a specific temperature??
 	auto Emissivity       = RegisterParameterDouble(Model, PhysParams, "Emissivity", Dimensionless, 0.97, 0.0, 1.0);
 	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
 	
 	
 	
 	auto SaturationSpecificHumidity           = RegisterEquation(Model, "Saturation specific humidity", KgPerKg);
-	auto ActualVaporPressure                  = RegisterEquation(Model, "Actual vapor pressure", Dimensionless);   //TODO: Unit!
+	SetSolver(Model, SaturationSpecificHumidity, LakeSolver);
+	auto ActualVaporPressure                  = RegisterEquation(Model, "Actual vapor pressure", HPa);
 	auto ActualSpecificHumidity               = RegisterEquation(Model, "Actual specific humidity", KgPerKg);
 	auto AirDensity                           = RegisterEquation(Model, "Air density", KgPerM3);
 	auto Stability                            = RegisterEquation(Model, "Stability", Dimensionless);               //TODO: this probably has another unit
+	SetSolver(Model, Stability, LakeSolver);
 	auto TransferCoefficientForLatentHeatFlux = RegisterEquation(Model, "Transfer coefficient for latent heat flux", Dimensionless); //Correct unit?
+	SetSolver(Model, TransferCoefficientForLatentHeatFlux, LakeSolver);
 	auto TransferCoefficientForSensibleHeatFlux = RegisterEquation(Model, "Transfer coefficient for sensible heat flux", Dimensionless); // unit?
+	SetSolver(Model, TransferCoefficientForSensibleHeatFlux, LakeSolver);
 	auto LatentHeatOfVaporization             = RegisterEquation(Model, "Latent heat of vaporization", Dimensionless); //TODO: Unit!
-	auto RainfallHeatfluxCorrection           = RegisterEquation(Model, "Rainfall heat flux correction", Dimensionless); //TODO: Unit!
+	SetSolver(Model, LatentHeatOfVaporization, LakeSolver);
+	//auto RainfallHeatfluxCorrection           = RegisterEquation(Model, "Rainfall heat flux correction", Dimensionless); //TODO: Unit!
 	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2);
+	SetSolver(Model, LatentHeatFlux, LakeSolver);
 	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2);
+	SetSolver(Model, SensibleHeatFlux, LakeSolver);
+	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2);
+	SetSolver(Model, EmittedLongwaveRadiation, LakeSolver);
+	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
 	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2);
+	SetSolver(Model, LongwaveRadiation, LakeSolver);
 	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2);
 	
 	auto LakeSurfaceTemperature     = RegisterEquation(Model, "Lake surface temperature", DegreesCelsius);
-	//SetSolver(Model, LakeSurfaceTemperature, LakeSolver);
+	SetSolver(Model, LakeSurfaceTemperature, LakeSolver);
 	//SetInitialValue;
 	
-	
+	/*
+		Specific humidity is mass_vapor / mass_air (kg/kg)         (mass_air = mass_vapor + mass_dry_air)
+		Saturation specific humidity is the specific humidity when the air is fully saturated with water vapor (function of temperature)
+		
+		Mixing ratio is  mass_vapor / mass_dry_air
+		Saturation mixing ration is mixing ratio when air is saturated
+		
+		Vapor pressure is the partial pressure of water vapor. 
+		Saturation vapor pressure is the partial pressure of water vapor when the air is fully saturated (function of temperature)
+		
+		pressure_air = pressure_dry_air + pressure_vapor   (Dalton's law)
+		
+		pressure * volume = moles * boltzmann_constant * temperature_kelvin    (Ideal gas law)
+		
+		=> pressure_vapor / pressure_dry_air = moles_vapor / moles_dry_air = (1/0.62198) * mass_vapor / mass_dry_air = (1/0.62198) * mixing_ratio
+		
+		=> mixing_ratio = 0.62198 * pressure_vapor / (pressure_air - pressure_vapor)
+		
+		specific_humidity = mixing_ratio / (1 + mixing_ratio)   ~= mixing_ratio      (approximately correct if vapor mass is significantly smaller than total air mass, i.e. mixing_ratio is much smaller than 1, which is usually is)
+		
+		Relative humidity is   vapor_pressure / saturation_vapor_pressure   = mixing_ratio / saturation_mixing_ratio
+
+
+		NOTE: Thes saturation specific humidity computed here is that of the air touching the lake surface, while the actual specific humidity is computed for air a little above that.
+	*/
 	
 	EQUATION(Model, SaturationSpecificHumidity,
 		//NOTE: This assumes 'mixing ratio' ~= 'specific humidity', which is ok if vapor mass is significantly smaller than total air mass.
@@ -204,30 +244,31 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		
 		double svap = SaturationVaporPressure(RESULT(LakeSurfaceTemperature));
 		
-		return ratioconvertionfactor * svap / (INPUT(AirPressure) - 0.377 * svap); //TODO: Find out what 0.377 is for. Shouldn't that just be 1?
+		//return ratioconvertionfactor * svap / (INPUT(AirPressure) - 0.377 * svap); //TODO: Find out what 0.377 is for. Shouldn't that just be 1?
+		return ratioconvertionfactor * svap / (INPUT(AirPressure) - svap);
 	)
 	
 	EQUATION(Model, ActualVaporPressure,
 		double relhum = 0.01 * INPUT(RelativeHumidity); // percent -> fraction
 		
 		double svap = SaturationVaporPressure(INPUT(AirTemperature));
-		return  relhum * svap;
+		return relhum * svap;
 	)
 	
 	EQUATION(Model, ActualSpecificHumidity,
 		double ratioconvertionfactor = 0.62198;
 		double actualvaporpressure = RESULT(ActualVaporPressure);
 		
-		return ratioconvertionfactor * actualvaporpressure / (INPUT(AirPressure) - 0.377*actualvaporpressure);
+		//return ratioconvertionfactor * actualvaporpressure / (INPUT(AirPressure) - 0.377*actualvaporpressure);
+		return ratioconvertionfactor * actualvaporpressure / (INPUT(AirPressure) - actualvaporpressure);
 	)
 
 
-	//TODO: Figure out why this eq is correct:
 	EQUATION(Model, AirDensity,
-		double gasconstair = 287.058;
-		double ratioconvertionfactor = 0.62198;
-		
-		return 100.0 * INPUT(AirPressure) / (gasconstair * (INPUT(AirTemperature) + 273.15) * (1.0 + ratioconvertionfactor*RESULT(ActualSpecificHumidity)));
+		double tempkelvin = INPUT(AirTemperature) + 273.15;
+		double specificgasconstdryair = 287.058; // J/(kg K)
+		double specificgasconstvapor  = 461.495; // (J/(kg K))
+		return ((INPUT(AirPressure) - RESULT(ActualVaporPressure)) / (tempkelvin*specificgasconstdryair)  +  RESULT(ActualVaporPressure) / (tempkelvin * specificgasconstvapor))* 100.0;   //Multiply by 100 for HPa -> Pa
 	)
 
 	EQUATION(Model, Stability,
@@ -261,6 +302,8 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		else
 			ced *= (1.0 + 0.63 * std::sqrt(s));
 		
+		if(W==0.0) ced =0.0;
+		
 		return ced;
 	)
 	
@@ -276,7 +319,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		else               { ae_h = 1.652; be_h = -0.017;  ce_h = 0.0;      pe_h = 1.0;  }
 	
 		double WM8 = (W - 8.0);
-		double ced = (ae_h + be_h*std::exp(pe_h * std::log(W + 1e-12)) + ce_h*WM8*WM8)*1e-3;
+		double chd = (ae_h + be_h*std::exp(pe_h * std::log(W + 1e-12)) + ce_h*WM8*WM8)*1e-3;
 		
 		double s = RESULT(Stability);
 		if(s < 0.0)
@@ -285,22 +328,24 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 			if(s > -3.3) 	x = 0.1 + 0.03*s + 0.9*std::exp(4.8 * s);
 			else            x = 0.0;
 			
-			ced *= x;
+			chd *= x;
 		}
 		else
-			ced *= (1.0 + 0.63 * std::sqrt(s));
+			chd *= (1.0 + 0.63 * std::sqrt(s));
 		
-		return ced;
+		return chd;
 	)
 	
 	EQUATION(Model, LatentHeatOfVaporization,
+		//TODO: Should be different for snow..
 		return (2.5 - 0.00234*RESULT(LakeSurfaceTemperature))*1e6;  //TODO: Figure out unit of this!
 	)
+	/*
 	
 	EQUATION(Model, RainfallHeatfluxCorrection,
 		double airt       = INPUT(AirTemperature);
 		double airtkelvin = airt + 273.15;
-		double cpa        = 1008.0;        //Specific heat capacity of air at constant pressure. Parameter??
+		double cpa        = 1008.0;        //Specific heat capacity of air at a given pressure.
 		double cpw        = 3985.0;        //Specific heat capacity of water. But is that the correct number though?? Shouldn't it be 4186.0?
 		double gasconstair = 287.058;
 		double ratioconvertionfactor = 0.62198;
@@ -315,45 +360,64 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		cd_rain *= cpw * ((RESULT(LakeSurfaceTemperature) - airt) + (RESULT(SaturationSpecificHumidity) - RESULT(ActualSpecificHumidity))*lheat/cpa); 
 		return cd_rain / 86400.0; // 1/(kg/m2/s) -> 1/(mm/day)
 	)
+	*/
 	
 	EQUATION(Model, LatentHeatFlux,
-		double latentheat = -RESULT(TransferCoefficientForLatentHeatFlux) * RESULT(LatentHeatOfVaporization) * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
+		double latentheat = RESULT(TransferCoefficientForLatentHeatFlux) * RESULT(LatentHeatOfVaporization) * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
 		
-		//NOTE: In GOTM code they say the correct the sensible heat flux for rainfall, but actually only correct the latent heat flux! (Is this important?)
+		//NOTE: In GOTM code they say they correct the sensible heat flux for rainfall, but actually only correct the latent heat flux! (Is this important?)
 	
 		//NOTE: Again, this is probably not correct for snow and ice.
-		return latentheat - INPUT(Precipitation) * RESULT(RainfallHeatfluxCorrection);
+		return latentheat;// - INPUT(Precipitation) * RESULT(RainfallHeatfluxCorrection);
 	)
 	
 	EQUATION(Model, SensibleHeatFlux,
 		double cpa        = 1008.0;
 	
-		return - RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(LakeSurfaceTemperature) - INPUT(AirTemperature));
+		return RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(LakeSurfaceTemperature) - INPUT(AirTemperature));
 	)
 	
 	EQUATION(Model, Evaporation,
-		//TODO: Should we have a correction that allows for evaporation when wind=0?
+		//TODO: Should we have a correction that allows for some evaporation when wind=0?
 		double evap = (RESULT(AirDensity) / PARAMETER(ReferenceDensity)) * RESULT(TransferCoefficientForLatentHeatFlux) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
 		
 		return -86400000.0*evap; //NOTE: Convert m/s to mm/day. Also, we want positive sign for value.
 	)
 	
 	
+	EQUATION(Model, EmittedLongwaveRadiation,
+		double watertkelv = RESULT(LakeSurfaceTemperature) + 273.15;
+		double stefanBoltzmannConst = 5.670367e-8;
+		
+		//TODO: emissivity could be different for snow/ice
+		return PARAMETER(Emissivity) * stefanBoltzmannConst * watertkelv * watertkelv * watertkelv * watertkelv;
+	)
 	
+	EQUATION(Model, DownwellingLongwaveRadation,
+		//Downwelling long-wave radiation,  Josey (2003)
+	
+		double airtkelv = INPUT(AirTemperature) + 273.15;
+		double stefanBoltzmannConst = 5.670367e-8;
+		
+		double cloudcover = INPUT(CloudCover);
+		double vaporpressure = RESULT(ActualVaporPressure);
+		
+		double dew_point_temperature = 34.07 + 4157.0 / std::log(2.1718e8 / vaporpressure);    //(Henderson-Sellers 1984)
+		double dew_point_depression = dew_point_temperature - airtkelv;
+		
+		double cloud_effect = 10.77 * cloudcover * cloudcover +   2.34 * cloudcover  - 18.44;
+		double vapor_pressure_effect = 0.84 * (dew_point_depression + 4.01);
+		
+		double effectiveairtemp = airtkelv + cloud_effect + vapor_pressure_effect;
+		
+		//NOTE: atmosphere is assumed to be perfect black body?
+		return stefanBoltzmannConst * effectiveairtemp * effectiveairtemp * effectiveairtemp * effectiveairtemp;
+	)
 	
 	EQUATION(Model, LongwaveRadiation,
-		//Net long-wave radiation. Berliand & Berliand (1952), as implemented by GOTM
-		//TODO: Should maybe use different method since the cloud correction factor in this is not sophisticated.
-		
-		auto airtkelv = INPUT(AirTemperature) + 273.15;
-		auto watertkelv = RESULT(LakeSurfaceTemperature) + 273.15;
-		double boltzmannConst = 4.903e-9;
-		
-		double cloud = INPUT(CloudCover);
-		double x1 = (1.0 - 0.6823*cloud*cloud)*airtkelv*airtkelv*airtkelv*airtkelv;
-		double x2 = (0.39 - 0.05*std::sqrt(0.01*RESULT(ActualVaporPressure)));
-		double x3 = 4.0 * airtkelv * airtkelv * airtkelv * (watertkelv - airtkelv);
-		return - PARAMETER(Emissivity) * boltzmannConst * (x1*x2 + x3);
+		//NOTE: have different albedo for longwave and shortwave?
+		double albedo = 0.045; //TODO: Should be different when ice/snow?
+		return (1.0 - albedo) * RESULT(DownwellingLongwaveRadation) - RESULT(EmittedLongwaveRadiation);
 	)
 	
 
@@ -361,7 +425,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		//Net shortwave radiation (not albedo-corrected), partially based on Rosati & Miyaconda (1988), as implemented by GOTM
 		
 		//TODO: This is bugged, it returns way too low numbers.
-		
+		/*
 		double SolarConstant = 1350.0;
 		double tau           = 0.7;
 		double eclipse       = 23.434 * Pi / 180.0;
@@ -399,6 +463,10 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		double qshort = qtot * (1.0 - 0.62*INPUT(CloudCover) + 0.0019*NoonAngleDeg);
 		if(qshort > qtot) qshort = qtot;
 		return qshort;
+		*/
+		
+		double albedo = 0.045; //TODO: Needs snow/ice-correction. Maybe also correction for solar angle!
+		return (1.0 - albedo) * INPUT(GlobalRadiation);
 	)
 
 	
@@ -458,21 +526,54 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		
 		return Hice;
 	)
-	
-	
-	
-	
-	
 	*/
 	
 	
+	auto MeanLakeTemperature = RegisterEquation(Model, "Mean lake temperature", DegreesCelsius);
+	SetSolver(Model, MeanLakeTemperature, LakeSolver);
 	
+	auto EpilimnionTemperature = RegisterEquationODE(Model, "Epilimnion temperature", DegreesCelsius);
+	SetSolver(Model, EpilimnionTemperature, LakeSolver);
+	SetInitialValue(Model, EpilimnionTemperature, 20.0);   //TODO!
+	
+	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
+	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
 	
 	EQUATION(Model, LakeSurfaceTemperature,
-		return INPUT(AirTemperature);       //TODO!!!!
+		//NOTE: In winter, this will be the temperature of the top of the ice/snow layer when that gets implemented.
+		return RESULT(EpilimnionTemperature);
 	)
 	
+	EQUATION(Model, MeanLakeTemperature,
+		double c_theta = 0.5;  //TODO!
+		
+		return RESULT(EpilimnionTemperature) - c_theta * (1.0 - RESULT(EpilimnionThickness)/RESULT(WaterLevel))*(RESULT(EpilimnionTemperature)-RESULT(BottomTemperature));
+	)
 	
+	EQUATION(Model, EpilimnionTemperature,
+		double dtemp = (RESULT(EpilimnionTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
+		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
+		double specificHeatCapacityOfWater = 4186.0;      //TODO: Check. Note, should also be modified for salinity?
+		
+		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation); //TODO: Check this!
+		double surfaceshortwave = RESULT(ShortwaveRadiation);
+		
+		double shortwave_absorbance = 2.0; //TODO: Do this more properly.
+		
+		double shortwave_passing_through = surfaceshortwave * std::exp(-shortwave_absorbance * RESULT(EpilimnionThickness));
+		
+		double heatfluxtometalimnion = 0.0; //TODO!!!
+		
+		return (1.0 / (RESULT(EpilimnionThickness) * waterDensity * specificHeatCapacityOfWater)) * (surfaceheatflux + surfaceshortwave - heatfluxtometalimnion - shortwave_passing_through) * 86400.0;
+	)
+	
+	EQUATION(Model, BottomTemperature,
+		return 4.0;      //TODO!
+	)
+	
+	EQUATION(Model, EpilimnionThickness,
+		return 2.0;   //TODO!
+	)
 	
 	EndModule(Model);
 }
