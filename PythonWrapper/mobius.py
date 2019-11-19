@@ -4,6 +4,9 @@ import datetime as dt
 
 mobiusdll = None
 
+class TimestepSize(ctypes.Structure):
+	_fields_ = [("type", ctypes.c_int), ("magnitude", ctypes.c_int)]
+
 def initialize(dllname) :
 	global mobiusdll
 	mobiusdll = ctypes.CDLL(dllname)
@@ -24,6 +27,9 @@ def initialize(dllname) :
 
 	mobiusdll.DllGetTimesteps.argtypes = [ctypes.c_void_p]
 	mobiusdll.DllGetTimesteps.restype = ctypes.c_uint64
+	
+	mobiusdll.DllGetTimestepSize.argtypes = [ctypes.c_void_p]
+	mobiusdll.DllGetTimestepSize.restype  = TimestepSize
 
 	mobiusdll.DllGetInputTimesteps.argtypes = [ctypes.c_void_p]
 	mobiusdll.DllGetInputTimesteps.restype = ctypes.c_uint64
@@ -170,6 +176,13 @@ class DataSet :
 		'''
 		mobiusdll.DllWriteParametersToFile(self.datasetptr, _CStr(filename))
 		check_dll_error()
+		
+	def get_timestep_size(self) :
+		'''
+		Get the size of the timestep of the model. Returned as a pair (type, magnitude), where type is either 'S' (second) or 'MS' (month).
+		'''
+		timestep = mobiusdll.DllGetTimestepSize(self.datasetptr)
+		return ('S' if timestep.type == 0 else 'M', timestep.magnitude)
 		
 	def get_result_series(self, name, indexes) :
 		'''
@@ -338,14 +351,18 @@ class DataSet :
 			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
 		
 		Returns:
-			The value of the parameter (a datetime).
+			The value of the parameter (as a datetime).
 		'''
 
-		string = ctypes.create_string_buffer(32)
+		string = ctypes.create_string_buffer(64)
 		mobiusdll.DllGetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), string)
 		check_dll_error()
 		datestr = string.value.decode('utf-8')
-		return dt.datetime.strptime(datestr, '%Y-%m-%d')
+		try :
+			result = dt.datetime.strptime(datestr, '%Y-%m-%d %H:%M:%S')
+		except :
+			result = dt.datetime.strptime(datestr, '%Y-%m-%d')
+		return result
 		
 	def get_parameter_double_min_max(self, name) :
 		'''

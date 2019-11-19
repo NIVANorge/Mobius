@@ -566,8 +566,8 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				
 				if(Token.Type == TokenType_Date)
 				{
-					datetime Date = Stream.ExpectDate();
-					CurTimestep = StartDate.DaysUntil(Date); //NOTE: Only one-day timesteps currently supported.
+					datetime Date = Stream.ExpectDateTime();
+					CurTimestep = FindTimestep(StartDate, Date, Model->TimestepSize);
 				}
 				else if(Token.Type == TokenType_UnquotedString) //TODO: Remove the whole 'end_timeseries' thing in the future when people have adjusted to the change.
 				{
@@ -601,8 +601,9 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						Stream.PrintErrorHeader();
 						MOBIUS_FATAL_ERROR("Expected a token saying 'to'.");
 					}
-					datetime EndDateRange = Stream.ExpectDate();
-					s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
+					datetime EndDateRange = Stream.ExpectDateTime();
+					s64 EndTimestepRange = FindTimestep(StartDate, EndDateRange, Model->TimestepSize);
+					//s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
 					
 					if(EndTimestepRange < CurTimestep)
 					{
@@ -682,7 +683,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 		else if(Section.Equals("start_date"))
 		{
 			Stream.ExpectToken(TokenType_Colon);
-			DataSet->InputDataStartDate = Stream.ExpectDate();
+			DataSet->InputDataStartDate = Stream.ExpectDateTime();
 			DataSet->InputDataHasSeparateStartDate = true;
 		}
 		else if(Section.Equals("inputs"))

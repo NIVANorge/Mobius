@@ -1016,7 +1016,7 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 		//NOTE: In case the user asked for a input timeseries that starts at the start of the modelrun rather than at the start of the input series.
 		datetime DataSetStartDate = GetStartDate(DataSet);
 		datetime InputStartDate   = DataSet->InputDataStartDate;
-		TimestepOffset = InputStartDate.DaysUntil(DataSetStartDate); //TODO: If we later allow for different lengths of timestep we have to update this!
+		TimestepOffset = FindTimestep(InputStartDate, DataSetStartDate, Model->TimestepSize);
 	}
 	
 	if(InputSeriesSize + TimestepOffset > DataSet->InputDataTimesteps)
@@ -1137,7 +1137,7 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 		//NOTE: In case the user asked for a input timeseries that starts at the start of the modelrun rather than at the start of the input series.
 		datetime DataSetStartDate = GetStartDate(DataSet);
 		datetime InputStartDate   = DataSet->InputDataStartDate;
-		s64 TimestepOffset = InputStartDate.DaysUntil(DataSetStartDate); //TODO: If we later allow for different lengths of timestep we have to update this!
+		s64 TimestepOffset = FindTimestep(InputStartDate, DataSetStartDate, Model->TimestepSize);
 		Lookup += TimestepOffset * DataSet->InputStorageStructure.TotalCount;
 	}
 	

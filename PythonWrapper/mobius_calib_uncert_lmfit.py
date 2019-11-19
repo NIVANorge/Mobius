@@ -535,7 +535,9 @@ def get_input_dataframe(dataset, list, alignwithresults=False) :
         start_date = dataset.get_input_start_date()
         timesteps  = dataset.get_input_timesteps()
 	
-    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='D'))
+    (type, magnitude) = dataset.get_timestep_size()
+	
+    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s' % (magnitude, type)))
 	
     df = pd.DataFrame({'Date' : dates})
 	
@@ -555,7 +557,9 @@ def get_result_dataframe(dataset, list) :
     start_date = dataset.get_parameter_time('Start date', [])
     timesteps  = dataset.get_parameter_uint('Timesteps', [])
 	
-    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='D'))
+    (type, magnitude) = dataset.get_timestep_size()
+	
+    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s' % (magnitude, type)))
 	
     df = pd.DataFrame({'Date' : dates})
 	

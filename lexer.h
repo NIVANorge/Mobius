@@ -10,11 +10,12 @@ enum token_type
 	TokenType_Numeric,
 	TokenType_Bool,
 	TokenType_Date,
+	TokenType_Time,
 	TokenType_EOF,
 };
 
 //NOTE: WARNING: This has to match the token_type enum!!!
-const char *TokenNames[10] =
+const char *TokenNames[11] =
 {
 	"(unknown)",
 	"unquoted string",
@@ -25,6 +26,7 @@ const char *TokenNames[10] =
 	"number",
 	"boolean",
 	"date",
+	"time",
 	"(end of file)",
 };
 
@@ -114,7 +116,7 @@ struct token_stream
 	double   ExpectDouble();
 	u64      ExpectUInt();
 	bool     ExpectBool();
-	datetime ExpectDate();
+	datetime ExpectDateTime();
 	token_string ExpectQuotedString();
 	token_string ExpectUnquotedString();
 	
@@ -416,6 +418,17 @@ token_stream::ReadTokenInternal_()
 					NumericPos = 0;
 				}
 			}
+			else if(c == ':')
+			{
+				Token.Type = TokenType_Time;
+				Date[0] = (s32)BeforeComma;
+				DatePos = 1;
+				if(HasComma || HasExponent || IsNegative)
+				{
+					PrintErrorHeader();
+					MOBIUS_FATAL_ERROR("Mixing numeric notation with time notation." << std::endl);
+				}
+			}
 			else if(c == '+')
 			{
 				if(!HasExponent || NumericPos != 0)
@@ -498,15 +511,17 @@ token_stream::ReadTokenInternal_()
 				break;
 			}
 		}
-		else if(Token.Type == TokenType_Date)
+		else if(Token.Type == TokenType_Date || Token.Type == TokenType_Time)
 		{
-			if(c == '-')
+			char Separator = Token.Type == TokenType_Date ? '-' : ':';
+			
+			if(c == Separator)
 			{
 				++DatePos;
 				if(DatePos == 3)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Too many '-' signs in date literal." << std::endl);
+					MOBIUS_FATAL_ERROR("Too many '" << Separator << "' signs in date or time literal." << std::endl);
 				}
 			}
 			else if(isdigit(c))
@@ -561,19 +576,27 @@ token_stream::ReadTokenInternal_()
 		}
 	}
 	
-	if(Token.Type == TokenType_Date)
+	if(Token.Type == TokenType_Date || Token.Type == TokenType_Time)
 	{
 		if(DatePos != 2)
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Invalid date literal. Has to be on the form yyyy-mm-dd ." << std::endl);
+			MOBIUS_FATAL_ERROR("Invalid date (time) literal. Has to be on the form YYYY-MM-DD (hh:mm:ss)." << std::endl);
 		}
 		bool Success;
-		Token.DateValue = datetime(Date[0], Date[1], Date[2], &Success);
+		if(Token.Type == TokenType_Date)
+		{
+			Token.DateValue = datetime(Date[0], Date[1], Date[2], &Success);
+		}
+		else
+		{
+			Success = Date[0] >= 0 && Date[0] <= 23 && Date[1] >= 0 && Date[1] <= 59 && Date[2] >= 0 && Date[2] <= 59;
+			Token.DateValue.SecondsSinceEpoch = 3600*Date[0] + 60*Date[1] + Date[2];
+		}
 		if(!Success)
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("The date " << Token.StringValue << " does not exist." << std::endl);
+			MOBIUS_FATAL_ERROR("The date or time " << Token.StringValue << " does not exist." << std::endl);
 		}
 	}
 	
@@ -603,10 +626,16 @@ bool token_stream::ExpectBool()
 	return Token.BoolValue;
 }
 
-datetime token_stream::ExpectDate()
+datetime token_stream::ExpectDateTime()
 {
-	token Token = ExpectToken(TokenType_Date);
-	return Token.DateValue;
+	token DateToken = ExpectToken(TokenType_Date);
+	token PotentialTimeToken = PeekToken();
+	if(PotentialTimeToken.Type == TokenType_Time)
+	{
+		ReadToken();
+		DateToken.DateValue.SecondsSinceEpoch += PotentialTimeToken.DateValue.SecondsSinceEpoch;
+	}
+	return DateToken.DateValue;
 }
 
 token_string token_stream::ExpectQuotedString()
@@ -737,7 +766,7 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, paramet
 		{
 			token Token = PeekToken();
 			if(Token.Type != TokenType_Date) break;
-			Value.ValTime = ExpectDate();
+			Value.ValTime = ExpectDateTime();
 			ListOut.push_back(Value);
 		}
 	}

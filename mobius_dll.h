@@ -124,6 +124,16 @@ DllGetStartDate(void *DataSetPtr, char *WriteTo)
 	CHECK_ERROR_END
 }
 
+DLLEXPORT timestep_size
+DllGetTimestepSize(void *DataSetPtr)
+{
+	CHECK_ERROR_BEGIN
+	
+	return ((mobius_data_set *) DataSetPtr)->Model->TimestepSize;
+	
+	CHECK_ERROR_END
+}
+
 DLLEXPORT u64
 DllGetInputTimesteps(void *DataSetPtr)
 {

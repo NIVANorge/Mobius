@@ -487,10 +487,11 @@ struct mobius_model
 	
 	array<equation_batch> EquationBatches;
 	array<equation_batch_group> BatchGroups;
-	//std::vector<equation_batch> EquationBatches;
-	//std::vector<equation_batch_group> BatchGroups;
 	
 	std::vector<mobius_preprocessing_step> PreprocessingSteps;
+	
+	timestep_size TimestepSize;
+	
 	
 	timer DefinitionTimer;
 	bool Finalized;
@@ -539,7 +540,7 @@ struct mobius_data_set
 	parameter_value *ParameterData;
 	storage_structure ParameterStorageStructure;
 	
-	double *hSolver;
+	double *hSolver; //TODO: Should just be in the RunState?
 	
 	double *InputData;
 	bool   *InputTimeseriesWasProvided;
@@ -582,9 +583,7 @@ struct model_run_state
 	const mobius_model *Model;
 	mobius_data_set *DataSet;
 	
-	s32 Year;
-	s32 DayOfYear;
-	s32 DaysThisYear;
+	expanded_datetime CurrentTime;
 	s64 Timestep; //NOTE: We make this a signed integer so that it can be set to -1 during the "initial value" step.
 
 
@@ -665,8 +664,7 @@ struct model_run_state
 			CurrentIndexes[IndexSetHandle].IndexSetHandle = IndexSetHandle;
 		}
 		
-		DayOfYear = 0;
-		DaysThisYear = 365;
+		
 		Timestep = 0;
 		
 		SolverTempX0 = nullptr;
@@ -826,9 +824,19 @@ if(Model->Finalized) \
 	MOBIUS_FATAL_ERROR("ERROR: You can not call the function " << __func__ << " on the model after it has been finalized using EndModelDefinition." << std::endl); \
 }
 
+inline void
+SetTimestepSize(mobius_model *Model, const char *Format)
+{
+	REGISTRATION_BLOCK(Model);
+	
+	Model->TimestepSize = ParseTimestepSize(Format);
+	
+	//TODO: Do we want to put any restrictions on it? Can be weird if somebody set a timestep of e.g. 61 seconds.
+}
 
 
-void AddPreprocessingStep(mobius_model *Model, mobius_preprocessing_step PreprocessingStep)
+inline void
+AddPreprocessingStep(mobius_model *Model, mobius_preprocessing_step PreprocessingStep)
 {
 	REGISTRATION_BLOCK(Model);
 	
@@ -1323,8 +1331,9 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 #define IF_INPUT_ELSE_PARAMETER(InputH, ParameterH) (RunState__->Running ? GetCurrentInputOrParameter(RunState__, InputH, ParameterH) : RegisterInputAndParameterDependency(RunState__, InputH, ParameterH))
 
 
-#define CURRENT_DAY_OF_YEAR() (RunState__->DayOfYear)
-#define DAYS_THIS_YEAR() (RunState__->DaysThisYear)
+#define CURRENT_DAY_OF_YEAR() (RunState__->CurrentTime.DayOfYear)
+#define DAYS_THIS_YEAR() (RunState__->CurrentTime.DaysThisYear)
+//TODO: need more of the ones above. Or maybe just expose the CurrentTime.
 #define CURRENT_TIMESTEP() (RunState__->Timestep)
 
 #define EQUATION(Model, ResultH, Def) \

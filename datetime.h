@@ -180,13 +180,23 @@ public:
 	ToString()
 	{
 		//Important: note that this one is overwritten whenever you call it. So you should make a copy of the string if you want to keep it.
-		s32 Year, Month, Day;
+		s32 Year, Month, Day, Hour, Minute, Second;
 		YearMonthDay(&Year, &Month, &Day);
-		static char Buf[32];
-		sprintf(Buf, "%04d-%02d-%02d", Year, Month, Day);
+		static char Buf[64];
+		if(SecondsSinceEpoch % 86400 == 0)
+		{
+			sprintf(Buf, "%04d-%02d-%02d", Year, Month, Day);
+		}
+		else
+		{
+			s32 Hour = (SecondsSinceEpoch / 3600) % 24;
+			s32 Minute = (SecondsSinceEpoch / 60) % 60;
+			s32 Second = SecondsSinceEpoch % 60;
+			sprintf(Buf, "%04d-%02d-%02d %02d:%02d%02d", Year, Month, Day, Hour, Minute, Second);
+		}
 		return Buf;
 	}
-	
+	/*
 	inline s32
 	DaysUntil(datetime DateTime)
 	{
@@ -201,10 +211,209 @@ public:
 			return (OtherSeconds - SecondsSinceEpoch - 1) / (24*60*60);
 		}
 	}
+	*/
 };
 
 
 
+enum timestep_unit
+{
+	Timestep_Second = 0,
+	Timestep_Month  = 1,
+	//Timestep_Year,    //TODO: Should probably have this as an optimization!
+};
+
+struct timestep_size
+{
+	timestep_unit Unit;
+	s32           Magnitude;
+};
+
+timestep_size
+ParseTimestepSize(const char *Format)
+{
+	// Format is "XY", where X is a number and Y is one of "s", "m", "h", "D", "M", "Y".
+	
+	timestep_size Result;
+	char Type;
+	int Found = sscanf(Format, "%d%c", &Result.Magnitude, &Type);
+	if(Found != 2 || Result.Magnitude <= 0)
+	{
+		MOBIUS_FATAL_ERROR("The size of the timestep must be declared on the format \"nx\", where n is a positive whole number, and x is one of 's', 'm', 'h', 'D', 'M', or 'Y'.\n");
+	}
+	if(Type == 's')
+	{
+		Result.Unit = Timestep_Second;
+	}
+	else if(Type == 'm')
+	{
+		Result.Unit = Timestep_Second;
+		Result.Magnitude *= 60;
+	}
+	else if(Type == 'h')
+	{
+		Result.Unit = Timestep_Second;
+		Result.Magnitude *= 3600;
+	}
+	else if(Type == 'D')
+	{
+		Result.Unit = Timestep_Second;
+		Result.Magnitude *= 86400;
+	}
+	else if(Type == 'M')
+	{
+		Result.Unit = Timestep_Month;
+	}
+	else if(Type == 'Y')
+	{
+		Result.Unit = Timestep_Month;
+		Result.Magnitude *= 12;
+	}
+	else
+	{
+		MOBIUS_FATAL_ERROR("The size of the timestep must be declared on the format \"nx\", where n is a positive whole number, and x is one of 's', 'm', 'h', 'D', 'M', or 'Y'.\n");
+	}
+	
+	return Result;
+}
+
+struct expanded_datetime
+{
+	datetime DateTime; //Do we need to store this?
+	s32      Year;
+	s32      Month;
+	s32      DayOfYear;
+	s32      DayOfMonth;
+	s64      SecondOfDay;
+	
+	s32      DaysThisYear;
+	s32      DaysThisMonth;
+	
+	timestep_size Timestep;
+	s64      NextStepLengthInSeconds;
+	
+	expanded_datetime(datetime Base, timestep_size Timestep)
+	{
+		this->DateTime = Base;
+		this->Timestep = Timestep;
+		
+		//NOTE: This does double work, but it should not matter that much.
+		DateTime.YearMonthDay(&Year, &Month, &DayOfMonth);
+		DateTime.DayOfYear(&DayOfYear, &Year);
+		
+		DaysThisYear = YearLength(Year);
+		DaysThisMonth = MonthLength(Year, Month);
+		
+		ComputeNextStepSize();
+	}
+	
+	expanded_datetime()
+	{
+		Year = 1970;
+		Month = 1;
+		DayOfYear = 1;
+		DayOfMonth = 1;
+		DaysThisYear = 365;
+		DaysThisMonth = 30;
+		NextStepLengthInSeconds = 86400;
+		Timestep.Unit = Timestep_Second;
+		Timestep.Magnitude = 86400;
+	}
+	
+	void
+	Advance()
+	{
+		if(Timestep.Unit == Timestep_Second)
+		{
+			DateTime.SecondsSinceEpoch += NextStepLengthInSeconds;
+			SecondOfDay                += NextStepLengthInSeconds;
+			
+			s32 Days = SecondOfDay / 86400;
+			SecondOfDay -= 86400*Days;
+			DayOfYear   += Days;
+			DayOfMonth  += Days;
+		}
+		else
+		{
+			assert(Timestep.Unit == Timestep_Month);
+			
+			DateTime.SecondsSinceEpoch += NextStepLengthInSeconds;
+			DayOfMonth                 += NextStepLengthInSeconds / 86400;
+		}
+		
+		while(DayOfMonth > DaysThisMonth)
+		{
+			DayOfMonth -= DaysThisMonth;
+			Month++;
+			
+			if(Month > 12)
+			{
+				
+				DayOfYear -= DaysThisYear;
+				Year++;
+				DaysThisYear = YearLength(Year);
+			}
+			
+			DaysThisMonth = MonthLength(Year, Month);
+		}
+		
+		if(Timestep.Unit == Timestep_Month)
+		{
+			ComputeNextStepSize();
+		}
+	}
+	
+	void
+	ComputeNextStepSize()
+	{
+		if(Timestep.Unit == Timestep_Second)
+		{
+			NextStepLengthInSeconds = Timestep.Magnitude;
+		}
+		else
+		{
+			assert(Timestep.Unit == Timestep_Month);
+			
+			NextStepLengthInSeconds = 0;
+			s32 Y = Year;
+			s32 M = Month;
+			for(s32 MM = 0; MM < Timestep.Magnitude; ++MM)
+			{
+				NextStepLengthInSeconds += 86400*MonthLength(Y, M);
+				M++;
+				if(M > 12) {M = 1; Y++; } 
+			}
+		}
+	}
+	
+};
+
+
+static s64
+FindTimestep(datetime Start, datetime Current, timestep_size Timestep)
+{
+	s64 Diff;
+	if(Timestep.Unit == Timestep_Second)
+	{
+		Diff = Current.SecondsSinceEpoch - Start.SecondsSinceEpoch;
+	}
+	else
+	{
+		assert(Timestep.Unit == Timestep_Month);
+		
+		s32 SY, SM, SD, CY, CM, CD;
+		
+		//TODO: This could probably be optimized
+		Start.YearMonthDay(&SY, &SM, &SD);
+		Current.YearMonthDay(&CY, &CM, &CD);
+
+		Diff = (CM - SM + 12*(CY-SY));
+	}
+	
+	if(Diff >= 0) return Diff / (s64)Timestep.Magnitude;
+	
+	return (-Diff + 1) / (s64)Timestep.Magnitude - 1;    //NOTE: This rounds  -Diff/Timestep.Magnitude down to nearest whole integer (as opposed to towards 0).
+}
 
 
 

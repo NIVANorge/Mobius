@@ -15,6 +15,8 @@ BeginModelDefinition(const char *Name = "(unnamed model)")
 	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
 	RegisterParameterDate(Model, System, "Start date", "1970-1-1");
 	
+	SetTimestepSize(Model, "1D");   // One day as default
+	
 	return Model;
 }
 
@@ -1533,6 +1535,8 @@ RunModel(mobius_data_set *DataSet)
 	u64 Timesteps           = GetTimesteps(DataSet);
 	datetime ModelStartTime = GetStartDate(DataSet); //NOTE: This reads the "Start date" parameter.
 	
+	//TODO: Should we put a restriction on ModelStartTime so that it is "round" with respect to the Model->TimestepSize ?
+	
 #if MOBIUS_PRINT_TIMING_INFO
 	std::cout << "Running model " << Model->Name;
 	if(Model->Modules.Count() > 1)
@@ -1557,7 +1561,10 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	datetime InputStartDate = GetInputStartDate(DataSet);
-	s64 InputDataStartOffsetTimesteps = InputStartDate.DaysUntil(ModelStartTime); //NOTE: Only one-day timesteps currently supported.
+	s64 InputDataStartOffsetTimesteps = FindTimestep(InputStartDate, ModelStartTime, Model->TimestepSize);
+	
+	//std::cout << "Input data offset" << 
+	
 	if(InputDataStartOffsetTimesteps < 0)
 	{
 		MOBIUS_FATAL_ERROR("ERROR: The input data starts at a later date than the model run." << std::endl);
@@ -1695,8 +1702,8 @@ RunModel(mobius_data_set *DataSet)
 	RunState.AllLastResultsBase = DataSet->ResultData;
 	RunState.AllCurResultsBase  = DataSet->ResultData;
 	
-	ModelStartTime.DayOfYear(&RunState.DayOfYear, &RunState.Year);
-	RunState.DaysThisYear = YearLength(RunState.Year);
+	//TODO: We may want to set this one timestep back for it to also be correct during the initial value run.
+	RunState.CurrentTime = expanded_datetime(ModelStartTime, Model->TimestepSize);
 	
 	//NOTE: Set up initial values;
 	RunState.AtResult          = RunState.AllCurResultsBase;
@@ -1755,13 +1762,7 @@ RunModel(mobius_data_set *DataSet)
 		RunState.AllCurResultsBase += DataSet->ResultStorageStructure.TotalCount;
 		RunState.AllCurInputsBase  += DataSet->InputStorageStructure.TotalCount;
 		
-		RunState.DayOfYear++;
-		if(RunState.DayOfYear == (365 + IsLeapYear(RunState.Year) + 1))
-		{
-			RunState.DayOfYear = 1;
-			RunState.Year++;
-			RunState.DaysThisYear = 365 + IsLeapYear(RunState.Year);
-		}
+		RunState.CurrentTime.Advance();
 	}
 	
 #if MOBIUS_PRINT_TIMING_INFO
@@ -1929,7 +1930,7 @@ PrintEquationProfiles(mobius_data_set *DataSet, model_run_state *RunState)
 	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
 	{	
 		std::cout << std::endl;
-		if(BatchGroup.IndexSets.empty()) std::cout << "[]";
+		if(BatchGroup.IndexSets.Count == 0) std::cout << "[]";
 		for(index_set_h IndexSet : BatchGroup.IndexSets)
 		{
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
