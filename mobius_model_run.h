@@ -1600,7 +1600,7 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	
-	if(ModelStartTime.SecondsSinceEpoch <= InputStartDate.SecondsSinceEpoch)
+	if(ModelStartTime.SecondsSinceEpoch < InputStartDate.SecondsSinceEpoch)
 	{
 		MOBIUS_FATAL_ERROR("ERROR: The input data starts at a later date than the model run." << std::endl);
 	}
