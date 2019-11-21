@@ -590,8 +590,8 @@ token_stream::ReadTokenInternal_()
 		}
 		else
 		{
-			Success = Date[0] >= 0 && Date[0] <= 23 && Date[1] >= 0 && Date[1] <= 59 && Date[2] >= 0 && Date[2] <= 59;
-			Token.DateValue.SecondsSinceEpoch = 3600*Date[0] + 60*Date[1] + Date[2];
+			Token.DateValue = datetime();
+			Success = Token.DateValue.AddHourMinuteSecond(Date[0], Date[1], Date[2]);
 		}
 		if(!Success)
 		{

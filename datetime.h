@@ -87,21 +87,33 @@ public:
 		//NOTE: Does not account for leap seconds, but that should not be a problem.
 		// Takes a string of the form "yyyy-mm-dd" and puts the number of seconds since "1970-01-01" in the SecondsSinceEpoch. Note that a negative value is computed for dates before "1970-01-01". Returns a bool saying if a correct date was provided.
 		
-		s32 Day, Month, Year;
+		s32 Day, Month, Year, Hour, Minute, Second;
 		
-		int Found = sscanf(DateString, "%d-%d-%d", &Year, &Month, &Day);
-		if(Found != 3)
+		int Found = sscanf(DateString, "%d-%d-%d %d:%d:%d", &Year, &Month, &Day, &Hour, &Minute, &Second);
+		if(Found != 3 && Found != 6)    //TODO: This does not check that somebody didn't write "2004--03 12::"
 		{
 			*Success = false;
 			return;
 		}
 		
 		*Success = SetFromYearMonthDay(Year, Month, Day);
+		if(Found == 6)
+		{
+			*Success = *Success && AddHourMinuteSecond(Hour, Minute, Second);
+		}
 	}
 	
 	datetime(s32 Year, s32 Month, s32 Day, bool *Success)
 	{
 		*Success = SetFromYearMonthDay(Year, Month, Day);
+	}
+	
+	inline bool
+	AddHourMinuteSecond(s32 Hour, s32 Minute, s32 Second)
+	{
+		bool Success = Hour >= 0 && Hour <= 23 && Minute >= 0 && Minute <= 59 && Second >= 0 && Second <= 59;
+		SecondsSinceEpoch += 3600*Hour + 60*Minute + Second;
+		return Success;
 	}
 	
 	inline void
@@ -170,10 +182,25 @@ public:
 		}
 	}
 	
+	//TODO: Consider removing this (it is used in Modules/Preprocessing/ThornthwaitePET.h only)
 	inline void
 	AdvanceDays(s32 NumberOfDays)
 	{
 		SecondsSinceEpoch += 24*60*60*((s64)NumberOfDays);
+	}
+	
+	inline s64
+	SecondOfDay()
+	{
+		if(SecondsSinceEpoch >= 0)
+		{
+			return SecondsSinceEpoch % 86400;
+		}
+		else
+		{
+			return (SecondsSinceEpoch % 86400 + 86400) % 86400;
+		}
+		return 0;
 	}
 	
 	inline char *
@@ -189,29 +216,14 @@ public:
 		}
 		else
 		{
-			s32 Hour = (SecondsSinceEpoch / 3600) % 24;
-			s32 Minute = (SecondsSinceEpoch / 60) % 60;
-			s32 Second = SecondsSinceEpoch % 60;
-			sprintf(Buf, "%04d-%02d-%02d %02d:%02d%02d", Year, Month, Day, Hour, Minute, Second);
+			s64 SOD = SecondOfDay();
+			s32 Hour = (SOD / 3600);
+			s32 Minute = (SOD / 60) % 60;
+			s32 Second = SOD % 60;
+			sprintf(Buf, "%04d-%02d-%02d %02d:%02d:%02d", Year, Month, Day, Hour, Minute, Second);
 		}
 		return Buf;
 	}
-	/*
-	inline s32
-	DaysUntil(datetime DateTime)
-	{
-		s64 OtherSeconds = DateTime.SecondsSinceEpoch;
-		
-		if(OtherSeconds >= SecondsSinceEpoch)
-		{
-			return (OtherSeconds - SecondsSinceEpoch) / (24*60*60);
-		}
-		else
-		{
-			return (OtherSeconds - SecondsSinceEpoch - 1) / (24*60*60);
-		}
-	}
-	*/
 };
 
 
@@ -304,6 +316,8 @@ struct expanded_datetime
 		DaysThisYear = YearLength(Year);
 		DaysThisMonth = MonthLength(Year, Month);
 		
+		SecondOfDay = DateTime.SecondOfDay();
+		
 		ComputeNextStepSize();
 	}
 	
@@ -318,6 +332,7 @@ struct expanded_datetime
 		NextStepLengthInSeconds = 86400;
 		Timestep.Unit = Timestep_Second;
 		Timestep.Magnitude = 86400;
+		SecondOfDay = 0;
 	}
 	
 	void

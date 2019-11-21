@@ -114,7 +114,7 @@ DLLEXPORT void
 DllGetStartDate(void *DataSetPtr, char *WriteTo)
 {
 	CHECK_ERROR_BEGIN
-	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 11-12-ish bytes)
+	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 30-ish bytes)
 	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
@@ -151,7 +151,7 @@ DLLEXPORT void
 DllGetInputStartDate(void *DataSetPtr, char *WriteTo)
 {
 	CHECK_ERROR_BEGIN
-	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 11-12-ish bytes)
+	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 30-ish bytes)
 	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
@@ -243,7 +243,7 @@ DllSetParameterTime(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	Value.ValTime = datetime(Val, &ParseSuccess);
 	if(!ParseSuccess)
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Unrecognized date format provided for the value of the parameter " << Name << std::endl)
+		MOBIUS_FATAL_ERROR("ERROR: Unrecognized date/time format \"" << Val << "\" provided for the value of the parameter " << Name << std::endl)
 	}
 	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_Time);
 	
@@ -289,7 +289,7 @@ DllGetParameterBool(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 DLLEXPORT void
 DllGetParameterTime(void *DataSetPtr, const char *Name, char **IndexNames, u64 IndexCount, char *WriteTo)
 {
-	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 11-12-ish bytes)
+	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 30-ish bytes)
 	//IMPORTANT: This is NOT thread safe since datetime::ToString is not thread safe.
 	CHECK_ERROR_BEGIN
 	
