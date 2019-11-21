@@ -1563,9 +1563,44 @@ RunModel(mobius_data_set *DataSet)
 	datetime InputStartDate = GetInputStartDate(DataSet);
 	s64 InputDataStartOffsetTimesteps = FindTimestep(InputStartDate, ModelStartTime, Model->TimestepSize);
 	
-	//std::cout << "Input data offset" << 
 	
-	if(InputDataStartOffsetTimesteps < 0)
+	//NOTE: Do some sanity checks of the input and model start times that limit potential errors.
+
+	s64 TimeOffset;
+	if(Model->TimestepSize.Unit == Timestep_Second)
+	{
+		TimeOffset = ModelStartTime.SecondsSinceEpoch - InputStartDate.SecondsSinceEpoch;
+	}
+	else
+	{
+		assert(Model->TimestepSize.Unit == Timestep_Month);
+		
+		s32 IYear, IMonth, IDay;
+		InputStartDate.YearMonthDay(&IYear, &IMonth, &IDay);
+		
+		s32 MYear, MMonth, MDay;
+		ModelStartTime.YearMonthDay(&MYear, &MMonth, &MDay);
+		
+		if(IDay != 1 || InputStartDate.SecondsSinceEpoch % 86400 != 0)
+		{
+			MOBIUS_FATAL_ERROR("ERROR: For models with timestep resolution measured in months or years, input data start dates have to be on the form yyyy-mm-01 or yyyy-mm-01 00:00:00 . In the current setup, the input start date was set to " << InputStartDate.ToString() << " ." << std::endl);
+		}
+		
+		if(MDay != 1 || ModelStartTime.SecondsSinceEpoch % 86400 != 0)
+		{
+			MOBIUS_FATAL_ERROR("ERROR: For models with timestep resolution measured in months or years, the \"Start date\" has to be on the form yyyy-mm-01 or yyyy-mm-01 00:00:00 . In the current setup, the start date was set to " << ModelStartTime.ToString() << " ." << std::endl);
+		}
+		
+		TimeOffset = (MYear-IYear)*12 + MMonth-IMonth;
+	}
+	
+	if(TimeOffset % Model->TimestepSize.Magnitude != 0)
+	{
+		MOBIUS_FATAL_ERROR("ERROR: The model run \"Start date\" was not set to be a whole number of timesteps after the input start date." << std::endl);
+	}
+	
+	
+	if(ModelStartTime.SecondsSinceEpoch <= InputStartDate.SecondsSinceEpoch)
 	{
 		MOBIUS_FATAL_ERROR("ERROR: The input data starts at a later date than the model run." << std::endl);
 	}
