@@ -302,7 +302,7 @@ struct expanded_datetime
 	s32      DaysThisMonth;
 	
 	timestep_size Timestep;
-	s64      NextStepLengthInSeconds;
+	s64      StepLengthInSeconds;
 	
 	expanded_datetime(datetime Base, timestep_size Timestep)
 	{
@@ -329,7 +329,7 @@ struct expanded_datetime
 		DayOfMonth = 1;
 		DaysThisYear = 365;
 		DaysThisMonth = 30;
-		NextStepLengthInSeconds = 86400;
+		StepLengthInSeconds = 86400;
 		Timestep.Unit = Timestep_Second;
 		Timestep.Magnitude = 86400;
 		SecondOfDay = 0;
@@ -340,8 +340,8 @@ struct expanded_datetime
 	{
 		if(Timestep.Unit == Timestep_Second)
 		{
-			DateTime.SecondsSinceEpoch += NextStepLengthInSeconds;
-			SecondOfDay                += NextStepLengthInSeconds;
+			DateTime.SecondsSinceEpoch += StepLengthInSeconds;
+			SecondOfDay                += StepLengthInSeconds;
 			
 			s32 Days = SecondOfDay / 86400;
 			SecondOfDay -= 86400*Days;
@@ -352,8 +352,8 @@ struct expanded_datetime
 		{
 			assert(Timestep.Unit == Timestep_Month);
 			
-			DateTime.SecondsSinceEpoch += NextStepLengthInSeconds;
-			DayOfMonth                 += NextStepLengthInSeconds / 86400;
+			DateTime.SecondsSinceEpoch += StepLengthInSeconds;
+			DayOfMonth                 += StepLengthInSeconds / 86400;
 		}
 		
 		while(DayOfMonth > DaysThisMonth)
@@ -383,18 +383,18 @@ struct expanded_datetime
 	{
 		if(Timestep.Unit == Timestep_Second)
 		{
-			NextStepLengthInSeconds = Timestep.Magnitude;
+			StepLengthInSeconds = Timestep.Magnitude;
 		}
 		else
 		{
 			assert(Timestep.Unit == Timestep_Month);
 			
-			NextStepLengthInSeconds = 0;
+			StepLengthInSeconds = 0;
 			s32 Y = Year;
 			s32 M = Month;
 			for(s32 MM = 0; MM < Timestep.Magnitude; ++MM)
 			{
-				NextStepLengthInSeconds += 86400*MonthLength(Y, M);
+				StepLengthInSeconds += 86400*MonthLength(Y, M);
 				M++;
 				if(M > 12) {M = 1; Y++; } 
 			}
