@@ -1,4 +1,6 @@
 # Recent large updates
+**(2019-11-25):** It is now possible to customize the timestep size when building a model. MobiView and model dlls compiled before and after this change may not compatible with each other respectively.
+
 **(2019-09-18):** The module system was formalized. MobiView and model dlls compiled before and after this change are not compatible with each other respectively.
 
 **(2019-08-26):** Timeseries in input files no longer have to be ended with 'end_timeseries'
