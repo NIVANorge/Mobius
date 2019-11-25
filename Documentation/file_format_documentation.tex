@@ -106,7 +106,9 @@ Number & {\tt 8} or {\tt 0.05} or {\tt 1e-9} or {\tt NaN} \\
 \hline
 Boolean &{\tt  true} or {\tt false} \\
 \hline
-Date & 1999-05-01 (format yyyy-mm-dd) \\
+Date & 1999-05-01 (format YYYY-MM-DD) \\
+\hline
+Time & 12:31:00 (format hh:mm:ss) \\
 \hline
 Unquoted string & {\tt index\_sets} \\
 \hline
@@ -115,6 +117,8 @@ Quoted string & {\tt "Timesteps"} \\
 \end{tabular}
 \caption{Types of allowed tokens in the standard format}
 \end{table}
+
+A \emph{Datetime} is either a Date alone or a Date followed by a Time.
 
 Both quoted strings and unquoted strings are always case sensitive, so you can for instance not type "landscape units" if you want to talk about the index set "Landscape units".
 
@@ -498,6 +502,35 @@ The entire contents of depositions.dat:
 \begin{note}
 All organisational data like additional timeseries or index set dependencies have to be declared in the master file even though the information may be about timeseries that are included from separate files.
 \end{note}
+
+\subsubsection{Models with non-daily timesteps}
+
+Mobius now supports models that have step sizes that are measured in seconds, minutes, hours, days, months or years. If a model has a timestep that is less than a day, one can use the full Datetime format to give a time value. Note that a given compiled model is always just using one timestep size, so you should find out what that is before making parameter and input files for it (most example models for Mobius still use a daily step size). We still use the term "start date" instead of "start time" for legacy reasons.
+
+\begin{example}
+Usages of the datetime format
+\begin{lstlisting}
+
+start_date : 1990-01-15 12:00:00
+
+"Air temperature" :
+1990-01-15 12:00:00  5.1
+1990-01-15 13:00:00 to 1990-01-15 16:00:00 7.8
+\end{lstlisting}
+\end{example}
+
+A Datetime can similarly be used for the model "Start date" parameter in the parameter file. There are some important rules to consider:
+\begin{enumerate}[i]
+\item "1990-04-03" is equivalent to "1990-04-03 00:00:00".
+\item A start date refers to the beginning of the first timestep. The timestep itself is an interval starting at some timestamp and spanning one step size.
+\item The input start date and the model run start date have to be aligned so that the the model run start date is either zero or a full number of timesteps after the input start date.
+\item If a value in an input series is given a timestamp that is not perfectly aligned with the beginning of a timestep, it will be considered to belong to the timestep whose interval the timestamp is in. For instance, in a model with an hourly timestep, a value given a timestamp of 12:53:14 will be considered to belong to a timestep starting at 12:00:00 (given that the start date was at a whole hour).
+\item If more than one value is given for the same timestep, only the last one is used. This means that if you feed hourly data to a daily-timestep model, only the last value of each day is used.
+\item No processing, aggregation or interpolation is done to the data by Mobius. This is because this is something that should be done with care by the researcher and often has to be done differently for different types of data. There is no one-size-fits-all way to automate it without potentially causing mistakes or confusion.
+\item Timeseries given in the dense format are always considered to be aligned with the timesteps of the model.
+\end{enumerate}
+
+In models that have their timestep measured in months or years, the timestep will always be full calendar months or calendar years. Note that this means that the length of each timestep (if measured in e.g. days) changes with the step since months and years are not of equal length. Models such as these have to have start dates (both in the parameter and input file) set at the first day of some month. For instance 1990-05-01 is a valid start date for such a model, but 1990-05-05 is not.
 
 
 \subsubsection{Converting from .csv or .xlsx}

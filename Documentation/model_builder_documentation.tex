@@ -107,7 +107,7 @@ directivestyle=\color{burgundy},
      \item[]\colorbox{silver}{\usebox\examplebox}
    \end{trivlist}}
 
-\title{Documentation of model building in Mobius}
+\title{Building models in Mobius}
 \author{Magnus Dahler Norling}
 
 \begin{document}
@@ -768,10 +768,29 @@ The framework lets you access a few additional variables that tell you something
 \item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
 \item {\tt FIRST\_INDEX(IndexSetHandle)} Gives you an {\tt index\_t} corresponding to the first index of that index set. Registers no dependencies.
 \item {\tt INDEX\_NUMBER(IndexSetHandle, Number)} Gives you an {\tt index\_t} corresponding to the index of that number. However, be careful when using this that the index is smaller than {\tt INDEX\_COUNT(IndexSetHandle)}. Also, it is probably better to use a predeclared index, which guarantees you that what you are referring to has the right index name  (see Section \ref{sec:predeclared} below). Registers no dependencies.
-\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is 1999-1-15, then during the first timestep, the current day of year will be 15.
-\item {\tt DAYS\_THIS\_YEAR()} Returns an integer that is either 365 (in a normal year) or 366 (in a leap year).
+\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is 1999-1-15, then during the first timestep, the current day of year will be 15. May be deprecated soon in favor of {\tt CURRENT\_TIME} (see below).
+\item {\tt DAYS\_THIS\_YEAR()} Returns an integer that is either 365 (in a normal year) or 366 (in a leap year). May be deprecated soon in favor of {\tt CURRENT\_TIME} (see below).
 \item {\tt CURRENT\_TIMESTEP()} Returns an integer saying what timestep we are on. A return value of -1 means that this is during an "initial value" computation, while 0 is the first proper timestep.
+\item {\tt CURRENT\_TIME()} Returns a reference to a structure with the following fields (all integers):
+	\begin{enumerate}[1]
+	\item {\tt Year}. The year of the beginning of the current timestep.
+	\item {\tt Month}. The month of the beginning of the current timestep. January is 1 and so on.
+	\item {\tt DayOfYear}. The day of the year that the current timestep starts on. January 1st is 1 and so on.
+	\item {\tt DayOfMonth}. What day in the month the current timestep starts. Starts at 1.
+	\item {\tt SecondOfDay}. What second of the day the current timestep starts. Range: 0-86399.
+	\item {\tt DaysThisYear}. The number of days in the year that the current timestep starts in.
+	\item {\tt DaysThisMonth}. The number of days in the month that the current timestep starts in.
+	\item {\tt StepLengthInSeconds}. The number of seconds that the current timestep spans.
+	\end{enumerate}
+Some of these are more relevant than others, depending on the timestep size of the model. See section \ref{sec:timestepsize}.
 \end{enumerate}
+
+\begin{example}
+If you want to access the current day of month inside an equation body, you can for instance write
+\begin{lstlisting}[style=mycpp]
+auto dom = CURRENT_TIME().DayOfMonth;
+\end{lstlisting}
+\end{example}
 
 \begin{note}
 The {\tt index\_t} structure only contains numeric info about what index set handle it belongs to and the number of the index. However, instead of specifying these directly, it is better to use one of the wrapper macros that allow you to get an index of a specific index set. There are also a couple of overloaded operators that allow you to do size comparisons or increment {\tt index\_t}'s.
@@ -999,6 +1018,32 @@ Every parameter group and equation that is registered between a {\tt BeginModule
 \item Module organization shows up MobiView, and it makes it easier for the user to see what part of the model each parameter or equation belongs to.
 \item You can have separate version numbers for each module, and these are shown in MobiView and in generated parameter files.
 \end{enumerate}
+
+\subsection{Model timestep size}\label{sec:timestepsize}
+
+The timestep size of a model can be set using {\tt SetTimestepSize(Model, Format)}. Here {\tt Format} is a string on the form "nX", where n is a postitive whole number and X is one of "s" (seconds), "m" (minutes), "h" (hours), "D" (days), "M" (months), or "Y" (years).
+\begin{example}
+Setting the timestep of a model to be 2 seconds
+\begin{lstlisting}[style=mycpp]
+SetTimestepSize(Model, "2s");
+\end{lstlisting}
+\end{example}
+Note, the number can not be omitted even if it is 1.
+
+Sometimes it can be useful to make a module that is independent of timestep size. The module can then be reused in models with various timestep sizes. One way to do that is to use {\tt CURRENT\_TIME().StepLengthInSeconds} inside equations to convert from one time unit to a timestep-based time unit.
+\begin{example}
+Converting one value from a day unit to a timestep unit.
+\begin{lstlisting}[style=mycpp]
+auto TimeConstant = RegisterParameterDouble(Model, Hydrology, "Time constant", Days, 2.0);
+
+EQUATION(Model, Runoff,
+	double timeConstant = PARAMETER(TimeConstant) * 86400.0 / (CURRENT_TIME().StepLengthInSeconds); //The unit of timeConstant is "timestep" whether "timestep" is a second, 3 days or 6 months.
+	return (RESULT(WaterDepth) - PARAMETER(FieldCapacity) / timeConstant;
+)
+\end{lstlisting}
+\end{example}
+
+When making monthly or yearly - timestep models it is recommended to work with such unit conversions always since {\tt StepLengthInSeconds} could be different from month to month or from year to year. (Note: we don't currently count leap seconds, but we do count leap days).
 
 \section{Application building API}
 

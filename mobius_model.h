@@ -1331,9 +1331,17 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 #define IF_INPUT_ELSE_PARAMETER(InputH, ParameterH) (RunState__->Running ? GetCurrentInputOrParameter(RunState__, InputH, ParameterH) : RegisterInputAndParameterDependency(RunState__, InputH, ParameterH))
 
 
+inline const expanded_datetime &
+GetCurrentTime(model_run_state *RunState)
+{
+	return RunState->CurrentTime;
+}
+
+#define CURRENT_TIME() (GetCurrentTime(RunState__))
+//TODO: The following two should be deprecated
 #define CURRENT_DAY_OF_YEAR() (RunState__->CurrentTime.DayOfYear)
 #define DAYS_THIS_YEAR() (RunState__->CurrentTime.DaysThisYear)
-//TODO: need more of the ones above. Or maybe just expose the CurrentTime.
+
 #define CURRENT_TIMESTEP() (RunState__->Timestep)
 
 #define EQUATION(Model, ResultH, Def) \
