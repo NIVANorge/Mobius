@@ -1037,7 +1037,7 @@ Converting one value from a day unit to a timestep unit.
 auto TimeConstant = RegisterParameterDouble(Model, Hydrology, "Time constant", Days, 2.0);
 
 EQUATION(Model, Runoff,
-	double timeConstant = PARAMETER(TimeConstant) * 86400.0 / (CURRENT_TIME().StepLengthInSeconds); //The unit of timeConstant is "timestep" whether "timestep" is a second, 3 days or 6 months.
+	double timeConstant = PARAMETER(TimeConstant) * 86400.0 / ((double)CURRENT_TIME().StepLengthInSeconds); //The unit of timeConstant is "timestep" whether "timestep" is a second, 3 days or 6 months.
 	return (RESULT(WaterDepth) - PARAMETER(FieldCapacity) / timeConstant;
 )
 \end{lstlisting}
