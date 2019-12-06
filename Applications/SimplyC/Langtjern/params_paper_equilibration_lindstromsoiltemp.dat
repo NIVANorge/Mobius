@@ -1,4 +1,4 @@
-# Parameter file generated for SimplyC V0.1 at 2019-09-10 14:24:02
+# Parameter file generated for model SimplyC, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4, Lindström soil temperature V1.0, SimplyC Vtest_03) at 2019-12-06 13:59:51
 
 index_sets:
 "Reaches" : {"Inlet"}
@@ -15,6 +15,9 @@ parameters:
 "Latitude" :     #(°C) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
 60.6
 
+"PET multiplication factor" :     #(dimensionless) [0, 2] Parameter to scale potential evapotranspiration. Should be set to 1 in most cases.
+0.6
+
 "Initial snow depth as water equivalent" :     #(mm) [0, 50000]
 250
 
@@ -23,9 +26,6 @@ parameters:
 
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
 0.22
-
-"PET multiplication factor" :     #(dimensionless) [0, 2]
-0.6
 
 "Soil field capacity" :     #(mm) [0, 1000]
 50
@@ -64,7 +64,7 @@ false
 9.7
 
 "Soil DOC equilibration factor" :     #(km2/day) [0, 10]
-0.1
+100
 
 ###################### "Reaches" ######################
 "Catchment area" :     #(km^2) [0, 10000]
