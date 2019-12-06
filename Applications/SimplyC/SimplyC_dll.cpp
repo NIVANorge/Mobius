@@ -16,7 +16,7 @@
 //#include "../../Modules/SimplyC.h"
 //#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_exp_temp_SO4_groundwater_transport.h"
 //#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
-#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4_equilibrizing_DOC.h"
+#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
 DLLEXPORT void *
@@ -28,7 +28,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
-	AddSoilTemperatureModel2(Model);
+	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
