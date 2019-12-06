@@ -24,6 +24,8 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	
+	SetTimestepSize(Model, "1Y");
+	
 	EndModelDefinition(Model);
 	
 	mobius_data_set *DataSet = GenerateDataSet(Model);

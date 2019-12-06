@@ -56,6 +56,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto M3PerS         = RegisterUnit(Model, "m3/s");
 	auto M3PerDay       = RegisterUnit(Model, "m3/day");
 	auto MmPerDay       = RegisterUnit(Model, "mm/day");
+	auto PerM           = RegisterUnit(Model, "1/m");
 	auto MPerM          = RegisterUnit(Model, "m/m");
 	auto Degrees        = RegisterUnit(Model, "°");
 	auto DegreesCelsius = RegisterUnit(Model, "°C");
@@ -65,6 +66,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto Pascal         = RegisterUnit(Model, "Pa");
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto WPerM2         = RegisterUnit(Model, "W/m2");
+	auto NPerM2         = RegisterUnit(Model, "N/m2");
 	
 	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters");
 	
@@ -193,6 +195,8 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	SetSolver(Model, TransferCoefficientForLatentHeatFlux, LakeSolver);
 	auto TransferCoefficientForSensibleHeatFlux = RegisterEquation(Model, "Transfer coefficient for sensible heat flux", Dimensionless); // unit?
 	SetSolver(Model, TransferCoefficientForSensibleHeatFlux, LakeSolver);
+	auto SurfaceStressCoefficient = RegisterEquation(Model, "Surface stress coefficient", Dimensionless);
+	SetSolver(Model, SurfaceStressCoefficient, LakeSolver);
 	auto LatentHeatOfVaporization             = RegisterEquation(Model, "Latent heat of vaporization", Dimensionless); //TODO: Unit!
 	SetSolver(Model, LatentHeatOfVaporization, LakeSolver);
 	//auto RainfallHeatfluxCorrection           = RegisterEquation(Model, "Rainfall heat flux correction", Dimensionless); //TODO: Unit!
@@ -200,6 +204,9 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	SetSolver(Model, LatentHeatFlux, LakeSolver);
 	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2);
 	SetSolver(Model, SensibleHeatFlux, LakeSolver);
+	auto SurfaceStress                        = RegisterEquation(Model, "Surface stress", NPerM2);
+	SetSolver(Model, SurfaceStress, LakeSolver);
+	
 	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2);
 	SetSolver(Model, EmittedLongwaveRadiation, LakeSolver);
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
@@ -336,6 +343,33 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		return chd;
 	)
 	
+	EQUATION(Model, SurfaceStressCoefficient,
+		double W = INPUT(WindSpeed);
+		
+		double ae_d; double be_d; double ce_d; double pe_d;
+		if(W < 2.2)        { ae_d = 0.0;   be_d = 1.08;   pe_d = -0.15;}
+		else if (W < 5.0)  { ae_d = 0.771; be_d = 0.0858; pe_d = 1.0;  }
+		else if (W < 8.0)  { ae_d = 0.867; be_d = 0.0667; pe_d = 1.0;  }
+		else if (W < 25.0) { ae_d = 1.2;   be_d = 0.0025; pe_d = 1.0;  }
+		else               { ae_d = 0.0;   be_d = 0.07;   pe_d = 1.0;  }
+	
+		double cdd = (ae_d + be_d*std::exp(pe_d * std::log(W + 1e-12)))*1e-3;
+		
+		double s = RESULT(Stability);
+		if(s < 0.0)
+		{
+			double x;
+			if(s > -3.3) 	x = 0.1 + 0.03*s + 0.9*std::exp(4.8 * s);
+			else            x = 0.0;
+			
+			cdd *= x;
+		}
+		else
+			cdd *= (1.0 + 0.47 * std::sqrt(s));
+		
+		return cdd;
+	)
+	
 	EQUATION(Model, LatentHeatOfVaporization,
 		//TODO: Should be different for snow..
 		return (2.5 - 0.00234*RESULT(LakeSurfaceTemperature))*1e6;  //TODO: Figure out unit of this!
@@ -373,16 +407,24 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	EQUATION(Model, SensibleHeatFlux,
 		double cpa        = 1008.0;
-	
-		return RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(LakeSurfaceTemperature) - INPUT(AirTemperature));
+		
+		return RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (INPUT(AirTemperature) - RESULT(LakeSurfaceTemperature));
 	)
 	
 	EQUATION(Model, Evaporation,
-		//TODO: Should we have a correction that allows for some evaporation when wind=0?
 		double evap = (RESULT(AirDensity) / PARAMETER(ReferenceDensity)) * RESULT(TransferCoefficientForLatentHeatFlux) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
 		
 		return -86400000.0*evap; //NOTE: Convert m/s to mm/day. Also, we want positive sign for value.
 	)
+	
+	EQUATION(Model, SurfaceStress,
+	
+		//TODO: Also possible to correct this for rainfall.
+		double Wind = INPUT(WindSpeed);
+		return RESULT(SurfaceStressCoefficient) * RESULT(AirDensity) * Wind * Wind;
+	)
+	
+	
 	
 	
 	EQUATION(Model, EmittedLongwaveRadiation,
@@ -410,7 +452,6 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		
 		double effectiveairtemp = airtkelv + cloud_effect + vapor_pressure_effect;
 		
-		//NOTE: atmosphere is assumed to be perfect black body?
 		return stefanBoltzmannConst * effectiveairtemp * effectiveairtemp * effectiveairtemp * effectiveairtemp;
 	)
 	
@@ -468,8 +509,133 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		double albedo = 0.045; //TODO: Needs snow/ice-correction. Maybe also correction for solar angle!
 		return (1.0 - albedo) * INPUT(GlobalRadiation);
 	)
+	
+
+	//TODO: Visibility should eventually depend on DOC concentration
+	//TODO: Absorbance may not be a technically correct name? Though is related..
+	auto ShortwaveAbsorbance = RegisterParameterDouble(Model, PhysParams, "Shortwave absorbance", PerM, 1.5);
 
 	
+	//Stuff below here is loosely based on FLake (Mironov 05)
+	auto ConvectiveHeatFluxScale = RegisterEquation(Model, "Convective heat flux scale", WPerM2);
+	SetSolver(Model, ConvectiveHeatFluxScale, LakeSolver);
+	
+	auto SurfaceShearVelocity = RegisterEquation(Model, "Surface shear velocity", MPerS);
+	SetSolver(Model, SurfaceShearVelocity, LakeSolver);
+	
+	auto MeanLakeTemperature = RegisterEquationODE(Model, "Mean lake temperature", DegreesCelsius);
+	SetSolver(Model, MeanLakeTemperature, LakeSolver);
+	SetInitialValue(Model, MeanLakeTemperature, 20.0); //TODO!
+	
+	auto EpilimnionTemperature = RegisterEquation(Model, "Epilimnion temperature", DegreesCelsius);
+	SetSolver(Model, EpilimnionTemperature, LakeSolver);
+	//SetInitialValue(Model, EpilimnionTemperature, 20.0);   //TODO!
+	
+	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
+	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
+	
+	
+	EQUATION(Model, ConvectiveHeatFluxScale,
+		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
+		double surfaceshortwave = RESULT(ShortwaveRadiation);
+		
+		//Assuming shortwave radiation at depth h is given by
+		// I(h) = s_0*e^-ah,     a = PARAMETER(ShortwaveAbsorbance), s_0=surfaceshortwave
+		
+		double absorb = PARAMETER(ShortwaveAbsorbance);
+		double thickness = RESULT(EpilimnionThickness);
+		
+		double expah = std::exp(-absorb*thickness);
+		
+		return surfaceheatflux + surfaceshortwave * (1.0 + expah + (2.0 / (absorb*thickness))*(1.0 - expah)); 
+	)
+	
+	EQUATION(Model, EpilimnionWaterDensity,
+		double dtemp = (RESULT(EpilimnionTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
+		return 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
+	)
+	
+	EQUATION(Model, SurfaceShearVelocity,
+		return std::sqrt(RESULT(SurfaceStress) / RESULT(EpilimnionWaterDensity));    //TODO: Why do FLake doc say to involve specific heat capacity here?
+	)
+	
+	EQUATION(Model, ObukhovLength,
+		double shearvel = RESULT(SurfaceShearVelocity);
+		double specificHeatCapacityOfWater = 4186.0;
+		double buoy = 9.81 * 1.6509e-5 * (RESULT(EpilimnionTemperature) + 273.15 - 277.13);
+		
+		return shearvel * shearvel * shearvel / (buoy * RESULT(ConvectiveHeatFluxScale)) * RESULT(EpilimnionWaterDensity) * specificHeatCapacityOfWater;
+	)
+	
+	EQUATION(Model, EquilibriumEpilimnionThickess,
+		
+	)
+	
+	
+	EQUATION(Model, LakeSurfaceTemperature,
+		//NOTE: In winter, this will be the temperature of the top of the ice/snow layer when that gets implemented.
+		return RESULT(EpilimnionTemperature);
+	)
+	
+	EQUATION(Model, MeanLakeTemperature,
+		double dtemp = (RESULT(MeanLakeTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
+		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
+		double specificHeatCapacityOfWater = 4186.0;
+		
+		//return RESULT(EpilimnionTemperature) - c_theta * (1.0 - RESULT(EpilimnionThickness)/RESULT(WaterLevel))*(RESULT(EpilimnionTemperature)-RESULT(BottomTemperature));
+		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
+		double surfaceshortwave = RESULT(ShortwaveRadiation);
+		
+		return (1.0 / (RESULT(WaterLevel)  * waterDensity * specificHeatCapacityOfWater)) * (surfaceheatflux + surfaceshortwave) * 86400.0;
+	)
+	
+	EQUATION(Model, EpilimnionTemperature,
+		double c_theta = 0.5;  //TODO!
+		
+		double a = c_theta*(1.0 - RESULT(EpilimnionThickness)/RESULT(WaterLevel));
+		
+		return (RESULT(MeanLakeTemperature) - a*RESULT(BottomTemperature)) / (1.0 - a);
+		/*
+		double dtemp = (RESULT(EpilimnionTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
+		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
+		double specificHeatCapacityOfWater = 4186.0;      //TODO: Check. Note, should also be modified for salinity?
+		
+		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation); //TODO: Check this!
+		double surfaceshortwave = RESULT(ShortwaveRadiation);
+		
+		double shortwave_absorbance = 2.0; //TODO: This should depend on water color when the DOC module is in. Also, should be parametrized
+		
+		double shortwave_passing_through = surfaceshortwave * std::exp(-shortwave_absorbance * RESULT(EpilimnionThickness));
+		
+		double heatfluxtometalimnion = 0.0; //TODO!!!
+		
+		return (1.0 / (RESULT(EpilimnionThickness) * waterDensity * specificHeatCapacityOfWater)) * (surfaceheatflux + surfaceshortwave - heatfluxtometalimnion - shortwave_passing_through) * 86400.0;
+		*/
+	)
+	
+	EQUATION(Model, BottomTemperature,
+		return 4.0;      //TODO!
+	)
+	
+	EQUATION(Model, EpilimnionThickness,
+		return 2.0;   //TODO!
+	)
+	
+	EndModule(Model);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 	/*
 	
 	
@@ -528,52 +694,3 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	)
 	*/
 	
-	
-	auto MeanLakeTemperature = RegisterEquation(Model, "Mean lake temperature", DegreesCelsius);
-	SetSolver(Model, MeanLakeTemperature, LakeSolver);
-	
-	auto EpilimnionTemperature = RegisterEquationODE(Model, "Epilimnion temperature", DegreesCelsius);
-	SetSolver(Model, EpilimnionTemperature, LakeSolver);
-	SetInitialValue(Model, EpilimnionTemperature, 20.0);   //TODO!
-	
-	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
-	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
-	
-	EQUATION(Model, LakeSurfaceTemperature,
-		//NOTE: In winter, this will be the temperature of the top of the ice/snow layer when that gets implemented.
-		return RESULT(EpilimnionTemperature);
-	)
-	
-	EQUATION(Model, MeanLakeTemperature,
-		double c_theta = 0.5;  //TODO!
-		
-		return RESULT(EpilimnionTemperature) - c_theta * (1.0 - RESULT(EpilimnionThickness)/RESULT(WaterLevel))*(RESULT(EpilimnionTemperature)-RESULT(BottomTemperature));
-	)
-	
-	EQUATION(Model, EpilimnionTemperature,
-		double dtemp = (RESULT(EpilimnionTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
-		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
-		double specificHeatCapacityOfWater = 4186.0;      //TODO: Check. Note, should also be modified for salinity?
-		
-		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation); //TODO: Check this!
-		double surfaceshortwave = RESULT(ShortwaveRadiation);
-		
-		double shortwave_absorbance = 2.0; //TODO: Do this more properly.
-		
-		double shortwave_passing_through = surfaceshortwave * std::exp(-shortwave_absorbance * RESULT(EpilimnionThickness));
-		
-		double heatfluxtometalimnion = 0.0; //TODO!!!
-		
-		return (1.0 / (RESULT(EpilimnionThickness) * waterDensity * specificHeatCapacityOfWater)) * (surfaceheatflux + surfaceshortwave - heatfluxtometalimnion - shortwave_passing_through) * 86400.0;
-	)
-	
-	EQUATION(Model, BottomTemperature,
-		return 4.0;      //TODO!
-	)
-	
-	EQUATION(Model, EpilimnionThickness,
-		return 2.0;   //TODO!
-	)
-	
-	EndModule(Model);
-}

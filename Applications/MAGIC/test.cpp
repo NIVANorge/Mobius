@@ -22,6 +22,8 @@ int main()
 	
 	ReadInputDependenciesFromFile(Model, InputFile);
 	
+	SetTimestepSize(Model, "1Y");
+	
 	EndModelDefinition(Model);
 	
 	mobius_data_set *DataSet = GenerateDataSet(Model);
