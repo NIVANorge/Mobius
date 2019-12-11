@@ -13,6 +13,8 @@
 
 \usepackage{natbib}
 
+\usepackage{hyperref}
+
 \setlength\parindent{0pt}
 \setlength\parskip{5pt}
 
@@ -66,7 +68,7 @@ stepnumber=1,
 
 \section{Introduction}
 
-MobiView is a graphical user interface that can load any model built using the Mobius dll interface. It is created using the Ultimate++ framework and the ScatterCtrl package (ultimatepp.org).
+MobiView is a graphical user interface that can load any model built using the Mobius dll interface. It is created using the Ultimate++ framework and the ScatterCtrl package (\url{ultimatepp.org}).
 
 This document is a work in progress.
 
@@ -118,9 +120,11 @@ The Regular plot mode will just plot all selected time series as a function of t
 
 \subsubsection{Histogram}
 
-This option only works if you have exactly one time series selected. it will make a histogram of the time series. The number of bins is determined by Sturges' rule \cite{sturges26}
+This option only works if you have exactly one time series selected. it will make a histogram of the time series. The number of bins is determined by %Sturges' rule \cite{sturges26}
+Rice's rule
 \[
-k = 1 + \log_2 n, 
+%k = 1 + \lceil \log_2 n\rceil, 
+k = 2\lceil\sqrt[3]{n}\rceil,
 \]
 where $n$ is the number of data points and $k$ is the number of bins.
 
@@ -142,7 +146,7 @@ You must have exactly one result time series and one input time series selected.
 
 To compare your modeled time series against an observed series, you can load the observed series in as an "additional timeseries", which is explained in the Mobius file format documentation.
 
-A linear regression line of the residuals is also displayed. This shows the trend in the residuals. For instance if this trend goes up, it says that the observed quantity increases more over time than the modeled one. The regression line is only computed for the GOF interval (see section \ref{sec:gofint}).
+A linear regression line of the residuals is also displayed. This shows the trend in the residuals. For instance if this trend goes up, it says that the observed quantity increases over time compared to the modeled one. The regression line is only computed for the GOF interval (see section \ref{sec:gofint}).
 
 You can also use aggregation. For instance, the monthly sum of the residuals of something like "Reach flow" versus "Observed discharge" can tell you something about the monthly water balance in a hydrology model.
 
@@ -177,7 +181,7 @@ Most of the goodness-of-fit statistics are implemented following \cite{krause05}
 
 Let $o=\{o_i\}_{i\in I}$ be the observed timeseries, and let $m=\{m_i\}_{i\in I}$ be the modelled timeseries. The set $I$ of comparison points is the set of all timesteps in the GOF interval where both series have a valid value. For instance, the observed timeseries can have missing values, so the timesteps corresponding to the missing values will not be considered when evaluating goodness-of-fit. The GOF interval is the entire model run interval unless something else is specified by the user. Let
 \[
-\overline{m} = mean(m)
+\overline{m} = \frac{1}{|I|}\sum_{i\in I}m_i
 \]
 denote the mean of a timeseries.
 
@@ -209,14 +213,14 @@ N-S is the Nash-Sutcliffe efficiency coefficient \cite{nashsutcliffe70}
 \[
 1 - \frac{\sum_{i\in I}(o_i - m_i)^2}{\sum_{i\in I}(o_i-\overline{o})^2}.
 \]
-This coefficient takes values in $(-\infty, 1]$, where a value of $1$ means a perfect fit, while a value of $0$ means that the modeled series is a no better fit than the mean of the observed series.
+This coefficient takes values in $(-\infty, 1]$, where a value of $1$ means a perfect fit, while a value of $0$ or less means that the modeled series is a no better fit than a series constantly equal to the mean of the observed series.
 
 \subsubsection{log N-S}
-log N-S is the same as N-S, but where $o_i$ is replaced by $\ln(o_i)$ and $m_i$ replaced by $\ln(m_i)$ for each $i\in I$, where $\ln$ denotes the natural logarithm.
+log N-S is the same as N-S, but where $o_i$ is replaced by $\ln(o_i)$ and $m_i$ replaced by $\ln(m_i)$ for each $i\in I$. Here $\ln$ denotes the natural logarithm.
 \[
 1 - \frac{\sum_{i\in I}(\ln(o_i) - \ln(m_i))^2}{\sum_{i\in I}(\ln(o_i)-\overline{\ln(o)})^2}.
 \]
-This coefficient behaves similarly to N-S, but is less sensitive to errors during high values.
+This coefficient behaves similarly to N-S, but is less sensitive to errors on time steps where both series have large values.
 
 \subsubsection{r2}
 $r^2$ is the coefficient of determination
