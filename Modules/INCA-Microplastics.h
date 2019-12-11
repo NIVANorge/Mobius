@@ -260,6 +260,9 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto MeanChannelSlope                = RegisterParameterDouble(Model, Reaches, "Mean channel slope", Dimensionless, 2.0);
 	auto EntrainmentCoefficient          = RegisterParameterDouble(Model, Reaches, "Entrainment coefficient", S2PerKg, 1.0);
 	
+	auto ConstantGrainDepositionToReach  = RegisterParameterDouble(Model, SedimentReach, "Constant grain deposition to reach", KgPerDay, 0.0);
+	
+	
 	auto ReachMassTransferRateBetweenClasses = RegisterParameterDouble(Model, TransferMatrix, "Mass transfer rate between classes in the reach", Dimensionless, 0.0, 0.0, 1.0);
 	
 	auto ReachUpstreamSuspendedGrain         = RegisterEquation(Model, "Reach upstream suspended grain", KgPerDay);
@@ -387,7 +390,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	
 	EQUATION(Model, SuspendedGrainMass,
 		return 
-			  RESULT(TotalGrainDeliveryToReach) 
+			  RESULT(TotalGrainDeliveryToReach)
+			+ PARAMETER(ConstantGrainDepositionToReach)
 			+ RESULT(EffluentGrain)
 			+ RESULT(ReachUpstreamSuspendedGrain) 
 			- RESULT(ReachSuspendedGrainOutput)
