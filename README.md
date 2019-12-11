@@ -147,6 +147,8 @@ We have also started making a simple wrapper of Mobius to the R language, but th
 
 ![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
 
+There is now [documentation](Documentation/mobiview_documentation.pdf) for MobiView. Below is a quick start guide.
+
 ### Getting MobiView
 
 You can download a compiled version of MobiView from ftp://mobiserver.niva.no/ (downloadable binary is Windows only). If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++.
