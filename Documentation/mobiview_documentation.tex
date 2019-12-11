@@ -14,6 +14,7 @@
 \usepackage{natbib}
 
 \usepackage{hyperref}
+\usepackage{graphicx}
 
 \setlength\parindent{0pt}
 \setlength\parskip{5pt}
@@ -72,6 +73,8 @@ MobiView is a graphical user interface that can load any model built using the M
 
 This document is a work in progress.
 
+\includegraphics[width=\linewidth]{img/mobiview}
+
 \section{The toolbar}
 
 The toolbar has 9 buttons.
@@ -126,7 +129,7 @@ Rice's rule
 %k = 1 + \lceil \log_2 n\rceil, 
 k = 2\lceil\sqrt[3]{n}\rceil,
 \]
-where $n$ is the number of data points and $k$ is the number of bins.
+where $n$ is the number of data points and $k$ is the number of bins. The Y axis displays the fraction of the total amount of data points that fall inside each bin.
 
 \subsubsection{Profile}
 
@@ -173,7 +176,9 @@ In addition to what we have implemented in MobiView (described above), the plot 
 
 \subsection{The GOF interval}\label{sec:gofint}
 
-\subsection{Goodness of fit statistics}\label{sec:gof}
+If you have selected one of the Residual, Residual histogram or the Q-Q plot modes, you can select the GOF interval below the timseries info box. The interval consists of two dates, and only timesteps between these dates will be considered in the plot and in the goodness-of-fit computations (see next section).
+
+\subsection{Goodness-of-fit statistics}\label{sec:gof}
 
 The goodness-of-fit statistics are displayed in the time series info box if you have exactly one result series and one input series selected, and have selected one of the Residuals, Residual histogram or Q-Q plot modes. 
 
