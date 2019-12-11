@@ -204,3 +204,9 @@ Jose-Luis Guerrero (Json format, general testing)
 Many others: General testing, feedback, ideas.
 
 For general questions and feedback, please contact (magnus.norling@niva.no)
+
+## Usage and attribution
+
+Mobius is (C) NIVA, but you are free to use it or modify it as long as you follow the license (LICENSE.md). See also NOTICES.md.
+
+Please give proper attribution if you are using Mobius in a project.
