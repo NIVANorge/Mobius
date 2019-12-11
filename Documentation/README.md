@@ -1,7 +1,7 @@
 # Documentation
 
 The documentation is being written. 
-We welcome feedback on the documentation in order to make it more useful.
+We welcome feedback on the documentation in order to make it more useful. Unless you want to edit the documents, you only want to open the .pdf files.
 
 ### Mostly finished:
 - **file_format_documentation** - The parameter and input file formats.
