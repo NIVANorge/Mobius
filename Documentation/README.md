@@ -5,10 +5,10 @@ We welcome feedback on the documentation in order to make it more useful. Unless
 
 ### Mostly finished:
 - **file_format_documentation** - The parameter and input file formats.
+- **mobiview_documentation** - For users who want to run existing models with the MobiView user interface.
 - **model_builder_documentation** - For users who want to build new models using the framework.
 
 ### Started writing:
-- **mobiview_documentation** - For users who want to run existing models with the MobiView user interface.
 - **framework_implementation_documentation** - Not exhaustive, but to give an overview of how the framework works internally for users who want to extend on it. How some of the core algorithms and data organization works.
 
 
