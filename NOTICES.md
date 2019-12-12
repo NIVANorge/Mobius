@@ -1,5 +1,7 @@
 
 
+Mobius (C) NIVA 2018-2019
+
 This file covers the licenses and copyrights of some of the libraries that are used by certain optional modules of the Mobius framework. None of the licenses in this file apply to the Mobius framework itself.
 
 See LICENSE.md for the license of the Mobius framework itself.
