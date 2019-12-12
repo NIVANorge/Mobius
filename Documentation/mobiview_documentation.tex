@@ -16,6 +16,8 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 
+\usepackage[font=small,labelfont=bf]{caption}
+
 \setlength\parindent{0pt}
 \setlength\parskip{5pt}
 
@@ -73,7 +75,10 @@ MobiView is a graphical user interface that can load any model built using the M
 
 This document is a work in progress.
 
+\begin{center}
 \includegraphics[width=\linewidth]{img/mobiview}
+\captionof{figure}{Overview of the MobiView user interface}
+\end{center}
 
 \section{The toolbar}
 
@@ -93,11 +98,25 @@ The toolbar has 9 buttons.
 
 \section{Parameter viewing and editing}
 
+\subsection{The parameter group view and parameter index selection}
+
+In the parameter group view you can select what parameter group to view the parameters of. These are usually organized under what module (i.e. sub-model) they belong to. Each parameter group indexes zero or more index sets. In the parameter index selection menus you can choose the (tuple of) indexes that you want for the current the parameter view display. Only the index sets that the currently selected group indexes over are active, the menus of the other index sets are disabled.
+
+If you check the 'Lock' box under one or more of the index sets, any edit to a parameter value will be performed to all value instances over those index sets, not just to the value corresponding to the current index tuple.
+
+\subsection{The parameter view}
+
+The parameter view displays the full name, the value, the recommended min and max values, the unit and the description of each parameter in the selected group. Min and max values and a description are not always provided by the model creator.
+
+The value field is editable. What type of field it is depends on the type of the parameter value. For instance, a parameter of type double (double precision floating point number) is edited using a text field, while a parameter of type bool is edited using a check box since it is essentially just an on-off switch.
+
+If a model has a parameter group where the two last index set dependencies are the same index set, the parameter view works a little differently. The parameter index selection for that index set will only apply to the first instance of the dependency. The second instance of the dependency is the row in the parameter view (so you can edit all values of that row in the same view). This does for instance apply to the percolation matrix in the PERSiST model, where you choose what row you are on using the Soil index set selection menu, and then all columns for that row are displayed in the parameter view. Note that this is so far a little limited. It does only work for parameters of type double, and it only works if it is the last two index set dependencies that are the same. If you have a different configuration in a Mobius model, it may not be that easy to use the MobiView interface with it, but this is a very small edge case that could be fixed later.
+
 \section{The plot}
 
 You can use the plot to visualize inputs and results of the model. Time series can be selected in the Equation and Input lists to the right of the plot (results can only be selected if the model has been run at least once). You can select multiple time series at one time by ctrl-clicking (or shift-clicking) them. You can also remove a selected time series by ctrl-clicking it. If a time series varies over one or more index sets, you can select indexes from the lists below the plot. You can do multiselection here too.
 
-The timeseries info box will display info about the selected timeseries. If you are in a residual-type plot mode, it will also display goodness-of-fit statistics (see section \ref{sec:gof}).
+The time series info box will display info about the selected time series. If you are in a residual-type plot mode, it will also display goodness-of-fit statistics (see section \ref{sec:gof}).
 
 The plot will automatically update itself every time you run the model to reflect any changes in the result time series.
 
@@ -105,7 +124,7 @@ The plot will automatically update itself every time you run the model to reflec
 You can choose between several different plot options. First, you can choose a few different plot modes. These are described in the next subsection. Depending on the plot mode, you may also have other options available
 
 \begin{enumerate}[i]
-\item Aggregation. You can choose to aggregate the displayed timeseries on monthly or yearly steps. You can also choose between "mean" or "sum" as the aggregation mode. Note that the sum aggregation only works well if all timesteps have a value (which may not be the case for some input series). Note: For models with other than daily timesteps, monthly or yearly aggregation may not always make sense. Other forms of aggregation like min or max could also be added. This is a work in progress.
+\item Aggregation. You can choose to aggregate the displayed time series on monthly or yearly steps. You can also choose between "mean" or "sum" as the aggregation mode. Note that the sum aggregation only works well if all timesteps have a value (which may not be the case for some input series). Note: For models with other than daily timesteps, monthly or yearly aggregation may not always make sense. Other forms of aggregation like min or max could also be added. This is a work in progress.
 \item Y axis transformation. You can choose between three Y axis transformations
 \begin{enumerate}
 \item You can have no transformation (regular Y axis).
@@ -124,7 +143,7 @@ The Regular plot mode will just plot all selected time series as a function of t
 \subsubsection{Histogram}
 
 This option only works if you have exactly one time series selected. it will make a histogram of the time series. The number of bins is determined by %Sturges' rule \cite{sturges26}
-Rice's rule
+Rice's rule %Can't find the original reference for Rice's rule :(
 \[
 %k = 1 + \lceil \log_2 n\rceil, 
 k = 2\lceil\sqrt[3]{n}\rceil,
@@ -136,6 +155,11 @@ where $n$ is the number of data points and $k$ is the number of bins. The Y axis
 Select one result or input. Moreover, select two or more indexes of exactly one index set that this time series varies over. For a given point in time, a bar plot will be displayed with the selected indexes as the X axis. The point in time can be selected using a slider or a text field. This mode also works together with aggregations, so you can display e.g. yearly mean values (for a selected year).
 
 One use case for this is e.g. to select the yearly sum of the value "Reach nitrate output" in INCA-N to show a bar plot of the yearly output of each reach in a given year.
+
+\begin{center}
+\includegraphics[width=0.7\linewidth]{img/scr2}
+\captionof{figure}{When using the Profile plot mode you can select the date using a slider or a date text field.}
+\end{center}
 
 \subsubsection{Compare baseline}
 
@@ -159,7 +183,7 @@ You must have exactly one result time series and one input time series selected.
 
 \subsubsection{Q-Q}
 
-You must have exactly one result time series and one input time series selected. This shows a quantile-quantile plot of the two time series, and can be used to see if your modeled timeseries is roughly similarly distributed to the observed one.
+You must have exactly one result time series and one input time series selected. This shows a quantile-quantile plot of the two time series, and can be used to see if your modeled time series is roughly similarly distributed to the observed one.
 
 The displayed percentiles are 5, 15, 25, 50, 75, 85, 95. The X axis is the result series, while the Y axis is the input series. The two have the same quantiles if the blue dots are on the red diagonal line.
 
@@ -178,17 +202,22 @@ In addition to what we have implemented in MobiView (described above), the plot 
 
 If you have selected one of the Residual, Residual histogram or the Q-Q plot modes, you can select the GOF interval below the timseries info box. The interval consists of two dates, and only timesteps between these dates will be considered in the plot and in the goodness-of-fit computations (see next section).
 
+\begin{center}
+\includegraphics[width=0.3\linewidth]{img/scr3}
+\captionof{figure}{When in a Residual-type plot mode, the GOF interval can be chosen using the two date text fields below the time series info box, where the goodness-of-fit stats are displayed.}
+\end{center}
+
 \subsection{Goodness-of-fit statistics}\label{sec:gof}
 
 The goodness-of-fit statistics are displayed in the time series info box if you have exactly one result series and one input series selected, and have selected one of the Residuals, Residual histogram or Q-Q plot modes. 
 
 Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various statistics are discussed in that paper.
 
-Let $o=\{o_i\}_{i\in I}$ be the observed timeseries, and let $m=\{m_i\}_{i\in I}$ be the modelled timeseries. The set $I$ of comparison points is the set of all timesteps in the GOF interval where both series have a valid value. For instance, the observed timeseries can have missing values, so the timesteps corresponding to the missing values will not be considered when evaluating goodness-of-fit. The GOF interval is the entire model run interval unless something else is specified by the user. Let
+Let $o=\{o_i\}_{i\in I}$ be the observed time series, and let $m=\{m_i\}_{i\in I}$ be the modelled time series. The set $I$ of comparison points is the set of all timesteps in the GOF interval where both series have a valid value. For instance, the observed time series can have missing values, so the timesteps corresponding to the missing values will not be considered when evaluating goodness-of-fit. The GOF interval is the entire model run interval unless something else is specified by the user. Let
 \[
 \overline{m} = \frac{1}{|I|}\sum_{i\in I}m_i
 \]
-denote the mean of a timeseries.
+denote the mean of a time series.
 
 \subsubsection{Common data points}
 The common data points is the size of the set of comparison points $I$, denoted $|I|$.
@@ -241,7 +270,7 @@ The index of agreement is
 \]
 
 \subsubsection{Spearman's RCC}
-Spearman's rank correlation coefficient \cite{spearman04} is computed as follows: For a timeseries $x={x_i}_{i\in_I}$, let $\mathrm{rank}(x_i)$ be the index of $x_i$ (starting from 1) in the list $\mathrm{sort}(x)$, where $\mathrm{sort}(x)$ is $x$ sorted from smallest to largest. The rank correlation coefficient can then be computed as
+Spearman's rank correlation coefficient \cite{spearman04} is computed as follows: For a time series $x={x_i}_{i\in_I}$, let $\mathrm{rank}(x_i)$ be the index of $x_i$ (starting from 1) in the list $\mathrm{sort}(x)$, where $\mathrm{sort}(x)$ is $x$ sorted from smallest to largest. The rank correlation coefficient can then be computed as
 \[
 1 - \frac{6\sum_{i\in I}(\mathrm{rank}(o_i)-\mathrm{rank}(m_i))^2}{|I|(|I|^2 - 1)}.
 \]
