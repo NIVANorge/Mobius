@@ -98,6 +98,10 @@ The toolbar has 9 buttons.
 
 \section{Parameter viewing and editing}
 
+\subsection{Setting up a new project}
+
+One efficient way of setting up a new project is to take the parameter file of an existing project and delete everything below the "parameters:" section. You can then fill in the indexes you want in the index sets (see the file format documentation in a separate document). This file can be loaded in MobiView. MobiView does not mind that not all parameters are given values in the parameter file, and will assume default values for the ones that are missing. If you save the file again after having loaded it, all default values will be filled in in the file.
+
 \subsection{The parameter group view and parameter index selection}
 
 In the parameter group view you can select what parameter group to view the parameters of. These are usually organized under what module (i.e. sub-model) they belong to. Each parameter group indexes zero or more index sets. In the parameter index selection menus you can choose the (tuple of) indexes that you want for the current the parameter view display. Only the index sets that the currently selected group indexes over are active, the menus of the other index sets are disabled.
