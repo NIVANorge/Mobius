@@ -25,7 +25,7 @@ n = 6
 dataset = wr.DataSet.setup_from_parameter_and_input_files('structure1_auto.dat', '../../Applications/SimplyC/Langtjern/langtjerninputs.dat')
 dataset.run_model() # Have to do this due to a bug in get_input_series(). TODO: Fix that!
 df = cu.get_input_dataframe(dataset, [('DOC', [])], alignwithresults=True)
-df.rename(columns={'DOC []':'Observed [DOC]'}, inplace = True)
+df.rename(columns={'DOC []':'Observed'}, inplace = True)
 
 dataset.delete()
 
@@ -44,7 +44,7 @@ for structure in [1, 3, 5] :
 	
 	sim_df = cu.get_result_dataframe(dataset, [('Reach DOC concentration (volume weighted daily mean)', ['Inlet'])])
 	
-	sim_df.rename(columns={'Reach DOC concentration (volume weighted daily mean) [Inlet]':'Modeled [DOC] structure %d' % structure}, inplace=True)
+	sim_df.rename(columns={'Reach DOC concentration (volume weighted daily mean) [Inlet]':'Modelled, structure %d' % structure}, inplace=True)
 	
 	dataset.delete()
 	
@@ -56,15 +56,15 @@ fig_width  = 15
 fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(fig_width, fig_height)) 
 
 #df.plot(ax=axes, style=['o--', '-', '-', '-', '-', '-', '-'])
-sub_df = df[['Modeled [DOC] structure %d' % structure for structure in [1, 3, 5]]]
+sub_df = df[['Modelled, structure %d' % structure for structure in [1, 3, 5]]]
 #sub_df.plot(ax=axes, style=['-r', '-b', '-g'])
 
-line, = axes.plot_date(df.index.values, df['Observed [DOC]'], 'o-', fillstyle='none', color='#777777', xdate=True)
-line.set_label('Observed [DOC]')
+line, = axes.plot_date(df.index.values, df['Observed'], 'o-', fillstyle='none', color='#777777', xdate=True)
+line.set_label('Observed')
 axes.legend()
 sub_df.plot(ax=axes, style=['#e41a1c', '#377eb8', '#4daf4a'])
 
-axes.set_ylabel('mg/l')
+axes.set_ylabel('Stream DOC concentration [mg/l]')
 
 plt.tight_layout()  
 
@@ -78,7 +78,7 @@ fig_width  = 15
 fig, axes = plt.subplots(nrows=n, ncols=1, figsize=(15, fig_height)) 
 
 for structure in range(1, n+1) :
-	sub_df = df[['Observed [DOC]', 'Modeled [DOC] structure %d' % structure]]
+	sub_df = df[['Observed [DOC]', 'Modelled [DOC] structure %d' % structure]]
 
 	sub_df.plot(ax=axes[structure-1], style=['o--', '-'])
 	axes[structure-1].set_ylabel('mg/l')
