@@ -6,7 +6,7 @@ from scipy.stats import norm
 # Initialise wrapper
 wrapper_fpath = (r"..\mobius.py")
 wr = imp.load_source('mobius', wrapper_fpath)
-wr.initialize('SimplyC.dll')
+wr.initialize('../../Applications/SimplyC/SimplyC_stage_1_4.dll')
 
 # Calibration functions
 calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
@@ -59,13 +59,15 @@ def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
 
 ###################################################################################################################
 
-dataset = wr.DataSet.setup_from_parameter_and_input_files('../../Applications/SimplyC/SimplyC_params_noGW.dat', 
-                                                          '../../Applications/SimplyC/langtjerninputs.dat')
+dataset = wr.DataSet.setup_from_parameter_and_input_files('structure3_auto.dat', 
+                                                          '../../Applications/SimplyC/Langtjern/langtjerninputs.dat')
+
+dataset.set_parameter_uint('Timesteps', [], 6573) #make it run only for the calibration period. Hmm this is not a good place to have that code though.
 
 if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
     
     # Unpack options from pickled file
-    with open('pickled\\mcmc_settings.pkl', 'rb') as handle:
+    with open('results\\mcmc_settings.pkl', 'rb') as handle:
         settings_dict = pickle.load(handle)
 
     params = settings_dict['params']
@@ -103,4 +105,4 @@ if __name__ == '__main__': # NOTE: this is necessary for parallelisation!
     cu.plot_objective(dataset, comparisons)
 
     # Goodness-of-fit stats
-    cu.gof_stats_map(result, dataset, comparisons, skip_timesteps)
+    cu.gof_stats(result, dataset, comparisons, skip_timesteps)
