@@ -1,15 +1,10 @@
 # Recent large updates
+
+**(2019-12-19):** **We just discovered that there has been a bug during the last month where models have not correctly been able to determine what day of year they are in**. It has affected the following models: SimplyP, INCA-N, INCA-P, INCA-C, Tutorial3. If you have downloaded or compiled one of these models between November 19. and now, you should download or compile a new version now that it has been fixed. We apologize for the inconvenience!
+
 **(2019-11-25):** It is now possible to customize the timestep size when building a model. MobiView and model dlls compiled before and after this change may not compatible with each other respectively.
 
 **(2019-09-18):** The module system was formalized. MobiView and model dlls compiled before and after this change are not compatible with each other respectively.
-
-**(2019-08-26):** Timeseries in input files no longer have to be ended with 'end_timeseries'
-
-**(2019-08-05):** We recently changed the format of dates in parameter and input files. A date should now be formatted like
-2003-01-01
-instead of what it was previously
-"2003-01-01"
-I.e. remove the quotations.
 
 
 

@@ -367,6 +367,7 @@ struct expanded_datetime
 				DayOfYear -= DaysThisYear;
 				Year++;
 				DaysThisYear = YearLength(Year);
+				Month = 1;
 			}
 			
 			DaysThisMonth = MonthLength(Year, Month);
