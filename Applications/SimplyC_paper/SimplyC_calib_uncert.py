@@ -60,7 +60,7 @@ def log_likelihood(params, error_param_dict, comparisons, skip_timesteps=0):
 ###################################################################################################################
 
 dataset = wr.DataSet.setup_from_parameter_and_input_files('structure3_auto.dat', 
-                                                          '..\SimplyC\Langtjern\langtjerninputs.dat')
+                                                          'langtjerninputs.dat')
 
 dataset.set_parameter_uint('Timesteps', [], 6573) #make it run only for the calibration period. Hmm this is not a good place to have that code though.
 
