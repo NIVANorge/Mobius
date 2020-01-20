@@ -52,36 +52,27 @@ struct bucket_allocator
 		}
 		
 		size_t RequestedSize = sizeof(T) * Count;
-		//NOTE: Pad to 64-bit aligned just to be safe. Not sure how important this is though.
+		//NOTE: Pad to 64-bit aligned just to be safe. Not sure how important this is though. Should we also try to align to cache boundaries?
 		size_t Lack = 8 - RequestedSize % 8;
 		if(Lack != 8) RequestedSize += Lack;
 		
-		
-		if(RequestedSize > BucketSize)
-		{
-			//TODO: Should probably allow for having a larger bucket in this case instead of giving an error?
-			MOBIUS_FATAL_ERROR("ERROR (internal): Tried to do a bucket allocation that was larger than the bucket size.\n");
-		}
-		
 		if(!Current || CurrentUsed + RequestedSize > BucketSize)
 		{
-			memory_bucket *NewBucket;
-			if(Current && Current->Next)
+			while(RequestedSize > BucketSize)
 			{
-				// This happens if we have called Flush(). Reuse earlier buckets.
-				NewBucket = Current->Next;
-				memset(NewBucket->Data, 0, BucketSize);
+				//TODO: This is not a very good way of doing it, but in any case we should just initialize with so large a size that this does not become a problem. This is just a safety stopgap.
+				//TODO: We should add a way of catching that this happens, in debug mode.
+				
+				BucketSize *= 2;
 			}
-			else
-			{
-				// Otherwise, create a new bucket
-				size_t AllocSize = sizeof(memory_bucket) + BucketSize;
-				u8 *Memory = AllocClearedArray(u8, AllocSize);     //TODO: Should clearing be optional?
+			
+			// Previous buckets are nonexisting or full. Create a new bucket
+			size_t AllocSize = sizeof(memory_bucket) + BucketSize;
+			u8 *Memory = AllocClearedArray(u8, AllocSize);     //TODO: Should clearing be optional?
 
-				NewBucket = (memory_bucket *)Memory;
-				NewBucket->Data = Memory + sizeof(memory_bucket);
-				NewBucket->Next = nullptr;
-			}
+			memory_bucket * NewBucket = (memory_bucket *)Memory;
+			NewBucket->Data = Memory + sizeof(memory_bucket);
+			NewBucket->Next = nullptr;
 			
 			if(Current)	Current->Next = NewBucket;
 			else        First         = NewBucket;
@@ -110,14 +101,6 @@ struct bucket_allocator
 	{
 		//NOTE: This is for copying 0-terminated strings only
 		return Copy(Source, strlen(Source)+1);
-	}
-	
-	void
-	Flush()
-	{
-		Current = First;
-		memset(Current->Data, 0, BucketSize);
-		CurrentUsed = 0;
 	}
 	
 	void
