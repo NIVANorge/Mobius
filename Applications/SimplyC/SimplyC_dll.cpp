@@ -16,7 +16,8 @@
 //#include "../../Modules/SimplyC.h"
 //#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_exp_temp_SO4_groundwater_transport.h"
 //#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
-#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
+//#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
+#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_DOC_creation_rate.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
 DLLEXPORT void *
