@@ -1,6 +1,11 @@
 # INCA-N (inc. PERSiST) inputs for the Tarland catchment, Scotland
 # Required inputs: "Air temperature", "Actual precipitation"
 
+
+# Temperature and precipitation data were derived from the UK Met Office 5 km gridded data (citable as Met Office (2017): UKCP09: Met Office gridded land surface climate observations - daily temperature and precipitation at 5km resolution. Centre for Environmental Data Analysis. https://catalogue.ceda.ac.uk/uuid/319b3f878c7d4cbfbdb356e19d8061d6). The dataset is available for reuse under an Open Government Licence 3.0
+
+# Discharge and chemistry data for model calibration: Data were collected by the James Hutton Institute (Scotland). See Stutter et al. (2008) (https://doi.org/10.1016/j.jhydrol.2007.10.045) for a full description of sampling and analytical methods.
+
 start_date : 1981-01-01
 timesteps : 10957
 
