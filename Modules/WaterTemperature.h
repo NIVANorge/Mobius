@@ -8,7 +8,7 @@ AddWaterTemperatureModel(mobius_model *Model)
 	auto Dimensionless 				= RegisterUnit(Model);
 	auto DegreesCelsius 			= RegisterUnit(Model, "°C");
 	
-	auto Reach = GetIndexSetHandle(Model, "Reaches");
+	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
 	
 	auto WaterTemp = RegisterParameterGroup(Model, "Water temperature", Reach);
 	
@@ -17,7 +17,7 @@ AddWaterTemperatureModel(mobius_model *Model)
 	auto MinimumWaterTemperature     = RegisterParameterDouble(Model, WaterTemp, "Minimum water temperature",    DegreesCelsius,  0.0, -5.0, 40.0);
 	auto WaterTemperatureLagFactor   = RegisterParameterDouble(Model, WaterTemp, "Water temperature lag factor", Dimensionless,   3.0, 1.0, 10.0);
 	
-	auto AirTemperature = GetInputHandle(Model, "Air temperature"); //NOTE: Must be registered by another module.
+	auto AirTemperature = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	
 	auto WaterTemperature = RegisterEquation(Model, "Water temperature", DegreesCelsius);
 	SetInitialValue(Model, WaterTemperature, InitialWaterTemperature);
