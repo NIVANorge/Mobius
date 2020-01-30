@@ -12,7 +12,7 @@ additional_timeseries :
 "DOC"                        unit "mg/l"
 "Soil temperature at 15cm"   unit "°C"
 "Soil temperature at 20cm"   unit "°C"
-"DOC flux"                   unit "kg/day"     #Based on linear interpolation of Discharge * DOC
+"DOC flux"                   unit "kg/day"     #Based on (linear interpolation of DOC)*Discharge
 
 inputs :
 
