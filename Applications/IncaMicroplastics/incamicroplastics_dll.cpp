@@ -9,6 +9,7 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/Persist.h"
+#include "../../Modules/WaterTemperature.h"
 #include "../../Modules/INCA-Microplastics.h"
 
 
@@ -21,6 +22,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
 	mobius_model *Model = BeginModelDefinition("INCA-Microplastics");
 	
 	AddPersistModel(Model);
+	AddWaterTemperatureModel(Model);
 	AddINCAMicroplasticsModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
