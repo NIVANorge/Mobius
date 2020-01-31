@@ -71,7 +71,7 @@ AddSimplyQLakeAddon(mobius_model *Model)
 		
 		if(PARAMETER(IsLake))
 		{
-			dVdt += (precip - airt*ddevap)*surface*1e-3;   // Convert m^2*mm->m^3 
+			dVdt += (precip - Max(0.0, airt*ddevap))*surface*1e-3;   // Convert m^2*mm->m^3 
 		}
 		
 		return dVdt;
