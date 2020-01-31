@@ -464,8 +464,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	EQUATION(Model, MaxGrainSizeForEntrainment,
 		double earthsurfacegravity = 9.807;
 		double waterdensity = 1000.0;  // TODO: Temperature dependence?
-		double rootcrit = RESULT(ReachShearStress) / ((PARAMETER(DensityOfClass) - waterdensity) * earthsurfacegravity * 0.558 * RESULT(SedimentBedCriticalShieldsParameter));
-		return rootcrit*rootcrit / PARAMETER(MedianSedimentGrainSize);
+		
+		return std::pow(RESULT(ReachShearStress) / (0.5588*RESULT(SedimentBedCriticalShieldsParameter)*std::pow(PARAMETER(MedianSedimentGrainSize), 0.503)*(PARAMETER(DensityOfClass) - waterdensity)*earthsurfacegravity), 1.0 / (1.0 - 0.503));
 	)
 	
 	EQUATION(Model, ReachUpstreamSuspendedGrain,
