@@ -31,7 +31,7 @@ static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplyQ", "0.4");
+	BeginModule(Model, "SimplyQ", "0.4.1");
 	
 	auto Degrees           = RegisterUnit(Model, "°C");
 	auto Dimensionless     = RegisterUnit(Model);
@@ -57,6 +57,8 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
 	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
+	auto SnowMeltOffsetTemperature = RegisterParameterDouble(Model, Snow, "Snow melt offset temperature", DegreesCelsius, 0.0, -4.0, 4.0, "Snow begins melting above this temperature");
+	auto SnowMultiplier          = RegisterParameterDouble(Model, Snow, "Snow fall multiplier", Dimensionless, 1.0, 0.5, 1.5, "Adjustment factor to take into account possible inaccuracies in snow fall measurements");
 	
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
@@ -108,7 +110,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
 	EQUATION(Model, PrecipitationFallingAsSnow,
-		double precip = INPUT(Precipitation);
+		double precip = INPUT(Precipitation) * PARAMETER(SnowMultiplier);
 		return (INPUT(AirTemperature) < 0) ? precip : 0.0;
 	)
 	
@@ -118,7 +120,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, PotentialDailySnowmelt,
-		return Max(0.0, PARAMETER(DegreeDayFactorSnowmelt) * INPUT(AirTemperature));
+		return Max(0.0, PARAMETER(DegreeDayFactorSnowmelt) * (INPUT(AirTemperature) - PARAMETER(SnowMeltOffsetTemperature)));
 	)
 	
 	EQUATION(Model, SnowMelt,
@@ -348,11 +350,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachVolume,
-#ifdef SIMPLYQ_GROUNDWATER
 		return 86400.0 * (RESULT(ReachFlowInputFromLand) + RESULT(ReachFlowInputFromUpstream) - RESULT(ReachFlow));
-#else
-		return 86400.0 * (RESULT(ReachFlowInputFromLand) + RESULT(ReachFlowInputFromUpstream) - RESULT(ReachFlow));
-#endif
 	)
 	
 	EQUATION(Model, ReachFlow,

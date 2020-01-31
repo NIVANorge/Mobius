@@ -20,6 +20,8 @@
 #include "../../Modules/Alternate_versions_of_simplyC/SimplyC_DOC_creation_rate.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
+#include "../../Modules/SimplyQLakeAddon.h"
+
 DLLEXPORT void *
 DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
@@ -29,6 +31,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
+	AddSimplyQLakeAddon(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);
 	
