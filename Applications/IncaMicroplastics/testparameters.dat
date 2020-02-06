@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Microplastics, containing modules (PERSiST V1.4, INCA water temperature V1.0, INCA-Microplastics V0.10.0) at 2020-02-06 14:37:17
+# Parameter file generated for model INCA-Microplastics, containing modules (PERSiST V1.4, INCA water temperature V1.0, INCA-Microplastics V0.10.0) at 2020-02-06 15:57:20
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -190,7 +190,7 @@ true true true
 0.0006 0.02
 
 "Density of grain class" :     #(kg/m3) [-1.79769313486232e+308, 1.79769313486232e+308]
-1200 1600
+1200 1200
 
 ###################### "Grain class" "Landscape units" ######################
 "Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
