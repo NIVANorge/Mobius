@@ -390,7 +390,6 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	SetSolver(Model, SuspendedGrainMass, InstreamSedimentSolver);
 	
 	
-	auto ReachWidth   = GetParameterDoubleHandle(Model, "Reach bottom width");
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
 	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
@@ -400,6 +399,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto ReachVelocity = GetEquationHandle(Model, "Reach velocity");
 	auto ReachHydraulicRadius = GetEquationHandle(Model, "Reach hydraulic radius");
 	auto ReachAbstraction = GetEquationHandle(Model, "Reach abstraction");
+	auto ReachWettedPerimeter = GetEquationHandle(Model, "Reach wetted perimeter");
 	
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature");
 	
@@ -516,7 +516,7 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 			+ RESULT(ReachUpstreamSuspendedGrain) 
 			- RESULT(ReachSuspendedGrainOutput)
 			- RESULT(GrainAbstraction)
-			+ PARAMETER(ReachLength) * PARAMETER(ReachWidth) * (RESULT(GrainEntrainment) - RESULT(GrainDeposition));
+			+ PARAMETER(ReachLength) * RESULT(ReachWettedPerimeter) * (RESULT(GrainEntrainment) - RESULT(GrainDeposition));
 	)
 	
 	/// Transferring mass between classes due to breakdown and other causes.

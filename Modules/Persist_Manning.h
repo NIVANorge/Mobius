@@ -379,17 +379,16 @@ AddPersistModel(mobius_model *Model)
 		double WB = PARAMETER(ReachBottomWidth);
 		double A  = RESULT(ReachCrossSectionArea);
 		double WBb = WB*b;
-		return 2.0 * (sqrt(WBb*WBb + 2.0*A*b) - WBb);
+		return 0.5 * (sqrt(WBb*WBb + 4.0*A*b) - WBb);
 	)
 	
 	EQUATION(Model, ReachTopWidth,
-		return PARAMETER(ReachBottomWidth) + RESULT(ReachDepth) / PARAMETER(ReachBankSlope);
+		return PARAMETER(ReachBottomWidth) + 2.0 * RESULT(ReachDepth) / PARAMETER(ReachBankSlope);
 	)
 	
 	EQUATION(Model, ReachWettedPerimeter,
-		double meanwidth = (PARAMETER(ReachBottomWidth) + RESULT(ReachTopWidth)) / 2.0;
-		double depth     = RESULT(ReachDepth);
-		return PARAMETER(ReachBottomWidth) + 2.0*sqrt(meanwidth*meanwidth + depth*depth);
+		double b = PARAMETER(ReachBankSlope);
+		return PARAMETER(ReachBottomWidth) + 2.0*RESULT(ReachDepth)*sqrt(1.0 + 1.0/(b*b));
 	)
 	
 	EQUATION(Model, ReachHydraulicRadius,

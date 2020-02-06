@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Microplastics, containing modules (PERSiST V1.4, INCA water temperature V1.0, INCA-Microplastics V0.10.0) at 2020-02-06 15:57:20
+# Parameter file generated for model INCA-Microplastics, containing modules (PERSiST V1.4, INCA water temperature V1.0, INCA-Microplastics V0.10.0) at 2020-02-06 16:30:55
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -110,7 +110,7 @@ true true true
 10000
 
 "Reach bottom width" :     #(m) [0.1, 9999] The bottom width of the main stem of the stream / reach in a subcatchment
-8
+2
 
 "Reach bank slope" :     #(dimensionless) [0.01, 10] The slope of the river bank
 0.6
