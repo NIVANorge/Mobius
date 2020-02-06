@@ -46,7 +46,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto M                 = RegisterUnit(Model, "m");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
 	auto MPerM			   = RegisterUnit(Model, "m/m");
-	auto SecondsPerCubeRouteM	= RegisterUnit(Model, "s/(m^1/3)");
+	auto SecondsPerCubeRootM	= RegisterUnit(Model, "s/(m^1/3)");
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
@@ -70,7 +70,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
 #endif
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRouteM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
+	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRootM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
@@ -89,7 +89,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0);
 	
-	auto SoilWaterTC2            = RegisterParameterDouble(Model, HydrologyLand, "Soil water tc 2", Dimensionless, 0.0);
+	auto SoilFlowExponent        = RegisterParameterDouble(Model, HydrologyLand, "Soil water flow exponent", Dimensionless, 0.0);
 	
 	
 	// General parameters that vary by land class and reach
@@ -176,10 +176,10 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	ResetEveryTimestep(Model, DailyMeanSoilWaterFlow);
 	
 	EQUATION(Model, SoilWaterFlow,
-		//double smd = PARAMETER(SoilFieldCapacity) - RESULT(SoilWaterVolume);
-		//return -smd * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
+		//return (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)) * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
 		
-		return std::pow(PARAMETER(SoilWaterTC2), PARAMETER(SoilWaterTimeConstant) * (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)));
+		return std::pow(PARAMETER(SoilWaterTimeConstant), PARAMETER(SoilFlowExponent) * (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)));
+		//return PARAMETER(SoilWaterTimeConstant) * pow(Max(0.0, RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)),  PARAMETER(SoilFlowExponent));
 	)
 	
 	
