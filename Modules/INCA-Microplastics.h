@@ -356,7 +356,6 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	
 	auto TerminalSettlingVelocity            = RegisterEquation(Model, "Terminal settling velocity", MPerS);
 	
-	auto ReachHydraulicRadius                = RegisterEquation(Model, "Reach hydraulic radius", Metres);
 	auto ReachShearStress                    = RegisterEquation(Model, "Reach shear stress", NewtonPerM2);
 	auto SedimentBedCriticalShieldsParameter = RegisterEquation(Model, "Sediment bed critical Shields parameter", Dimensionless);
 	auto ClassCriticalShieldsParameter       = RegisterEquation(Model, "Critical Shields parameter (dimensionless critical shear stress) for class", Dimensionless);
@@ -390,18 +389,16 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	SetInitialValue(Model, SuspendedGrainMass, InitialSuspendedGrainMass);
 	SetSolver(Model, SuspendedGrainMass, InstreamSedimentSolver);
 	
-
 	
-	
-	auto ReachWidth   = GetParameterDoubleHandle(Model, "Reach width");
+	auto ReachWidth   = GetParameterDoubleHandle(Model, "Reach bottom width");
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
-	auto ReachHasEffluentInputs = GetParameterBoolHandle(Model, "Reach has effluent input");
 	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
 	auto ReachDepth    = GetEquationHandle(Model, "Reach depth");
 	auto ReachFlow     = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume   = GetEquationHandle(Model, "Reach volume");
 	auto ReachVelocity = GetEquationHandle(Model, "Reach velocity");
+	auto ReachHydraulicRadius = GetEquationHandle(Model, "Reach hydraulic radius");
 	auto ReachAbstraction = GetEquationHandle(Model, "Reach abstraction");
 	
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature");
@@ -422,11 +419,6 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		
 		//TODO: Support more shape types and geometries later
 		return ComputeTerminalSettlingVelocity(a, a, a, waterkinematicviscosity, waterdensity, plasticdensity, ShapeType);
-	)
-	
-	EQUATION(Model, ReachHydraulicRadius,
-		double wettedperimeter = 2.0*RESULT(ReachDepth) + PARAMETER(ReachWidth);
-		return PARAMETER(ReachWidth)*RESULT(ReachDepth) / wettedperimeter;
 	)
 	
 	EQUATION(Model, ReachShearStress,
@@ -512,12 +504,11 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * 86400.0;
 		double effluentconc = PARAMETER(EffluentGrainConcentration) * 1e-3;
 		
-		if(PARAMETER(ReachHasEffluentInputs)) return effluentflow * effluentconc;
-		
-		return 0.0;
+		return effluentflow * effluentconc;
 	)
 	
 	EQUATION(Model, SuspendedGrainMass,
+		//TODO: This uses only the reach bottom for entrainment and deposition. Should maybe include the banks
 		return 
 			  RESULT(TotalGrainDeliveryToReach)
 			+ PARAMETER(ConstantGrainDepositionToReach)
