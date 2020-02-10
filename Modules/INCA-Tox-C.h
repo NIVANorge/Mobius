@@ -3,7 +3,7 @@
 
 
 //NOTE: This is a simple DOC module (simpler than INCA-C) built to be used with INCA-Tox.
-// This is built on top of PERSiST and (eventually) INCA-Microplastics
+// This is built on top of PERSiST and INCA-Sed
 
 // This module does not try to keep track of the carbon balance or soil processes, it just provides a way to set up a simple empirical model of DOC transport in order for contaminants bound in the carbon to be transported correctly.
 
@@ -14,7 +14,7 @@
 static void
 AddIncaToxDOCModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox DOC", "0.1");
+	BeginModule(Model, "INCA-Tox Carbon", "0.1");
 	
 	auto MgPerL   = RegisterUnit(Model, "mg/l");
 	auto Kg       = RegisterUnit(Model, "kg");
@@ -30,7 +30,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Reaches      = GetIndexSetHandle(Model, "Reaches");
 	auto Soils        = GetIndexSetHandle(Model, "Soils");
-	auto Class        = GetIndexSetHandle(Model, "Grain class");
+	auto Class        = GetIndexSetHandle(Model, "Sediment size class");
 	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
@@ -55,12 +55,12 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto ReachFlow             = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume           = GetEquationHandle(Model, "Reach volume");
 	
-	//IncaMicroplastics.h :
-	auto GrainDeliveryToReach = GetEquationHandle(Model, "Grain delivery to reach");
-	auto SuspendedGrainMass   = GetEquationHandle(Model, "Suspended grain mass");
-	auto GrainDeposition      = GetEquationHandle(Model, "Grain deposition");
-	auto GrainEntrainment     = GetEquationHandle(Model, "Grain entrainment");
-	auto MassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Mass of bed grain per unit area");
+	//IncaSed.h :
+	auto AreaScaledGrainDeliveryToReach = GetEquationHandle(Model, "Area scaled sediment delivery to reach");
+	auto SuspendedGrainMass   = GetEquationHandle(Model, "Suspended sediment mass");
+	auto GrainDeposition      = GetEquationHandle(Model, "Sediment deposition");
+	auto GrainEntrainment     = GetEquationHandle(Model, "Sediment entrainment");
+	auto MassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Mass of bed sediment per unit area");
 	
 	
 	auto Percent                  = GetParameterDoubleHandle(Model, "%");
@@ -116,7 +116,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	//TODO: Transport by direct runoff (infiltration excess)?
 	
 	EQUATION(Model, SOCDeliveryToReach,
-		return RESULT(GrainDeliveryToReach) * PARAMETER(GrainSOCDensity);
+		return RESULT(AreaScaledGrainDeliveryToReach) * PARAMETER(GrainSOCDensity);
 	)
 	
 	EQUATION(Model, DiffuseDOCOutput,

@@ -49,7 +49,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Soils          = GetIndexSetHandle(Model, "Soils");
 	auto Reach          = GetIndexSetHandle(Model, "Reaches");
-	auto Class          = GetIndexSetHandle(Model, "Grain class");
+	auto Class          = GetIndexSetHandle(Model, "Sediment size class");
 	auto DirectRunoff = RequireIndex(Model, Soils, "Direct runoff");
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
@@ -86,11 +86,11 @@ AddIncaToxModule(mobius_model *Model)
 	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
 	
-	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5); //Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
+	//Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
+	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5);
+	auto AverageBedGrainDiameter = RegisterParameterDouble(Model, ContaminantReach, "Average bed grain diameter", M, 0.0001, 0.0, 0.1);
 	auto SedimentDryDensity = RegisterParameterDouble(Model, ContaminantReach, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
 	auto SedimentPorosity   = RegisterParameterDouble(Model, ContaminantReach, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
-	
-	
 	
 	auto SoilTemperature = GetEquationHandle(Model, "Soil temperature"); //SoilTemperature.h
 	auto WaterDepth      = GetEquationHandle(Model, "Water depth");      //PERSiST.h
@@ -107,9 +107,8 @@ AddIncaToxModule(mobius_model *Model)
 	auto ReachDOCOutput  = GetEquationHandle(Model, "Reach DOC output"); //INCA-Tox-C.h
 	auto ReachDOCMass    = GetEquationHandle(Model, "Reach DOC mass");   //INCA-Tox-C.h
 	auto SOCDeliveryToReach = GetEquationHandle(Model, "SOC delivery to reach by erosion"); //INCA-Tox-C.h
-	auto AverageBedGrainDiameter = GetEquationHandle(Model, "Average bed grain diameter"); //INCA-Microplastics.h
-	auto TotalMassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Total mass of bed grain per unit area"); //INCA-Microplastics.h
-	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity"); //INCA-Microplastics.h
+	auto TotalMassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Total mass of bed sediment per unit area"); //INCA-Sed.h
+	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity"); //INCA-Sed.h
 	auto ReachSOCDeposition = GetEquationHandle(Model, "Reach SOC deposition"); //INCA-Tox-C.h
 	auto ReachSOCEntrainment = GetEquationHandle(Model, "Reach SOC entrainment"); //INCA-Tox-C.h
 	auto ReachSuspendedSOCMass = GetEquationHandle(Model, "Reach suspended SOC mass"); //INCA-Tox-C.h
@@ -258,7 +257,6 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ContaminantDeliveryToReachByErosion,
-		//TODO: Eventually we may need separate partitioning coefficients per grain class. If they are plastic, the contaminants bind not in SOC but directly in the plastic.
 		return LAST_RESULT(SoilSOCContaminantConcentration) * RESULT(SOCDeliveryToReach) * PARAMETER(ContaminantSOCScalingFactor); //NOTE: LAST_RESULT because otherwise we would get a circular dependency with the solver, and we can't do that since this equation indexes over Grain class.
 	)
 	
@@ -426,8 +424,8 @@ AddIncaToxModule(mobius_model *Model)
 			- RESULT(ReachContaminantFlux)
 			- RESULT(ReachContaminantDegradation)
 			- RESULT(DiffusiveAirReachExchangeFlux)
-			+
-			(- RESULT(TotalReachContaminantDeposition) + RESULT(TotalReachContaminantEntrainment)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
+			
+			(RESULT(TotalReachContaminantEntrainment) - RESULT(TotalReachContaminantDeposition)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
 			// exchange with stream bed
 	)
 	
@@ -503,7 +501,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, NonDimensionalRoughnessParameter,
-		return RESULT(AverageBedGrainDiameter) * RESULT(ReachShearVelocity) / RESULT(ReachKinematicViscosity);
+		return PARAMETER(AverageBedGrainDiameter) * RESULT(ReachShearVelocity) / RESULT(ReachKinematicViscosity);
 	)
 	
 	EQUATION(Model, ElementFroudeNumber,

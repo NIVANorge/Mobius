@@ -223,6 +223,7 @@ AddINCASedModel(mobius_model *Model)
 	auto MassOfBedSediment = RegisterEquation(Model, "Mass of bed sediment", Kg);
 	
 	auto TotalBedSedimentMass       = RegisterEquationCumulative(Model, "Total bed sediment mass", MassOfBedSediment, SizeClass);
+	auto TotalBedSedimentMassPerUnitArea = RegisterEquationCumulative(Model, "Total mass of bed sediment per unit area", MassOfBedSedimentPerUnitArea, SizeClass);
 	auto TotalSuspendedSedimentMass = RegisterEquationCumulative(Model, "Total suspended sediment mass", SuspendedSedimentMass, SizeClass);
 	auto TotalEntrainment           = RegisterEquationCumulative(Model, "Total sediment entrainment", SedimentEntrainment, SizeClass);
 	auto TotalDeposition            = RegisterEquationCumulative(Model, "Total sediment deposition", SedimentDeposition, SizeClass);

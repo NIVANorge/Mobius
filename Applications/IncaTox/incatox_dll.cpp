@@ -9,7 +9,7 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/Persist.h"
-#include "../../Modules/INCA-Microplastics.h"
+#include "../../Modules/INCA-Sed.h"
 #include "../../Modules/SoilTemperature.h"
 #include "../../Modules/WaterTemperature.h"
 #include "../../Modules/INCA-Tox-C.h"
@@ -24,7 +24,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
 	mobius_model *Model = BeginModelDefinition("INCA-Tox");
 	
 	AddPersistModel(Model);
-	AddINCAMicroplasticsModel(Model);
+	AddINCASedModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
