@@ -424,8 +424,7 @@ AddIncaToxModule(mobius_model *Model)
 			- RESULT(ReachContaminantFlux)
 			- RESULT(ReachContaminantDegradation)
 			- RESULT(DiffusiveAirReachExchangeFlux)
-			
-			(RESULT(TotalReachContaminantEntrainment) - RESULT(TotalReachContaminantDeposition)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
+			+ (RESULT(TotalReachContaminantEntrainment) - RESULT(TotalReachContaminantDeposition)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
 			// exchange with stream bed
 	)
 	
@@ -585,7 +584,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DiffusiveAirReachExchangeFlux,
-		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - PARAMETER(AtmosphericContaminantConcentration)/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
+		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - 1e-3*PARAMETER(AtmosphericContaminantConcentration)/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
 	)
 	
 	
