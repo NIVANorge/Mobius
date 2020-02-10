@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-02-03 16:23:51
+# Parameter file generated for model SimplyC, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-02-10 17:26:06
 
 index_sets:
 "Reaches" : {"Storgama"}
@@ -16,7 +16,7 @@ parameters:
 60
 
 "PET multiplication factor" :     #(dimensionless) [0, 2] Parameter to scale potential evapotranspiration. Should be set to 1 in most cases.
-0.41
+0.3
 
 "Initial snow depth as water equivalent" :     #(mm) [0, 50000]
 250
@@ -25,10 +25,10 @@ parameters:
 2
 
 "Snow melt offset temperature" :     #(°C) [-4, 4] Snow begins melting above this temperature
-0
+0.1
 
 "Snow fall multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor to take into account possible inaccuracies in snow fall measurements
-1.2
+1.28
 
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
 0
@@ -46,7 +46,7 @@ parameters:
 0
 
 "Soil temperature DOC creation linear coefficient" :     #(mg/l/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
-3
+4
 
 "Soil carbon solubility response to SO4 deposition" :     #(dimensionless) [0, 20]
 10
@@ -74,10 +74,13 @@ true
 5
 
 "Lake rating curve constant" :     #(m2/s) [1e-06, 1000000] How much outflow is generated per meter the water level is above the level of the outlet. This parameter is only used if the reach is a lake
-0.5
+0.02
+
+"Lake rating curve exponent" :     #(dimensionless) [0.5, 3] Exponent on the outflow as a function of water level. This parameter is only used if the reach is a lake
+5
 
 "Lake degree-day evaporation" :     #(mm/°C/day) [0, 1] This parameter is only used if the reach is a lake
-0.1
+0.01
 
 ###################### "Reaches" "Landscape units" ######################
 "Land use proportions" :     #(dimensionless) [0, 1]
@@ -87,12 +90,15 @@ true
 "Soil water time constant" :     #(days) [0.01, 40]
 0.2
 
+"Soil water flow exponent" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
 "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)" :     #(1E-6 m2/s) [0.01, 0.8]
-0.01
+0.03
 
 "Baseline Soil DOC creation rate" :     #(kg/km2/day) [0, 100]
-70
+110
 
 "Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0
-8
+7
 

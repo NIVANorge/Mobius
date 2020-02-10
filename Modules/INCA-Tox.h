@@ -9,7 +9,7 @@
 static void
 AddIncaToxModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox", "0.00.0.0.23");
+	BeginModule(Model, "INCA-Tox", "_dev");
 	
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");

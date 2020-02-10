@@ -176,10 +176,9 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	ResetEveryTimestep(Model, DailyMeanSoilWaterFlow);
 	
 	EQUATION(Model, SoilWaterFlow,
-		//return (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)) * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
+		return (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)) * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
 		
-		return std::pow(PARAMETER(SoilWaterTimeConstant), PARAMETER(SoilFlowExponent) * (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)));
-		//return PARAMETER(SoilWaterTimeConstant) * pow(Max(0.0, RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)),  PARAMETER(SoilFlowExponent));
+		//return std::pow(PARAMETER(SoilWaterTimeConstant), PARAMETER(SoilFlowExponent) * (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)));
 	)
 	
 	

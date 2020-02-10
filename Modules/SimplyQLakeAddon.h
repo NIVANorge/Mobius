@@ -14,6 +14,7 @@ AddSimplyQLakeAddon(mobius_model *Model)
 {
 	//NOTE: This is not registered as a separate module because we just put things into the SimplyQ module
 	
+	auto Dimensionless = RegisterUnit(Model);
 	auto M2          = RegisterUnit(Model, "m2");
 	auto M           = RegisterUnit(Model, "m");
 	auto M2PerS      = RegisterUnit(Model, "m2/s");
@@ -25,6 +26,7 @@ AddSimplyQLakeAddon(mobius_model *Model)
 	auto LakeSurfaceArea  = RegisterParameterDouble(Model, ReachParams, "Lake surface area", M2, 1e3, 0.0, 371e9, "This parameter is only used if the reach is a lake");
 	auto LakeDepth        = RegisterParameterDouble(Model, ReachParams, "Lake depth at 0 outflow", M, 10.0, 0.0, 1642.0, "This parameter is only used if the reach is a lake");
 	auto LakeRatingCurveConst = RegisterParameterDouble(Model, ReachParams, "Lake rating curve constant", M2PerS, 0.1, 1e-6, 1e6, "How much outflow is generated per meter the water level is above the level of the outlet. This parameter is only used if the reach is a lake");
+	auto LakeRatingCurveExponent = RegisterParameterDouble(Model, ReachParams, "Lake rating curve exponent", Dimensionless, 1.0, 0.5, 3.0, "Exponent on the outflow as a function of water level. This parameter is only used if the reach is a lake");
 	auto LakeDegreeDayEvaporation = RegisterParameterDouble(Model, ReachParams, "Lake degree-day evaporation", MmPerDegreePerDay, 0.1, 0.0, 1.0, "This parameter is only used if the reach is a lake");
 	
 	auto InitialReachVolume      = GetEquationHandle(Model, "Initial reach volume");
@@ -85,6 +87,7 @@ AddSimplyQLakeAddon(mobius_model *Model)
 		double depth  = PARAMETER(LakeDepth);
 		double surface = PARAMETER(LakeSurfaceArea);
 		double lakeratingcurveconst = PARAMETER(LakeRatingCurveConst);
+		double ratingcurveexp       = PARAMETER(LakeRatingCurveExponent);
 	
 		if(PARAMETER(IsLake))
 		{
@@ -93,7 +96,7 @@ AddSimplyQLakeAddon(mobius_model *Model)
 			double excessvol = Max(0.0, volume - volume0);
 			double excessheight = excessvol / surface;   //Assumes that the banks are steep, but it should not matter that much??
 
-			return lakeratingcurveconst * excessheight;
+			return lakeratingcurveconst * pow(excessheight, ratingcurveexp);
 		}
 		else
 		{

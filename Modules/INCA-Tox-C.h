@@ -26,6 +26,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto KgPerM2PerDay  = RegisterUnit(Model, "kg/m2/day");
 	auto PerDay   = RegisterUnit(Model, "1/day");
 	auto M3PerKm2 = RegisterUnit(Model, "m3/km2");
+	auto MgPerLPerC = RegisterUnit(Model, "mg/l/°C");
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Reaches      = GetIndexSetHandle(Model, "Reaches");
@@ -41,6 +42,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	
 	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerKm2, 0.0, 0.0, 1e7);
 	auto SoilWaterBaselineDOCConcentration = RegisterParameterDouble(Model, Land, "Soil water baseline DOC concentration", MgPerL, 0.0, 0.0, 20.0);
+	auto SoilWaterDOCTemperatureResponse   = RegisterParameterDouble(Model, Land, "Soil water DOC temperature response", MgPerLPerC, 0.0, 0.0, 5.0);
 	auto MineralLayerDOCConcentration      = RegisterParameterDouble(Model, Reach, "Mineral layer DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	
 	auto GrainClass = RegisterParameterGroup(Model, "Carbon by grain class", Class);
@@ -62,6 +64,8 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto GrainEntrainment     = GetEquationHandle(Model, "Sediment entrainment");
 	auto MassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Mass of bed sediment per unit area");
 	
+	//SoilTemperature.h
+	auto SoilTemperature      = GetEquationHandle(Model, "Soil temperature");
 	
 	auto Percent                  = GetParameterDoubleHandle(Model, "%");
 	auto TerrestrialCatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
@@ -92,8 +96,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	
 	
 	EQUATION(Model, SoilWaterDOCConcentration,
-		//TODO: Temperature and SO4 controls?
-		return PARAMETER(SoilWaterBaselineDOCConcentration);
+		return PARAMETER(SoilWaterBaselineDOCConcentration) + PARAMETER(SoilWaterDOCTemperatureResponse)*RESULT(SoilTemperature);
 	)
 	
 	EQUATION(Model, SoilDOCMass,
