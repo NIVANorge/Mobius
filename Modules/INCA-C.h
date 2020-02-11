@@ -286,7 +286,7 @@ AddINCACModel(mobius_model *Model)
 		
 		if(INPUT_WAS_PROVIDED(LitterFallTimeseries)) return litter;
 		
-		if( (CURRENT_DAY_OF_YEAR() < start) || (CURRENT_DAY_OF_YEAR() >= start + duration))
+		if( (CURRENT_TIME().DayOfYear < start) || (CURRENT_TIME().DayOfYear >= start + duration))
 		{
 			litter = 0.0;
 		}

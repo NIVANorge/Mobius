@@ -42,7 +42,7 @@ AddMaxSolarRadiationModule(mobius_model *Model)
 	
 		double latitude = PARAMETER(Latitude);
 	
-		s32 DOY = (s32)CURRENT_DAY_OF_YEAR();
+		s32 DOY = CURRENT_TIME().DayOfYear;
 		
 		double detr = DailyExtraTerrestrialRadiation(latitude, DOY);
 		

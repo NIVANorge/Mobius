@@ -550,14 +550,14 @@ AddSimplyPSedimentModule(mobius_model *Model)
 				double d_start = d_maxE[Season] - E_risk_period / 2.0;
 				double d_end   = d_maxE[Season] + E_risk_period / 2.0;
 				double d_mid   = d_maxE[Season];
-				double dayNo = (double)CURRENT_DAY_OF_YEAR();
+				double dayNo = (double)CURRENT_TIME().DayOfYear;
 				double C_season;
 				if(dayNo >= d_start && dayNo <= d_end)
 				{
 					if(dayNo < d_mid) C_season = LinearInterpolate(dayNo, d_start, d_mid, C_cover, 1.0);
 					else              C_season = LinearInterpolate(dayNo, d_mid,   d_end, 1.0, C_cover);
 				}
-				else C_season = C_cover - E_risk_period*(1.0 - C_cover)/(2.0*(DAYS_THIS_YEAR()-E_risk_period));
+				else C_season = C_cover - E_risk_period*(1.0 - C_cover)/(2.0*(CURRENT_TIME().DaysThisYear-E_risk_period));
 				C_cov += C_season * coverproportion[Season];
 			}
 			return C_cov;

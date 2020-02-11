@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-02-10 17:26:06
+# Parameter file generated for model SimplyC, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-02-11 13:33:44
 
 index_sets:
 "Reaches" : {"Storgama"}
@@ -46,7 +46,7 @@ parameters:
 0
 
 "Soil temperature DOC creation linear coefficient" :     #(mg/l/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
-4
+6
 
 "Soil carbon solubility response to SO4 deposition" :     #(dimensionless) [0, 20]
 10

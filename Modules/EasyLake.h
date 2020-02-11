@@ -472,8 +472,8 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		double eclipse       = 23.434 * Pi / 180.0;
 		double ozoneppm      = 0.09;
 		
-		double doy = (double)CURRENT_DAY_OF_YEAR();
-		double days = (double)DAYS_THIS_YEAR();
+		double doy = (double)CURRENT_TIME().DayOfYear;
+		double days = (double)CURRENT_TIME().DaysThisYear;
 		
 		double LatitudeRad = PARAMETER(Latitude) * Pi / 180.0;
 		

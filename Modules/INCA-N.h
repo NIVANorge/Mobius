@@ -316,7 +316,7 @@ AddIncaNModel(mobius_model *Model)
 	EQUATION(Model, NitrateFertilizerAddition,
 		double startday = (double)PARAMETER(FertilizerAdditionStartDay);
 		double endday   = startday + (double)PARAMETER(FertilizerAdditionPeriod);
-		double currentday = (double)CURRENT_DAY_OF_YEAR();
+		double currentday = (double)CURRENT_TIME().DayOfYear;
 		double additionrate = IF_INPUT_ELSE_PARAMETER(NitrateFertilizerTimeseries, FertilizerNitrateAdditionRate);
 		
 		if(!INPUT_WAS_PROVIDED(NitrateFertilizerTimeseries) && (currentday < startday || currentday > endday))
@@ -329,7 +329,7 @@ AddIncaNModel(mobius_model *Model)
 	EQUATION(Model, AmmoniumFertilizerAddition,
 		double startday = (double)PARAMETER(FertilizerAdditionStartDay);
 		double endday   = startday + (double)PARAMETER(FertilizerAdditionPeriod);
-		double currentday = (double)CURRENT_DAY_OF_YEAR();
+		double currentday = (double)CURRENT_TIME().DayOfYear;
 		double additionrate = IF_INPUT_ELSE_PARAMETER(AmmoniumFertilizerTimeseries, FertilizerAmmoniumAdditionRate);
 		
 		if(!INPUT_WAS_PROVIDED(AmmoniumFertilizerTimeseries) && (currentday < startday || currentday > endday))
@@ -358,7 +358,7 @@ AddIncaNModel(mobius_model *Model)
 		
 		if(LAST_RESULT(CurrentGrowthCurveAmplitude) != RESULT(CurrentGrowthCurveAmplitude))
 		{
-			start = (double)CURRENT_DAY_OF_YEAR();
+			start = (double)CURRENT_TIME().DayOfYear;
 		}
 		
 		if(!INPUT_WAS_PROVIDED(GrowthCurveOffsetTimeseries)) start = startparam;
@@ -368,8 +368,8 @@ AddIncaNModel(mobius_model *Model)
 
 	EQUATION(Model, SeasonalGrowthFactor,
 		double startday = (double)RESULT(CurrentPlantGrowthStartDay);
-		double daysthisyear = (double)DAYS_THIS_YEAR();
-		double currentday   = (double)CURRENT_DAY_OF_YEAR();
+		double daysthisyear = (double)CURRENT_TIME().DaysThisYear;
+		double currentday   = (double)CURRENT_TIME().DayOfYear;
 		double endday   = startday + (double)PARAMETER(PlantGrowthPeriod);
 		
 		double offset    = IF_INPUT_ELSE_PARAMETER(GrowthCurveOffsetTimeseries, GrowthCurveOffset);
@@ -402,7 +402,7 @@ AddIncaNModel(mobius_model *Model)
 	
 	EQUATION(Model, YearlyAccumulatedNitrogenUptake,
 		double accumulated = LAST_RESULT(YearlyAccumulatedNitrogenUptake) + (LAST_RESULT(NitrateUptake) + LAST_RESULT(AmmoniumUptake)) / 100.0; //NOTE convert 1/km2 to 1/Ha
-		if(CURRENT_DAY_OF_YEAR() == 1) accumulated = 0.0;
+		if(CURRENT_TIME().DayOfYear == 1) accumulated = 0.0;
 		return accumulated;
 	)
 	

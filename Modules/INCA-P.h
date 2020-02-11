@@ -265,7 +265,7 @@ AddINCAPModel(mobius_model *Model)
 		
 		u64 Fstart  = PARAMETER(FertilizerAdditionStartDay);
 		u64 Fperiod = PARAMETER(FertilizerAdditionPeriod);
-		u64 Day = CURRENT_DAY_OF_YEAR();
+		u64 Day = CURRENT_TIME().DayOfYear;
 		
 		if(Day >= Fstart && Day <= Fstart + Fperiod)
 		{
@@ -279,13 +279,13 @@ AddINCAPModel(mobius_model *Model)
 		double Psolidmanure = IF_INPUT_ELSE_PARAMETER(SolidManurePTimeseries, SolidManureP);
 		double Psolidfert   = IF_INPUT_ELSE_PARAMETER(SolidFertilizerPTimeseries, SolidFertilizerP);
 		double Presidue     = IF_INPUT_ELSE_PARAMETER(PlantResiduePTimeseries, PlantResidueP);
-		double Pdep         = IF_INPUT_ELSE_PARAMETER(PhosphorousDryDepositionTimeseries, PhosphorousDryDeposition) / (double)DAYS_THIS_YEAR();
+		double Pdep         = IF_INPUT_ELSE_PARAMETER(PhosphorousDryDepositionTimeseries, PhosphorousDryDeposition) / (double)CURRENT_TIME().DaysThisYear;
 		
 		double Psolidin = Presidue + Pdep;
 		
 		u64 Fstart  = PARAMETER(FertilizerAdditionStartDay);
 		u64 Fperiod = PARAMETER(FertilizerAdditionPeriod);
-		u64 Day = CURRENT_DAY_OF_YEAR();
+		u64 Day = CURRENT_TIME().DayOfYear;
 		
 		if(Day >= Fstart && Day <= Fstart + Fperiod)
 		{
@@ -330,9 +330,9 @@ AddINCAPModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SeasonalPlantGrowthIndex,
-		double Day = (double)CURRENT_DAY_OF_YEAR();
+		double Day = (double)CURRENT_TIME().DayOfYear;
 		double DayOffset = (double)PARAMETER(GrowingSeasonStart);
-		double DayCount  = (double)DAYS_THIS_YEAR();
+		double DayCount  = (double)CURRENT_TIME().DaysThisYear;
 		return PARAMETER(PlantGrowthCurveOffset) + PARAMETER(PlantGrowthCurveAmplitude)*sin(2.0*Pi*(Day - DayOffset) / DayCount);
 	)
 	
@@ -349,7 +349,7 @@ AddINCAPModel(mobius_model *Model)
 	
 	EQUATION(Model, AccumulatedAnnualPUptake,
 		double acc = LAST_RESULT(AccumulatedAnnualPUptake) + LAST_RESULT(PlantPUptakeFromSoilwater) / 100.0;
-		if(CURRENT_DAY_OF_YEAR() == 1) acc = 0.0;
+		if(CURRENT_TIME().DayOfYear == 1) acc = 0.0;
 		return acc;
 	)
 	

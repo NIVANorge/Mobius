@@ -110,7 +110,7 @@ AddGibletThrasherModel(mobius_model *Model)
 	EQUATION(Model, GibletTemporalBirthRate,
 		//TODO: This does not work that well if GibletBirthdayMean is too close to one of the edges of the year, and so we should make it wrap around in some way.
 		//TODO: This is not normalized!
-		double exponent = (double)((s64)CURRENT_DAY_OF_YEAR() - (s64)PARAMETER(GibletBirthdayMean)) / (double)PARAMETER(GibletBirthdayStandardDeviation);
+		double exponent = (double)(CURRENT_TIME().DayOfYear - (s32)PARAMETER(GibletBirthdayMean)) / (double)PARAMETER(GibletBirthdayStandardDeviation);
 		return PARAMETER(GibletBirthRate) * std::exp(-Square(exponent) / 2.0 );
 	)
 	

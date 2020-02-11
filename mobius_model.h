@@ -1338,9 +1338,6 @@ GetCurrentTime(model_run_state *RunState)
 }
 
 #define CURRENT_TIME() (GetCurrentTime(RunState__))
-//TODO: The following two should be deprecated
-#define CURRENT_DAY_OF_YEAR() (RunState__->CurrentTime.DayOfYear)
-#define DAYS_THIS_YEAR() (RunState__->CurrentTime.DaysThisYear)
 
 #define CURRENT_TIMESTEP() (RunState__->Timestep)
 

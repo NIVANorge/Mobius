@@ -380,7 +380,7 @@ AddINCANClassicModel(mobius_model *Model)
 
 	EQUATION(Model, SeasonalGrowthFactor,
 		return PARAMETER(GrowthCurveOffset) + PARAMETER(GrowthCurveAmplitude) 
-			* sin(2.0 * Pi * ((double)CURRENT_DAY_OF_YEAR() - (double)PARAMETER(PlantGrowthStartDay) ) / (double)DAYS_THIS_YEAR() );
+			* sin(2.0 * Pi * ((double)CURRENT_TIME().DayOfYear - (double)PARAMETER(PlantGrowthStartDay) ) / (double)CURRENT_TIME().DaysThisYear );
 	)
 
 	EQUATION(Model, TemperatureFactor,
@@ -399,7 +399,7 @@ AddINCANClassicModel(mobius_model *Model)
 		double plantGrowthStartDay = (double)PARAMETER(PlantGrowthStartDay);
 		double plantGrowthEndDay = plantGrowthStartDay + (double)PARAMETER(PlantGrowthPeriod);
 		
-		if((double)CURRENT_DAY_OF_YEAR() < plantGrowthStartDay || (double)CURRENT_DAY_OF_YEAR() > plantGrowthEndDay) return 0.0;
+		if((double)CURRENT_TIME().DayOfYear < plantGrowthStartDay || (double)CURRENT_TIME().DayOfYear > plantGrowthEndDay) return 0.0;
 		
 		return PARAMETER(NitratePlantUptakeRate)
 			* RESULT(TemperatureFactor)
@@ -442,7 +442,7 @@ AddINCANClassicModel(mobius_model *Model)
 		double startDay = (double)PARAMETER(FertilizerAdditionStartDay);
 		double endDay   = startDay + (double)PARAMETER(FertilizerAdditionPeriod);
 		
-		if((double)CURRENT_DAY_OF_YEAR() >= startDay && (double)CURRENT_DAY_OF_YEAR() <= endDay)
+		if((double)CURRENT_TIME().DayOfYear >= startDay && (double)CURRENT_TIME().DayOfYear <= endDay)
 		{
 			nitrateInput += PARAMETER(FertilizerNitrateAdditionRate);
 		}
@@ -506,7 +506,7 @@ AddINCANClassicModel(mobius_model *Model)
 		double startDay = (double)PARAMETER(FertilizerAdditionStartDay);
 		double endDay   = startDay + (double)PARAMETER(FertilizerAdditionPeriod);
 		
-		if((double)CURRENT_DAY_OF_YEAR() >= startDay && (double)CURRENT_DAY_OF_YEAR() <= endDay)
+		if((double)CURRENT_TIME().DayOfYear >= startDay && (double)CURRENT_TIME().DayOfYear <= endDay)
 		{
 			nitrateInput += PARAMETER(FertilizerAmmoniumAdditionRate);
 		}

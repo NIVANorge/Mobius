@@ -772,8 +772,6 @@ The framework lets you access a few additional variables that tell you something
 \item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
 \item {\tt FIRST\_INDEX(IndexSetHandle)} Gives you an {\tt index\_t} corresponding to the first index of that index set. Registers no dependencies.
 \item {\tt INDEX\_NUMBER(IndexSetHandle, Number)} Gives you an {\tt index\_t} corresponding to the index of that number. However, be careful when using this that the index is smaller than {\tt INDEX\_COUNT(IndexSetHandle)}. Also, it is probably better to use a predeclared index, which guarantees you that what you are referring to has the right index name  (see Section \ref{sec:predeclared} below). Registers no dependencies.
-\item {\tt CURRENT\_DAY\_OF\_YEAR()} Returns an integer telling you which day of year it is (in the current model state). January 1st is always day 1. For instance, if the model "Start date" is 1999-1-15, then during the first timestep, the current day of year will be 15. May be deprecated soon in favor of {\tt CURRENT\_TIME} (see below).
-\item {\tt DAYS\_THIS\_YEAR()} Returns an integer that is either 365 (in a normal year) or 366 (in a leap year). May be deprecated soon in favor of {\tt CURRENT\_TIME} (see below).
 \item {\tt CURRENT\_TIMESTEP()} Returns an integer saying what timestep we are on. A return value of -1 means that this is during an "initial value" computation, while 0 is the first proper timestep.
 \item {\tt CURRENT\_TIME()} Returns a reference to a structure with the following fields (all integers):
 	\begin{enumerate}[1]
@@ -792,7 +790,7 @@ Some of these are more relevant than others, depending on the timestep size of t
 \begin{example}
 If you want to access the current day of month inside an equation body, you can for instance write
 \begin{lstlisting}[style=mycpp]
-auto dom = CURRENT_TIME().DayOfMonth;
+int dom = CURRENT_TIME().DayOfMonth;
 \end{lstlisting}
 \end{example}
 
@@ -1467,18 +1465,6 @@ The following macros are only available inside the {\tt Decl} of an {\tt EQUATIO
 \apipar{index\_t Indexes\ldots}{(optional, varargs) One or more indexes to explicitly index.}
 \apiret{A {\tt double}.}
 \apidesc{Looks up the result of the equation value for the current timestep minus {\tt StepBack} number of timesteps. So if {\tt StepBack=0} you get the current result, if {\tt StepBack=1} you get the last result and so on. This registers the same dependencies as a {\tt LAST\_RESULT} lookup.}
-}
-
-\apientry{CURRENT\_DAY\_OF\_YEAR}{Equation macro}{
-\apipar{}{None.}
-\apiret{A {\tt s32}.}
-\apidesc{Returns the current day of the year in the context of the simulation. January 1st corresponds to a current day of year of 1. This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
-}
-
-\apientry{DAYS\_THIS\_YEAR}{Equation macro}{
-\apipar{}{None.}
-\apiret{A {\tt s32}.}
-\apidesc{Returns the amount of days this year in the context of the simulation. Is either 365 (in a common year) or 366 (in a leap year). This is a macro that expands to an expression that extracts the value from the {\tt model\_run\_state}.}
 }
 
 \apientry{CURRENT\_TIMESTEP}{Equation macro}{
