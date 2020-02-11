@@ -57,7 +57,7 @@ AddSimplyQLakeAddon(mobius_model *Model)
 		{
 			// If it is not a lake, use the same volume equation as in SimplyQ
 			double reachdepth = 0.349 * pow(flow, 0.34);
-			double reachwidth = 2.71 * pow(length, 0.557);
+			double reachwidth = 2.71 * pow(flow, 0.557);
 			return reachdepth * reachwidth * length;
 		}
 	)
