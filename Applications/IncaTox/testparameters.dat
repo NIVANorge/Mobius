@@ -309,9 +309,6 @@ false
 "Grain SOC density" :     #(kg/kg) [0, 1]
 0.1 0.01
 
-"Contaminant SOC scaling factor" :     #(dimensionless) [0, 1]
-1 1
-
 ###################### "Sediment size class" "Reaches" ######################
 "Effluent sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0

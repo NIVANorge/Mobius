@@ -63,6 +63,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto GrainDeposition      = GetEquationHandle(Model, "Sediment deposition");
 	auto GrainEntrainment     = GetEquationHandle(Model, "Sediment entrainment");
 	auto MassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Mass of bed sediment per unit area");
+	auto PercentageOfSedimentInGrainSizeClass = GetParameterDoubleHandle(Model, "Percentage of sediment in grain size class");
 	
 	//SoilTemperature.h
 	auto SoilTemperature      = GetEquationHandle(Model, "Soil temperature");
@@ -79,7 +80,9 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto DiffuseDOCOutput          = RegisterEquation(Model, "Diffuse DOC output", KgPerDay);
 	auto TotalDiffuseDOCOutput     = RegisterEquationCumulative(Model, "Total diffuse DOC output", DiffuseDOCOutput, LandscapeUnits);
 	
-	auto SOCDeliveryToReach        = RegisterEquation(Model, "SOC delivery to reach by erosion", KgPerDay);
+	auto SOCDeliveryToReach        = RegisterEquation(Model, "SOC delivery to reach by erosion per grain class and landscape unit", KgPerDay);
+	auto SOCDeliveryToReachPerLU   = RegisterEquationCumulative(Model, "SOC delivery to reach per landscape unit", SOCDeliveryToReach, Class);
+	auto TotalSOCDeliveryToReach   = RegisterEquationCumulative(Model, "Total SOC delivery to reach", SOCDeliveryToReachPerLU, LandscapeUnits);
 	
 	auto ReachSolver = GetSolverHandle(Model, "Reach solver");
 	auto ReachDOCMass              = RegisterEquationODE(Model, "Reach DOC mass", Kg);
@@ -93,6 +96,11 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto BedSOCMass                = RegisterEquation(Model, "Stream bed SOC mass", KgPerM2);
 	auto ReachSOCDeposition        = RegisterEquation(Model, "Reach SOC deposition", KgPerM2PerDay);
 	auto ReachSOCEntrainment       = RegisterEquation(Model, "Reach SOC entrainment", KgPerM2PerDay);
+	
+	auto TotalSuspendedSOCMass     = RegisterEquationCumulative(Model, "Total suspended SOC mass", ReachSuspendedSOCMass, Class);
+	auto TotalBedSOCMass           = RegisterEquationCumulative(Model, "Total stream bed SOC mass", BedSOCMass, Class);
+	auto TotalSOCDeposition        = RegisterEquationCumulative(Model, "Total reach SOC deposition", ReachSOCDeposition, Class);
+	auto TotalSOCEntrainment       = RegisterEquationCumulative(Model, "Total reach SOC entrainment", ReachSOCEntrainment, Class);
 	
 	
 	EQUATION(Model, SoilWaterDOCConcentration,
@@ -119,7 +127,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	//TODO: Transport by direct runoff (infiltration excess)?
 	
 	EQUATION(Model, SOCDeliveryToReach,
-		return RESULT(AreaScaledGrainDeliveryToReach) * PARAMETER(GrainSOCDensity);
+		return RESULT(AreaScaledGrainDeliveryToReach) * PARAMETER(PercentageOfSedimentInGrainSizeClass) * 0.01 * PARAMETER(GrainSOCDensity);
 	)
 	
 	EQUATION(Model, DiffuseDOCOutput,
