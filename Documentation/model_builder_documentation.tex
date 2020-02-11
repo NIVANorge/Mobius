@@ -769,7 +769,7 @@ The step to compute parameters is executed right before the step that initialize
 The framework lets you access a few additional variables that tell you something about the state the equation is called under. These are.
 \begin{enumerate}[i]
 \item {\tt CURRENT\_INDEX(IndexSetHandle)} This will return an {\tt index\_t} which tells you the current index of the index set corresponding to the provided {\tt IndexSetHandle}. An {\tt index\_t} is a small struct that contains information about what index set and what index it belongs to. In addition to providing the value of the current index, {\tt CURRENT\_INDEX} forces the equation to depend on this index set, i.e. it will be evaluated for each index in the index set (otherwise, if it was not evaluated for each index in the index set, it would not make sense to ask what was the current index of that index set during evaluation).
-\item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
+\item {\tt INDEX\_COUNT(IndexSetHandle)} This will return an {\tt index\_t} that is always guaranteed to be one larger than the largest index in the index set corresponding to the provided {\tt IndexSetHandle}. Registers no dependencies.
 \item {\tt FIRST\_INDEX(IndexSetHandle)} Gives you an {\tt index\_t} corresponding to the first index of that index set. Registers no dependencies.
 \item {\tt INDEX\_NUMBER(IndexSetHandle, Number)} Gives you an {\tt index\_t} corresponding to the index of that number. However, be careful when using this that the index is smaller than {\tt INDEX\_COUNT(IndexSetHandle)}. Also, it is probably better to use a predeclared index, which guarantees you that what you are referring to has the right index name  (see Section \ref{sec:predeclared} below). Registers no dependencies.
 \item {\tt CURRENT\_TIMESTEP()} Returns an integer saying what timestep we are on. A return value of -1 means that this is during an "initial value" computation, while 0 is the first proper timestep.
@@ -1008,7 +1008,7 @@ This can sometimes be tricky if a solver is involved. Equation A can not depend 
 For each batch, the order of evaluating the initial value of each equation (either by reading it from a parameter, setting it to a constant, or evaluating an initial value equation) is given its own evaluation order based on the dependencies of the initial value equations.
 
 \begin{note}
-The description given here does not give all the implementation details. To get a complete understanding you probably have to look up the implementation of the {\tt EndModelDefinition} function in {\tt mobius\_model.cpp}.
+The description given here does not give all the implementation details. To get a complete understanding you probably have to look up the implementation of the {\tt EndModelDefinition} function in {\tt mobius\_model\_run.h}.
 \end{note}
 
 \subsection{Module organization}
