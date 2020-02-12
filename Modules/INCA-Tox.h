@@ -254,7 +254,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DiffusiveAirSoilExchangeFlux,
-		return PARAMETER(AirSoilOverallMassTransferCoefficient) * (1e-3*PARAMETER(AtmosphericContaminantConcentration) - RESULT(SoilAirContaminantConcentration));
+		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (1e-3*PARAMETER(AtmosphericContaminantConcentration) - RESULT(SoilAirContaminantConcentration));
 	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,

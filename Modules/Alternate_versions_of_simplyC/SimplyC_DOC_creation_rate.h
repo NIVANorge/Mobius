@@ -104,10 +104,10 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilWaterDOCMass,
 		//double destructionrate = PARAMETER(BaselineSoilDOCDestructionRate);
-		double destructionrate = PARAMETER(BaselineSoilDOCCreationRate) / (PARAMETER(BaselineSoilDOCConcentration) * PARAMETER(FieldCapacity));
+		double destructionrate = 1e3 * PARAMETER(BaselineSoilDOCCreationRate) / PARAMETER(BaselineSoilDOCConcentration);
 	
 		return
-			  RESULT(SoilDOCCreationRate)
+			  RESULT(SoilDOCCreationRate) * RESULT(SoilWaterVolume) * 1e3   // 1/m3 * mm ->  1/km^2
 			- destructionrate*RESULT(SoilWaterDOCMass)
 			- RESULT(InfiltrationExcessCarbonFluxToReach)
 			- RESULT(SoilWaterCarbonFlux);
