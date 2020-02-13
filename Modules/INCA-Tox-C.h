@@ -96,11 +96,13 @@ AddIncaToxDOCModule(mobius_model *Model)
 	auto BedSOCMass                = RegisterEquation(Model, "Stream bed SOC mass", KgPerM2);
 	auto ReachSOCDeposition        = RegisterEquation(Model, "Reach SOC deposition", KgPerM2PerDay);
 	auto ReachSOCEntrainment       = RegisterEquation(Model, "Reach SOC entrainment", KgPerM2PerDay);
+	auto ReachSuspendedSOCFlux     = RegisterEquation(Model, "Reach suspended SOC flux", KgPerDay);
 	
 	auto TotalSuspendedSOCMass     = RegisterEquationCumulative(Model, "Total suspended SOC mass", ReachSuspendedSOCMass, Class);
 	auto TotalBedSOCMass           = RegisterEquationCumulative(Model, "Total stream bed SOC mass", BedSOCMass, Class);
 	auto TotalSOCDeposition        = RegisterEquationCumulative(Model, "Total reach SOC deposition", ReachSOCDeposition, Class);
 	auto TotalSOCEntrainment       = RegisterEquationCumulative(Model, "Total reach SOC entrainment", ReachSOCEntrainment, Class);
+	auto TotalSOCFlux              = RegisterEquationCumulative(Model, "Total reach SOC flux", ReachSuspendedSOCFlux, Class);
 	
 	
 	EQUATION(Model, SoilWaterDOCConcentration,
@@ -164,6 +166,10 @@ AddIncaToxDOCModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachSuspendedSOCMass,
 		return RESULT(SuspendedGrainMass) * PARAMETER(GrainSOCDensity);
+	)
+	
+	EQUATION(Model, ReachSuspendedSOCFlux,
+		return RESULT(ReachFlow) * SafeDivide(RESULT(ReachSuspendedSOCMass), RESULT(ReachVolume));
 	)
 	
 	EQUATION(Model, BedSOCMass,

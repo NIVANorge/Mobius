@@ -123,6 +123,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto TotalSOCEntrainment      = GetEquationHandle(Model, "Total reach SOC entrainment");
 	auto TotalSuspendedSOCMass    = GetEquationHandle(Model, "Total suspended SOC mass");
 	auto TotalBedSOCMass          = GetEquationHandle(Model, "Total stream bed SOC mass");
+	auto TotalReachSOCFlux        = GetEquationHandle(Model, "Total reach SOC flux");
 	
 	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //PERSiST.h
 	auto Percent         = GetParameterDoubleHandle(Model, "%");                //PERSiST.h
@@ -355,6 +356,9 @@ AddIncaToxModule(mobius_model *Model)
 	auto SchmidtNumber                            = RegisterEquation(Model, "Schmidt number", Dimensionless);
 	auto NonDimensionalRoughnessParameter         = RegisterEquation(Model, "Non-dimensional roughness parameter", Dimensionless);
 	auto ElementFroudeNumber                      = RegisterEquation(Model, "Element Froude number", Dimensionless);
+	auto WaterSedimentApparentViscosity           = RegisterEquation(Model, "Water sediment apparent viscosity", M2PerS);
+	auto TurbulentReynoldsNumber                  = RegisterEquation(Model, "Turbulent Reynolds number", M2PerS);
+	auto DiffusivityOfDissolvedCompoundInWater    = RegisterEquation(Model, "Diffusivity of dissolved compound in water", M2PerS);
 	
 	
 	auto ReachAirContaminantTransferVelocity      = RegisterEquation(Model, "Reach air contamninant transfer velocity", MPerDay);
@@ -388,6 +392,9 @@ AddIncaToxModule(mobius_model *Model)
 	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
 	SetSolver(Model, BedSOCContaminantConcentration, ReachSolver);
 	
+	auto DiffusiveSedimentReachExchangeFlux = RegisterEquation(Model, "Diffusive sediment reach water exchange flux", NgPerDay);
+	SetSolver(Model, DiffusiveSedimentReachExchangeFlux, ReachSolver);
+	
 	
 	
 	EQUATION(Model, DiffuseContaminantOutput,
@@ -408,7 +415,7 @@ AddIncaToxModule(mobius_model *Model)
 			upstreamflux
 			+ RESULT(TotalDiffuseContaminantOutput)
 			+ RESULT(TotalContaminantDeliveryToReach)
-			//+ deposition
+			//+ direct deposition to the stream (from e.g. industry)
 			;
 	)
 	
@@ -416,8 +423,8 @@ AddIncaToxModule(mobius_model *Model)
 	EQUATION(Model, ReachContaminantFlux,
 		return
 		  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration)
-		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration);
-		// + suspended sediment flux
+		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration)
+		+ RESULT(TotalReachSOCFlux) * RESULT(ReachSOCContaminantConcentration);
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
@@ -432,7 +439,7 @@ AddIncaToxModule(mobius_model *Model)
 			- RESULT(ReachContaminantDegradation)
 			- RESULT(DiffusiveAirReachExchangeFlux)
 			+ (RESULT(ReachContaminantEntrainment) - RESULT(ReachContaminantDeposition)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
-			// exchange with stream bed
+			- RESULT(DiffusiveSedimentReachExchangeFlux);
 	)
 	
 	
@@ -627,8 +634,8 @@ AddIncaToxModule(mobius_model *Model)
 		return
 		  RESULT(ReachContaminantDeposition)
 		- RESULT(ReachContaminantEntrainment)
-		- RESULT(BedContaminantDegradation);
-		// TODO: diffusive exchange with stream
+		- RESULT(BedContaminantDegradation)
+		+ RESULT(DiffusiveSedimentReachExchangeFlux);
 	)
 	
 	EQUATION(Model, PoreWaterVolume,
@@ -646,7 +653,6 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(BedWaterContaminantConcentration) * RESULT(ReachWaterSOCPartitioningCoefficient);
 	)
 	
-	/*
 	EQUATION(Model, WaterSedimentApparentViscosity,
 		double por = (1.0 - PARAMETER(SedimentPorosity)) / PARAMETER(SedimentPorosity);
 		return (RESULT(ReachKinematicViscosity) / (32.0 * 5.6e-3)) * 0.1 * por * por;
@@ -657,9 +663,28 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(ReachShearVelocity) * RESULT(ReachShearVelocity) * periodOfVelocityPulse / RESULT(WaterSedimentApparentViscosity);
 	)
 	
-	EQUATION(Model, ReachBedWaterContaminantDiffusiveExchange,
-		return 
+	EQUATION(Model, DiffusivityOfDissolvedCompoundInWater,
+		double a = 8.32e-4;
+		double b = 8.2157e-1;
+		double c = 0.1571;
+		double ustar = RESULT(ReachShearVelocity);
+		double zus = -5.0*PARAMETER(AverageBedGrainDiameter);
+		double zusstar = 0.5*zus / ustar;
+		double Re = RESULT(TurbulentReynoldsNumber);
+		
+		double logDstar = (log10(-a*(zusstar + 10.0)) - log10((a-10.0)*zusstar)) / (b * pow(Re, c));
+		
+		std::cout << "z_us* " << zusstar << '\n';
+		std::cout << "logD* " << logDstar << '\n';
+		
+		double Dstar = pow(10.0, logDstar);
+		return Dstar * ustar * ustar;
 	)
-	*/
+	
+	EQUATION(Model, DiffusiveSedimentReachExchangeFlux,
+		double zus = -5.0*PARAMETER(AverageBedGrainDiameter);
+		return RESULT(DiffusivityOfDissolvedCompoundInWater) * (RESULT(ReachWaterContaminantConcentration) - RESULT(BedWaterContaminantConcentration)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth) * 86400.0 / (0.5 * (-zus));
+	)
+
 	EndModule(Model);
 }
