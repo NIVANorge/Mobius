@@ -30,7 +30,8 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	mobius_model *Model = BeginModelDefinition("SimplyC");
 	
-	AddThornthwaitePETModule(Model);
+	//AddThornthwaitePETModule(Model);
+	AddDegreeDayPETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSimplyQLakeAddon(Model);
 	AddSoilTemperatureModel(Model);

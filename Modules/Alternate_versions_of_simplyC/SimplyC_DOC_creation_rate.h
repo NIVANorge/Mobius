@@ -20,8 +20,9 @@ AddSimplyCModel(mobius_model *Model)
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km2/day");
 	auto Km2PerDay  = RegisterUnit(Model, "km2/day");
 	auto MgPerL		 = RegisterUnit(Model, "mg/l");
-	auto MgPerLPerC  = RegisterUnit(Model, "mg/l/°C");
-	auto MgPerLPerC2 = RegisterUnit(Model, "mg/l/(°C)^2");
+	auto MgPerLPerDay = RegisterUnit(Model, "mg/l/day");
+	auto MgPerLPerDayPerC  = RegisterUnit(Model, "mg/l/day/°C");
+	auto MgPerLPerDayPerMgPerL = RegisterUnit(Model, "mg/l/day/(mg/l)");
 
 	// Set up index sets
 	auto Reach          = GetIndexSetHandle(Model, "Reaches"); //Defined in SimplyQ.h
@@ -40,9 +41,9 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that don't vary with land class or sub-catchment/reach
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
 	
-	auto SoilTemperatureDOCLinearCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", MgPerLPerC, 0.0);
+	auto SoilTemperatureDOCLinearCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", MgPerLPerDayPerC, 0.0);
 
-	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", Dimensionless, 0.0, 0.0, 20.0);
+	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", MgPerLPerDayPerMgPerL, 0.0, 0.0, 20.0);
 	
 
 #ifdef SIMPLYQ_GROUNDWATER
@@ -52,8 +53,7 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
 	
-	auto BaselineSoilDOCCreationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC creation rate", KgPerKm2PerDay, 0.1, 0.0, 100.0);
-	//auto BaselineSoilDOCDestructionRate = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC destruction rate", KgPerKm2PerDay, 0.1, 0.0, 100.0);
+	auto BaselineSoilDOCCreationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC creation rate", MgPerLPerDay, 0.1, 0.0, 100.0);
 	auto BaselineSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0");
 
 	// EQUATIONS
@@ -75,7 +75,7 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilTemperature       = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");
 
 
-	auto SoilDOCCreationRate = RegisterEquation(Model, "Soil DOC creation rate", KgPerKm2PerDay);
+	auto SoilDOCCreationRate = RegisterEquation(Model, "Soil DOC creation rate", MgPerLPerDay);
 	// Carbon equations which vary by land class
 	auto SoilWaterDOCMass             = RegisterEquationODE(Model, "Soil water DOC mass", KgPerKm2);
 	SetSolver(Model, SoilWaterDOCMass, LandSolver);
@@ -103,11 +103,10 @@ AddSimplyCModel(mobius_model *Model)
 	auto FieldCapacity = GetParameterDoubleHandle(Model, "Soil field capacity");
 	
 	EQUATION(Model, SoilWaterDOCMass,
-		//double destructionrate = PARAMETER(BaselineSoilDOCDestructionRate);
-		double destructionrate = 1e3 * PARAMETER(BaselineSoilDOCCreationRate) / PARAMETER(BaselineSoilDOCConcentration);
+		double destructionrate = PARAMETER(BaselineSoilDOCCreationRate) / PARAMETER(BaselineSoilDOCConcentration);
 	
 		return
-			  RESULT(SoilDOCCreationRate) * RESULT(SoilWaterVolume) * 1e3   // 1/m3 * mm ->  1/km^2
+			  RESULT(SoilDOCCreationRate) * RESULT(SoilWaterVolume)   // mg/(l day) * mm = kg/(km2 day)
 			- destructionrate*RESULT(SoilWaterDOCMass)
 			- RESULT(InfiltrationExcessCarbonFluxToReach)
 			- RESULT(SoilWaterCarbonFlux);
