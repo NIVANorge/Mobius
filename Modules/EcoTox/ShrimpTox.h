@@ -1,6 +1,10 @@
 
 
 
+// This model is based on
+// S. Jannicke Moe & al. 2019, Effects of an aquaculture pesticide (diflubenzuron) on non-target shrimp populations: Extrapolation from laboratory experiments to the risk of population decline.  Ecological Modelling 413, 108833
+
+
 void AddShrimpToxModel(mobius_model *Model)
 {
 	BeginModule(Model, "Shrimp tox", "0.1");

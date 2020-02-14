@@ -1,4 +1,4 @@
-# Parameter file generated for model Shrimp tox, containing modules (Shrimp tox V0.1) at 2020-02-14 14:49:30
+# Parameter file generated for model Shrimp tox, containing modules (Shrimp tox V0.1) at 2020-02-14 15:24:01
 
 index_sets:
 "Age class" : {"1  Larva" "2  Juvenile" "3  Juvenile" "4  Juvenile" "5  Juvenile" "6  Immature male" "7  Mature male" "8  Mature male" "9  Transitional" "10 Immature female" "11 Ovigerous female I" "12 Ovigerous female I" "13 Spent female I" "14 Spent female I" "15 Ovigerous female II" "16 Ovigerous female II" "17 Spent female II" "18 Spent female II" "19 Ovigerous female III" "20 Ovigerous female III"}
@@ -6,7 +6,7 @@ index_sets:
 parameters:
 ###################### (no index sets) ######################
 "Timesteps" :     #(days) [0, 18446744073709551615]
-4000
+400
 
 "Start date" :     # [1000-01-01, 3000-12-31]
 2020-01-01
