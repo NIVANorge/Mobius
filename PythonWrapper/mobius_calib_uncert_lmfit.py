@@ -213,7 +213,20 @@ def set_parameter_values(params, dataset, use_stat=None):
                 val = params[key].value
             #print('%s %s %s' % (name, index, val))
             dataset.set_parameter_double(name, index, val)
-        
+
+
+def get_date_index(dataset) :
+    """ Get a vector of datetimes that matches the time steps in the dataset.
+	"""
+    start_date = dataset.get_parameter_time('Start date', [])
+    timesteps  = dataset.get_parameter_uint('Timesteps', [])
+	
+    (type, magnitude) = dataset.get_timestep_size()
+	
+    return np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s' % (magnitude, type)))
+
+
+
 def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0):
     """ Set the parameters of 'dataset' to 'params' and run the model. For each data
         series in 'comparisons', calculate the residual vector (model - simulated), 
@@ -244,15 +257,17 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
         sim = dataset_copy.get_result_series(simname, simindexes)
         obs = dataset_copy.get_input_series(obsname, obsindexes, alignwithresults=True)
         
-        if np.isnan(sim).any() :
-            raise ValueError('Got a NaN in the simulated data')
-		
         sim = sim[skip_timesteps:]
         obs = obs[skip_timesteps:]
-        
+		
         if norm:
             sim = sim/np.nanmean(obs)
             obs = obs/np.nanmean(obs)
+		
+		
+        if np.isnan(sim).any() :
+            raise ValueError('Got a NaN in the simulated data')
+		
 
         resid = sim - obs
         
@@ -264,7 +279,7 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
     
     return np.concatenate(residuals)
 
-def minimize_residuals(params, dataset, comparisons, method='nelder', norm=False, 
+def minimize_residuals(params, dataset, comparisons, residual_method=calculate_residuals, method='nelder', norm=False, 
                        skip_timesteps=0):
     """ Lest squares minimisation of the residuals. See
             
@@ -295,7 +310,7 @@ def minimize_residuals(params, dataset, comparisons, method='nelder', norm=False
                % (par, params[par].user_data['parameter_type']))
         
     # Create minimizer
-    mi = lmfit.Minimizer(calculate_residuals, 
+    mi = lmfit.Minimizer(residual_method, 
                          params, 
                          fcn_args=(dataset, comparisons),
                          fcn_kws={'norm':norm,
@@ -525,10 +540,17 @@ def triangle_plot(result, nburn, thin, file_name=None, truths=None):
 
 
 def get_input_dataframe(dataset, list, alignwithresults=False) :
-    """ TODO: Document
+    """ Get a dataframe with a date column together with model input columnts
+	
+    Args:
+        dataset:       Obj. Mobius 'dataset' object
+        list:          List of pairs (name, indexes) where 'name' is the name of an input timeseries and indexes are associated indexes
+        alignwithresults: Bool. Whether the time series should be extracted starting at the model run start date or the input start date.
+    
+    Returns : A pandas dataframe
     """
 
-    if alignwithresults :
+    if alignwithresults:
         start_date = dataset.get_parameter_time('Start date', [])
         timesteps  = dataset.get_parameter_uint('Timesteps', [])
     else :
@@ -551,15 +573,16 @@ def get_input_dataframe(dataset, list, alignwithresults=False) :
     return df
 	
 def get_result_dataframe(dataset, list) :
-    """ TODO: Document
-    """
+    """ Get a dataframe with a date column together with model result columnts
 	
-    start_date = dataset.get_parameter_time('Start date', [])
-    timesteps  = dataset.get_parameter_uint('Timesteps', [])
-	
-    (type, magnitude) = dataset.get_timestep_size()
-	
-    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s' % (magnitude, type)))
+	Args:
+		dataset:       Obj. Mobius 'dataset' object
+		list:          List of pairs (name, indexes) where 'name' is the name of a result timeseries and indexes are associated indexes
+    
+	Returns : A pandas dataframe
+	"""
+
+    dates = get_date_index(dataset)
 	
     df = pd.DataFrame({'Date' : dates})
 	
