@@ -252,7 +252,7 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
     residuals = []
     
     for i, comparison in enumerate(comparisons):
-        simname, simindexes, obsname, obsindexes = comparison
+        simname, simindexes, obsname, obsindexes, *_ = comparison
     
         sim = dataset_copy.get_result_series(simname, simindexes)
         obs = dataset_copy.get_input_series(obsname, obsindexes, alignwithresults=True)
@@ -614,7 +614,7 @@ def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
     
     for idx, comparison in enumerate(comparisons):
         
-        simname, simindexes, obsname, obsindexes = comparison
+        simname, simindexes, obsname, obsindexes, *_ = comparison
         
         sim_df = get_result_dataframe(dataset, [(simname, simindexes)])
         obs_df = get_input_dataframe(dataset, [(obsname, obsindexes)], alignwithresults=True)
@@ -667,7 +667,7 @@ def print_goodness_of_fit(dataset, comparisons, skip_timesteps=0):
         None.
     """
     for comparison in comparisons :
-        simname, simindexes, obsname, obsindexes = comparison
+        simname, simindexes, obsname, obsindexes, *_ = comparison
 
         sim = dataset.get_result_series(simname, simindexes)
         obs = dataset.get_input_series(obsname, obsindexes, alignwithresults=True)
