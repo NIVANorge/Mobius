@@ -1,0 +1,32 @@
+# Parameter file generated for model Shrimp tox, containing modules (Shrimp tox V0.1) at 2020-02-14 14:49:30
+
+index_sets:
+"Age class" : {"1  Larva" "2  Juvenile" "3  Juvenile" "4  Juvenile" "5  Juvenile" "6  Immature male" "7  Mature male" "8  Mature male" "9  Transitional" "10 Immature female" "11 Ovigerous female I" "12 Ovigerous female I" "13 Spent female I" "14 Spent female I" "15 Ovigerous female II" "16 Ovigerous female II" "17 Spent female II" "18 Spent female II" "19 Ovigerous female III" "20 Ovigerous female III"}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :     #(days) [0, 18446744073709551615]
+4000
+
+"Start date" :     # [1000-01-01, 3000-12-31]
+2020-01-01
+
+"Strength of density dependence (a)" :     #(1/(ind/100m2)) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.0001
+
+"Degree of compensation (b)" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"First adult age class" :     #(season) [1, 100]
+6
+
+###################### "Age class" ######################
+"Base survival rate" :     #(dimensionless) [0, 1]
+0.05 0.75 0.95 0.95 0.75 0.95 0.95 0.75 0.75 0.95 0.7 0.9 0.7 0.9 0.7 0.9 0.7 0.9 0.7 0
+
+"Fertility" :     #(dimensionless) [0, 1]
+0 0 0 0 0 0 0 0 0 0 0 1000 0 0 0 1500 0 0 0 2000
+
+"Initial population size" :     #(ind/100m2) [-1.79769313486232e+308, 1.79769313486232e+308]
+10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+
