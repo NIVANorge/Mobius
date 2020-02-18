@@ -190,6 +190,8 @@ Mobius is a reimplementation and extension of the functionality that was provide
 
 This project was partially funded by Nordforsk “Nordic eScience Globalisation Initiative (NeGI)” via the project [An open access, generic ePlatform for environmental model-building at the river-basin scale (Machu-Picchu)](https://www.nordforsk.org/en/programmes-and-projects/projects/an-open-access-generic-eplatform-for-environmental-model-building-at-the-river-basin-scale-machu-picchu).
 
+The project also received some funding from WaterJPI "Predicting in-lake responses to change using near real time models" (PROGNOS)
+
 Developed by by Magnus Dahler Norling for [NIVA](https://www.niva.no/) (Norwegian institute for water research)
 
 Additional contributions:
