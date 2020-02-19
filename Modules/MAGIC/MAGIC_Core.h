@@ -45,11 +45,11 @@ struct magic_output
 	double ChargeBalanceAlk;   // Charge balance alkalinity         (SumBaseCationConc + NH4 - SumAcidAnionConc)  (= Acid neutralizing capacity)
 	double WeakAcidAlk;        // Weak acid alkalinity (HCO3 + 2*CO3 + OH - H - Alxx)  (limnological definition)
 	
-	double exchangable_Ca;     // Exchangable Calcium on soil as % of cation exchange capacity (meq - ECa/meq - CEC)    (%)
-	double exchangable_Mg;     // Exchangable Magnesium on soil as % of cation exchange capacity (meq - EMg/meq - CEC)  (%)
-	double exchangable_Na;     // Exchangable Sodium on soil as % of cation exchange capacity (meq - ENa/meq - CEC)     (%)
-	double exchangable_K;      // Exchangable Potassium on soil as % of cation exchange capacity (meq - EK/meq - CEC)   (%)
-	double exchangable_SO4;    // Exchangable Sulfate on soil as % of cation exchange capacity (meq - ESO4/meq - MaxCap)(%)
+	double exchangeable_Ca;    // Exchangeable Calcium on soil as % of cation exchange capacity (meq - ECa/meq - CEC)    (%)
+	double exchangeable_Mg;    // Exchangeable Magnesium on soil as % of cation exchange capacity (meq - EMg/meq - CEC)  (%)
+	double exchangeable_Na;    // Exchangeable Sodium on soil as % of cation exchange capacity (meq - ENa/meq - CEC)     (%)
+	double exchangeable_K;     // Exchangeable Potassium on soil as % of cation exchange capacity (meq - EK/meq - CEC)   (%)
+	double exchangeable_SO4;   // Exchangeable Sulfate on soil as % of cation exchange capacity (meq - ESO4/meq - MaxCap)(%)
 	double BaseSaturationSoil; // Base saturation of soil (ECa + EMg + ENa + EK)
 	
 	double conc_H;             // Hydrogen ion concentration       (meq/m3)
@@ -591,10 +591,10 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 		double SumBaseCations1 = Result.SumAcidAnionConc + Result.all_DIC + Result.all_DOC + Coeff.K_W/Result.conc_H - NetAlCharge - Result.conc_H - Result.conc_NH4;
 	
 		// Calculate exchangeable Al fraction on soil (EAL=1-BS) (fraction) - from TBC (meq/m2), SBC1 (meq/m3), soil pore volume (m) and soil cation exchange capacity (meq/m2) 
-		double exchangable_Al = 1.0 - TotalBaseCations/SoilCationExchange + WaterVolume*SumBaseCations1/SoilCationExchange;
+		double exchangeable_Al = 1.0 - TotalBaseCations/SoilCationExchange + WaterVolume*SumBaseCations1/SoilCationExchange;
 		
 		// Solve cation exchange equations using selectivity coefficients - calculations based on GainesThomas cation exchange using equivalents of charge
-		double XK0 = log10(exchangable_Al/Coeff.GibbsAlSolubility)/3.0 - log10(Result.conc_H)*(Param.HAlOH3Exponent/3.0);
+		double XK0 = log10(exchangeable_Al/Coeff.GibbsAlSolubility)/3.0 - log10(Result.conc_H)*(Param.HAlOH3Exponent/3.0);
 		
 		CaExchange = pow(10.0, 2.0*XK0 + Coeff.K_AlCa);
 		MgExchange = pow(10.0, 2.0*XK0 + Coeff.K_AlMg);
@@ -682,11 +682,11 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 				double SumBaseCations1 = Result.SumAcidAnionConc + Result.all_DIC + Result.all_DOC + Coeff.K_W/Result.conc_H - NetAlCharge - Result.conc_H - Result.conc_NH4;
 				
 				// Calculate exchangeable Al fraction on soil (EAL=1-BS) (fraction) - from TBC (meq/m2), SBC1 (meq/m3), soil pore volume (m) and soil cation exchange capacity (meq/m2) 
-				double exchangable_Al = 1.0 - TotalBaseCations/SoilCationExchange + WaterVolume*SumBaseCations1/SoilCationExchange;
+				double exchangeable_Al = 1.0 - TotalBaseCations/SoilCationExchange + WaterVolume*SumBaseCations1/SoilCationExchange;
 	
 			
 				// Solve cation exchange equations using selectivity coefficients - calculations based on GainesThomas cation exchange using equivalents of charge
-				double XK0 = log10(exchangable_Al/Coeff.GibbsAlSolubility)/3.0 - log10(Result.conc_H)*(Param.HAlOH3Exponent/3.0);
+				double XK0 = log10(exchangeable_Al/Coeff.GibbsAlSolubility)/3.0 - log10(Result.conc_H)*(Param.HAlOH3Exponent/3.0);
 				
 				CaExchange = pow(10.0, 2.0*XK0 + Coeff.K_AlCa);
 				MgExchange = pow(10.0, 2.0*XK0 + Coeff.K_AlMg);
@@ -754,27 +754,27 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 		// If soil compartment - calculate solid phase output variables
 		
 		// If SO4 adsorption, calculate fraction of adsorption capacity filled (convert mmol to meq for adsorption isotherm)
-		Result.exchangable_SO4 = 0.0;
+		Result.exchangeable_SO4 = 0.0;
 		if(Param.SO4MaxCap > 0.0 && Param.SO4HalfSat > 0.0)
 		{
-			Result.exchangable_SO4 = (Param.SO4MaxCap*2.0*Result.conc_SO4/(Param.SO4HalfSat + 2.0*Result.conc_SO4)) / Param.SO4MaxCap;
+			Result.exchangeable_SO4 = (Param.SO4MaxCap*2.0*Result.conc_SO4/(Param.SO4HalfSat + 2.0*Result.conc_SO4)) / Param.SO4MaxCap;
 		}
 		
 		// Calculate excangeable Ca/Mg/Na/K on soil (fraction) (convert mmol to meq)
-		Result.exchangable_Ca = Input.total_Ca/SoilCationExchange - Result.conc_Ca*2.0*WaterVolume/SoilCationExchange;
-		Result.exchangable_Mg = Input.total_Mg/SoilCationExchange - Result.conc_Mg*2.0*WaterVolume/SoilCationExchange;
-		Result.exchangable_Na = Input.total_Na/SoilCationExchange - Result.conc_Na*WaterVolume/SoilCationExchange;
-		Result.exchangable_K  = Input.total_K /SoilCationExchange - Result.conc_K *WaterVolume/SoilCationExchange;
-		Result.BaseSaturationSoil = Result.exchangable_Ca + Result.exchangable_Mg + Result.exchangable_Na + Result.exchangable_K;
+		Result.exchangeable_Ca = Input.total_Ca/SoilCationExchange - Result.conc_Ca*2.0*WaterVolume/SoilCationExchange;
+		Result.exchangeable_Mg = Input.total_Mg/SoilCationExchange - Result.conc_Mg*2.0*WaterVolume/SoilCationExchange;
+		Result.exchangeable_Na = Input.total_Na/SoilCationExchange - Result.conc_Na*WaterVolume/SoilCationExchange;
+		Result.exchangeable_K  = Input.total_K /SoilCationExchange - Result.conc_K *WaterVolume/SoilCationExchange;
+		Result.BaseSaturationSoil = Result.exchangeable_Ca + Result.exchangeable_Mg + Result.exchangeable_Na + Result.exchangeable_K;
 	}
 	else
 	{
 		// If not soil compartment - set solid phase output variables to zero
-		Result.exchangable_SO4 = 0.0;
-		Result.exchangable_Ca = 0.0;
-		Result.exchangable_Mg = 0.0;
-		Result.exchangable_Na = 0.0;
-		Result.exchangable_K  = 0.0;
+		Result.exchangeable_SO4 = 0.0;
+		Result.exchangeable_Ca = 0.0;
+		Result.exchangeable_Mg = 0.0;
+		Result.exchangeable_Na = 0.0;
+		Result.exchangeable_K  = 0.0;
 		Result.BaseSaturationSoil = 0.0;
 	}
 	

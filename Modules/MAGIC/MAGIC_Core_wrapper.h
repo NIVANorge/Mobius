@@ -2,6 +2,8 @@
 
 /*
 	This is a Mobius wrapper for the MAGIC core.
+	
+	This has to be used together with another "driver" module that determines things like temperature and external fluxes (nitrification, weathering, deposition etc. etc.)
 */
 
 
@@ -25,8 +27,21 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	auto GeneralParams     = RegisterParameterGroup(Model, "General parameters");
 	auto ConvergenceCriterion      = RegisterParameterDouble(Model, GeneralParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
+	
+	//TODO: Should any of the following be per compartment instead?
 	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, GeneralParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0); //TODO
 	auto HAlOH3Exponent            = RegisterParameterDouble(Model, GeneralParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0); //TODO
+	
+	auto PK1DOC                    = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK 1st equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
+	auto PK2DOC                    = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK 2nd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
+	auto PK3DOC                    = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK 3rd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
+	auto PK1AlDOC                  = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]", Dimensionless, 0.0); //TODO
+	auto PK2AlDOC                  = RegisterParameterDouble(Model, GeneralParams, "(-log10 pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0); //TODO
+	
+	auto Log10CaAlSelectCoeff      = RegisterParameterDouble(Model, GeneralParams, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto Log10MgAlSelectCoeff      = RegisterParameterDouble(Model, GeneralParams, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto Log10NaAlSelectCoeff      = RegisterParameterDouble(Model, GeneralParams, "(log10) Na/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto Log10KAlSelectCoeff       = RegisterParameterDouble(Model, GeneralParams, "(log10) K/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
 	
 	
 	auto Compartment = RegisterIndexSet(Model, "Compartment");
@@ -41,12 +56,20 @@ AddMagicCoreModel(mobius_model *Model)
 	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MeqPerKg, 0.0); //TODO
 	
 	
-	auto ConcCa        = RegisterEquation(Model, "Ca(2+) ion concentration", MeqPerM3);
-	auto ConcMg        = RegisterEquation(Model, "Mg(2+) ion concentration", MeqPerM3);
-	auto ConcNa        = RegisterEquation(Model, "Na(+) ion concentration", MeqPerM3);
-	auto ConcK         = RegisterEquation(Model, "K(+) ion concentration", MeqPerM3);
+	auto ConcCa        = RegisterEquation(Model, "Ca(2+) ionic concentration", MeqPerM3);
+	auto ConcMg        = RegisterEquation(Model, "Mg(2+) ionic concentration", MeqPerM3);
+	auto ConcNa        = RegisterEquation(Model, "Na(+) ionic concentration", MeqPerM3);
+	auto ConcK         = RegisterEquation(Model, "K(+) ionic concentration", MeqPerM3);
+	auto ConcNH4       = RegisterEquation(Model, "NH4(+) ionic concentration", MeqPerM3);
+	auto ConcSO4       = RegisterEquation(Model, "SO4(2-) ionic concentration", MeqPerM3);
+	auto ConcCl        = RegisterEquation(Model, "Cl(-) ionic concentration", MeqPerM3);
+	auto ConcNO3       = RegisterEquation(Model, "NO3(-) ionic concentration", MeqPerM3);
+	auto ConcF         = RegisterEquation(Model, "F(-) ionic concentration", MeqPerM3);
 	
-	auto ConcH         = RegisterEquation(Model, "H(+) ion concentration", MeqPerM3);
+	auto ConcAllSO4    = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MeqPerM3);
+	auto ConcAllF      = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MeqPerM3);
+	
+	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MeqPerM3);
 	SetInitialValue(Model, ConcH, 1.0);
 	auto IonicStrength = RegisterEquation(Model, "Ionic strength", Dimensionless);
 	SetInitialValue(Model, IonicStrength, 0.0);
@@ -66,33 +89,55 @@ AddMagicCoreModel(mobius_model *Model)
 	auto Temperature        = GetEquationHandle(Model, "Temperature");
 	auto PartialPressureCO2 = GetEquationHandle(Model, "CO2 partial pressure");
 	auto DOCConcentration   = GetEquationHandle(Model, "DOC concentration");
-	auto WaterFlow          = GetEquationHandle(Model, "Water flow");
+	auto Discharge          = GetEquationHandle(Model, "Discharge");
 	
-	auto CaExternalFlux     = GetEquationHandle(Model, "Sum of Ca fluxes not related to water flow");
-	auto MgExternalFlux     = GetEquationHandle(Model, "Sum of Mg fluxes not related to water flow");
-	auto NaExternalFlux     = GetEquationHandle(Model, "Sum of Na fluxes not related to water flow");
-	auto KExternalFlux      = GetEquationHandle(Model, "Sum of K fluxes not related to water flow");
-	
-	
+	auto CaExternalFlux     = GetEquationHandle(Model, "Sum of Ca fluxes not related to discharge");
+	auto MgExternalFlux     = GetEquationHandle(Model, "Sum of Mg fluxes not related to discharge");
+	auto NaExternalFlux     = GetEquationHandle(Model, "Sum of Na fluxes not related to discharge");
+	auto KExternalFlux      = GetEquationHandle(Model, "Sum of K fluxes not related to discharge");
+	auto NH4ExternalFlux    = GetEquationHandle(Model, "Sum of NH4 fluxes not related to discharge");
+	auto SO4ExternalFlux    = GetEquationHandle(Model, "Sum of SO4 fluxes not related to discharge");
+	auto ClExternalFlux     = GetEquationHandle(Model, "Sum of Cl fluxes not related to discharge");
+	auto NO3ExternalFlux    = GetEquationHandle(Model, "Sum of NO3 fluxes not related to discharge");
+	auto FExternalFlux      = GetEquationHandle(Model, "Sum of F fluxes not related to discharge");
 	
 	//TODO: Inputs from other compartments for all the total mass equations
 	//TODO: Time step size independence? But that can be done via units too.
 	EQUATION(Model, TotalCa,
-		return LAST_RESULT(TotalCa) + RESULT(CaExternalFlux) - RESULT(WaterFlow)*2.0*RESULT(ConcCa);
+		return LAST_RESULT(TotalCa) + RESULT(CaExternalFlux) - RESULT(Discharge)*2.0*RESULT(ConcCa);
 	)
 	
 	EQUATION(Model, TotalMg,
-		return LAST_RESULT(TotalMg) + RESULT(MgExternalFlux) - RESULT(WaterFlow)*2.0*RESULT(ConcMg);
+		return LAST_RESULT(TotalMg) + RESULT(MgExternalFlux) - RESULT(Discharge)*2.0*RESULT(ConcMg);
 	)
 	
 	EQUATION(Model, TotalNa,
-		return LAST_RESULT(TotalNa) + RESULT(NaExternalFlux) - RESULT(WaterFlow)*RESULT(ConcNa);
+		return LAST_RESULT(TotalNa) + RESULT(NaExternalFlux) - RESULT(Discharge)*RESULT(ConcNa);
 	)
 	
 	EQUATION(Model, TotalK,
-		return LAST_RESULT(TotalK)  + RESULT(KExternalFlux)  - RESULT(WaterFlow)*RESULT(ConcK);
+		return LAST_RESULT(TotalK)  + RESULT(KExternalFlux)  - RESULT(Discharge)*RESULT(ConcK);
 	)
 	
+	EQUATION(Model, TotalNH4,
+		return LAST_RESULT(TotalNH) + RESULT(NH4ExternalFlux) - RESULT(Discharge)*RESULT(ConcNH4);
+	)
+	
+	EQUATION(Model, TotalSO4,
+		return LAST_RESULT(TotalSO4) + RESULT(SO4ExternalFlux) - RESULT(Discharge)*2.0*RESULT(ConcAllSO4);
+	)
+	
+	EQUATION(Model, TotalCl,
+		return LAST_RESULT(TotalCl) + RESULT(ClExternalFlux) - RESULT(Discharge)*RESULT(ConcCl);
+	)
+	
+	EQUATION(Model, TotalNO3,
+		return LAST_RESULT(TotalNO3) + RESULT(NO3ExternalFlux) - RESULT(Discharge)*RESULT(ConcNO3);
+	)
+	
+	EQUATION(Model, TotalF,
+		return LAST_RESULT(TotalF) + RESULT(FExternalFlux) - RESULT(Discharge)*Result(ConcAllF);
+	)
 	
 	EQUATION(Model, ConcH,
 		magic_input Input;
@@ -116,22 +161,22 @@ AddMagicCoreModel(mobius_model *Model)
 		
 		Param.Log10AlOH3EquilibriumConst = PARAMETER(Log10AlOH3EquilibriumConst);
 		Param.HAlOH3Exponent             = PARAMETER(HAlOH3Exponent);
-		//Param.pK1DOC                     = ;
-		//Param.pK2DOC                     = ;
-		//Param.pK3DOC                     = ;
-		//Param.pK1AlDOC                   = ;
-		//Param.pK2AlDOC                   = ;
+		Param.pK1DOC                     = PARAMETER(PK1DOC);
+		Param.pK2DOC                     = PARAMETER(PK2DOC);
+		Param.pK3DOC                     = PARAMETER(PK3DOC);
+		Param.pK1AlDOC                   = PARAMETER(PK1AlDOC);
+		Param.pK2AlDOC                   = PARAMETER(PK2AlDOC);
 		
-		Param.Porosity    = PARAMETER(Porosity);
-		Param.BulkDensity = PARAMETER(BulkDensity);
-		Param.CationExchangeCapacity = PARAMETER(CationExchangeCapacity);
-		Param.SO4HalfSat  = PARAMETER(SO4HalfSat);
-		Param.SO4MaxCap   = PARAMETER(SO4MaxCap);
+		Param.Porosity                   = PARAMETER(Porosity);
+		Param.BulkDensity                = PARAMETER(BulkDensity);
+		Param.CationExchangeCapacity     = PARAMETER(CationExchangeCapacity);
+		Param.SO4HalfSat                 = PARAMETER(SO4HalfSat);
+		Param.SO4MaxCap                  = PARAMETER(SO4MaxCap);
 		
-		//Param.Log10CaAlSelectCoeff         = ;
-		//Param.Log10MgAlSelectCoeff         = ;
-		//Param.Log10NaAlSelectCoeff         = ;
-		//Param.Log10KAlSelectCoeff          = ;
+		Param.Log10CaAlSelectCoeff       = PARAMETER(Log10CaAlSelectCoeff);
+		Param.Log10MgAlSelectCoeff       = PARAMETER(Log10MgAlSelectCoeff);
+		Param.Log10NaAlSelectCoeff       = PARAMETER(Log10NaAlSelectCoeff);
+		Param.Log10KAlSelectCoeff        = PARAMETER(Log10KAlSelectCoeff);
 		
 		bool   issoil     = PARAMETER(IsSoil);
 		double conv       = PARAMETER(ConvergenceCriterion);
@@ -148,29 +193,29 @@ AddMagicCoreModel(mobius_model *Model)
 		SET_RESULT(ConcMg,        Result.conc_Mg);
 		SET_RESULT(ConcNa,        Result.conc_Na);
 		SET_RESULT(ConcK,         Result.conc_K);
+		SET_RESULT(ConcNH4,       Result.conc_NH4);
+		SET_RESULT(ConcSO4,       Result.conc_SO4);
+		SET_RESULT(ConcCl,        Result.conc_Cl);
+		SET_RESULT(ConcNO3,       Result.conc_NO3);
+		SET_RESULT(ConcF,         Result.conc_F);
+		
+		SET_RESULT(ConcAllSO4,    Result.all_SO4);
+		SET_RESULT(ConcAllF,      Result.all_F);
+		
 		SET_RESULT(IonicStrength, Result.IonicStrength);
 		
-		/*
-		double conc_NH4;           // Ammonium ion concentration       (meq/m3)
-		double conc_SO4;           // Sulfate ion concentration        (meq/m3)
-		double conc_Cl;            // Nitrate ion concentration        (meq/m3)
-		double conc_NO3;           // Nitrate ion concentration        (meq/m3)
-		double conc_F;             // Fluoride ion concentration       (meq/m3)
-		
-		double all_SO4;            // Total Sulfate in solution (ionic + Al complexes)  (meq/m3)
-		double all_F;              // Total Fluoride in solution (ionic + Al complexes) (meq/m3)
-		
+		/*      //TODO: Export the following values too
 		double pH;                 // Solution pH (log10)
 		double SumBaseCationConc;  // Sum of base cation concentrations (Ca + Mg + Na + K)  (meq/m3)
 		double SumAcidAnionConc;   // Sum of acid anion concentrations  (SO4 + Cl + NO3 + F)
 		double ChargeBalanceAlk;   // Charge balance alkalinity         (SumBaseCationConc + NH4 - SumAcidAnionConc)  (= Acid neutralizing capacity)
 		double WeakAcidAlk;        // Weak acid alkalinity (HCO3 + 2*CO3 + OH - H - Alxx)  (limnological definition)
 		
-		double exchangable_Ca;     // Exchangable Calcium on soil as % of cation exchange capacity (meq - ECa/meq - CEC)    (%)
-		double exchangable_Mg;     // Exchangable Magnesium on soil as % of cation exchange capacity (meq - EMg/meq - CEC)  (%)
-		double exchangable_Na;     // Exchangable Sodium on soil as % of cation exchange capacity (meq - ENa/meq - CEC)     (%)
-		double exchangable_K;      // Exchangable Potassium on soil as % of cation exchange capacity (meq - EK/meq - CEC)   (%)
-		double exchangable_SO4;    // Exchangable Sulfate on soil as % of cation exchange capacity (meq - ESO4/meq - MaxCap)(%)
+		double exchangeable_Ca;    // Exchangeable Calcium on soil as % of cation exchange capacity (meq - ECa/meq - CEC)    (%)
+		double exchangeable_Mg;    // Exchangeable Magnesium on soil as % of cation exchange capacity (meq - EMg/meq - CEC)  (%)
+		double exchangeable_Na;    // Exchangeable Sodium on soil as % of cation exchange capacity (meq - ENa/meq - CEC)     (%)
+		double exchangeable_K;     // Exchangeable Potassium on soil as % of cation exchange capacity (meq - EK/meq - CEC)   (%)
+		double exchangeable_SO4;   // Exchangeable Sulfate on soil as % of cation exchange capacity (meq - ESO4/meq - MaxCap)(%)
 		double BaseSaturationSoil; // Base saturation of soil (ECa + EMg + ENa + EK)
 		
 		double conc_HCO3;          // Bicarbonate ion concentration    (meq/m3)
@@ -195,7 +240,7 @@ AddMagicCoreModel(mobius_model *Model)
 		return Result.conc_H;
 	)
 	
-	//TODO: We should maybe have a way to tell the model that we don't need to provide the dummy equations.
+	//TODO: We should maybe have a way to tell the model that this is not computed Mobius style so that we don't need to provide the dummy equations.
 	
 	EQUATION(Model, ConcCa,
 		// Dummy, this is set in the ConcH equation
@@ -216,6 +261,41 @@ AddMagicCoreModel(mobius_model *Model)
 		// Dummy, this is set in the ConcH equation
 		return RESULT(ConcK, CURRENT_INDEX(Compartment));
 	)
+	
+	EQUATION(Model, ConcNH4,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcNH4, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, ConcSO4,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcSO4, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, ConcAllSO4,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcAllSO4, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, ConcCl,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcCl, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, ConcNO3,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcNO3, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, ConcF,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcF, CURRENT_INDEX(Compartment));
+	)
+	EQUATION(Model, ConcAllF,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcAllF, CURRENT_INDEX(Compartment));
+	)
+	
 	
 	EQUATION(Model, IonicStrength,
 		// Dummy, this is set in the ConcH equation
