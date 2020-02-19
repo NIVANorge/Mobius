@@ -71,7 +71,7 @@ struct magic_output
 	double all_DOC;            // Total anionic charge from DOC (triprotic acid) in solution (H2AM, HA2M, A3M)   (meq/m3)
 	double CaAlRatio;          // Molar ratio of Calcium ion to aqueous Aluminum                                 (mol/mol)
 	
-	double IonicStrength; 
+	double IonicStrength;      // ionic strength of the aqueous solution (0 - 1)
 	
 };
 
@@ -177,7 +177,7 @@ SetEquilibriumConstants(const magic_param &Param, magic_coeff &CoeffOut, bool Is
 	CoeffOut.K_AlDOC[3] = pow(10.0, Param.pK1AlDOC   + G[3] + G[3] - G[0]);
 	CoeffOut.K_AlDOC[4] = pow(10.0, Param.pK2AlDOC   + G[3] + G[3] + G[1] - G[1]);
 	
-	// Set term for departure of temoperature from standard Temp/Press (STP) in thermodynamic expression PV=nRT 
+	// Set term for departure of temperature from standard Temp/Press (STP) in thermodynamic expression PV=nRT 
 	double Tmtr = (1.0/T0 - 1.0/TempKelvin) / R;
 	
 	// Correct equilibrium coeeficients for Al-SO4 complexation using standard coefficient & enthalpy of reactions
