@@ -18,14 +18,20 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	auto Dimensionless = RegisterUnit(Model);
 	auto M             = RegisterUnit(Model, "m");
+	auto MPerTs        = RegisterUnit(Model, "m/timestep");
+	auto Km2           = RegisterUnit(Model, "km2");
 	auto KgPerM3       = RegisterUnit(Model, "kg/m3");
 	auto MMolPerM2     = RegisterUnit(Model, "mmol/m2");
-	auto MeqPerKg      = RegisterUnit(Model, "meq/kg");
-	auto MeqPerM3      = RegisterUnit(Model, "meq/m3");
+	auto MMolPerM3     = RegisterUnit(Model, "mmol/m3");
+	auto MEqPerKg      = RegisterUnit(Model, "meq/kg");
+	auto MEqPerM3      = RegisterUnit(Model, "meq/m3");
 	auto Log10MolPerL  = RegisterUnit(Model, "log10(mol/l)")
+	auto MMolPerTs     = RegisterUnit(Model, "mmol/timestep");
+	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/timestep");
+	auto DegreesCelsius	= RegisterUnit(Model, "°C");
+	auto Percent        = RegisterUnit(Model, "%");
 	
-	
-	auto GeneralParams     = RegisterParameterGroup(Model, "General parameters");
+	auto GeneralParams             = RegisterParameterGroup(Model, "General parameters");
 	auto ConvergenceCriterion      = RegisterParameterDouble(Model, GeneralParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
 	
 	//TODO: Should any of the following be per compartment instead?
@@ -48,6 +54,7 @@ AddMagicCoreModel(mobius_model *Model)
 	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters");
 	
 	auto IsSoil                    = RegisterParameterBool(Model, CompartmentParams, "This is a soil compartment", true);
+	auto Area                      = RegisterParameterDouble(Model, CompartmentParams, "Surface area", Km2, 1.0, 0.0, 10000.0);
 	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0);
 	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0);
 	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 0.25, 0.0, 2.0);
@@ -55,24 +62,53 @@ AddMagicCoreModel(mobius_model *Model)
 	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MeqPerKg, 0.0); //TODO
 	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MeqPerKg, 0.0); //TODO
 	
+	auto FlowFractions = RegisterParameterGroup(Model, "Flow fractions", Compartment, Compartment);
 	
-	auto ConcCa        = RegisterEquation(Model, "Ca(2+) ionic concentration", MeqPerM3);
-	auto ConcMg        = RegisterEquation(Model, "Mg(2+) ionic concentration", MeqPerM3);
-	auto ConcNa        = RegisterEquation(Model, "Na(+) ionic concentration", MeqPerM3);
-	auto ConcK         = RegisterEquation(Model, "K(+) ionic concentration", MeqPerM3);
-	auto ConcNH4       = RegisterEquation(Model, "NH4(+) ionic concentration", MeqPerM3);
-	auto ConcSO4       = RegisterEquation(Model, "SO4(2-) ionic concentration", MeqPerM3);
-	auto ConcCl        = RegisterEquation(Model, "Cl(-) ionic concentration", MeqPerM3);
-	auto ConcNO3       = RegisterEquation(Model, "NO3(-) ionic concentration", MeqPerM3);
-	auto ConcF         = RegisterEquation(Model, "F(-) ionic concentration", MeqPerM3);
+	auto FlowFraction = RegisterParameterDouble(Model, FlowFractions, "Flow fraction", Dimensionless, 0.0, 0.0, 1.0, "How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)");
 	
-	auto ConcAllSO4    = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MeqPerM3);
-	auto ConcAllF      = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MeqPerM3);
 	
-	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MeqPerM3);
+	
+	
+	auto ConcCa        = RegisterEquation(Model, "Ca(2+) ionic concentration", MEqPerM3);
+	auto ConcMg        = RegisterEquation(Model, "Mg(2+) ionic concentration", MEqPerM3);
+	auto ConcNa        = RegisterEquation(Model, "Na(+) ionic concentration", MEqPerM3);
+	auto ConcK         = RegisterEquation(Model, "K(+) ionic concentration", MEqPerM3);
+	auto ConcNH4       = RegisterEquation(Model, "NH4(+) ionic concentration", MEqPerM3);
+	auto ConcSO4       = RegisterEquation(Model, "SO4(2-) ionic concentration", MEqPerM3);
+	auto ConcCl        = RegisterEquation(Model, "Cl(-) ionic concentration", MEqPerM3);
+	auto ConcNO3       = RegisterEquation(Model, "NO3(-) ionic concentration", MEqPerM3);
+	auto ConcF         = RegisterEquation(Model, "F(-) ionic concentration", MEqPerM3);
+	
+	auto ConcAllSO4    = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MEqPerM3);
+	auto ConcAllF      = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MEqPerM3);
+	
+	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MEqPerM3);
 	SetInitialValue(Model, ConcH, 1.0);
 	auto IonicStrength = RegisterEquation(Model, "Ionic strength", Dimensionless);
 	SetInitialValue(Model, IonicStrength, 0.0);
+	
+	
+	auto CaInput       = RegisterEquation(Model, "Ca input from other compartments", MMolPerM2PerTs);
+	auto MgInput       = RegisterEquation(Model, "Mg input from other compartments", MMolPerM2PerTs);
+	auto NaInput       = RegisterEquation(Model, "Na input from other compartments", MMolPerM2PerTs);
+	auto KInput        = RegisterEquation(Model, "K input from other compartments", MMolPerM2PerTs);
+	auto NH4Input      = RegisterEquation(Model, "NH4 input from other compartments", MMolPerM2PerTs);
+	auto SO4Input      = RegisterEquation(Model, "SO4 input from other compartments", MMolPerM2PerTs);
+	auto ClInput       = RegisterEquation(Model, "Cl input from other compartments", MMolPerM2PerTs);
+	auto NO3Input      = RegisterEquation(Model, "NO3 input from other compartments", MMolPerM2PerTs);
+	auto FInput        = RegisterEquation(Model, "F input from other compartments", MMolPerM2PerTs);
+	
+	
+	auto CaOutput      = RegisterEquation(Model, "Ca output via discharge", MMolPerM2PerTs);
+	auto MgOutput      = RegisterEquation(Model, "Mg output via discharge", MMolPerM2PerTs);
+	auto NaOutput      = RegisterEquation(Model, "Na output via discharge", MMolPerM2PerTs);
+	auto KOutput       = RegisterEquation(Model, "K output via discharge", MMolPerM2PerTs);
+	auto NH4Output     = RegisterEquation(Model, "NH4 output via discharge", MMolPerM2PerTs);
+	auto SO4Output     = RegisterEquation(Model, "SO4 output via discharge", MMolPerM2PerTs);
+	auto ClOutput      = RegisterEquation(Model, "Cl output via discharge", MMolPerM2PerTs);
+	auto NO3Output     = RegisterEquation(Model, "NO3 output via discharge", MMolPerM2PerTs);
+	auto FOutput       = RegisterEquation(Model, "F output via discharge", MMolPerM2PerTs);
+	
 	
 	//TODO: Initial value for these:
 	auto TotalCa       = RegisterEquation(Model, "Total Ca mass", MMolPerM2);
@@ -85,63 +121,191 @@ AddMagicCoreModel(mobius_model *Model)
 	auto TotalNO3      = RegisterEquation(Model, "Total NO3 mass", MMolPerM2);
 	auto TotalF        = RegisterEquation(Model, "Total F mass", MMolPerM2);
 	
-	// Equations that have to be defined by an outside "driver":
-	auto Temperature        = GetEquationHandle(Model, "Temperature");
-	auto PartialPressureCO2 = GetEquationHandle(Model, "CO2 partial pressure");
-	auto DOCConcentration   = GetEquationHandle(Model, "DOC concentration");
-	auto Discharge          = GetEquationHandle(Model, "Discharge");
 	
-	auto CaExternalFlux     = GetEquationHandle(Model, "Sum of Ca fluxes not related to discharge");
-	auto MgExternalFlux     = GetEquationHandle(Model, "Sum of Mg fluxes not related to discharge");
-	auto NaExternalFlux     = GetEquationHandle(Model, "Sum of Na fluxes not related to discharge");
-	auto KExternalFlux      = GetEquationHandle(Model, "Sum of K fluxes not related to discharge");
-	auto NH4ExternalFlux    = GetEquationHandle(Model, "Sum of NH4 fluxes not related to discharge");
-	auto SO4ExternalFlux    = GetEquationHandle(Model, "Sum of SO4 fluxes not related to discharge");
-	auto ClExternalFlux     = GetEquationHandle(Model, "Sum of Cl fluxes not related to discharge");
-	auto NO3ExternalFlux    = GetEquationHandle(Model, "Sum of NO3 fluxes not related to discharge");
-	auto FExternalFlux      = GetEquationHandle(Model, "Sum of F fluxes not related to discharge");
 	
-	//TODO: Inputs from other compartments for all the total mass equations
-	//TODO: Time step size independence? But that can be done via units too.
+	// Equations that have to be defined by an outside "driver", and are not provided in the core, but which the core has to read the values of:
+	auto Temperature        = RegisterEquation(Model, "Temperature", DegreesCelsius);
+	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
+	auto DOCConcentration   = RegisterEquation(Model, "DOC concentration", MMolPerM3);
+	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
+	
+	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MMolPerM2PerTs);
+	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MMolPerM2PerTs);
+	auto NaExternalFlux     = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MMolPerM2PerTs);
+	auto KExternalFlux      = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MMolPerM2PerTs);
+	auto NH4ExternalFlux    = RegisterEquation(Model, "Sum of NH4 fluxes not related to discharge", MMolPerM2PerTs);
+	auto SO4ExternalFlux    = RegisterEquation(Model, "Sum of SO4 fluxes not related to discharge", MMolPerM2PerTs);
+	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MMolPerM2PerTs);
+	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MMolPerM2PerTs);
+	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MMolPerM2PerTs);
+	
+	//TODO: Could the mass balance equations be done using an index set where the indexes are (Ca, Mg, Na ...)?
+	
+	EQUATION(Model, CaOutput,
+		return RESULT(Discharge)*2.0*RESULT(ConcCa);
+	)
+	
+	EQUATION(Model, MgOutput,
+		return RESULT(Discharge)*2.0*RESULT(ConcMg);
+	)
+	
+	EQUATION(Model, NaOutput,
+		return RESULT(Discharge)*RESULT(ConcNa);
+	)
+	
+	EQUATION(Model, KOutput,
+		return RESULT(Discharge)*RESULT(ConcK);
+	)
+	
+	EQUATION(Model, NH4Output,
+		return RESULT(Discharge)*RESULT(ConcNH4);
+	)
+	
+	EQUATION(Model, SO4Output,
+		return RESULT(Discharge)*2.0*RESULT(ConcAllSO4);
+	)
+	
+	EQUATION(Model, ClOutput,
+		return RESULT(Discharge)*RESULT(ConcCl);
+	)
+	
+	EQUATION(Model, NO3Output,
+		return RESULT(Discharge)*RESULT(ConcNO3);
+	)
+	
+	EQUATION(Model, FOutput,
+		return RESULT(Discharge)*Result(ConcAllF);
+	)
+	
+	EQUATION(Model, CaInput,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(CaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, MgInput,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(MgOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, NaInput,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(NaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, KInput,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(KOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, NH4Input,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(NH4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, SO4Input,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(SO4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, ClInput,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(ClOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, NO3Input,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(NO3Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
+	EQUATION(Model, FInput,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(FOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+		}
+		return input / PARAMETER(Area);
+	)
+	
 	EQUATION(Model, TotalCa,
-		return LAST_RESULT(TotalCa) + RESULT(CaExternalFlux) - RESULT(Discharge)*2.0*RESULT(ConcCa);
+		return LAST_RESULT(TotalCa) + RESULT(CaExternalFlux) - RESULT(CaOutput) + RESULT(CaInput);
 	)
 	
 	EQUATION(Model, TotalMg,
-		return LAST_RESULT(TotalMg) + RESULT(MgExternalFlux) - RESULT(Discharge)*2.0*RESULT(ConcMg);
+		return LAST_RESULT(TotalMg) + RESULT(MgExternalFlux) - RESULT(MgOutput) + RESULT(MgInput);
 	)
 	
 	EQUATION(Model, TotalNa,
-		return LAST_RESULT(TotalNa) + RESULT(NaExternalFlux) - RESULT(Discharge)*RESULT(ConcNa);
+		return LAST_RESULT(TotalNa) + RESULT(NaExternalFlux) - RESULT(NaOutput) + RESULT(NaInput);
 	)
 	
 	EQUATION(Model, TotalK,
-		return LAST_RESULT(TotalK)  + RESULT(KExternalFlux)  - RESULT(Discharge)*RESULT(ConcK);
+		return LAST_RESULT(TotalK)  + RESULT(KExternalFlux)  - RESULT(KOutput) + RESULT(KInput);
 	)
 	
 	EQUATION(Model, TotalNH4,
-		return LAST_RESULT(TotalNH) + RESULT(NH4ExternalFlux) - RESULT(Discharge)*RESULT(ConcNH4);
+		return LAST_RESULT(TotalNH) + RESULT(NH4ExternalFlux) - RESULT(NH4Output) + RESULT(NH4Input);
 	)
 	
 	EQUATION(Model, TotalSO4,
-		return LAST_RESULT(TotalSO4) + RESULT(SO4ExternalFlux) - RESULT(Discharge)*2.0*RESULT(ConcAllSO4);
+		return LAST_RESULT(TotalSO4) + RESULT(SO4ExternalFlux) - RESULT(SO4Output) + RESULT(SO4Input);
 	)
 	
 	EQUATION(Model, TotalCl,
-		return LAST_RESULT(TotalCl) + RESULT(ClExternalFlux) - RESULT(Discharge)*RESULT(ConcCl);
+		return LAST_RESULT(TotalCl) + RESULT(ClExternalFlux) - RESULT(ClOutput) + RESULT(ClInput);
 	)
 	
 	EQUATION(Model, TotalNO3,
-		return LAST_RESULT(TotalNO3) + RESULT(NO3ExternalFlux) - RESULT(Discharge)*RESULT(ConcNO3);
+		return LAST_RESULT(TotalNO3) + RESULT(NO3ExternalFlux) - RESULT(NO3Output) + RESULT(NO3Input);
 	)
 	
 	EQUATION(Model, TotalF,
-		return LAST_RESULT(TotalF) + RESULT(FExternalFlux) - RESULT(Discharge)*Result(ConcAllF);
+		return LAST_RESULT(TotalF) + RESULT(FExternalFlux) - RESULT(FOutput) + RESULT(FInput);
 	)
 	
 	EQUATION(Model, ConcH,
 		magic_input Input;
-		magic_param Param = {};
+		magic_param Param;
 		magic_output Result;
 		
 		Input.total_Ca    = LAST_RESULT(TotalCa);
