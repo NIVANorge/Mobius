@@ -219,18 +219,34 @@ SetEquilibriumConstants(const magic_param &Param, magic_coeff &CoeffOut, bool Is
 }
 
 inline double
-SolveQuadratic(double AA, double BB, double CC)
+SolveQuadratic(double A, double B, double C)
 {
-	//Solve quadratic equation AA*X^2 + BB*X + CC = 0
+	//Solve quadratic equation A*X^2 + B*X + C = 0, only caring about the (largest) positive result.
 	
-	return (-BB + sqrt(BB*BB - 4.0*AA*CC))/(2.0*AA);
+	return (-B + sqrt(B*B - 4.0*A*C))/(2.0*A);
 }
 
 inline double
 Sign(double A, double B)
 {
+	// Return the value of A with the sign of B
+	return B > 0.0 ? abs(A) : -abs(A);
+	
+	/*
 	//TODO: More efficient implementation of this?
-	return abs(A) * (B < 0.0 ? -1.0 : 1.0);
+	//The following should work. Not that the speed of this is going to matter anyway, though, so....
+	
+	double C;
+
+	u64* AA = (u64*)&A;
+	u64* BB = (u64*)&B;
+	u64* CC = (u64*)&C;
+
+	u64 Msk = ((u64)1) << 63;
+	*CC = (*BB & Msk) | (*AA & (Msk-1));
+	
+	return C;
+	*/
 }
 
 double
