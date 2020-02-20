@@ -13,7 +13,7 @@
 static void
 AddMagicCoreModel(mobius_model *Model)
 {
-	BeginModule(Model, "MAGIC Core", "0.1");
+	BeginModule(Model, "MAGIC Core", "_dev");
 	
 	
 	auto Dimensionless = RegisterUnit(Model);
