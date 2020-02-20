@@ -1009,7 +1009,7 @@ EndModelDefinition(mobius_model *Model)
 	}
 	
 	
-	//////////////////////// Gather about (in-) direct equation dependencies to be used by the Jacobian estimation used by some implicit solvers //////////////////////////////////
+	//////////////////////// Gather info about (in-) direct equation dependencies to be used by the Jacobian estimation used by some implicit solvers //////////////////////////////////
 	BuildJacobianInfo(Model);
 	
 	TemporaryBucket.DeallocateAll();
@@ -1242,7 +1242,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 					}
 					else
 					{
-						RunState->SolverTempX0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState.LastResult is set up above already.
+						RunState->SolverTempX0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState->LastResults is filled with the right values above already.
 					}
 					++EquationIdx;
 				}
