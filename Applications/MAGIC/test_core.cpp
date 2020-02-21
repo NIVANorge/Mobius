@@ -48,7 +48,8 @@ int main()
 	bool IsSoil = true;
 	double Conv = 1.0;
 	double H_estimate = 1.0;
-	double IonicStrength = /*0.0;*/0.0166965;
+	//double IonicStrength = 0.0167825;
+	double IonicStrength = 0.0;
 	
 	MagicCore(Input, Param, Result, IsSoil, Conv, H_estimate, IonicStrength);
 	
@@ -68,9 +69,24 @@ int main()
 	printf("Org Al is %g, should be 0.0\n", 3.0*Result.org_Al);
 	printf("conc_Al is %g, should be 3.8\n", 3.0*Result.conc_Al);
 	printf("conc_H is %g, should be 26.1\n", Result.conc_H);
+	printf("conc_HCO3 is %g, should be 2.5\n", Result.conc_HCO3);
+	printf("conc_CO3 is %g, should be 0.0\n", Result.conc_CO3);
 	printf("conc_H2A is %g, should be 12.9\n", Result.conc_H2AM);
 	printf("conc_HA2 is %g, should be 33.0\n", 2.0*Result.conc_HA2M);
+	printf("conc_A3- is %g, should be 0.7\n", 3.0*Result.conc_A3M);
+	printf("Total DOC is %g, should be 46.6\n", Result.all_DOC);
+	printf("Total DIC is %g, should be 2.5\n", Result.all_DIC);
+	printf("CB Alk is %g, should be 19.0\n", Result.ChargeBalanceAlk);
+	printf("SBC is %g, should be 194.7\n", Result.SumBaseCationConc);
+	printf("SAA is %g, should be 175.7\n", Result.SumAcidAnionConc);
 	printf("Sum positive is %g, should be 224.9\n", Result.SumPositive);
 	printf("Sum negative is %g, should be 224.9\n", Result.SumNegative);
+	printf("ES is %g, should be 26.4\n", 100.0*Result.exchangeable_SO4);
+	printf("ECa is %g, should be 18.5\n", 100.0*Result.exchangeable_Ca);
+	printf("EMg is %g, should be 13.0\n", 100.0*Result.exchangeable_Mg);
+	printf("ENa is %g, should be 2.5\n", 100.0*Result.exchangeable_Na);
+	printf("EK is %g, should be 3.2\n", 100.0*Result.exchangeable_K);
+	printf("Base saturation soil is %g, should be 37.2\n", 100.0*Result.BaseSaturationSoil);
+	printf("Ca/Al ratio is %g, should be 10.4\n", Result.CaAlRatio);
 	printf("ionic strength is %g\n", Result.IonicStrength);
 }

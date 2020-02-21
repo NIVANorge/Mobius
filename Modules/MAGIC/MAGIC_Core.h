@@ -383,7 +383,7 @@ CalculateDOC(const magic_coeff &Coeff, double conc_DOC, double conc_H, double co
 	conc_H3A  = conc_DOC*conc_H*conc_H*conc_H/Term1;
 	conc_H2AM = conc_H3A*Coeff.K_DOC[0]/conc_H;
 	conc_HA2M = conc_H2AM*Coeff.K_DOC[1]/conc_H;
-	conc_A3M  = conc_H2AM*Coeff.K_DOC[2]/conc_H;
+	conc_A3M  = conc_HA2M*Coeff.K_DOC[2]/conc_H;
 	
 	// Calculate the concentrations (mmol/m3) of the organic complexes with Al
 	conc_AlA  = conc_A3M*Coeff.K_AlDOC[0]*conc_Al;
