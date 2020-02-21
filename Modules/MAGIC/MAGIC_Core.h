@@ -117,7 +117,7 @@ struct magic_coeff
 	double K_AlDOC[2];
 	double K_W;               // Water dissociation constant K_W = [H+][OH-]
 	double HenrysLawConstant; // Henry's law constant for CO2
-	double GibbsAlSolubility; // Gibbs constant for aluminum solubility ( [Al] = GibbsAlSolubility * [H]^HAlOH3Exponent
+	double GibbsAlSolubility; // Gibbs constant for aluminum solubility ( [Al] = GibbsAlSolubility * [H]^HAlOH3Exponent )
 	double K_AlCa;
 	double K_AlMg;
 	double K_AlNa;
@@ -169,13 +169,13 @@ SetEquilibriumConstants(const magic_param &Param, magic_coeff &CoeffOut, bool Is
 	CoeffOut.K_C[1] = pow(10.0, 6.4980 - 2902.39/TempKelvin - 0.02379*TempKelvin + G[1] - G[1] - G[2]);
 	
 	// Calculate corrected equilibrium coefficients for dissociation of trivalent organic acids
-	CoeffOut.K_DOC[0] = pow(10.0, Param.pK1DOC + G[0] - 2.0*G[1]);
-	CoeffOut.K_DOC[1] = pow(10.0, Param.pK2DOC + G[1] - G[1] - G[2]);
-	CoeffOut.K_DOC[2] = pow(10.0, Param.pK3DOC + G[2] - G[1] - G[3]);
+	CoeffOut.K_DOC[0] = pow(10.0, -Param.pK1DOC + G[0] - 2.0*G[1]);
+	CoeffOut.K_DOC[1] = pow(10.0, -Param.pK2DOC + G[1] - G[1] - G[2]);
+	CoeffOut.K_DOC[2] = pow(10.0, -Param.pK3DOC + G[2] - G[1] - G[3]);
 	
 	// Calculate corrected equilibrium coefficients for complexation of AL with organic acid anions
-	CoeffOut.K_AlDOC[3] = pow(10.0, Param.pK1AlDOC   + G[3] + G[3] - G[0]);
-	CoeffOut.K_AlDOC[4] = pow(10.0, Param.pK2AlDOC   + G[3] + G[3] + G[1] - G[1]);
+	CoeffOut.K_AlDOC[0] = pow(10.0, -Param.pK1AlDOC   + G[3] + G[3] - G[0]);
+	CoeffOut.K_AlDOC[1] = pow(10.0, -Param.pK2AlDOC   + G[3] + G[3] + G[1] - G[1]);
 	
 	// Set term for departure of temperature from standard Temp/Press (STP) in thermodynamic expression PV=nRT 
 	double Tmtr = (1.0/T0 - 1.0/TempKelvin) / R;
@@ -376,7 +376,7 @@ CalculateDOC(const magic_coeff &Coeff, double conc_DOC, double conc_H, double co
 	// Calculate DOC species concen (H3A,H2AM,HA2M,A3M, AlA,ALHA) (mmol/m3) from DOC, H and Al3+ ion concens (mmol/m3)
 	
 	// Set constants to solve the 5 simultaneous equilibrium equations
-	double Term1 = conc_H*conc_H*conc_H + Coeff.K_DOC[0]*conc_H*conc_H + Coeff.K_DOC[1]*conc_H
+	double Term1 = conc_H*conc_H*conc_H + Coeff.K_DOC[0]*conc_H*conc_H + Coeff.K_DOC[0]*Coeff.K_DOC[1]*conc_H
 		+ Coeff.K_DOC[0]*Coeff.K_DOC[1]*Coeff.K_DOC[2]*(1.0 + Coeff.K_AlDOC[0]*conc_Al + Coeff.K_AlDOC[1]*conc_Al*conc_H);
 		
 	// Calculate the concentrations (mmol/m3) of the triprotic organic acid components
@@ -385,7 +385,7 @@ CalculateDOC(const magic_coeff &Coeff, double conc_DOC, double conc_H, double co
 	conc_HA2M = conc_H2AM*Coeff.K_DOC[1]/conc_H;
 	conc_A3M  = conc_H2AM*Coeff.K_DOC[2]/conc_H;
 	
-	// Calculate the conentrations (mmol/m3) of the organic complexes with Al
+	// Calculate the concentrations (mmol/m3) of the organic complexes with Al
 	conc_AlA  = conc_A3M*Coeff.K_AlDOC[0]*conc_Al;
 	conc_AlHA = conc_A3M*Coeff.K_AlDOC[1]*conc_Al*conc_H;
 }
@@ -643,6 +643,7 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 	// Calculate charge balance for all aqueous ions
 	double ChargeBalance = Result.SumBaseCationConc + NetAlCharge + Result.conc_H + Result.conc_NH4 - Result.SumAcidAnionConc - Result.all_DIC - Result.all_DOC - Coeff.K_W/Result.conc_H;
 	
+	int Iter = 0;
 	if(abs(ChargeBalance) >= Conv)  // If charge balance is within convergence criterion, the solution has converged. Otherwise, do an iterative solution loop
 	{
 		// Set increment for changing pH and begin the iterative solution loop
@@ -740,9 +741,13 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 			
 			// If solution has overshot, reduce step size and change increment direction
 			double ChargeSgn = ChargeBalance0 / ChargeBalance;
-			if(ChargeSgn > 0.0) dpH = -dpH/2.0;
+			if(ChargeSgn < 0.0) dpH = -dpH/2.0;
+			
+			//printf("pH: %g, dpH: %g  charge balance: %g\n", Result.pH, dpH, ChargeBalance0);
 			
 			ChargeBalance = ChargeBalance0;
+			
+			//if(Iter++ > 100) exit(0);
 		}
 	}
 	
