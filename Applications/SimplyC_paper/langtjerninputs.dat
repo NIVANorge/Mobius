@@ -1,11 +1,18 @@
+
+
+# Meteorological data is based on data from met.no obtained under the creative commons 4.0 license
+
+
 start_date : 1986-01-01
 timesteps : 10957
 
 additional_timeseries :
 "Discharge"                  unit "m3/s"
+"Discharge mm/day"           unit "mm/day"
 "DOC"                        unit "mg/l"
 "Soil temperature at 15cm"   unit "°C"
 "Soil temperature at 20cm"   unit "°C"
+"DOC flux"                   unit "kg/day"     #Based on (linear interpolation of DOC)*Discharge
 
 inputs :
 
