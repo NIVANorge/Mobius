@@ -26,22 +26,22 @@ struct magic_input
 
 struct magic_output
 {
-	double conc_Ca;            // Calcium ion concentration        (meq/m3)
-	double conc_Mg;            // Magnesium ion concentration      (meq/m3)
-	double conc_Na;            // Sodium ion concentration         (meq/m3)
-	double conc_K;             // Potassium ion concentration      (meq/m3)
-	double conc_NH4;           // Ammonium ion concentration       (meq/m3)
-	double conc_SO4;           // Sulfate ion concentration        (meq/m3)
-	double conc_Cl;            // Nitrate ion concentration        (meq/m3)
-	double conc_NO3;           // Nitrate ion concentration        (meq/m3)
-	double conc_F;             // Fluoride ion concentration       (meq/m3)
+	double conc_Ca;            // Calcium ion concentration        (mmol/m3)
+	double conc_Mg;            // Magnesium ion concentration      (mmol/m3)
+	double conc_Na;            // Sodium ion concentration         (mmol/m3)
+	double conc_K;             // Potassium ion concentration      (mmol/m3)
+	double conc_NH4;           // Ammonium ion concentration       (mmol/m3)
+	double conc_SO4;           // Sulfate ion concentration        (mmol/m3)
+	double conc_Cl;            // Nitrate ion concentration        (mmol/m3)
+	double conc_NO3;           // Nitrate ion concentration        (mmol/m3)
+	double conc_F;             // Fluoride ion concentration       (mmol/m3)
 	
-	double all_SO4;            // Total Sulfate in solution (ionic + Al complexes)  (meq/m3)
-	double all_F;              // Total Fluoride in solution (ionic + Al complexes) (meq/m3)
+	double all_SO4;            // Total Sulfate in solution (ionic + Al complexes)  (mmol/m3)
+	double all_F;              // Total Fluoride in solution (ionic + Al complexes) (mmol/m3)
 	
 	double pH;                 // Solution pH (log10)
 	double SumBaseCationConc;  // Sum of base cation concentrations (Ca + Mg + Na + K)  (meq/m3)
-	double SumAcidAnionConc;   // Sum of acid anion concentrations  (SO4 + Cl + NO3 + F)
+	double SumAcidAnionConc;   // Sum of acid anion concentrations  (SO4 + Cl + NO3 + F) (meq/m3)
 	double ChargeBalanceAlk;   // Charge balance alkalinity         (SumBaseCationConc + NH4 - SumAcidAnionConc)  (= Acid neutralizing capacity)
 	double WeakAcidAlk;        // Weak acid alkalinity (HCO3 + 2*CO3 + OH - H - Alxx)  (limnological definition)
 	
@@ -52,17 +52,17 @@ struct magic_output
 	double exchangeable_SO4;   // Exchangeable Sulfate on soil as % of cation exchange capacity (meq - ESO4/meq - MaxCap)(%)
 	double BaseSaturationSoil; // Base saturation of soil (ECa + EMg + ENa + EK)
 	
-	double conc_H;             // Hydrogen ion concentration       (meq/m3)
-	double conc_HCO3;          // Bicarbonate ion concentration    (meq/m3)
-	double conc_CO3;           // Carbonate ion concentration      (meq/m3)
+	double conc_H;             // Hydrogen ion concentration       (mmol/m3)
+	double conc_HCO3;          // Bicarbonate ion concentration    ((mmol/m3)
+	double conc_CO3;           // Carbonate ion concentration      (mmol/m3)
 	
-	double conc_Al;            // [Al3+] Trivalent aluminum ion concentration                    (meq/m3)
-	double all_Al;             // Total aluminum in solution (ionic + SO4-F-DOC-complexes)       (meq/m3)
-	double org_Al;             // Aluminum in solution as organic complexes (AlA, Al(HA)+)       (meq/m3)
+	double conc_Al;            // [Al3+] Trivalent aluminum ion concentration                    (mmol/m3)
+	double all_Al;             // Total aluminum in solution (ionic + SO4-F-DOC-complexes)       (mmol/m3)
+	double org_Al;             // Aluminum in solution as organic complexes (AlA, Al(HA)+)       (mmol/m3)
 	
-	double conc_H2AM;          // [H2A-] Monovalent ion concentration, triprotic organic acid   (meq/m3)
-	double conc_HA2M;          // [HA2-] Divalent ion concentration, triprotic organic acid     (meq/m3)
-	double conc_A3M;           // [A3-]  Trivalent ion concentration, triprotic organic acid    (meq/m3)
+	double conc_H2AM;          // [H2A-] Monovalent ion concentration, triprotic organic acid   (mmol/m3)
+	double conc_HA2M;          // [HA2-] Divalent ion concentration, triprotic organic acid     (mmol/m3)
+	double conc_A3M;           // [A3-]  Trivalent ion concentration, triprotic organic acid    (mmol/m3)
 	
 	double SumPositive;        // Sum of all positive charges in solution (cations)             (meq/m3)
 	double SumNegative;        // Sum of all negative charges in solution (anions)              (meq/m3)

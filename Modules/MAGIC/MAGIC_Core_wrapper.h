@@ -69,18 +69,18 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	
 	
-	auto ConcCa            = RegisterEquation(Model, "Ca(2+) ionic concentration", MEqPerM3);
-	auto ConcMg            = RegisterEquation(Model, "Mg(2+) ionic concentration", MEqPerM3);
-	auto ConcNa            = RegisterEquation(Model, "Na(+) ionic concentration", MEqPerM3);
-	auto ConcK             = RegisterEquation(Model, "K(+) ionic concentration", MEqPerM3);
-	auto ConcNH4           = RegisterEquation(Model, "NH4(+) ionic concentration", MEqPerM3);
-	auto ConcSO4           = RegisterEquation(Model, "SO4(2-) ionic concentration", MEqPerM3);
-	auto ConcCl            = RegisterEquation(Model, "Cl(-) ionic concentration", MEqPerM3);
-	auto ConcNO3           = RegisterEquation(Model, "NO3(-) ionic concentration", MEqPerM3);
-	auto ConcF             = RegisterEquation(Model, "F(-) ionic concentration", MEqPerM3);
+	auto ConcCa            = RegisterEquation(Model, "Ca(2+) ionic concentration", MMolPerM3);
+	auto ConcMg            = RegisterEquation(Model, "Mg(2+) ionic concentration", MMolPerM3);
+	auto ConcNa            = RegisterEquation(Model, "Na(+) ionic concentration", MMolPerM3);
+	auto ConcK             = RegisterEquation(Model, "K(+) ionic concentration", MMolPerM3);
+	auto ConcNH4           = RegisterEquation(Model, "NH4(+) ionic concentration", MMolPerM3);
+	auto ConcSO4           = RegisterEquation(Model, "SO4(2-) ionic concentration", MMolPerM3);
+	auto ConcCl            = RegisterEquation(Model, "Cl(-) ionic concentration", MMolPerM3);
+	auto ConcNO3           = RegisterEquation(Model, "NO3(-) ionic concentration", MMolPerM3);
+	auto ConcF             = RegisterEquation(Model, "F(-) ionic concentration", MMolPerM3);
 	
-	auto ConcAllSO4        = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MEqPerM3);
-	auto ConcAllF          = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MEqPerM3);
+	auto ConcAllSO4        = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MMolPerM3);
+	auto ConcAllF          = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MMolPerM3);
 	
 	auto PH                = RegisterEquation(Model, "pH", Log10MolPerL);
 	auto SumBaseCationConc = RegisterEquation(Model, "Sum of base cation concentrations (Ca + Mg + Na + K)", MEqPerM3);
@@ -93,26 +93,26 @@ AddMagicCoreModel(mobius_model *Model)
 	auto ExchangeableNa    = RegisterEquation(Model, "Exchangeable Na on soil as % of CEC", Percent);
 	auto ExchangeableK     = RegisterEquation(Model, "Exchangeable K on soil as % of CEC", Percent);
 	auto ExchangeableSO4   = RegisterEquation(Model, "Exchangeable SO4 on soil as % of CEC", Percent);
-	auto BaseSaturationSoil = RegisterEquation(Model, "Base saturation of soil (ECa + EMg + ENa + EK)")
+	auto BaseSaturationSoil = RegisterEquation(Model, "Base saturation of soil (ECa + EMg + ENa + EK)", Percent);
 
-	auto ConcHCO3          = RegisterEquation(Model, "HCO3 (Bicarbonate) ionic concentration", MEqPerM3);
-	auto ConcCO3           = RegisterEquation(Model, "CO3 (Carbonate) ionic concentration", MEqPerM3);
-	auto ConcAl            = RegisterEquation(Model, "Al(3+) ionic concentration", MEqPerM3);
-	auto ConcAllAl         = RegisterEquation(Model, "Total aluminum in solution (ionic + SO4-F-DOC complexes)", MEqPerM3);
-	auto ConcOrgAl         = RegisterEquation(Model, "Aluminum in solution as organic complexes (AlA, Al(HA)(+)", MEqPerM3);
+	auto ConcHCO3          = RegisterEquation(Model, "HCO3 (Bicarbonate) ionic concentration", MMolPerM3);
+	auto ConcCO3           = RegisterEquation(Model, "CO3 (Carbonate) ionic concentration", MMolPerM3);
+	auto ConcAl            = RegisterEquation(Model, "Al(3+) ionic concentration", MMolPerM3);
+	auto ConcAllAl         = RegisterEquation(Model, "Total aluminum in solution (ionic + SO4-F-DOC complexes)", MMolPerM3);
+	auto ConcOrgAl         = RegisterEquation(Model, "Aluminum in solution as organic complexes (AlA, Al(HA)(+)", MMolPerM3);
 
-	auto ConcH2AM          = RegisterEquation(Model, "[H2A-] Monovalent ion concentration, triprotic organic acid", MEqPerM3);
-	auto ConcHA2M          = RegisterEquation(Model, "[HA2-] Divalent ion concentration, triprotic organic acid", MEqPerM3);
-	auto ConcA3M           = RegisterEquation(Model, "[A3-] Trivalent ion concentration, triprotic organic acid", MEqPerM3);
+	auto ConcH2AM          = RegisterEquation(Model, "[H2A-] Monovalent ion concentration, triprotic organic acid", MMolPerM3);
+	auto ConcHA2M          = RegisterEquation(Model, "[HA2-] Divalent ion concentration, triprotic organic acid", MMolPerM3);
+	auto ConcA3M           = RegisterEquation(Model, "[A3-] Trivalent ion concentration, triprotic organic acid", MMolPerM3);
 	
 	auto SumPositive       = RegisterEquation(Model, "Sum of all positive charges in solution (cations)", MEqPerM3);
 	auto SumNegative       = RegisterEquation(Model, "Sum of all negative charges in solution (anions)", MEqPerM3);
 	
 	auto ConcAllDIC        = RegisterEquation(Model, "Total anionic charge from inorganic carbon in solution (HC3O, CO3)", MEqPerM3);
 	auto ConcAllDOC        = RegisterEquation(Model, "Total anionic charge from DOC (triprotic acid) in solution (H2AM, HA2M, A3M)", MEqPerM3);
-	auto CaAlRatio         = RegisterEquation(Model, "Ca ion to aqueous Al molar ratio", MEqPerM3);
+	auto CaAlRatio         = RegisterEquation(Model, "Ca ion to aqueous Al molar ratio", Dimensionless);
 	
-	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MEqPerM3);
+	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MMolPerM3);
 	SetInitialValue(Model, ConcH, 1.0);
 	auto IonicStrength = RegisterEquation(Model, "Ionic strength", Dimensionless);
 	SetInitialValue(Model, IonicStrength, 0.0);
@@ -404,12 +404,12 @@ AddMagicCoreModel(mobius_model *Model)
 		SET_RESULT(ChargeBalanceAlk,  Result.ChargeBalanceAlk);
 		SET_RESULT(WeakAcidAlk,       Result.WeakAcidAlk);
 		
-		SET_RESULT(ExchangeableCa,    Result.ExchangeableCa);
-		SET_RESULT(ExchangeableMg,    Result.ExchangeableMg);
-		SET_RESULT(ExchangeableNa,    Result.ExchangeableNa);
-		SET_RESULT(ExchangeableK,     Result.ExchangeableK);
-		SET_RESULT(ExchangeableSO4,   Result.ExchangeableSO4);
-		SET_RESULT(BaseSaturationSoil,Result.BaseSaturationSoil);
+		SET_RESULT(ExchangeableCa,    100.0*Result.ExchangeableCa);
+		SET_RESULT(ExchangeableMg,    100.0*Result.ExchangeableMg);
+		SET_RESULT(ExchangeableNa,    100.0*Result.ExchangeableNa);
+		SET_RESULT(ExchangeableK,     100.0*Result.ExchangeableK);
+		SET_RESULT(ExchangeableSO4,   100.0*Result.ExchangeableSO4);
+		SET_RESULT(BaseSaturationSoil,100.0*Result.BaseSaturationSoil);
 		
 		SET_RESULT(ConcHCO3,          Result.conc_HCO3);
 		SET_RESULT(ConcCO3,           Result.conc_CO3);

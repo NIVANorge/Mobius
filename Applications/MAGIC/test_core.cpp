@@ -46,7 +46,7 @@ int main()
 	Param.Log10KAlSelectCoeff        = -6.81;
 	
 	bool IsSoil = true;
-	double Conv = 1.0;
+	double Conv = 0.01;
 	double H_estimate = 1.0;
 	//double IonicStrength = 0.0167825;
 	double IonicStrength = 0.0;
