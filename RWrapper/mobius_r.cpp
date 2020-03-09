@@ -159,7 +159,7 @@ mobius_set_parameter_time(std::string Name, Rcpp::StringVector IndexesIn, std::s
 Rcpp::DataFrame
 mobius_run_with(Rcpp::StringVector ParNames, Rcpp::List ParIndexes, std::vector<double> ParValues, Rcpp::StringVector ResultNames, Rcpp::List ResultIndexes)
 {
-	if(!DataSet) return;
+	if(!DataSet) return {};
 	
 	mobius_data_set *Copy = CopyDataSet(DataSet);
 	
