@@ -538,9 +538,8 @@ AddINCAPModel(mobius_model *Model)
 	auto SubcatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //From Persist.h
 	auto Percent          = GetParameterDoubleHandle(Model, "%"); //From Persist.h
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length"); //From Persist.h
-	auto ReachWidth       = GetParameterDoubleHandle(Model, "Reach width"); //From Persist.h
+	auto ReachWidth       = GetParameterDoubleHandle(Model, "Reach bottom width"); //From Persist.h
 	auto EffluentFlow     = GetParameterDoubleHandle(Model, "Effluent flow"); // From Persist.h
-	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input"); // From Persist.h
 	
 	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
 	
@@ -678,7 +677,7 @@ AddINCAPModel(mobius_model *Model)
 			upstreamtdp += RESULT(WaterColumnTDPOutput, *Input);
 		)
 		
-		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * (double)PARAMETER(ReachHasEffluentInput);
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentTDPConcentrationTimeseries, EffluentTDPConcentration);
 		
 		return upstreamtdp + RESULT(TotalReachTDPInputFromLand) + effluentflow * effluentconc * 86.4;
@@ -691,7 +690,7 @@ AddINCAPModel(mobius_model *Model)
 			upstreampp += RESULT(WaterColumnPPOutput, *Input);
 		)
 		
-		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * (double)PARAMETER(ReachHasEffluentInput);
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentPPConcentrationTimeseries, EffluentPPConcentration);
 		
 		return upstreampp + RESULT(TotalReachPPInputFromLand) + effluentflow * effluentconc * 86.4;

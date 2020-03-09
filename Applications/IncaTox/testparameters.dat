@@ -214,14 +214,8 @@ true true true
 "Reach length" :     #(m) [1, 999999] The length of the main stem of the stream / reach in a subcatchment
 10000
 
-"Reach width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
+"Reach bottom width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
 2
-
-"a" :     #(1/m2) [0.001, 1] The flow velocity 'a' parameter V=aQ^b
-0.06
-
-"b" :     #(dimensionless) [0.3, 0.5] The flow velocity 'b' parameter V=aQ^b
-0.7
 
 "Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
 0
@@ -238,12 +232,6 @@ true true true
 "Effluent flow" :     #(m3/s) [0, 9999] The rate of liquid inputs to a reach from e.g. sewage treatment works
 0
 
-"Reach has abstraction" :
-false
-
-"Reach has effluent input" :
-false
-
 "Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
 2
 
@@ -256,7 +244,7 @@ false
 "Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 1e-05
 
-"Mean channel slope" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Reach slope" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 2
 
 "Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]

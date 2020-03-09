@@ -121,14 +121,15 @@ AddIncaToxModule(mobius_model *Model)
 	auto TotalBedSOCMass          = GetEquationHandle(Model, "Total stream bed SOC mass");
 	auto TotalReachSOCFlux        = GetEquationHandle(Model, "Total reach SOC flux");
 	
-	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area"); //PERSiST.h
-	auto Percent         = GetParameterDoubleHandle(Model, "%");                //PERSiST.h
-	auto MaximumCapacity = GetParameterDoubleHandle(Model, "Maximum capacity"); //PERSiST.h
-	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");      //INCA-Tox-C.h
-	auto ReachLength     = GetParameterDoubleHandle(Model, "Reach length"); //PERSiST.h
-	auto ReachWidth      = GetParameterDoubleHandle(Model, "Reach width"); //PERSiST.h
+	// Persist.h
+	auto CatchmentArea   = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
+	auto Percent         = GetParameterDoubleHandle(Model, "%");
+	auto MaximumCapacity = GetParameterDoubleHandle(Model, "Maximum capacity");
+	auto ReachLength     = GetParameterDoubleHandle(Model, "Reach length");
+	auto ReachWidth      = GetParameterDoubleHandle(Model, "Reach bottom width");
 	
-	
+	//INCA-Tox-C.h
+	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
 	

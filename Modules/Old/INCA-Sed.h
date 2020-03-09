@@ -7,9 +7,9 @@
 static void
 AddINCASedModel(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Sed", "0.9");
+	BeginModule(Model, "INCA-Sed", "0.1");
 	
-	//NOTE: Is designed to work with PERSiST 1.4 or later
+	//NOTE: Is designed to work with PERSiST
 	
 	auto Dimensionless = RegisterUnit(Model);
 	auto SPerM         = RegisterUnit(Model, "s/m");
@@ -186,7 +186,7 @@ AddINCASedModel(mobius_model *Model)
 	auto BankErosionScalingFactor        = RegisterParameterDouble(Model, Reaches, "Bank erosion scaling factor", KgPerM2PerM3SPerDay, 1.0);
 	auto BankErosionNonlinearCoefficient = RegisterParameterDouble(Model, Reaches, "Bank erosion non-linear coefficient", Dimensionless, 1.0);
 	auto ShearVelocityCoefficient        = RegisterParameterDouble(Model, Reaches, "Shear velocity coefficient", Dimensionless, 1.0);
-	//auto MeanChannelSlope                = RegisterParameterDouble(Model, Reaches, "Mean channel slope", Dimensionless, 2.0);
+	auto MeanChannelSlope                = RegisterParameterDouble(Model, Reaches, "Mean channel slope", Dimensionless, 2.0);
 	auto EntrainmentCoefficient          = RegisterParameterDouble(Model, Reaches, "Entrainment coefficient", S2PerKg, 1.0);
 	auto InitialMassOfBedSedimentPerUnitArea = RegisterParameterDouble(Model, SedimentReach, "Initial mass of bed sediment per unit area", KgPerM2, 10);
 	
@@ -195,6 +195,7 @@ AddINCASedModel(mobius_model *Model)
 	auto SedimentOfSizeClassDeliveredToReach = RegisterEquation(Model, "Sediment of size class delivered to reach", KgPerDay);
 	auto ReachUpstreamSuspendedSediment     = RegisterEquation(Model, "Reach upstream suspended sediment", KgPerDay);
 	auto ClayReleaseFromChannelBanks        = RegisterEquation(Model, "Clay release from channel banks", KgPerM2PerDay);
+	auto ReachFrictionFactor                = RegisterEquation(Model, "Reach friction factor", Dimensionless);
 	auto ReachShearVelocity                 = RegisterEquation(Model, "Reach shear velocity", MPerS);
 	auto ProportionOfSedimentThatCanBeEntrained = RegisterEquation(Model, "Proportion of sediment that can be entrained", Dimensionless);
 	auto StreamPower                        = RegisterEquation(Model, "Stream power", JPerSPerM2);
@@ -225,11 +226,10 @@ AddINCASedModel(mobius_model *Model)
 	auto TotalEntrainment           = RegisterEquationCumulative(Model, "Total sediment entrainment", SedimentEntrainment, SizeClass);
 	auto TotalDeposition            = RegisterEquationCumulative(Model, "Total sediment deposition", SedimentDeposition, SizeClass);
 	
-	auto ReachWidth = GetParameterDoubleHandle(Model, "Reach bottom width");
+	auto ReachWidth = GetParameterDoubleHandle(Model, "Reach width");
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
-	auto MeanChannelSlope = GetParameterDoubleHandle(Model, "Reach slope");
-	
-	auto ReachHydraulicRadius = GetEquationHandle(Model, "Reach hydraulic radius");
+	auto ReachHasEffluentInput = GetParameterDoubleHandle(Model, "Reach has effluent input");
+	auto ReachDepth = GetEquationHandle(Model, "Reach depth");
 	auto ReachFlow  = GetEquationHandle(Model, "Reach flow");
 	auto ReachVolume = GetEquationHandle(Model, "Reach volume");
 	auto ReachVelocity = GetEquationHandle(Model, "Reach velocity");
@@ -261,9 +261,13 @@ AddINCASedModel(mobius_model *Model)
 		return PARAMETER(BankErosionScalingFactor) * pow(RESULT(ReachFlow), PARAMETER(BankErosionNonlinearCoefficient));
 	)
 	
+	EQUATION(Model, ReachFrictionFactor,
+		return 4.0 * RESULT(ReachDepth) / (2.0 * RESULT(ReachDepth) + PARAMETER(ReachWidth));
+	)
+	
 	EQUATION(Model, ReachShearVelocity,
 		double earthsurfacegravity = 9.807;
-		return sqrt(earthsurfacegravity * RESULT(ReachHydraulicRadius) * PARAMETER(ShearVelocityCoefficient) * PARAMETER(MeanChannelSlope));
+		return sqrt(earthsurfacegravity * RESULT(ReachDepth) * PARAMETER(ShearVelocityCoefficient) * PARAMETER(MeanChannelSlope));
 	)
 	
 	EQUATION(Model, ProportionOfSedimentThatCanBeEntrained,
@@ -278,11 +282,11 @@ AddINCASedModel(mobius_model *Model)
 	EQUATION(Model, StreamPower,
 		double waterdensity = 1000.0;
 		double earthsurfacegravity = 9.807;
-		return waterdensity * earthsurfacegravity * PARAMETER(MeanChannelSlope) * RESULT(ReachVelocity) * RESULT(ReachHydraulicRadius);
+		return waterdensity * earthsurfacegravity * PARAMETER(MeanChannelSlope) * RESULT(ReachVelocity) * RESULT(ReachDepth);
 	)
 	
 	EQUATION(Model, SedimentEntrainment,
-		double value = 86400.0 * PARAMETER(EntrainmentCoefficient) * RESULT(MassOfBedSedimentPerUnitArea) * RESULT(ProportionOfSedimentThatCanBeEntrained) * RESULT(StreamPower);
+		double value = 86400.0 * PARAMETER(EntrainmentCoefficient) * RESULT(MassOfBedSedimentPerUnitArea) * RESULT(ProportionOfSedimentThatCanBeEntrained) * RESULT(StreamPower) * RESULT(ReachFrictionFactor);
 		return value;
 	)
 	
@@ -312,7 +316,7 @@ AddINCASedModel(mobius_model *Model)
 		if(CURRENT_INDEX(SizeClass) != 0) clayrelease = 0.0;      //NOTE: This assumes that index 0 is always clay though...
 		
 		//TODO: Abstraction??
-		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
+		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * PARAMETER(ReachHasEffluentInput);
 		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentSedimentConcentrationTimeseries, EffluentSedimentConcentration);
 		
 		return 
