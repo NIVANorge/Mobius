@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.3, INCA-Sed V0.1, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Tox V_dev) at 2020-02-12 11:23:10
+# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.3, INCA-Sed V0.1, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Tox V_dev) at 2020-03-09 10:16:54
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -73,34 +73,34 @@ parameters:
 0 0
 
 "Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1 0.1
+0.12 0.12
 
 "Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.001 0.001
+0 0.001
 
 "Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1
+0.12 0.12
 
 "Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1
+0.3 0.3
 
 "Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.001 0.001
+0 0.001
 
 "Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1
+0.1 0.1
 
 "Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-06 1e-06
+1.2e-05 1.2e-05
 
 "Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.074 0.074
+0.029 0.029
 
 "Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1
+2 2
 
 "Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1 1
+0 1
 
 "Initial surface sediment store" :     #(kg/km^2) [0, 10]
 0 0
@@ -145,7 +145,7 @@ parameters:
 0.5 0.5
 
 "Initial contaminant mass in soil" :     #(ng/km2) [0, 1000]
-1 0
+200000 0
 
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]

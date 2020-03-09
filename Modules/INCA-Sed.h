@@ -155,11 +155,10 @@ AddINCASedModel(mobius_model *Model)
 	
 	EQUATION(Model, SurfaceSedimentStore,
 		double SSD = RESULT(SedimentMobilisedViaSplashDetachment);
-		double Mland = RESULT(SedimentDeliveryToReach);
 		
-		double SSDthatwastransported = Min(SSD, RESULT(SedimentTransportCapacity));
+		double surfacestorebeforeerosion = LAST_RESULT(SurfaceSedimentStore) + SSD;
 		
-		return LAST_RESULT(SurfaceSedimentStore) + SSD - SSDthatwastransported;
+		return Max(0.0, surfacestorebeforeerosion - RESULT(SedimentTransportCapacity));
 	)
 	
 	EQUATION(Model, SoilMassInTheOAHorizon,

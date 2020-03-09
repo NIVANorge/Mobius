@@ -38,13 +38,9 @@ AddIncaToxModule(mobius_model *Model)
 	auto Cm3PerMol        = RegisterUnit(Model, "cm3/mol");
 	auto GPerCmPerSPerHundred = RegisterUnit(Model, "10^-2 g/cm/s");
 	
-	auto AtmosphericDryDeposition = RegisterInput(Model, "Atmospheric dry contaminant deposition", NgPerM2PerDay);
-	auto AtmosphericWetDeposition = RegisterInput(Model, "Atmospheric wet contaminant deposition", NgPerM2PerDay);
-	auto LandManagementDeposition = RegisterInput(Model, "Land management conatminant deposition", NgPerM2PerDay);
-	auto LitterFallDeposition     = RegisterInput(Model, "Litter fall contaminant deposition",     NgPerM2PerDay);
-	
-	
-	auto WindSpeed = RegisterInput(Model, "Wind speed", MPerS);
+	auto DepositionToLand         = RegisterInput(Model, "Deposition to land", NgPerM2PerDay);
+	auto DepositionToReach        = RegisterInput(Model, "Deposition to reach", NgPerM2PerDay);
+	auto WindSpeed                = RegisterInput(Model, "Wind speed", MPerS);
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Soils          = GetIndexSetHandle(Model, "Soils");
@@ -259,13 +255,9 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,
-		//TODO: dry and wet inputs should depend on precipitation
-		//TODO: maybe also let the user parametrize these in case they don't have detailed timeseries
+		//TODO: Maybe let the user parametrize this in case they don't have detailed timeseries
 		//NOTE: convert ng/m2 -> ng/km2
-		return (
-			INPUT(AtmosphericDryDeposition) + INPUT(AtmosphericWetDeposition) + INPUT(LandManagementDeposition) + INPUT(LitterFallDeposition)
-			) * 1e6 
-			;
+		return INPUT(DepositionToLand) * 1e6;
 	)
 	
 	EQUATION(Model, ContaminantDeliveryToReachByErosion,
@@ -415,7 +407,7 @@ AddIncaToxModule(mobius_model *Model)
 			upstreamflux
 			+ RESULT(TotalDiffuseContaminantOutput)
 			+ RESULT(TotalContaminantDeliveryToReach)
-			//+ direct deposition to the stream (from e.g. industry)
+			+ INPUT(DepositionToReach)
 			;
 	)
 	
@@ -597,7 +589,6 @@ AddIncaToxModule(mobius_model *Model)
 		);
 	)
 	
-	//TODO: This one is broken!
 	EQUATION(Model, DiffusiveAirReachExchangeFlux,
 		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - PARAMETER(AtmosphericContaminantConcentration)/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
 	)
