@@ -666,8 +666,8 @@ AddIncaToxModule(mobius_model *Model)
 		
 		double logDstar = (log10(-a*(zusstar + 10.0)) - log10((a-10.0)*zusstar)) / (b * pow(Re, c));
 		
-		std::cout << "z_us* " << zusstar << '\n';
-		std::cout << "logD* " << logDstar << '\n';
+		//std::cout << "z_us* " << zusstar << '\n';
+		//std::cout << "logD* " << logDstar << '\n';
 		
 		double Dstar = pow(10.0, logDstar);
 		return Dstar * ustar * ustar;
