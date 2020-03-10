@@ -9,7 +9,7 @@
 static void
 AddIncaToxModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox", "_dev");
+	BeginModule(Model, "INCA-Tox", "0.1");
 	
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");
@@ -38,8 +38,8 @@ AddIncaToxModule(mobius_model *Model)
 	auto Cm3PerMol        = RegisterUnit(Model, "cm3/mol");
 	auto GPerCmPerSPerHundred = RegisterUnit(Model, "10^-2 g/cm/s");
 	
-	auto DepositionToLand         = RegisterInput(Model, "Deposition to land", NgPerM2PerDay);
-	auto DepositionToReach        = RegisterInput(Model, "Deposition to reach", NgPerM2PerDay);
+	auto DepositionToLand         = RegisterInput(Model, "Contaminant deposition to land", NgPerM2PerDay);
+	auto DepositionToReach        = RegisterInput(Model, "Contaminant deposition to reach", NgPerDay);
 	auto WindSpeed                = RegisterInput(Model, "Wind speed", MPerS);
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
@@ -635,8 +635,10 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, BedWaterContaminantConcentration,
+		double beddocmass = RESULT(ReachDOCMass) * RESULT(PoreWaterVolume) / RESULT(ReachVolume); //Assuming same concentration as in the reach
+		
 		return RESULT(BedContaminantMass) /
-			(RESULT(ReachWaterSOCPartitioningCoefficient)*RESULT(TotalBedSOCMass) + RESULT(PoreWaterVolume)); //TODO: DOC in pore water, but is it necessary?
+			(RESULT(ReachWaterSOCPartitioningCoefficient)*RESULT(TotalBedSOCMass) + RESULT(ReachWaterDOCPartitioningCoefficient)*beddocmass + RESULT(PoreWaterVolume));
 	)	
 	
 	EQUATION(Model, BedSOCContaminantConcentration,
