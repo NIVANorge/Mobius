@@ -85,7 +85,7 @@ AddIncaToxModule(mobius_model *Model)
 	//Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
 	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5);
 	auto AverageBedGrainDiameter = RegisterParameterDouble(Model, ContaminantReach, "Average bed grain diameter", M, 0.0001, 0.0, 0.1);
-	auto SedimentDryDensity = RegisterParameterDouble(Model, ContaminantReach, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
+	//auto SedimentDryDensity = RegisterParameterDouble(Model, ContaminantReach, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
 	auto SedimentPorosity   = RegisterParameterDouble(Model, ContaminantReach, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
 	
 	
@@ -349,8 +349,6 @@ AddIncaToxModule(mobius_model *Model)
 	auto SchmidtNumber                            = RegisterEquation(Model, "Schmidt number", Dimensionless);
 	auto NonDimensionalRoughnessParameter         = RegisterEquation(Model, "Non-dimensional roughness parameter", Dimensionless);
 	auto ElementFroudeNumber                      = RegisterEquation(Model, "Element Froude number", Dimensionless);
-	auto WaterSedimentApparentViscosity           = RegisterEquation(Model, "Water sediment apparent viscosity", M2PerS);
-	auto TurbulentReynoldsNumber                  = RegisterEquation(Model, "Turbulent Reynolds number", M2PerS);
 	auto DiffusivityOfDissolvedCompoundInWater    = RegisterEquation(Model, "Diffusivity of dissolved compound in water", M2PerS);
 	
 	
@@ -631,9 +629,9 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, PoreWaterVolume,
-		//TODO: We could compute this based on the actual density of sediment classes (INCA-Sed parameter) instead of having a separate parameter for it.
+		double sedimentdrydensity = 2650.0;
 		//TODO: Also, this should maybe be an output of INCA-Sed instead of being computed by the contaminants module.
-		return (RESULT(TotalMassOfBedGrainPerUnitArea) / PARAMETER(SedimentDryDensity)) * std::pow(PARAMETER(SedimentPorosity), 2.0/3.0);
+		return (RESULT(TotalMassOfBedGrainPerUnitArea) / sedimentdrydensity) * std::pow(PARAMETER(SedimentPorosity), 2.0/3.0);
 	)
 	
 	EQUATION(Model, BedWaterContaminantConcentration,
@@ -645,37 +643,17 @@ AddIncaToxModule(mobius_model *Model)
 		return RESULT(BedWaterContaminantConcentration) * RESULT(ReachWaterSOCPartitioningCoefficient);
 	)
 	
-	EQUATION(Model, WaterSedimentApparentViscosity,
-		double por = (1.0 - PARAMETER(SedimentPorosity)) / PARAMETER(SedimentPorosity);
-		return (RESULT(ReachKinematicViscosity) / (32.0 * 5.6e-3)) * 0.1 * por * por;
-	)
-	
-	EQUATION(Model, TurbulentReynoldsNumber,
-		double periodOfVelocityPulse = 1.0;
-		return RESULT(ReachShearVelocity) * RESULT(ReachShearVelocity) * periodOfVelocityPulse / RESULT(WaterSedimentApparentViscosity);
-	)
 	
 	EQUATION(Model, DiffusivityOfDissolvedCompoundInWater,
-		double a = 8.32e-4;
-		double b = 8.2157e-1;
-		double c = 0.1571;
-		double ustar = RESULT(ReachShearVelocity);
-		double zus = -5.0*PARAMETER(AverageBedGrainDiameter);
-		double zusstar = 0.5*zus / ustar;
-		double Re = RESULT(TurbulentReynoldsNumber);
-		
-		double logDstar = (log10(-a*(zusstar + 10.0)) - log10((a-10.0)*zusstar)) / (b * pow(Re, c));
-		
-		//std::cout << "z_us* " << zusstar << '\n';
-		//std::cout << "logD* " << logDstar << '\n';
-		
-		double Dstar = pow(10.0, logDstar);
-		return Dstar * ustar * ustar;
+		// Empirical formula from Grant, Stewardson, Marusic 2012,
+		double constant = 3311311.21483; // Constant is 10^7.2*0.1^0.68. Here 0.1 is the depth of sediment participating in diffusive exchange.
+		double sedimentpermeability = 1e-10;   // m^2
+		return constant * pow(RESULT(ReachVelocity), 0.83) * pow(RESULT(ReachShearVelocity), 1.4) * pow(sedimentpermeability, 0.91) * pow(RESULT(ReachDepth), 0.68) * pow(PARAMETER(SedimentPorosity), 1.5);
 	)
 	
 	EQUATION(Model, DiffusiveSedimentReachExchangeFlux,
-		double zus = -5.0*PARAMETER(AverageBedGrainDiameter);
-		return RESULT(DiffusivityOfDissolvedCompoundInWater) * (RESULT(ReachWaterContaminantConcentration) - RESULT(BedWaterContaminantConcentration)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth) * 86400.0 / (0.5 * (-zus));
+		double z = 0.1; // Thickness of sediment layer that participates in diffusive exchange.
+		return RESULT(DiffusivityOfDissolvedCompoundInWater) * (RESULT(ReachWaterContaminantConcentration) - RESULT(BedWaterContaminantConcentration)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth) * 86400.0 / z;
 	)
 
 	EndModule(Model);
