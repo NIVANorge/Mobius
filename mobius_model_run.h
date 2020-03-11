@@ -1259,9 +1259,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 					//NOTE: Values are not written to ResultData before the entire solution process is finished. So during the solver process one can ONLY read intermediary results from equations belonging to this solver using RESULT(H), never RESULT(H, Idx1,...) etc. However there is no reason one would want to do that any way.
 					for(equation_h Equation : Batch.EquationsODE)
 					{
-#if MOBIUS_TEST_FOR_NAN
-						NaNTest(Model, RunState, x0[EquationIdx], Equation);
-#endif
+//#if MOBIUS_TEST_FOR_NAN
+//						NaNTest(Model, RunState, x0[EquationIdx], Equation);
+//#endif
 						RunState->CurResults[Equation.Handle] = x0[EquationIdx];
 						++EquationIdx;
 					}
@@ -1270,9 +1270,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 					for(equation_h Equation : Batch.Equations)
 					{
 						double ResultValue = CallEquation(Model, RunState, Equation);
-#if MOBIUS_TEST_FOR_NAN
-						NaNTest(Model, RunState, ResultValue, Equation);
-#endif
+//#if MOBIUS_TEST_FOR_NAN
+//						NaNTest(Model, RunState, ResultValue, Equation);
+//#endif
 						RunState->CurResults[Equation.Handle] = ResultValue;
 					}
 					
@@ -1306,6 +1306,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 				for(equation_h Equation : Batch.Equations)
 				{
 					double ResultValue = RunState->CurResults[Equation.Handle];
+#if MOBIUS_TEST_FOR_NAN
+					NaNTest(Model, RunState, ResultValue, Equation);
+#endif
 					*RunState->AtResult = ResultValue;
 					++RunState->AtResult;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
@@ -1317,6 +1320,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 				for(equation_h Equation : Batch.EquationsODE)
 				{
 					double ResultValue = RunState->SolverTempX0[EquationIdx];
+#if MOBIUS_TEST_FOR_NAN
+					NaNTest(Model, RunState, ResultValue, Equation);
+#endif
 					RunState->CurResults[Equation.Handle] = ResultValue;
 					*RunState->AtResult = ResultValue;
 					++RunState->AtResult;
