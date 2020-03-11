@@ -625,7 +625,7 @@ AddIncaToxModule(mobius_model *Model)
 		  RESULT(ReachContaminantDeposition)
 		- RESULT(ReachContaminantEntrainment)
 		- RESULT(BedContaminantDegradation)
-		+ RESULT(DiffusiveSedimentReachExchangeFlux);
+		+ RESULT(DiffusiveSedimentReachExchangeFlux) / (PARAMETER(ReachLength)*PARAMETER(ReachWidth));
 	)
 	
 	EQUATION(Model, PoreWaterVolume,
