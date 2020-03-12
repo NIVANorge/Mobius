@@ -51,10 +51,10 @@ AddIncaRadModule(mobius_model *Model)
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
 	
+	auto Radionuclide = RegisterIndexSetBranched(Model, "Radionuclide");
 	
-	
-	auto Chemistry = RegisterParameterGroup(Model, "Chemistry");
-	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits);
+	auto Chemistry = RegisterParameterGroup(Model, "Chemistry", Radionuclide);
+	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits, Radionuclide);
 
 	//TODO: As always, find better default, min, max values for parameters!
 	
@@ -75,17 +75,17 @@ AddIncaRadModule(mobius_model *Model)
 
 	
 	
-	auto ContaminantReach = RegisterParameterGroup(Model, "Contaminants by reach", Reach);
+	auto ContaminantReach = RegisterParameterGroup(Model, "Contaminants by reach", Reach, Radionuclide);
+	auto OtherReachParams = RegisterParameterGroup(Model, "Reach parameters", Reach);
 	
 	auto InitialContaminantMassInSoil  = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
 	
-	//Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
-	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5);
-	auto AverageBedGrainDiameter = RegisterParameterDouble(Model, ContaminantReach, "Average bed grain diameter", M, 0.0001, 0.0, 0.1);
-	//auto SedimentDryDensity = RegisterParameterDouble(Model, ContaminantReach, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
-	auto SedimentPorosity   = RegisterParameterDouble(Model, ContaminantReach, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
+	auto HeightOfLargeStones = RegisterParameterDouble(Model, OtherReachParams, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5);
+	auto AverageBedGrainDiameter = RegisterParameterDouble(Model, OtherReachParams, "Average bed grain diameter", M, 0.0001, 0.0, 0.1);
+	//auto SedimentDryDensity = RegisterParameterDouble(Model, OtherReachParams, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
+	auto SedimentPorosity   = RegisterParameterDouble(Model, OtherReachParams, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
 	
 	
 	 //SoilTemperature.h
@@ -163,6 +163,8 @@ AddIncaRadModule(mobius_model *Model)
 	auto SoilContaminantDegradation        = RegisterEquation(Model, "Soil contaminant degradation", NgPerKm2PerDay);
 	SetSolver(Model, SoilContaminantDegradation, SoilSolver);
 	
+	auto SoilContaminantFormation          = RegisterEquation(Model, "Soil contaminant formation", NgPerKm2PerDay);
+	
 	auto SoilWaterVolume                   = RegisterEquation(Model, "Soil water volume", M3PerKm2);
 	auto SoilAirVolume                     = RegisterEquation(Model, "Soil air volume", M3PerKm2);
 	
@@ -184,6 +186,8 @@ AddIncaRadModule(mobius_model *Model)
 	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2);
 	SetSolver(Model, ContaminantMassInGroundwater, SoilSolver);
 	SetInitialValue(Model, ContaminantMassInGroundwater, InitialContaminantMassInGroundwater);
+	
+	auto GroundwaterContaminantFormation   = RegisterEquation(Model, "Groundwater contaminant formation", NgPerKm2PerDay);
 	
 	EQUATION(Model, HenrysConstant,
 		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
@@ -279,6 +283,16 @@ AddIncaRadModule(mobius_model *Model)
 		return rate * degradablemass;
 	)
 	
+	EQUATION(Model, SoilContaminantFormation,
+		double formation = 0.0;
+		
+		FOREACH_INPUT(Radionuclide,
+			formation += RESULT(SoilContaminantDegradation, *Input);
+		)
+		
+		return formation;
+	)
+	
 	EQUATION(Model, ContaminantMassInSoil,
 		return
 		  RESULT(ContaminantInputsToSoil)
@@ -287,7 +301,8 @@ AddIncaRadModule(mobius_model *Model)
 		- RESULT(SoilContaminantFluxToDirectRunoff)
 		+ RESULT(DiffusiveAirSoilExchangeFlux)
 		- RESULT(SoilContaminantDegradation)
-		- RESULT(ContaminantDeliveryToReachByErosion);
+		- RESULT(ContaminantDeliveryToReachByErosion)
+		+ RESULT(SoilContaminantFormation);
 	)
 	
 	EQUATION(Model, GroundwaterContaminantFluxToReach,
@@ -302,11 +317,22 @@ AddIncaRadModule(mobius_model *Model)
 		return rate * degradablemass;
 	)
 	
+	EQUATION(Model, GroundwaterContaminantFormation,
+		double formation = 0.0;
+		
+		FOREACH_INPUT(Radionuclide,
+			formation += RESULT(GroundwaterContaminantDegradation, *Input);
+		)
+		
+		return formation;
+	)
+	
 	EQUATION(Model, ContaminantMassInGroundwater,
 		return
 		  RESULT(SoilContaminantFluxToGroundwater)
 		- RESULT(GroundwaterContaminantFluxToReach)
-		- RESULT(GroundwaterContaminantDegradation);
+		- RESULT(GroundwaterContaminantDegradation)
+		+ RESULT(GroundwaterContaminantFormation);
 	)
 
 	
@@ -325,6 +351,8 @@ AddIncaRadModule(mobius_model *Model)
 	SetSolver(Model, ReachContaminantFlux, ReachSolver);
 	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay);
 	SetSolver(Model, ReachContaminantDegradation, ReachSolver);
+	
+	auto ReachContaminantFormation     = RegisterEquation(Model, "Reach contaminant formation", NgPerDay);
 	
 	auto ReachHenrysConstant                      = RegisterEquation(Model, "Reach Henry's constant", PascalM3PerMol);
 	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Reach air-water partitioning coefficient", Dimensionless);
@@ -375,6 +403,7 @@ AddIncaRadModule(mobius_model *Model)
 	auto DiffusiveSedimentReachExchangeFlux = RegisterEquation(Model, "Diffusive sediment reach water exchange flux", NgPerDay);
 	SetSolver(Model, DiffusiveSedimentReachExchangeFlux, ReachSolver);
 	
+	auto BedContaminantFormation          = RegisterEquation(Model, "Bed contaminant formation", NgPerM2PerDay);
 	
 	
 	EQUATION(Model, DiffuseContaminantOutput,
@@ -413,6 +442,16 @@ AddIncaRadModule(mobius_model *Model)
 		return RESULT(ContaminantMassInReach) * rate;
 	)
 	
+	EQUATION(Model, ReachContaminantFormation,
+		double formation = 0.0;
+		
+		FOREACH_INPUT(Radionuclide,
+			formation += RESULT(ReachContaminantDegradation, *Input);
+		)
+		
+		return formation;
+	)
+	
 	
 	EQUATION(Model, ContaminantMassInReach,
 		return
@@ -421,7 +460,8 @@ AddIncaRadModule(mobius_model *Model)
 			- RESULT(ReachContaminantDegradation)
 			- RESULT(DiffusiveAirReachExchangeFlux)
 			+ (RESULT(ReachContaminantEntrainment) - RESULT(ReachContaminantDeposition)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
-			- RESULT(DiffusiveSedimentReachExchangeFlux);
+			- RESULT(DiffusiveSedimentReachExchangeFlux)
+			+ RESULT(ReachContaminantFormation);
 	)
 	
 	
@@ -601,12 +641,23 @@ AddIncaRadModule(mobius_model *Model)
 		return RESULT(BedContaminantMass) * rate;
 	)
 	
+	EQUATION(Model, BedContaminantFormation,
+		double formation = 0.0;
+		
+		FOREACH_INPUT(Radionuclide,
+			formation += RESULT(BedContaminantDegradation, *Input);
+		)
+		
+		return formation;
+	)
+	
 	EQUATION(Model, BedContaminantMass,
 		return
 		  RESULT(ReachContaminantDeposition)
 		- RESULT(ReachContaminantEntrainment)
 		- RESULT(BedContaminantDegradation)
-		+ RESULT(DiffusiveSedimentReachExchangeFlux) / (PARAMETER(ReachLength)*PARAMETER(ReachWidth));
+		+ RESULT(DiffusiveSedimentReachExchangeFlux) / (PARAMETER(ReachLength)*PARAMETER(ReachWidth))
+		+ RESULT(BedContaminantFormation);
 	)
 	
 	EQUATION(Model, PoreWaterVolume,

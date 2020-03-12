@@ -1,10 +1,11 @@
-# Parameter file generated for model INCA-Rad, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Rad V_dev) at 2020-03-11 12:27:57
+# Parameter file generated for model INCA-Rad, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Rad V_dev) at 2020-03-12 11:25:49
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
 "Soils" : {"Direct runoff" "Soil water" "Groundwater"}
 "Reaches" : {"One"}
 "Sediment size class" : {"Clay and silt" "Sand"}
+"Radionuclide" : {"C14"}
 
 parameters:
 ###################### (no index sets) ######################
@@ -13,33 +14,6 @@ parameters:
 
 "Start date" :     # [1000-01-01, 3000-12-31]
 1996-01-01
-
-"Contaminant molar mass" :     #(g/mol) [0, 1000]
-50
-
-"Contaminant molecular volume at surface pressure" :     #(cm3/mol) [0, 1000]
-20
-
-"Enthalpy of phase transfer between air and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
-68.2
-
-"Enthalpy of phase tranfer between organic carbon and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
-
-"Henry's constant at 25°C" :     #(Pa m3/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
-1.1
-
-"Organic carbon-water partitioning coefficient at 25°C" :     #(m3/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-2000
-
-"DOC-water partitioning coefficient" :     #(m3/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-200
-
-"Atmospheric contaminant concentration" :     #(ng/m3) [0, 100]
-0.01
-
-"Element half life" :     #(years) [7.29e-31, 2.2e+24]
-1
 
 ###################### "Landscape units" ######################
 "Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
@@ -135,12 +109,6 @@ parameters:
 "Soil water DOC temperature response" :     #(mg/l/°C) [0, 5]
 0.3 0
 
-"Overall air-soil mass transfer coefficient" :     #(m/day) [0, 100]
-0.5 0.5
-
-"Initial contaminant mass in soil" :     #(ng/km2) [0, 1000]
-200000 0
-
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]
 0.1 0.9 0
@@ -150,6 +118,15 @@ parameters:
 0.1 0.9 0
 1 0.5 0.5
 0 0 1
+
+###################### "Landscape units" "Radionuclide" ######################
+"Overall air-soil mass transfer coefficient" :     #(m/day) [0, 100]
+0.5
+0.5
+
+"Initial contaminant mass in soil" :     #(ng/km2) [0, 1000]
+200000
+0
 
 ###################### "Soils" ######################
 "This is a quick box" :
@@ -245,10 +222,10 @@ true true true
 1
 
 "Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-05
+0.01
 
 "Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-12
+1e-10
 
 "Initial water temperature" :     #(°C) [0, 40]
 20
@@ -261,12 +238,6 @@ true true true
 
 "Mineral layer DOC concentration" :     #(mg/l) [0, 20]
 5
-
-"Initial contaminant mass in groundwater" :     #(ng/km2) [0, 1000]
-0
-
-"Initial contaminant mass in reach" :     #(ng) [0, 1000]
-0
 
 "Average height of large stones in the stream bed" :     #(m) [0, 0.5]
 0
@@ -281,9 +252,16 @@ true true true
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
 50 50
 
+###################### "Reaches" "Radionuclide" ######################
+"Initial contaminant mass in groundwater" :     #(ng/km2) [0, 1000]
+0
+
+"Initial contaminant mass in reach" :     #(ng) [0, 1000]
+0
+
 ###################### "Sediment size class" ######################
 "Percentage of sediment in grain size class" :     #(%) [-1.79769313486232e+308, 1.79769313486232e+308]
-20 20
+80 20
 
 "Smallest diameter of sediment in size class" :     #(m) [0, 1]
 0 6e-05
@@ -306,4 +284,32 @@ true true true
 "Initial suspended sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.001
 0.001
+
+###################### "Radionuclide" ######################
+"Contaminant molar mass" :     #(g/mol) [0, 1000]
+50
+
+"Contaminant molecular volume at surface pressure" :     #(cm3/mol) [0, 1000]
+20
+
+"Enthalpy of phase transfer between air and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
+68.2
+
+"Enthalpy of phase tranfer between organic carbon and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Henry's constant at 25°C" :     #(Pa m3/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
+1.1
+
+"Organic carbon-water partitioning coefficient at 25°C" :     #(m3/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+2000
+
+"DOC-water partitioning coefficient" :     #(m3/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+200
+
+"Atmospheric contaminant concentration" :     #(ng/m3) [0, 100]
+0.01
+
+"Element half life" :     #(years) [7.29e-31, 2.2e+24]
+1
 
