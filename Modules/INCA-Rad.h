@@ -105,7 +105,7 @@ AddIncaRadModule(mobius_model *Model)
 	
 	//INCA-Sed.h
 	auto TotalMassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Total mass of bed sediment per unit area");
-	auto ReachShearVelocity = GetEquationHandle(Model, "Reach shear velocity");
+	auto ReachShearVelocity             = GetEquationHandle(Model, "Reach shear velocity");
 	
 	 //INCA-Tox-C.h
 	auto SoilDOCMass              = GetEquationHandle(Model, "Soil DOC mass");
