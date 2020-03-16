@@ -207,5 +207,12 @@ mobius_run_with(Rcpp::StringVector ParNames, Rcpp::List ParIndexes, std::vector<
 }
 
 
-
+// [[Rcpp::export]]
+void
+mobius_print_result_structure()
+{
+	if(!DataSet) return;
+	
+	PrintResultStructure(DataSet->Model, Rcpp::Rcout);
+}
 
