@@ -12,7 +12,164 @@ void AddMagicModel(mobius_model *Model)
 {
 	BeginModule(Model, "MAGIC driver", "_dev");
 	
+	auto Dimensionless  = RegisterUnit(Model);
+	auto MPerTs         = RegisterUnit(Model, "m/timestep");
+	auto MPerYear       = RegisterUnit(Model, "m/year");
+	auto MEqPerM2PerTs  = RegisterUnit(Model, "meq/m2/timestep");
+	auto MEqPerM3       = RegisterUnit(Model, "meq/m3");
 	
+	auto Compartment    = RegisterIndexSet(Model, "Compartment");
+	
+	auto DepositionParams      = RegisterParameterGroup(Model, "Deposition");
+	auto DepositionCompartment = RegisterParameterGroup(Model, "Deposition by compartment", Compartment);
+	auto CompartmentParams = GetParameterGroupHandle(Model, "Compartment parameters");
+	
+	auto PrecipPar             = RegisterParameterDouble(Model, DepositionParams, "Precipitation", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
+	auto CaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Ca wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto MgWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Mg wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto NaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Na wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto KWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "K wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto NH4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NH4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto SO4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "SO4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto ClWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Cl wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto NO3WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NO3 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto FWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "F wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	
+	
+	auto DischargePar          = RegisterParameterDouble(Model, CompartmentParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
+	
+	auto CaDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Ca dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto MgDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Mg dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto NaDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Na dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto KDryDepositionFactor   = RegisterParameterDouble(Model, DepositionCompartment, "K dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto NH4DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "NH4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto SO4DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "SO4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto ClDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Cl dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto NO3DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "NO3 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto FDryDepositionFactor   = RegisterParameterDouble(Model, DepositionCompartment, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+
+	
+	
+	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
+	auto Precipitation      = RegisterEquation(Model, "Precipitation", MPerTs);
+	
+	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
+	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
+	auto NaExternalFlux     = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MEqPerM2PerTs);
+	auto KExternalFlux      = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MEqPerM2PerTs);
+	auto NH4ExternalFlux    = RegisterEquation(Model, "Sum of NH4 fluxes not related to discharge", MEqPerM2PerTs);
+	auto SO4ExternalFlux    = RegisterEquation(Model, "Sum of SO4 fluxes not related to discharge", MEqPerM2PerTs);
+	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
+	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
+	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
+	
+	
+	auto CaDeposition       = RegisterEquation(Model, "Ca deposition", MEqPerM2PerTs);
+	auto MgDeposition       = RegisterEquation(Model, "Mg deposition", MEqPerM2PerTs);
+	auto NaDeposition       = RegisterEquation(Model, "Na deposition", MEqPerM2PerTs);
+	auto KDeposition        = RegisterEquation(Model, "K deposition", MEqPerM2PerTs);
+	auto NH4Deposition      = RegisterEquation(Model, "NH4 deposition", MEqPerM2PerTs);
+	auto SO4Deposition      = RegisterEquation(Model, "SO4 deposition", MEqPerM2PerTs);
+	auto ClDeposition       = RegisterEquation(Model, "Cl deposition", MEqPerM2PerTs);
+	auto NO3Deposition      = RegisterEquation(Model, "NO3 deposition", MEqPerM2PerTs);
+	auto FDeposition        = RegisterEquation(Model, "F deposition", MEqPerM2PerTs);
+	
+	auto PrecipIn           = RegisterInput(Model, "Precipitation", MPerTs);
+	auto DischargeIn        = RegisterInput(Model, "Discharge", MPerTs);
+	
+	EQUATION(Model, Precipitation,
+		double prin  = INPUT(PrecipIn);
+		double prpar = PARAMETER(PrecipPar) * (double) CURRENT_TIME().StepLengthInSeconds / (86400.0*(double)CURRENT_TIME().DaysThisYear);
+		if(prin > 0.0) return prin;
+		return prpar;
+	)
+	
+	EQUATION(Model, Discharge,
+		double disin  = INPUT(DischargeIn);
+		double dispar = PARAMETER(DischargePar) * (double) CURRENT_TIME().StepLengthInSeconds / (86400.0*(double)CURRENT_TIME().DaysThisYear);
+		if(disin > 0.0) return disin;
+		return dispar;
+	)
+	
+	
+	
+	EQUATION(Model, CaDeposition,
+		return RESULT(Precipitation)*PARAMETER(CaWetDeposition)*PARAMETER(CaDryDepositionFactor);
+	)
+	
+	EQUATION(Model, MgDeposition,
+		return RESULT(Precipitation)*PARAMETER(MgWetDeposition)*PARAMETER(MgDryDepositionFactor);
+	)
+	
+	EQUATION(Model, NaDeposition,
+		return RESULT(Precipitation)*PARAMETER(NaWetDeposition)*PARAMETER(NaDryDepositionFactor);
+	)
+	
+	EQUATION(Model, KDeposition,
+		return RESULT(Precipitation)*PARAMETER(KWetDeposition)*PARAMETER(KDryDepositionFactor);
+	)
+	
+	EQUATION(Model, NH4Deposition,
+		return RESULT(Precipitation)*PARAMETER(NH4WetDeposition)*PARAMETER(NH4DryDepositionFactor);
+	)
+	
+	EQUATION(Model, SO4Deposition,
+		return RESULT(Precipitation)*PARAMETER(SO4WetDeposition)*PARAMETER(SO4DryDepositionFactor);
+	)
+	
+	EQUATION(Model, ClDeposition,
+		return RESULT(Precipitation)*PARAMETER(ClWetDeposition)*PARAMETER(ClDryDepositionFactor);
+	)
+	
+	EQUATION(Model, NO3Deposition,
+		return RESULT(Precipitation)*PARAMETER(NO3WetDeposition)*PARAMETER(NO3DryDepositionFactor);
+	)
+	
+	EQUATION(Model, FDeposition,
+		return RESULT(Precipitation)*PARAMETER(FWetDeposition)*PARAMETER(FDryDepositionFactor);
+	)
+	
+	
+	
+	
+	EQUATION(Model, CaExternalFlux,
+		return RESULT(CaDeposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, MgExternalFlux,
+		return RESULT(MgDeposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, NaExternalFlux,
+		return RESULT(NaDeposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, KExternalFlux,
+		return RESULT(KDeposition);    // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, NH4ExternalFlux,
+		return RESULT(NH4Deposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, SO4ExternalFlux,
+		return RESULT(SO4Deposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, ClExternalFlux,
+		return RESULT(ClDeposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, NO3ExternalFlux,
+		return RESULT(NO3Deposition);   // weathering, sources+sinks, etc.
+	)
+	
+	EQUATION(Model, FExternalFlux,
+		return RESULT(FDeposition);   // weathering, sources+sinks, etc.
+	)
+	
+	
+	/*
 	auto CompartmentParams = RegisterParameterGroup(Model, "Soil"); //TODO: figure out group structure later. This should index over multiple soil boxes
 	
 	
@@ -163,6 +320,7 @@ void AddMagicModel(mobius_model *Model)
 			- PARAMETER(Nitrification)
 	)
 	
+	*/
 
 	
 	EndModule(Model);

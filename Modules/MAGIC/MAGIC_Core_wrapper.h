@@ -17,6 +17,7 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	
 	auto Dimensionless = RegisterUnit(Model);
+	auto Ts            = RegisterUnit(Model, "timesteps");
 	auto M             = RegisterUnit(Model, "m");
 	auto MPerTs        = RegisterUnit(Model, "m/timestep");
 	auto Km2           = RegisterUnit(Model, "km2");
@@ -24,8 +25,10 @@ AddMagicCoreModel(mobius_model *Model)
 	auto MMolPerM2     = RegisterUnit(Model, "mmol/m2");
 	auto MMolPerM3     = RegisterUnit(Model, "mmol/m3");
 	auto MEqPerKg      = RegisterUnit(Model, "meq/kg");
+	auto MEqPerM2      = RegisterUnit(Model, "meq/m2");
+	auto MEqPerM2PerTs = RegisterUnit(Model, "meq/m2/timestep");
 	auto MEqPerM3      = RegisterUnit(Model, "meq/m3");
-	auto Log10MolPerL  = RegisterUnit(Model, "log10(mol/l)")
+	auto Log10MolPerL  = RegisterUnit(Model, "log10(mol/l)");
 	auto MMolPerTs     = RegisterUnit(Model, "mmol/timestep");
 	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/timestep");
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");
@@ -33,41 +36,50 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	auto GeneralParams             = RegisterParameterGroup(Model, "General parameters");
 	auto ConvergenceCriterion      = RegisterParameterDouble(Model, GeneralParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
-	
-	//TODO: Should any of the following be per compartment instead?
-	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, GeneralParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0); //TODO
-	auto HAlOH3Exponent            = RegisterParameterDouble(Model, GeneralParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0); //TODO
-	
-	auto PK1DOC                    = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK 1st equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
-	auto PK2DOC                    = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK 2nd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
-	auto PK3DOC                    = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK 3rd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
-	auto PK1AlDOC                  = RegisterParameterDouble(Model, GeneralParams, "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]", Dimensionless, 0.0); //TODO
-	auto PK2AlDOC                  = RegisterParameterDouble(Model, GeneralParams, "(-log10 pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0); //TODO
-	
-	auto Log10CaAlSelectCoeff      = RegisterParameterDouble(Model, GeneralParams, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	auto Log10MgAlSelectCoeff      = RegisterParameterDouble(Model, GeneralParams, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	auto Log10NaAlSelectCoeff      = RegisterParameterDouble(Model, GeneralParams, "(log10) Na/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	auto Log10KAlSelectCoeff       = RegisterParameterDouble(Model, GeneralParams, "(log10) K/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	
+	auto SolverStep                = RegisterParameterDouble(Model, GeneralParams, "Solver sub-step length", Ts, 0.1, 1e-3, 1.0);
 	
 	auto Compartment = RegisterIndexSet(Model, "Compartment");
-	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters");
+	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters", Compartment);
 	
 	auto IsSoil                    = RegisterParameterBool(Model, CompartmentParams, "This is a soil compartment", true);
 	auto Area                      = RegisterParameterDouble(Model, CompartmentParams, "Surface area", Km2, 1.0, 0.0, 10000.0);
 	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0);
 	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0);
 	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 0.25, 0.0, 2.0);
-	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MeqPerKg, 9.0, 0.0, 50.0);
-	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MeqPerKg, 0.0); //TODO
-	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MeqPerKg, 0.0); //TODO
+	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 9.0, 0.0, 50.0);
+	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerKg, 0.0); //TODO
+	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0); //TODO
+	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0); //TODO
+	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0); //TODO
+	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
+	auto PK2DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 2nd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
+	auto PK3DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 3rd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
+	auto PK1AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]", Dimensionless, 0.0); //TODO
+	auto PK2AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0); //TODO
+	auto Log10CaAlSelectCoeff      = RegisterParameterDouble(Model, CompartmentParams, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto Log10MgAlSelectCoeff      = RegisterParameterDouble(Model, CompartmentParams, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto Log10NaAlSelectCoeff      = RegisterParameterDouble(Model, CompartmentParams, "(log10) Na/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto Log10KAlSelectCoeff       = RegisterParameterDouble(Model, CompartmentParams, "(log10) K/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	
+	
+	
+	//TODO; These should be computed from steady-state instead
+	auto InitialTotalCa            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Ca", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalMg            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Mg", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalNa            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Na", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalK             = RegisterParameterDouble(Model, CompartmentParams, "Initial total K", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalNH4           = RegisterParameterDouble(Model, CompartmentParams, "Initial total NH4", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalSO4           = RegisterParameterDouble(Model, CompartmentParams, "Initial total SO4", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalCl            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Cl", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalNO3           = RegisterParameterDouble(Model, CompartmentParams, "Initial total NO3", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialTotalF             = RegisterParameterDouble(Model, CompartmentParams, "Initial total F", MEqPerM2, 0.0, 0.0, 1e5);
 	
 	auto FlowFractions = RegisterParameterGroup(Model, "Flow fractions", Compartment, Compartment);
 	
 	auto FlowFraction = RegisterParameterDouble(Model, FlowFractions, "Flow fraction", Dimensionless, 0.0, 0.0, 1.0, "How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)");
 	
 	
-	
+	auto CompartmentSolver = RegisterSolver(Model, "Compartment solver", SolverStep, MobiusEuler);
 	
 	auto ConcCa            = RegisterEquation(Model, "Ca(2+) ionic concentration", MMolPerM3);
 	auto ConcMg            = RegisterEquation(Model, "Mg(2+) ionic concentration", MMolPerM3);
@@ -84,7 +96,7 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	auto PH                = RegisterEquation(Model, "pH", Log10MolPerL);
 	auto SumBaseCationConc = RegisterEquation(Model, "Sum of base cation concentrations (Ca + Mg + Na + K)", MEqPerM3);
-	auto SumAcidAnionConc  = RegisterEquation(Model, "Sum of acid anion concentrations (SO4 + Cl + NO3 + F", MEqPerM3);
+	auto SumAcidAnionConc  = RegisterEquation(Model, "Sum of acid anion concentrations (SO4 + Cl + NO3 + F)", MEqPerM3);
 	auto ChargeBalanceAlk  = RegisterEquation(Model, "Charge balance alkalinity", MEqPerM3);
 	auto WeakAcidAlk       = RegisterEquation(Model, "Weak acid alkalinity", MEqPerM3);
 
@@ -112,62 +124,71 @@ AddMagicCoreModel(mobius_model *Model)
 	auto ConcAllDOC        = RegisterEquation(Model, "Total anionic charge from DOC (triprotic acid) in solution (H2AM, HA2M, A3M)", MEqPerM3);
 	auto CaAlRatio         = RegisterEquation(Model, "Ca ion to aqueous Al molar ratio", Dimensionless);
 	
-	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MMolPerM3);
+	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MMolPerM3, CompartmentSolver);
 	SetInitialValue(Model, ConcH, 1.0);
 	auto IonicStrength = RegisterEquation(Model, "Ionic strength", Dimensionless);
 	SetInitialValue(Model, IonicStrength, 0.0);
 	
 	
-	auto CaInput       = RegisterEquation(Model, "Ca input from other compartments", MMolPerM2PerTs);
-	auto MgInput       = RegisterEquation(Model, "Mg input from other compartments", MMolPerM2PerTs);
-	auto NaInput       = RegisterEquation(Model, "Na input from other compartments", MMolPerM2PerTs);
-	auto KInput        = RegisterEquation(Model, "K input from other compartments", MMolPerM2PerTs);
-	auto NH4Input      = RegisterEquation(Model, "NH4 input from other compartments", MMolPerM2PerTs);
-	auto SO4Input      = RegisterEquation(Model, "SO4 input from other compartments", MMolPerM2PerTs);
-	auto ClInput       = RegisterEquation(Model, "Cl input from other compartments", MMolPerM2PerTs);
-	auto NO3Input      = RegisterEquation(Model, "NO3 input from other compartments", MMolPerM2PerTs);
-	auto FInput        = RegisterEquation(Model, "F input from other compartments", MMolPerM2PerTs);
+	auto CaInput       = RegisterEquation(Model, "Ca input from other compartments", MEqPerM2PerTs);
+	auto MgInput       = RegisterEquation(Model, "Mg input from other compartments", MEqPerM2PerTs);
+	auto NaInput       = RegisterEquation(Model, "Na input from other compartments", MEqPerM2PerTs);
+	auto KInput        = RegisterEquation(Model, "K input from other compartments", MEqPerM2PerTs);
+	auto NH4Input      = RegisterEquation(Model, "NH4 input from other compartments", MEqPerM2PerTs);
+	auto SO4Input      = RegisterEquation(Model, "SO4 input from other compartments", MEqPerM2PerTs);
+	auto ClInput       = RegisterEquation(Model, "Cl input from other compartments", MEqPerM2PerTs);
+	auto NO3Input      = RegisterEquation(Model, "NO3 input from other compartments", MEqPerM2PerTs);
+	auto FInput        = RegisterEquation(Model, "F input from other compartments", MEqPerM2PerTs);
 	
 	
-	auto CaOutput      = RegisterEquation(Model, "Ca output via discharge", MMolPerM2PerTs);
-	auto MgOutput      = RegisterEquation(Model, "Mg output via discharge", MMolPerM2PerTs);
-	auto NaOutput      = RegisterEquation(Model, "Na output via discharge", MMolPerM2PerTs);
-	auto KOutput       = RegisterEquation(Model, "K output via discharge", MMolPerM2PerTs);
-	auto NH4Output     = RegisterEquation(Model, "NH4 output via discharge", MMolPerM2PerTs);
-	auto SO4Output     = RegisterEquation(Model, "SO4 output via discharge", MMolPerM2PerTs);
-	auto ClOutput      = RegisterEquation(Model, "Cl output via discharge", MMolPerM2PerTs);
-	auto NO3Output     = RegisterEquation(Model, "NO3 output via discharge", MMolPerM2PerTs);
-	auto FOutput       = RegisterEquation(Model, "F output via discharge", MMolPerM2PerTs);
+	auto CaOutput      = RegisterEquation(Model, "Ca output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto MgOutput      = RegisterEquation(Model, "Mg output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto NaOutput      = RegisterEquation(Model, "Na output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto KOutput       = RegisterEquation(Model, "K output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto NH4Output     = RegisterEquation(Model, "NH4 output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto SO4Output     = RegisterEquation(Model, "SO4 output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto ClOutput      = RegisterEquation(Model, "Cl output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto NO3Output     = RegisterEquation(Model, "NO3 output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto FOutput       = RegisterEquation(Model, "F output via discharge", MEqPerM2PerTs, CompartmentSolver);
 	
 	
 	//TODO: Initial value for these:
-	auto TotalCa       = RegisterEquation(Model, "Total Ca mass", MMolPerM2);
-	auto TotalMg       = RegisterEquation(Model, "Total Mg mass", MMolPerM2);
-	auto TotalNa       = RegisterEquation(Model, "Total Na mass", MMolPerM2);
-	auto TotalK        = RegisterEquation(Model, "Total K  mass", MMolPerM2);
-	auto TotalNH4      = RegisterEquation(Model, "Total NH4 mass", MMolPerM2);
-	auto TotalSO4      = RegisterEquation(Model, "Total SO4 mass", MMolPerM2);
-	auto TotalCl       = RegisterEquation(Model, "Total Cl mass", MMolPerM2);
-	auto TotalNO3      = RegisterEquation(Model, "Total NO3 mass", MMolPerM2);
-	auto TotalF        = RegisterEquation(Model, "Total F mass", MMolPerM2);
+	auto TotalCa       = RegisterEquationODE(Model, "Total Ca mass", MEqPerM2, CompartmentSolver);
+	auto TotalMg       = RegisterEquationODE(Model, "Total Mg mass", MEqPerM2, CompartmentSolver);
+	auto TotalNa       = RegisterEquationODE(Model, "Total Na mass", MEqPerM2, CompartmentSolver);
+	auto TotalK        = RegisterEquationODE(Model, "Total K  mass", MEqPerM2, CompartmentSolver);
+	auto TotalNH4      = RegisterEquationODE(Model, "Total NH4 mass", MEqPerM2, CompartmentSolver);
+	auto TotalSO4      = RegisterEquationODE(Model, "Total SO4 mass", MEqPerM2, CompartmentSolver);
+	auto TotalCl       = RegisterEquationODE(Model, "Total Cl mass", MEqPerM2, CompartmentSolver);
+	auto TotalNO3      = RegisterEquationODE(Model, "Total NO3 mass", MEqPerM2, CompartmentSolver);
+	auto TotalF        = RegisterEquationODE(Model, "Total F mass", MEqPerM2, CompartmentSolver);
 	
-	
+	SetInitialValue(Model, TotalCa, InitialTotalCa);
+	SetInitialValue(Model, TotalMg, InitialTotalMg);
+	SetInitialValue(Model, TotalNa, InitialTotalNa);
+	SetInitialValue(Model, TotalK, InitialTotalK);
+	SetInitialValue(Model, TotalNH4, InitialTotalNH4);
+	SetInitialValue(Model, TotalSO4, InitialTotalSO4);
+	SetInitialValue(Model, TotalCl, InitialTotalCl);
+	SetInitialValue(Model, TotalNO3, InitialTotalNO3);
+	SetInitialValue(Model, TotalF, InitialTotalF);
+
+	auto Temperature        = RegisterInput(Model, "Temperature", DegreesCelsius);
+	auto PartialPressureCO2 = RegisterInput(Model, "CO2 partial pressure", Percent);
+	auto DOCConcentration   = RegisterInput(Model, "DOC concentration", MMolPerM3);
 	
 	// Equations that have to be defined by an outside "driver", and are not provided in the core, but which the core has to read the values of:
-	auto Temperature        = RegisterEquation(Model, "Temperature", DegreesCelsius);
-	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
-	auto DOCConcentration   = RegisterEquation(Model, "DOC concentration", MMolPerM3);
 	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
 	
-	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MMolPerM2PerTs);
-	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MMolPerM2PerTs);
-	auto NaExternalFlux     = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MMolPerM2PerTs);
-	auto KExternalFlux      = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MMolPerM2PerTs);
-	auto NH4ExternalFlux    = RegisterEquation(Model, "Sum of NH4 fluxes not related to discharge", MMolPerM2PerTs);
-	auto SO4ExternalFlux    = RegisterEquation(Model, "Sum of SO4 fluxes not related to discharge", MMolPerM2PerTs);
-	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MMolPerM2PerTs);
-	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MMolPerM2PerTs);
-	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MMolPerM2PerTs);
+	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
+	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
+	auto NaExternalFlux     = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MEqPerM2PerTs);
+	auto KExternalFlux      = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MEqPerM2PerTs);
+	auto NH4ExternalFlux    = RegisterEquation(Model, "Sum of NH4 fluxes not related to discharge", MEqPerM2PerTs);
+	auto SO4ExternalFlux    = RegisterEquation(Model, "Sum of SO4 fluxes not related to discharge", MEqPerM2PerTs);
+	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
+	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
+	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
 	
 	//TODO: Could the mass balance equations be done using an index set where the indexes are (Ca, Mg, Na ...)?
 	
@@ -204,7 +225,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, FOutput,
-		return RESULT(Discharge)*Result(ConcAllF);
+		return RESULT(Discharge)*RESULT(ConcAllF);
 	)
 	
 	EQUATION(Model, CaInput,
@@ -298,39 +319,39 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, TotalCa,
-		return LAST_RESULT(TotalCa) + RESULT(CaExternalFlux) - RESULT(CaOutput) + RESULT(CaInput);
+		return RESULT(CaExternalFlux) - RESULT(CaOutput) + RESULT(CaInput);
 	)
 	
 	EQUATION(Model, TotalMg,
-		return LAST_RESULT(TotalMg) + RESULT(MgExternalFlux) - RESULT(MgOutput) + RESULT(MgInput);
+		return RESULT(MgExternalFlux) - RESULT(MgOutput) + RESULT(MgInput);
 	)
 	
 	EQUATION(Model, TotalNa,
-		return LAST_RESULT(TotalNa) + RESULT(NaExternalFlux) - RESULT(NaOutput) + RESULT(NaInput);
+		return RESULT(NaExternalFlux) - RESULT(NaOutput) + RESULT(NaInput);
 	)
 	
 	EQUATION(Model, TotalK,
-		return LAST_RESULT(TotalK)  + RESULT(KExternalFlux)  - RESULT(KOutput) + RESULT(KInput);
+		return RESULT(KExternalFlux)  - RESULT(KOutput) + RESULT(KInput);
 	)
 	
 	EQUATION(Model, TotalNH4,
-		return LAST_RESULT(TotalNH) + RESULT(NH4ExternalFlux) - RESULT(NH4Output) + RESULT(NH4Input);
+		return RESULT(NH4ExternalFlux) - RESULT(NH4Output) + RESULT(NH4Input);
 	)
 	
 	EQUATION(Model, TotalSO4,
-		return LAST_RESULT(TotalSO4) + RESULT(SO4ExternalFlux) - RESULT(SO4Output) + RESULT(SO4Input);
+		return RESULT(SO4ExternalFlux) - RESULT(SO4Output) + RESULT(SO4Input);
 	)
 	
 	EQUATION(Model, TotalCl,
-		return LAST_RESULT(TotalCl) + RESULT(ClExternalFlux) - RESULT(ClOutput) + RESULT(ClInput);
+		return RESULT(ClExternalFlux) - RESULT(ClOutput) + RESULT(ClInput);
 	)
 	
 	EQUATION(Model, TotalNO3,
-		return LAST_RESULT(TotalNO3) + RESULT(NO3ExternalFlux) - RESULT(NO3Output) + RESULT(NO3Input);
+		return RESULT(NO3ExternalFlux) - RESULT(NO3Output) + RESULT(NO3Input);
 	)
 	
 	EQUATION(Model, TotalF,
-		return LAST_RESULT(TotalF) + RESULT(FExternalFlux) - RESULT(FOutput) + RESULT(FInput);
+		return RESULT(FExternalFlux) - RESULT(FOutput) + RESULT(FInput);
 	)
 	
 	EQUATION(Model, ConcH,
@@ -349,9 +370,9 @@ AddMagicCoreModel(mobius_model *Model)
 		Input.total_F     = LAST_RESULT(TotalF);
 		
 		Param.Depth       = PARAMETER(Depth);
-		Param.Temperature = RESULT(Temperature);
-		Param.PartialPressureCO2 = RESULT(PartialPressureCO2);
-		Param.conc_DOC    = RESULT(DOCConcentration);
+		Param.Temperature = INPUT(Temperature);
+		Param.PartialPressureCO2 = INPUT(PartialPressureCO2);
+		Param.conc_DOC    = INPUT(DOCConcentration);
 		
 		Param.Log10AlOH3EquilibriumConst = PARAMETER(Log10AlOH3EquilibriumConst);
 		Param.HAlOH3Exponent             = PARAMETER(HAlOH3Exponent);
@@ -382,7 +403,6 @@ AddMagicCoreModel(mobius_model *Model)
 			MagicCore(Input, Param, Result, issoil, conv, H_estimate, ionic);
 		}
 		
-		
 		SET_RESULT(ConcCa,            Result.conc_Ca);
 		SET_RESULT(ConcMg,            Result.conc_Mg);
 		SET_RESULT(ConcNa,            Result.conc_Na);
@@ -404,11 +424,11 @@ AddMagicCoreModel(mobius_model *Model)
 		SET_RESULT(ChargeBalanceAlk,  Result.ChargeBalanceAlk);
 		SET_RESULT(WeakAcidAlk,       Result.WeakAcidAlk);
 		
-		SET_RESULT(ExchangeableCa,    100.0*Result.ExchangeableCa);
-		SET_RESULT(ExchangeableMg,    100.0*Result.ExchangeableMg);
-		SET_RESULT(ExchangeableNa,    100.0*Result.ExchangeableNa);
-		SET_RESULT(ExchangeableK,     100.0*Result.ExchangeableK);
-		SET_RESULT(ExchangeableSO4,   100.0*Result.ExchangeableSO4);
+		SET_RESULT(ExchangeableCa,    100.0*Result.exchangeable_Ca);
+		SET_RESULT(ExchangeableMg,    100.0*Result.exchangeable_Mg);
+		SET_RESULT(ExchangeableNa,    100.0*Result.exchangeable_Na);
+		SET_RESULT(ExchangeableK,     100.0*Result.exchangeable_K);
+		SET_RESULT(ExchangeableSO4,   100.0*Result.exchangeable_SO4);
 		SET_RESULT(BaseSaturationSoil,100.0*Result.BaseSaturationSoil);
 		
 		SET_RESULT(ConcHCO3,          Result.conc_HCO3);

@@ -13,15 +13,15 @@ This adaptation is a work in progress
 
 struct magic_input
 {
-	double total_Ca;   // Total mass of Calcium   (mmol/m2)
-	double total_Mg;   // Total mass of Magnesium (mmol/m2)
-	double total_Na;   // Total mass of Sodium    (mmol/m2)
-	double total_K;    // Total mass of Potassium (mmol/m2)
-	double total_NH4;  // Total mass of Ammonium  (mmol/m2)
-	double total_SO4;  // Total mass of Sulfate   (mmol/m2)
-	double total_Cl;   // Total mass of Chloride  (mmol/m2)
-	double total_NO3;  // Total mass of Nitrate   (mmol/m2)
-	double total_F;    // Total mass of Fluoride  (mmol/m2)
+	double total_Ca;   // Total mass of Calcium   (meq/m2)
+	double total_Mg;   // Total mass of Magnesium (meq/m2)
+	double total_Na;   // Total mass of Sodium    (meq/m2)
+	double total_K;    // Total mass of Potassium (meq/m2)
+	double total_NH4;  // Total mass of Ammonium  (meq/m2)
+	double total_SO4;  // Total mass of Sulfate   (meq/m2)
+	double total_Cl;   // Total mass of Chloride  (meq/m2)
+	double total_NO3;  // Total mass of Nitrate   (meq/m2)
+	double total_F;    // Total mass of Fluoride  (meq/m2)
 };
 
 struct magic_output
@@ -278,7 +278,7 @@ SolveFreeFluoride(const magic_coeff &Coeff, double all_F, double conc_Al)
 double
 SolveAqueousSO4(const magic_coeff &Coeff, double total_SO4, double conc_Al, double WaterVolume, double SO4AdsorptionCap, double SO4HalfSat)
 {
-	// Solve for aqueous Sulfate concen (free + Al-complexed) (mmol/m3) - from total Sulfate amount (meg/m2), trivalent AL ion concen (mmol/m3) and sulfate adsorption parameters
+	// Solve for aqueous Sulfate concen (free + Al-complexed) (mmol/m3) - from total Sulfate amount (meq/m2), trivalent AL ion concen (mmol/m3) and sulfate adsorption parameters
 	
 	// If input variable is not positive, no solution. All SO4 values are set to zero (mmol/m3)
 	if(total_SO4 <= 0.0) return 0.0;

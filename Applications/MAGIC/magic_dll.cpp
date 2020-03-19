@@ -8,7 +8,8 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/MAGIC.h"
+#include "../../Modules/MAGIC/MAGIC_Core_Wrapper.h"
+#include "../../Modules/MAGIC/MAGICBasic.h"
 
 
 
@@ -20,11 +21,12 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	mobius_model *Model = BeginModelDefinition("MAGIC");
 	
+	AddMagicCoreModel(Model);
 	AddMagicModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	
-	SetTimestepSize(Model, "1Y");
+	SetTimestepSize(Model, "1M");
 	
 	EndModelDefinition(Model);
 	

@@ -1,4 +1,14 @@
 
-timesteps : 100
+start_date : 1999-1-1
+timesteps : 120
 
 inputs :
+
+"Temperature" :
+1999-1-1 to 2009-1-1 5.0
+
+"CO2 partial pressure" :
+1999-1-1 to 2009-1-1 0.3
+
+"DOC concentration" :
+1999-1-1 to 2009-1-1 30.0
