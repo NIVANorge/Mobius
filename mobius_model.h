@@ -1099,8 +1099,21 @@ SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBo
 	Model->Equations.Specs[Equation.Handle].EquationIsSet = true;
 }
 
+static void
+SetSolver(mobius_model *Model, equation_h Equation, solver_h Solver)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	equation_type Type = Model->Equations.Specs[Equation.Handle].Type;
+	if(Type != EquationType_Basic && Type != EquationType_ODE)
+	{
+		MOBIUS_FATAL_ERROR("ERROR: Tried to set a solver for the equation " << GetName(Model, Equation) << ", but it is not a basic equation or ODE equation, and so can not be given a solver." << std::endl);
+	}
+	Model->Equations.Specs[Equation.Handle].Solver = Solver;
+}
+
 static equation_h
-RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, equation_type Type = EquationType_Basic)
+RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver = {}, equation_type Type = EquationType_Basic)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -1115,15 +1128,20 @@ RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, equation_ty
 	Model->Equations.Specs[Equation].Unit = Unit;
 	Model->Equations.Specs[Equation].Module = Model->CurrentModule;
 	
+	if(IsValid(Solver))
+	{
+		SetSolver(Model, equation_h {Equation}, Solver);
+	}
+	
 	return {Equation};
 }
 
 inline equation_h
-RegisterEquationODE(mobius_model *Model, const char *Name, unit_h Unit)
+RegisterEquationODE(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver = {})
 {
 	REGISTRATION_BLOCK(Model)
 	
-	return RegisterEquation(Model, Name, Unit, EquationType_ODE);
+	return RegisterEquation(Model, Name, Unit, Solver, EquationType_ODE);
 }
 
 inline equation_h
@@ -1131,7 +1149,7 @@ RegisterEquationInitialValue(mobius_model *Model, const char *Name, unit_h Unit)
 {
 	REGISTRATION_BLOCK(Model)
 	
-	return RegisterEquation(Model, Name, Unit, EquationType_InitialValue);
+	return RegisterEquation(Model, Name, Unit, {}, EquationType_InitialValue);
 }
 
 //NOTE: CumulateResult is implemented in mobius_data_set.cpp
@@ -1150,7 +1168,7 @@ RegisterEquationCumulative(mobius_model *Model, const char *Name, equation_h Cum
 	}
 	
 	unit_h Unit = Model->Equations.Specs[Cumulates.Handle].Unit;
-	equation_h Equation = RegisterEquation(Model, Name, Unit, EquationType_Cumulative);
+	equation_h Equation = RegisterEquation(Model, Name, Unit, {}, EquationType_Cumulative);
 	Model->Equations.Specs[Equation.Handle].CumulatesOverIndexSet = CumulatesOverIndexSet;
 	Model->Equations.Specs[Equation.Handle].Cumulates = Cumulates;
 	Model->Equations.Specs[Equation.Handle].CumulationWeight = Weight;
@@ -1287,19 +1305,6 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	Spec.AbsErr = AbsErr;
 	
 	return Solver;
-}
-
-static void
-SetSolver(mobius_model *Model, equation_h Equation, solver_h Solver)
-{
-	REGISTRATION_BLOCK(Model)
-	
-	equation_type Type = Model->Equations.Specs[Equation.Handle].Type;
-	if(Type != EquationType_Basic && Type != EquationType_ODE)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set a solver for the equation " << GetName(Model, Equation) << ", but it is not a basic equation or ODE equation, and so can not be given a solver." << std::endl);
-	}
-	Model->Equations.Specs[Equation.Handle].Solver = Solver;
 }
 
 inline void
@@ -1567,6 +1572,7 @@ SetResult(model_run_state *RunState, double Value, equation_h Result)
 	mobius_data_set *DataSet = RunState->DataSet;
 	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, nullptr, 0, Result.Handle);
 	RunState->AllCurResultsBase[Offset] = Value;
+	RunState->CurResults[Result.Handle] = Value;
 }
 
 
