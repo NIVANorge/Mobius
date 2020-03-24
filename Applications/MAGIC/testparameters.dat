@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev) at 2020-03-19 16:39:00
+# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev) at 2020-03-20 13:00:12
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -133,7 +133,7 @@ true
 0
 
 "Discharge" :     #(m/year) [0, 100] Default value for timesteps where no input series value is provided
-1
+1.15
 
 "Ca dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
 1
@@ -161,6 +161,33 @@ true
 
 "F dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
 1
+
+"Ca weathering" :     #(meq/m2/year) [0, 500]
+28
+
+"Mg weathering" :     #(meq/m2/year) [0, 500]
+0
+
+"Na weathering" :     #(meq/m2/year) [0, 500]
+20
+
+"K weathering" :     #(meq/m2/year) [0, 500]
+2
+
+"NH4 weathering" :     #(meq/m2/year) [0, 500]
+0
+
+"SO4 weathering" :     #(meq/m2/year) [0, 500]
+20
+
+"Cl weathering" :     #(meq/m2/year) [0, 500]
+0
+
+"NO3 weathering" :     #(meq/m2/year) [0, 500]
+0
+
+"F weathering" :     #(meq/m2/year) [0, 500]
+0
 
 ###################### "Compartment" "Compartment" ######################
 "Flow fraction" :     #(dimensionless) [0, 1] How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)
