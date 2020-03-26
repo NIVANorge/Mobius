@@ -55,6 +55,16 @@ void AddMagicModel(mobius_model *Model)
 	auto ClDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Cl dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto NO3DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "NO3 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto FDryDepositionFactor   = RegisterParameterDouble(Model, DepositionCompartment, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	
+	auto CaWetDepositionScale      = RegisterInput(Model, "Ca wet deposition scaling factor", Dimensionless);
+	auto MgWetDepositionScale      = RegisterInput(Model, "Mg wet deposition scaling factor", Dimensionless);
+	auto NaWetDepositionScale      = RegisterInput(Model, "Na wet deposition scaling factor", Dimensionless);
+	auto KWetDepositionScale       = RegisterInput(Model, "K wet deposition scaling factor", Dimensionless);
+	auto NH4WetDepositionScale     = RegisterInput(Model, "NH4 wet deposition scaling factor", Dimensionless);
+	auto SO4WetDepositionScale     = RegisterInput(Model, "SO4 wet deposition scaling factor", Dimensionless);
+	auto ClWetDepositionScale      = RegisterInput(Model, "Cl wet deposition scaling factor", Dimensionless);
+	auto NO3WetDepositionScale     = RegisterInput(Model, "NO3 wet deposition scaling factor", Dimensionless);
+	auto FWetDepositionScale       = RegisterInput(Model, "F wet deposition scaling factor", Dimensionless);
 
 	auto CaWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Ca weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto MgWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Mg weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
@@ -115,7 +125,6 @@ void AddMagicModel(mobius_model *Model)
 	auto ClDeposition       = RegisterEquation(Model, "Cl deposition", MEqPerM2PerTs);
 	auto NO3Deposition      = RegisterEquation(Model, "NO3 deposition", MEqPerM2PerTs);
 	auto FDeposition        = RegisterEquation(Model, "F deposition", MEqPerM2PerTs);
-	
 
 	
 	auto CAndN             = RegisterParameterGroup(Model, "Carbon and Nitrogen", Compartment);
@@ -202,40 +211,59 @@ void AddMagicModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, CaDeposition,
-		return RESULT(Precipitation)*PARAMETER(CaWetDeposition)*PARAMETER(CaDryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(CaWetDepositionScale)) scale = INPUT(CaWetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(CaWetDeposition)*scale*PARAMETER(CaDryDepositionFactor);
 	)
 	
 	EQUATION(Model, MgDeposition,
-		return RESULT(Precipitation)*PARAMETER(MgWetDeposition)*PARAMETER(MgDryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(MgWetDepositionScale)) scale = INPUT(MgWetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(MgWetDeposition)*scale*PARAMETER(MgDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NaDeposition,
-		return RESULT(Precipitation)*PARAMETER(NaWetDeposition)*PARAMETER(NaDryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(NaWetDepositionScale)) scale = INPUT(NaWetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(NaWetDeposition)*scale*PARAMETER(NaDryDepositionFactor);
 	)
 	
 	EQUATION(Model, KDeposition,
-		return RESULT(Precipitation)*PARAMETER(KWetDeposition)*PARAMETER(KDryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(KWetDepositionScale)) scale = INPUT(KWetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(KWetDeposition)*scale*PARAMETER(KDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NH4Deposition,
-		return RESULT(Precipitation)*PARAMETER(NH4WetDeposition)*PARAMETER(NH4DryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(NH4WetDepositionScale)) scale = INPUT(NH4WetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(NH4WetDeposition)*scale*PARAMETER(NH4DryDepositionFactor);
 	)
 	
 	EQUATION(Model, SO4Deposition,
-		return RESULT(Precipitation)*PARAMETER(SO4WetDeposition)*PARAMETER(SO4DryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(SO4WetDepositionScale)) scale = INPUT(SO4WetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(SO4WetDeposition)*scale*PARAMETER(SO4DryDepositionFactor);
 	)
 	
 	EQUATION(Model, ClDeposition,
-		return RESULT(Precipitation)*PARAMETER(ClWetDeposition)*PARAMETER(ClDryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(ClWetDepositionScale)) scale = INPUT(ClWetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(ClWetDeposition)*scale*PARAMETER(ClDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NO3Deposition,
-		return RESULT(Precipitation)*PARAMETER(NO3WetDeposition)*PARAMETER(NO3DryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(NO3WetDepositionScale)) scale = INPUT(NO3WetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(NO3WetDeposition)*scale*PARAMETER(NO3DryDepositionFactor);
 	)
 	
 	EQUATION(Model, FDeposition,
-		return RESULT(Precipitation)*PARAMETER(FWetDeposition)*PARAMETER(FDryDepositionFactor);
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(FWetDepositionScale)) scale = INPUT(FWetDepositionScale);
+		return RESULT(Precipitation)*PARAMETER(FWetDeposition)*scale*PARAMETER(FDryDepositionFactor);
 	)
+	
 	
 	
 	

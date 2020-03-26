@@ -6,10 +6,10 @@ index_sets:
 parameters:
 ###################### (no index sets) ######################
 "Timesteps" :     #(days) [0, 18446744073709551615]
-120
+2040
 
 "Start date" :     # [1000-01-01, 3000-12-31]
-1999-01-01
+1850-01-01
 
 "Convergence criterion" :     #(dimensionless) [0.01, 10] Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed
 0.1
