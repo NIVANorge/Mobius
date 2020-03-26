@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev) at 2020-03-20 13:00:12
+# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev) at 2020-03-26 10:34:30
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -187,6 +187,75 @@ true
 0
 
 "F weathering" :     #(meq/m2/year) [0, 500]
+0
+
+"Ca sinks" :     #(meq/m2/year) [0, 500]
+4.2
+
+"Mg sinks" :     #(meq/m2/year) [0, 500]
+1.1
+
+"Na sinks" :     #(meq/m2/year) [0, 500]
+0
+
+"K sinks" :     #(meq/m2/year) [0, 500]
+2.4
+
+"NH4 sinks" :     #(meq/m2/year) [0, 500]
+0
+
+"SO4 sinks" :     #(meq/m2/year) [0, 500]
+0
+
+"Cl sinks" :     #(meq/m2/year) [0, 500]
+0
+
+"NO3 sinks" :     #(meq/m2/year) [0, 500]
+0
+
+"F sinks" :     #(meq/m2/year) [0, 500]
+0
+
+"Ca sources" :     #(meq/m2/year) [0, 500]
+0
+
+"Mg sources" :     #(meq/m2/year) [0, 500]
+0
+
+"Na sources" :     #(meq/m2/year) [0, 500]
+0
+
+"K sources" :     #(meq/m2/year) [0, 500]
+0
+
+"NH4 sources" :     #(meq/m2/year) [0, 500]
+0
+
+"SO4 sources" :     #(meq/m2/year) [0, 500]
+0
+
+"Cl sources" :     #(meq/m2/year) [0, 500]
+0
+
+"NO3 sources" :     #(meq/m2/year) [0, 500]
+0
+
+"F sources" :     #(meq/m2/year) [0, 500]
+0
+
+"Nitrification" :     #(mmol/m2/year) [-100, 500] Negative rate sets value as % of inputs
+-100
+
+"Denitrification" :     #(mmol/m2/year) [-100, 500] Negative rate sets value as % of inputs
+0
+
+"NO3 immobilisation" :     #(mmol/m2/year) [-100, 500] Negative rate sets value as % of inputs
+-91
+
+"NH4 immobilisation" :     #(mmol/m2/year) [-100, 500] Negative rate sets value as % of inputs
+0
+
+"Mineralisation" :     #(mmol/m2/year) [0, 500]
 0
 
 ###################### "Compartment" "Compartment" ######################
