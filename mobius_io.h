@@ -374,7 +374,6 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 					ExpectedCount *= DataSet->IndexCounts[IndexSet.Handle];
 				}
 
-				//TODO: Check that the values are in the Min-Max range? (issue warning only)
 				std::vector<parameter_value> Values;
 				Values.reserve(ExpectedCount);
 				Stream.ReadParameterSeries(Values, Type);
@@ -386,6 +385,50 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
 			}
 		}
+	}
+}
+
+
+static void
+FillConstantInputValues(mobius_data_set *DataSet, double *Base, double Value, s64 BeginTimestep, s64 EndTimestep)
+{
+	if(BeginTimestep < 0) BeginTimestep = 0;
+	if(EndTimestep >= (s64)DataSet->InputDataTimesteps) EndTimestep = (s64)DataSet->InputDataTimesteps - 1;
+	
+	size_t Stride = DataSet->InputStorageStructure.TotalCount;
+	double *WriteTo = Base + Stride*BeginTimestep;
+	for(s64 Timestep = BeginTimestep; Timestep <= EndTimestep; ++Timestep)
+	{
+		*WriteTo = Value;
+		WriteTo += Stride;
+	}
+}
+
+static void
+LinearInterpolateInputValues(mobius_data_set *DataSet, double *Base, double FirstValue, double LastValue, datetime FirstDate, datetime LastDate)
+{
+	size_t Stride = DataSet->InputStorageStructure.TotalCount;
+	
+	expanded_datetime Date(FirstDate, DataSet->Model->TimestepSize);
+	
+	double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
+	double YRange = LastValue - FirstValue;
+	
+	s64 Step = FindTimestep(DataSet->InputDataStartDate, FirstDate, DataSet->Model->TimestepSize);
+	
+	double *WriteTo = Base + Step*Stride;
+	while(Date.DateTime < LastDate)
+	{
+		if(Step >= 0 && Step < DataSet->InputDataTimesteps)
+		{
+			double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
+			double Value = FirstValue + XX*YRange;
+			*WriteTo = Value;
+		}
+		
+		Date.Advance();
+		WriteTo += Stride;
+		++Step;
 	}
 }
 
@@ -488,6 +531,22 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			Offsets.push_back(Offset);
 		}
 		
+		bool LinearInterpolate = false;
+		Token = Stream.PeekToken();
+		if(Token.Type == TokenType_UnquotedString)
+		{
+			if(Token.StringValue.Equals("linear_interpolate"))
+			{
+				LinearInterpolate = true;
+				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
+			}
+			else
+			{
+				Stream.PrintErrorHeader();
+				MOBIUS_FATAL_ERROR("unexpected command word " << Token.StringValue << std::endl);
+			}
+		}
+		
 		Stream.ExpectToken(TokenType_Colon);
 		
 		for(size_t Offset : Offsets)
@@ -524,133 +583,170 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			//TODO: This makes us only clear the ones that are provided in the file... Whe should really also clear ones that are not provided..
 			for(size_t Offset : Offsets)
 			{
-				double *WriteTo = DataSet->InputData + Offset;
-				for(u64 Timestep = 0; Timestep < Timesteps; ++ Timestep)
-				{
-					*WriteTo = std::numeric_limits<double>::quiet_NaN();
-					WriteTo += DataSet->InputStorageStructure.TotalCount;
-				}
+				double *Base = DataSet->InputData + Offset;
+				FillConstantInputValues(DataSet, Base, std::numeric_limits<double>::quiet_NaN(), 0, (s64)Timesteps-1);
 			}
 		}
 		
-		if(FormatType == 0)
+		if(!LinearInterpolate)
 		{
-			for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
+			if(FormatType == 0)
 			{
-				//double Value = Stream.ExpectDouble();
-				Token = Stream.ReadToken();
-				if(Token.Type != TokenType_Numeric)
+				for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
 				{
-					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Only got " << Timestep << " values for series. Expected " << Timesteps << std::endl);
-				}
-				double Value = Token.DoubleValue;
-				
-				for(size_t Offset : Offsets)
-				{
-					double *WriteTo = DataSet->InputData + Offset + Timestep*DataSet->InputStorageStructure.TotalCount;
+					//double Value = Stream.ExpectDouble();
+					Token = Stream.ReadToken();
+					if(Token.Type != TokenType_Numeric)
+					{
+						Stream.PrintErrorHeader();
+						MOBIUS_FATAL_ERROR("Only got " << Timestep << " values for series. Expected " << Timesteps << std::endl);
+					}
+					double Value = Token.DoubleValue;
 					
-					*WriteTo = Value;
+					for(size_t Offset : Offsets)
+					{
+						double *WriteTo = DataSet->InputData + Offset + Timestep*DataSet->InputStorageStructure.TotalCount;
+						
+						*WriteTo = Value;
+					}
 				}
 			}
-		}
-		else //FormatType == 1
-		{
-			datetime StartDate = DataSet->InputDataStartDate;
-			
-			while(true)
+			else //FormatType == 1
 			{
-				s64 CurTimestep;
+				datetime StartDate = DataSet->InputDataStartDate;
 				
-				token Token = Stream.PeekToken();
-				
-				if(Token.Type == TokenType_Date)
+				while(true)
 				{
-					datetime Date = Stream.ExpectDateTime();
-					CurTimestep = FindTimestep(StartDate, Date, Model->TimestepSize);
-				}
-				else if(Token.Type == TokenType_UnquotedString) //TODO: Remove the whole 'end_timeseries' thing in the future when people have adjusted to the change.
-				{
-					if(Token.StringValue.Equals("end_timeseries"))
+					s64 CurTimestep;
+					
+					token Token = Stream.PeekToken();
+					
+					if(Token.Type == TokenType_Date)
 					{
-						Stream.ReadToken(); //NOTE: Consume it.
+						datetime Date = Stream.ExpectDateTime();
+						CurTimestep = FindTimestep(StartDate, Date, Model->TimestepSize);
+					}
+					else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
+					{
 						break;
 					}
 					else
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Unexpected command word: " << Token.StringValue << std::endl);
+						MOBIUS_FATAL_ERROR("Expected either a date or the beginning of a new input series." << std::endl);
 					}
+					
+					Token = Stream.PeekToken();
+					if(Token.Type == TokenType_UnquotedString)
+					{
+						Stream.ReadToken();
+						if(!Token.StringValue.Equals("to"))
+						{
+							Stream.PrintErrorHeader();
+							MOBIUS_FATAL_ERROR("Expected a token saying 'to'.");
+						}
+						datetime EndDateRange = Stream.ExpectDateTime();
+						s64 EndTimestepRange = FindTimestep(StartDate, EndDateRange, Model->TimestepSize);
+						//s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
+						
+						if(EndTimestepRange < CurTimestep)
+						{
+							Stream.PrintErrorHeader();
+							MOBIUS_FATAL_ERROR("The end of the date range is earlier than the beginning.");
+						}
+						
+						double Value = Stream.ExpectDouble();
+						
+						for(size_t Offset : Offsets)
+						{
+							double *Base = DataSet->InputData + Offset;
+							FillConstantInputValues(DataSet, Base, Value, CurTimestep, EndTimestepRange);
+						}
+					}
+					else if(Token.Type == TokenType_Numeric)
+					{
+						double Value = Stream.ExpectDouble();
+						if(CurTimestep >= 0 && CurTimestep < (s64)Timesteps)
+						{
+							for(size_t Offset : Offsets)
+							{
+								double *WriteTo = DataSet->InputData + Offset + CurTimestep*DataSet->InputStorageStructure.TotalCount;
+								*WriteTo = Value;
+							}
+						}
+					}
+					else
+					{
+						Stream.PrintErrorHeader();
+						MOBIUS_FATAL_ERROR("Expected either a 'to' or a number.");
+					}
+				}
+			}
+		}
+		else  // if LinearInterpolate
+		{
+			if(FormatType != 1)
+			{
+				Stream.PrintErrorHeader();
+				MOBIUS_FATAL_ERROR("when linear interpolation is specified, the input format has to be: date (time) value\n");
+			}
+			
+			datetime PrevDate = DataSet->InputDataStartDate;
+			double PrevValue = 0.0;
+			bool AtBeginning = true;
+			
+			while(true)
+			{
+				datetime CurDate;
+				
+				token Token = Stream.PeekToken();
+				if(Token.Type == TokenType_Date)
+				{
+					CurDate = Stream.ExpectDateTime();
 				}
 				else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
 				{
+					for(size_t Offset : Offsets)
+					{
+						double *Base = DataSet->InputData + Offset;
+						s64 BeginTimestep = FindTimestep(DataSet->InputDataStartDate, PrevDate, Model->TimestepSize);
+						s64 EndTimestep = (s64)DataSet->InputDataTimesteps-1;
+						FillConstantInputValues(DataSet, Base, PrevValue, BeginTimestep, EndTimestep);
+					}
 					break;
 				}
 				else
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Expected either a date or the beginning of a new input series." << std::endl);
+					MOBIUS_FATAL_ERROR("Expected either a date or the beginning of a new input series.\n");
 				}
 				
-				Token = Stream.PeekToken();
-				if(Token.Type == TokenType_UnquotedString)
+				double Value = Stream.ExpectDouble();
+				if(AtBeginning)
 				{
-					Stream.ReadToken();
-					if(!Token.StringValue.Equals("to"))
-					{
-						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Expected a token saying 'to'.");
-					}
-					datetime EndDateRange = Stream.ExpectDateTime();
-					s64 EndTimestepRange = FindTimestep(StartDate, EndDateRange, Model->TimestepSize);
-					//s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
-					
-					if(EndTimestepRange < CurTimestep)
-					{
-						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("The end of the date range is earlier than the beginning.");
-					}
-					
-					double Value = Stream.ExpectDouble();
-					for(s64 Timestep = CurTimestep; Timestep <= EndTimestepRange; ++Timestep)
-					{
-						if(Timestep >= 0 && Timestep < (s64)Timesteps)
-						{
-							for(size_t Offset : Offsets)
-							{
-								double *WriteTo = DataSet->InputData + Offset + Timestep*DataSet->InputStorageStructure.TotalCount;
-								*WriteTo = Value;
-							}
-						}
-						else
-						{
-							//NOTE: Should we log if this happens and print a warning?
-						}
-					}
+					PrevValue = Value;
+					AtBeginning = false;
 				}
-				else if(Token.Type == TokenType_Numeric)
-				{
-					double Value = Stream.ExpectDouble();
-					if(CurTimestep >= 0 && CurTimestep < (s64)Timesteps)
-					{
-						for(size_t Offset : Offsets)
-						{
-							double *WriteTo = DataSet->InputData + Offset + CurTimestep*DataSet->InputStorageStructure.TotalCount;
-							*WriteTo = Value;
-						}
-					}
-					else
-					{
-						//NOTE: Should we log if this happens and print a warning?
-					}
-				}
-				else
+				
+				if(CurDate < PrevDate)
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Expected either a 'to' or a number.");
+					MOBIUS_FATAL_ERROR("in linear interpolation mode, the dates have to be sequential.\n");
 				}
+
+				for(size_t Offset : Offsets)
+				{
+					double *Base = DataSet->InputData + Offset;
+					LinearInterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate);
+					
+					//std::cout << "interpolate " << PrevValue << " - " << Value << " from " << PrevDate.ToString() << " to " << CurDate.ToString() << "\n";
+				}
+				
+				PrevValue = Value;
+				PrevDate  = CurDate;
 			}
 		}
+	
 	}
 }
 

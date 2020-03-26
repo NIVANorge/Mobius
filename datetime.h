@@ -224,6 +224,12 @@ public:
 		}
 		return Buf;
 	}
+	
+	bool
+	operator<(const datetime& Other)
+	{
+		return SecondsSinceEpoch < Other.SecondsSinceEpoch;
+	}
 };
 
 
@@ -291,7 +297,7 @@ ParseTimestepSize(const char *Format)
 
 struct expanded_datetime
 {
-	datetime DateTime; //Do we need to store this?
+	datetime DateTime;
 	s32      Year;
 	s32      Month;
 	s32      DayOfYear;
