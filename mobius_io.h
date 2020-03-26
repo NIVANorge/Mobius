@@ -414,10 +414,11 @@ LinearInterpolateInputValues(mobius_data_set *DataSet, double *Base, double Firs
 	double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
 	double YRange = LastValue - FirstValue;
 	
-	s64 Step = FindTimestep(DataSet->InputDataStartDate, FirstDate, DataSet->Model->TimestepSize);
+	s64 Step     = FindTimestep(DataSet->InputDataStartDate, FirstDate, DataSet->Model->TimestepSize);
+	s64 LastStep = FindTimestep(DataSet->InputDataStartDate, LastDate, DataSet->Model->TimestepSize);
 	
 	double *WriteTo = Base + Step*Stride;
-	while(Date.DateTime < LastDate)
+	while(Step <= LastStep)
 	{
 		if(Step >= 0 && Step < DataSet->InputDataTimesteps)
 		{

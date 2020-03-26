@@ -230,6 +230,12 @@ public:
 	{
 		return SecondsSinceEpoch < Other.SecondsSinceEpoch;
 	}
+	
+	bool
+	operator<=(const datetime& Other)
+	{
+		return SecondsSinceEpoch <= Other.SecondsSinceEpoch;
+	}
 };
 
 
