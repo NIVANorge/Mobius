@@ -17,20 +17,20 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	
 	auto Dimensionless = RegisterUnit(Model);
-	auto Ts            = RegisterUnit(Model, "timesteps");
+	auto Ts            = RegisterUnit(Model, "months");
 	auto M             = RegisterUnit(Model, "m");
-	auto MPerTs        = RegisterUnit(Model, "m/timestep");
+	auto MPerTs        = RegisterUnit(Model, "m/month");
 	auto Km2           = RegisterUnit(Model, "km2");
 	auto KgPerM3       = RegisterUnit(Model, "kg/m3");
 	auto MMolPerM2     = RegisterUnit(Model, "mmol/m2");
 	auto MMolPerM3     = RegisterUnit(Model, "mmol/m3");
 	auto MEqPerKg      = RegisterUnit(Model, "meq/kg");
 	auto MEqPerM2      = RegisterUnit(Model, "meq/m2");
-	auto MEqPerM2PerTs = RegisterUnit(Model, "meq/m2/timestep");
+	auto MEqPerM2PerTs = RegisterUnit(Model, "meq/m2/month");
 	auto MEqPerM3      = RegisterUnit(Model, "meq/m3");
 	auto Log10MolPerL  = RegisterUnit(Model, "log10(mol/l)");
-	auto MMolPerTs     = RegisterUnit(Model, "mmol/timestep");
-	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/timestep");
+	auto MMolPerTs     = RegisterUnit(Model, "mmol/month");
+	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");
 	auto Percent        = RegisterUnit(Model, "%");
 	
@@ -172,13 +172,13 @@ AddMagicCoreModel(mobius_model *Model)
 	SetInitialValue(Model, TotalCl, InitialTotalCl);
 	SetInitialValue(Model, TotalNO3, InitialTotalNO3);
 	SetInitialValue(Model, TotalF, InitialTotalF);
-
-	auto Temperature        = RegisterInput(Model, "Temperature", DegreesCelsius);
-	auto PartialPressureCO2 = RegisterInput(Model, "CO2 partial pressure", Percent);
-	auto DOCConcentration   = RegisterInput(Model, "DOC concentration", MMolPerM3);
+	
 	
 	// Equations that have to be defined by an outside "driver", and are not provided in the core, but which the core has to read the values of:
 	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
+	auto Temperature        = RegisterEquation(Model, "Temperature", DegreesCelsius);
+	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
+	auto DOCConcentration   = RegisterEquation(Model, "DOC concentration", MMolPerM3);
 	
 	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
 	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
@@ -370,9 +370,9 @@ AddMagicCoreModel(mobius_model *Model)
 		Input.total_F     = LAST_RESULT(TotalF);
 		
 		Param.Depth       = PARAMETER(Depth);
-		Param.Temperature = INPUT(Temperature);
-		Param.PartialPressureCO2 = INPUT(PartialPressureCO2);
-		Param.conc_DOC    = INPUT(DOCConcentration);
+		Param.Temperature = RESULT(Temperature);
+		Param.PartialPressureCO2 = RESULT(PartialPressureCO2);
+		Param.conc_DOC    = RESULT(DOCConcentration);
 		
 		Param.Log10AlOH3EquilibriumConst = PARAMETER(Log10AlOH3EquilibriumConst);
 		Param.HAlOH3Exponent             = PARAMETER(HAlOH3Exponent);

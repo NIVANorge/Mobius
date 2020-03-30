@@ -13,15 +13,17 @@ void AddMagicModel(mobius_model *Model)
 	BeginModule(Model, "MAGIC driver", "_dev");
 	
 	auto Dimensionless  = RegisterUnit(Model);
-	auto MPerTs         = RegisterUnit(Model, "m/timestep");
+	auto DegreesCelsius	= RegisterUnit(Model, "°C");
+	auto MPerTs         = RegisterUnit(Model, "m/month");
 	auto MPerYear       = RegisterUnit(Model, "m/year");
-	auto YearPerTs      = RegisterUnit(Model, "year/timestep");
+	auto YearPerTs      = RegisterUnit(Model, "year/month");
 	auto MEqPerM2PerYear = RegisterUnit(Model, "meq/m2/year");
-	auto MEqPerM2PerTs  = RegisterUnit(Model, "meq/m2/timestep");
+	auto MEqPerM2PerTs  = RegisterUnit(Model, "meq/m2/month");
 	auto MEqPerM3       = RegisterUnit(Model, "meq/m3");
 	auto MMolPerM2      = RegisterUnit(Model, "mmol/m2");
+	auto MMolPerM3      = RegisterUnit(Model, "mmol/m3");
 	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
-	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/timestep");
+	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	auto Percent        = RegisterUnit(Model, "%");
 	
 	auto Compartment    = RegisterIndexSet(Model, "Compartment");
@@ -45,6 +47,10 @@ void AddMagicModel(mobius_model *Model)
 	
 	
 	auto DischargePar          = RegisterParameterDouble(Model, CompartmentParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
+	auto TemperaturePar        = RegisterParameterDouble(Model, CompartmentParams, "Temperature", DegreesCelsius, 0.0, -20.0, 40.0, "Default value for timesteps where no input series value is provided");
+	auto PartialPressureCO2Par = RegisterParameterDouble(Model, CompartmentParams, "CO2 partial pressure", Percent, 20.0, 0.1, 40.0, "Default value for timesteps where no input series value is provided");
+	auto DOCConcentrationPar   = RegisterParameterDouble(Model, CompartmentParams, "DOC concentration", MMolPerM3, 0.0, 0.0, 500.0, "Default value for timesteps where no input series value is provided");
+	
 	
 	auto CaDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Ca dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto MgDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Mg dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
@@ -99,9 +105,11 @@ void AddMagicModel(mobius_model *Model)
 	
 	auto FractionOfYear     = RegisterEquation(Model, "Fraction of year", YearPerTs);
 	
-	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
 	auto Precipitation      = RegisterEquation(Model, "Precipitation", MPerTs);
-	
+	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
+	auto Temperature        = RegisterEquation(Model, "Temperature", DegreesCelsius);
+	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
+	auto DOCConcentration   = RegisterEquation(Model, "DOC concentration", MMolPerM3);
 	
 	auto CompartmentSolver = GetSolverHandle(Model, "Compartment solver");
 	
@@ -176,10 +184,10 @@ void AddMagicModel(mobius_model *Model)
 	auto NH4Immobilisation  = RegisterParameterDouble(Model, CAndN, "NH4 immobilisation", MMolPerM2PerYear, 0.0, -100.0, 500.0, "Negative rate sets value as % of inputs");
 	auto Mineralisation     = RegisterParameterDouble(Model, CAndN, "Mineralisation", MMolPerM2PerYear, 0.0, 0.0, 500.0);
 	
-	auto NO3Inputs          = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
-	auto NH4Inputs          = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
-	auto NitrificationEq    = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
-	auto DenitrificationEq  = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
+	auto NO3Inputs           = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
+	auto NH4Inputs           = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
+	auto NitrificationEq     = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
+	auto DenitrificationEq   = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
 	auto NO3ImmobilisationEq = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
 	auto NH4ImmobilisationEq = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
 	
@@ -187,7 +195,13 @@ void AddMagicModel(mobius_model *Model)
 	
 	
 	auto PrecipIn           = RegisterInput(Model, "Precipitation", MPerTs);
+	auto PrecipSeasonal     = RegisterInput(Model, "Precipitation seasonal distribution", Percent);
 	auto DischargeIn        = RegisterInput(Model, "Discharge", MPerTs);
+	auto DischargeSeasonal  = RegisterInput(Model, "Discharge seasonal distribution", Percent);
+	auto TemperatureIn      = RegisterInput(Model, "Temperature", DegreesCelsius);
+	auto PartialPressureCO2In= RegisterInput(Model, "CO2 partial pressure", Percent);
+	auto DOCConcentrationIn = RegisterInput(Model, "DOC concentration", MMolPerM3);
+	
 	
 	
 	EQUATION(Model, FractionOfYear,
@@ -195,20 +209,44 @@ void AddMagicModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, Precipitation,
-		double prin  = INPUT(PrecipIn);
-		double prpar = PARAMETER(PrecipPar) * RESULT(FractionOfYear);
-		if(prin > 0.0) return prin;
-		return prpar;
+		double in  = INPUT(PrecipIn);
+		double fraction = RESULT(FractionOfYear);
+		if(INPUT_WAS_PROVIDED(PrecipSeasonal)) fraction = INPUT(PrecipSeasonal)*0.01;
+		double par = PARAMETER(PrecipPar) * fraction;
+		if(in > 0.0) return in;
+		return par;
 	)
 	
 	EQUATION(Model, Discharge,
-		double disin  = INPUT(DischargeIn);
-		double dispar = PARAMETER(DischargePar) * RESULT(FractionOfYear);
-		if(disin > 0.0) return disin;
-		return dispar;
+		double in  = INPUT(DischargeIn);
+		double fraction = RESULT(FractionOfYear);
+		if(INPUT_WAS_PROVIDED(DischargeSeasonal)) fraction = INPUT(DischargeSeasonal)*0.01;
+		double par = PARAMETER(DischargePar) * fraction;
+		if(in > 0.0) return in;
+		return par;
 	)
 	
+	EQUATION(Model, Temperature,
+		//TODO: Hmm, it is not that good that this works differently to the others, but the problem is that 0 is a valid temperature value... Should we have an option to always clear an input series to NaN?
+		double par = PARAMETER(TemperaturePar);
+		if(INPUT_WAS_PROVIDED(TemperatureIn)) return INPUT(TemperatureIn);
+		return par;
+	)
 	
+	EQUATION(Model, PartialPressureCO2,
+		double par = PARAMETER(PartialPressureCO2Par);
+		double in  = INPUT(PartialPressureCO2In);
+		if(in > 0.0) return in;
+		return par;
+	)
+	
+	EQUATION(Model, DOCConcentration,
+		//TODO: 0 is actually a legitimate value here too though...
+		double par = PARAMETER(DOCConcentrationPar);
+		double in = INPUT(DOCConcentrationIn);
+		if(in > 0.0) return in;
+		return par;
+	)
 	
 	EQUATION(Model, CaDeposition,
 		double scale = 1.0;
