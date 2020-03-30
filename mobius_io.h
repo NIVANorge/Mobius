@@ -533,12 +533,18 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		}
 		
 		bool LinearInterpolate = false;
+		bool RepeatYearly = false;
 		Token = Stream.PeekToken();
-		if(Token.Type == TokenType_UnquotedString)
+		while(Token.Type == TokenType_UnquotedString)
 		{
 			if(Token.StringValue.Equals("linear_interpolate"))
 			{
 				LinearInterpolate = true;
+				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
+			}
+			else if(Token.StringValue.Equals("repeat_yearly"))
+			{
+				RepeatYearly = true;
 				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
 			}
 			else
@@ -546,6 +552,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				Stream.PrintErrorHeader();
 				MOBIUS_FATAL_ERROR("unexpected command word " << Token.StringValue << std::endl);
 			}
+			Token = Stream.PeekToken();
 		}
 		
 		Stream.ExpectToken(TokenType_Colon);
@@ -747,7 +754,59 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				PrevDate  = CurDate;
 			}
 		}
-	
+		
+		if(RepeatYearly)
+		{
+			//NOTE: Copy the first year of the timeseries repeatedly for the rest of the allocated space.
+			//TODO: This behaves kind of weirdly when you have sub-monthly timesteps, esp. when there are leap years.. Also if the timestep does not divide a year.
+			
+			//Important note! This code may be volatile if we later add Timestep_Year and handle that differently to Timestep_Month!
+			
+			timestep_size ModelStep = Model->TimestepSize;
+			if(ModelStep.Unit == Timestep_Month && (ModelStep.Magnitude >= 12  || 12 % ModelStep.Magnitude != 0))
+			{
+				Stream.PrintErrorHeader();
+				MOBIUS_FATAL_ERROR("yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
+			}
+			
+			datetime BeginDate = DataSet->InputDataStartDate;
+			timestep_size YearStep = {Timestep_Month, 12};
+			
+			for(size_t Offset : Offsets)  //TODO: It is not the most efficient to have this as an outer loop..
+			{
+				expanded_datetime Year(BeginDate, YearStep);
+				
+				double *Base = DataSet->InputData + Offset;
+				
+				bool Finished = false;
+				while(true)
+				{
+					expanded_datetime CurDate(Year.DateTime, ModelStep);
+					
+					double *ReadValue  = Base;
+					double *WriteValue = Base + DataSet->InputStorageStructure.TotalCount*FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
+
+					Year.Advance();
+					size_t YearEnd = FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
+					
+					while(true)
+					{
+						double Value = *ReadValue;
+						ReadValue += DataSet->InputStorageStructure.TotalCount;
+						*WriteValue = Value;
+						WriteValue += DataSet->InputStorageStructure.TotalCount;
+						
+						size_t Timestep = FindTimestep(DataSet->InputDataStartDate, CurDate.DateTime, ModelStep);
+						Finished = (Timestep >= DataSet->InputDataTimesteps);
+						if(Finished) break;
+						if(Timestep >= YearEnd-1) break;
+						
+						CurDate.Advance();
+					}
+					if(Finished) break;
+				}
+			}
+		}  //if RepeatYearly
 	}
 }
 
