@@ -783,8 +783,9 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				{
 					expanded_datetime CurDate(Year.DateTime, ModelStep);
 					
+					size_t YearStartTimestep = FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
 					double *ReadValue  = Base;
-					double *WriteValue = Base + DataSet->InputStorageStructure.TotalCount*FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
+					double *WriteValue = Base + DataSet->InputStorageStructure.TotalCount*YearStartTimestep;
 
 					Year.Advance();
 					size_t YearEnd = FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
@@ -797,7 +798,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						WriteValue += DataSet->InputStorageStructure.TotalCount;
 						
 						size_t Timestep = FindTimestep(DataSet->InputDataStartDate, CurDate.DateTime, ModelStep);
-						Finished = (Timestep >= DataSet->InputDataTimesteps);
+						Finished = (Timestep >= DataSet->InputDataTimesteps-1);
 						if(Finished) break;
 						if(Timestep >= YearEnd-1) break;
 						
@@ -806,6 +807,8 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					if(Finished) break;
 				}
 			}
+			
+			std::cout << "input " << InputName << '\n';
 		}  //if RepeatYearly
 	}
 }
