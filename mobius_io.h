@@ -807,8 +807,6 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					if(Finished) break;
 				}
 			}
-			
-			std::cout << "input " << InputName << '\n';
 		}  //if RepeatYearly
 	}
 }
