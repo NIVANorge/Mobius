@@ -169,7 +169,7 @@ AddIncaToxDOCModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachSuspendedSOCFlux,
-		return RESULT(ReachFlow) * SafeDivide(RESULT(ReachSuspendedSOCMass), RESULT(ReachVolume));
+		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(ReachSuspendedSOCMass), RESULT(ReachVolume));
 	)
 	
 	EQUATION(Model, BedSOCMass,
