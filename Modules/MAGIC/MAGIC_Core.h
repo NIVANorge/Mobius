@@ -522,7 +522,7 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 		SoilCationExchange = Param.Depth * Param.BulkDensity * Param.CationExchangeCapacity;
 		
 		// Calculate soil total SO4 adsorption capacity (meq/m2) - from depth (m), bulk density (kg/m3), maximum SO4 adsorption capacity (meq/kg)
-		SO4AdsorptionCap = Param.Depth * Param.BulkDensity *  Param.SO4MaxCap;
+		SO4AdsorptionCap = Param.Depth * Param.BulkDensity * Param.SO4MaxCap;
 	}
 	else
 	{

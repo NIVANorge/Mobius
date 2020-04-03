@@ -42,12 +42,12 @@ AddMagicCoreModel(mobius_model *Model)
 	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters", Compartment);
 	
 	auto IsSoil                    = RegisterParameterBool(Model, CompartmentParams, "This is a soil compartment", true);
-	auto Area                      = RegisterParameterDouble(Model, CompartmentParams, "Surface area", Km2, 1.0, 0.0, 10000.0);
+	auto Area                      = RegisterParameterDouble(Model, CompartmentParams, "Surface area", Km2, 1.0, 0.0, 100000.0);
 	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0);
 	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0);
-	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 0.25, 0.0, 2.0);
-	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 9.0, 0.0, 50.0);
-	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerKg, 0.0); //TODO
+	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 600.0, 0.0, 2000.0);
+	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 100.0, 0.0, 500.0);
+	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerM3, 0.0); //TODO
 	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0); //TODO
 	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0); //TODO
 	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0); //TODO
@@ -62,17 +62,10 @@ AddMagicCoreModel(mobius_model *Model)
 	auto Log10KAlSelectCoeff       = RegisterParameterDouble(Model, CompartmentParams, "(log10) K/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
 	
 	
-	
-	//TODO; These should be computed from steady-state instead
-	auto InitialTotalCa            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Ca", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalMg            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Mg", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalNa            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Na", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalK             = RegisterParameterDouble(Model, CompartmentParams, "Initial total K", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalNH4           = RegisterParameterDouble(Model, CompartmentParams, "Initial total NH4", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalSO4           = RegisterParameterDouble(Model, CompartmentParams, "Initial total SO4", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalCl            = RegisterParameterDouble(Model, CompartmentParams, "Initial total Cl", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalNO3           = RegisterParameterDouble(Model, CompartmentParams, "Initial total NO3", MEqPerM2, 0.0, 0.0, 1e5);
-	auto InitialTotalF             = RegisterParameterDouble(Model, CompartmentParams, "Initial total F", MEqPerM2, 0.0, 0.0, 1e5);
+	auto InitialECa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Ca on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
+	auto InitialEMg            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Mg on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
+	auto InitialENa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Na on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
+	auto InitialEK             = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable K on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
 	
 	auto FlowFractions = RegisterParameterGroup(Model, "Flow fractions", Compartment, Compartment);
 	
@@ -163,16 +156,6 @@ AddMagicCoreModel(mobius_model *Model)
 	auto TotalNO3      = RegisterEquationODE(Model, "Total NO3 mass", MEqPerM2, CompartmentSolver);
 	auto TotalF        = RegisterEquationODE(Model, "Total F mass", MEqPerM2, CompartmentSolver);
 	
-	SetInitialValue(Model, TotalCa, InitialTotalCa);
-	SetInitialValue(Model, TotalMg, InitialTotalMg);
-	SetInitialValue(Model, TotalNa, InitialTotalNa);
-	SetInitialValue(Model, TotalK, InitialTotalK);
-	SetInitialValue(Model, TotalNH4, InitialTotalNH4);
-	SetInitialValue(Model, TotalSO4, InitialTotalSO4);
-	SetInitialValue(Model, TotalCl, InitialTotalCl);
-	SetInitialValue(Model, TotalNO3, InitialTotalNO3);
-	SetInitialValue(Model, TotalF, InitialTotalF);
-	
 	
 	// Equations that have to be defined by an outside "driver", and are not provided in the core, but which the core has to read the values of:
 	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
@@ -190,7 +173,118 @@ AddMagicCoreModel(mobius_model *Model)
 	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
 	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
 	
-	//TODO: Could the mass balance equations be done using an index set where the indexes are (Ca, Mg, Na ...)?
+	auto InitialCa           = RegisterEquationInitialValue(Model, "Initial Ca mass", MEqPerM2);
+	SetInitialValue(Model, TotalCa, InitialCa);
+	auto InitialMg           = RegisterEquationInitialValue(Model, "Initial Mg mass", MEqPerM2);
+	SetInitialValue(Model, TotalMg, InitialMg);
+	auto InitialNa           = RegisterEquationInitialValue(Model, "Initial Na mass", MEqPerM2);
+	SetInitialValue(Model, TotalNa, InitialNa);
+	auto InitialK            = RegisterEquationInitialValue(Model, "Initial K mass", MEqPerM2);
+	SetInitialValue(Model, TotalK, InitialK);
+	auto InitialNH4          = RegisterEquationInitialValue(Model, "Initial NH4 mass", MEqPerM2);
+	SetInitialValue(Model, TotalNH4, InitialNH4);
+	auto InitialSO4          = RegisterEquationInitialValue(Model, "Initial SO4 mass", MEqPerM2);
+	SetInitialValue(Model, TotalSO4, InitialSO4);
+	auto InitialCl           = RegisterEquationInitialValue(Model, "Initial Cl mass", MEqPerM2);
+	SetInitialValue(Model, TotalCl, InitialCl);
+	auto InitialNO3          = RegisterEquationInitialValue(Model, "Initial NO3 mass", MEqPerM2);
+	SetInitialValue(Model, TotalNO3, InitialNO3);
+	auto InitialF            = RegisterEquationInitialValue(Model, "Initial F mass", MEqPerM2);
+	SetInitialValue(Model, TotalF, InitialF);
+	
+	//TODO: Also have to compute selectivity coeffs
+	
+	EQUATION(Model, InitialCa,
+		double initconc        = RESULT(CaExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		double ECa             = PARAMETER(InitialECa)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) ECa = 0.0;
+		return ECa + WaterVolume*initconc;
+	)
+	
+	EQUATION(Model, InitialMg,
+		double initconc        = RESULT(MgExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		double EMg             = PARAMETER(InitialEMg)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) EMg = 0.0;
+		return EMg + WaterVolume*initconc;
+	)
+	
+	EQUATION(Model, InitialNa,
+		double initconc        = RESULT(NaExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		double ENa             = PARAMETER(InitialENa)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) ENa = 0.0;
+		return ENa + WaterVolume*initconc;
+	)
+	
+	EQUATION(Model, InitialK,
+		double initconc        = RESULT(KExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		double EK              = PARAMETER(InitialEK)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) EK = 0.0;
+		return EK + WaterVolume*initconc;
+	)
+	
+	EQUATION(Model, InitialNH4,
+		double initconc        = RESULT(NH4ExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		return initconc * WaterVolume;
+	)
+	
+	EQUATION(Model, InitialSO4,
+		double initconc        = RESULT(SO4ExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		double sm              = PARAMETER(Depth)*PARAMETER(BulkDensity);
+		//(Param.SO4MaxCap*2.0*Result.conc_SO4/(Param.SO4HalfSat + 2.0*Result.conc_SO4)) / Param.SO4MaxCap
+		//TODO: This is wrong! initconc is the total aqueous conc, not the free conc, which is what we should use!
+		double ESO4            = initconc / (PARAMETER(SO4HalfSat) + initconc);
+		if(!PARAMETER(IsSoil)) ESO4 = 0.0;
+		//return sm*ESO4 + WaterVolume*initconc;
+		return 14.1;
+	)
+	
+	EQUATION(Model, InitialCl,
+		double initconc        = RESULT(ClExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		return initconc * WaterVolume;
+	)
+
+	EQUATION(Model, InitialNO3,
+		double initconc        = RESULT(NO3ExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		return initconc * WaterVolume;
+	)
+	
+	
+	EQUATION(Model, InitialF,
+		double initconc        = RESULT(FExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		return initconc * WaterVolume;
+	)
+	
+	
+	
+	
+	
 	
 	EQUATION(Model, CaOutput,
 		return RESULT(Discharge)*2.0*RESULT(ConcCa);

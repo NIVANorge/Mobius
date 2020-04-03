@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev) at 2020-03-30 16:14:42
+# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev) at 2020-04-02 15:54:50
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -51,7 +51,7 @@ parameters:
 "This is a soil compartment" :
 true
 
-"Surface area" :     #(km2) [0, 10000]
+"Surface area" :     #(km2) [0, 100000]
 1
 
 "Depth" :     #(m) [0, 100]
@@ -60,13 +60,13 @@ true
 "Porosity" :     #(dimensionless) [0, 1]
 0.5
 
-"Bulk density" :     #(kg/m3) [0, 2]
+"Bulk density" :     #(kg/m3) [0, 2000]
 656
 
-"Cation exchange capacity" :     #(meq/kg) [0, 50]
+"Cation exchange capacity" :     #(meq/kg) [0, 500]
 113.3
 
-"Soil sulfate adsorption capacity, half saturation" :     #(meq/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [-1.79769313486232e+308, 1.79769313486232e+308]
 100
 
 "Soil sulfate adsorption max capacity" :     #(meq/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
@@ -94,43 +94,28 @@ true
 0
 
 "(log10) Ca/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--0.93
+-0.926
 
 "(log10) Mg/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--0.59
+-0.586
 
 "(log10) Na/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--1.09
+-1.086
 
 "(log10) K/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--6.81
+-6.808
 
-"Initial total Ca" :     #(meq/m2) [0, 100000]
-5505.8
+"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100]
+18.5
 
-"Initial total Mg" :     #(meq/m2) [0, 100000]
-3870.2
+"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100]
+13
 
-"Initial total Na" :     #(meq/m2) [0, 100000]
-770.7
+"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100]
+2.5
 
-"Initial total K" :     #(meq/m2) [0, 100000]
-951.8
-
-"Initial total NH4" :     #(meq/m2) [0, 100000]
-0
-
-"Initial total SO4" :     #(meq/m2) [0, 100000]
-14.1
-
-"Initial total Cl" :     #(meq/m2) [0, 100000]
-28
-
-"Initial total NO3" :     #(meq/m2) [0, 100000]
-0
-
-"Initial total F" :     #(meq/m2) [0, 100000]
-0
+"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100]
+3.2
 
 "Discharge" :     #(m/year) [0, 100] Default value for timesteps where no input series value is provided
 1.15
@@ -138,8 +123,8 @@ true
 "Temperature" :     #(°C) [-20, 40] Default value for timesteps where no input series value is provided
 5
 
-"CO2 partial pressure" :     #(%) [10, 40] Default value for timesteps where no input series value is provided
-30
+"CO2 partial pressure" :     #(%) [0.1, 40] Default value for timesteps where no input series value is provided
+0.3
 
 "DOC concentration" :     #(mmol/m3) [0, 500] Default value for timesteps where no input series value is provided
 30

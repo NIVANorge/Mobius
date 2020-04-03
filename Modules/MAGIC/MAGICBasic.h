@@ -17,6 +17,7 @@ void AddMagicModel(mobius_model *Model)
 	auto MPerTs         = RegisterUnit(Model, "m/month");
 	auto MPerYear       = RegisterUnit(Model, "m/year");
 	auto YearPerTs      = RegisterUnit(Model, "year/month");
+	auto MEqPerM2       = RegisterUnit(Model, "meq/m2");
 	auto MEqPerM2PerYear = RegisterUnit(Model, "meq/m2/year");
 	auto MEqPerM2PerTs  = RegisterUnit(Model, "meq/m2/month");
 	auto MEqPerM3       = RegisterUnit(Model, "meq/m3");
@@ -32,7 +33,7 @@ void AddMagicModel(mobius_model *Model)
 	auto DepositionCompartment = RegisterParameterGroup(Model, "Deposition by compartment", Compartment);
 	auto WeatheringCompartment = RegisterParameterGroup(Model, "Weathering by compartment", Compartment);
 	auto SourcesSinksCompartment = RegisterParameterGroup(Model, "Sources and sinks by compartment", Compartment);
-	auto CompartmentParams = GetParameterGroupHandle(Model, "Compartment parameters");
+	auto ClimateParams         = RegisterParameterGroup(Model, "Climate by compartment", Compartment);
 	
 	auto PrecipPar             = RegisterParameterDouble(Model, DepositionParams, "Precipitation", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
 	auto CaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Ca wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
@@ -46,10 +47,11 @@ void AddMagicModel(mobius_model *Model)
 	auto FWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "F wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
 	
 	
-	auto DischargePar          = RegisterParameterDouble(Model, CompartmentParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
-	auto TemperaturePar        = RegisterParameterDouble(Model, CompartmentParams, "Temperature", DegreesCelsius, 0.0, -20.0, 40.0, "Default value for timesteps where no input series value is provided");
-	auto PartialPressureCO2Par = RegisterParameterDouble(Model, CompartmentParams, "CO2 partial pressure", Percent, 20.0, 0.1, 40.0, "Default value for timesteps where no input series value is provided");
-	auto DOCConcentrationPar   = RegisterParameterDouble(Model, CompartmentParams, "DOC concentration", MMolPerM3, 0.0, 0.0, 500.0, "Default value for timesteps where no input series value is provided");
+	auto DischargePar          = RegisterParameterDouble(Model, ClimateParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
+	auto TemperaturePar        = RegisterParameterDouble(Model, ClimateParams, "Temperature", DegreesCelsius, 0.0, -20.0, 40.0, "Default value for timesteps where no input series value is provided");
+	auto PartialPressureCO2Par = RegisterParameterDouble(Model, ClimateParams, "CO2 partial pressure", Percent, 20.0, 0.1, 40.0, "Default value for timesteps where no input series value is provided");
+	auto DOCConcentrationPar   = RegisterParameterDouble(Model, ClimateParams, "DOC concentration", MMolPerM3, 0.0, 0.0, 500.0, "Default value for timesteps where no input series value is provided");
+
 	
 	
 	auto CaDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Ca dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
@@ -61,7 +63,15 @@ void AddMagicModel(mobius_model *Model)
 	auto ClDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Cl dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto NO3DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "NO3 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto FDryDepositionFactor   = RegisterParameterDouble(Model, DepositionCompartment, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
-	
+
+	auto PrecipIn                  = RegisterInput(Model, "Precipitation", MPerTs);
+	auto PrecipSeasonal            = RegisterInput(Model, "Precipitation seasonal distribution", Percent);
+	auto DischargeIn               = RegisterInput(Model, "Discharge", MPerTs);
+	auto DischargeSeasonal         = RegisterInput(Model, "Discharge seasonal distribution", Percent);
+	auto TemperatureIn             = RegisterInput(Model, "Temperature", DegreesCelsius);
+	auto PartialPressureCO2In      = RegisterInput(Model, "CO2 partial pressure", Percent);
+	auto DOCConcentrationIn        = RegisterInput(Model, "DOC concentration", MMolPerM3);
+
 	auto CaWetDepositionScale      = RegisterInput(Model, "Ca wet deposition scaling factor", Dimensionless);
 	auto MgWetDepositionScale      = RegisterInput(Model, "Mg wet deposition scaling factor", Dimensionless);
 	auto NaWetDepositionScale      = RegisterInput(Model, "Na wet deposition scaling factor", Dimensionless);
@@ -71,6 +81,9 @@ void AddMagicModel(mobius_model *Model)
 	auto ClWetDepositionScale      = RegisterInput(Model, "Cl wet deposition scaling factor", Dimensionless);
 	auto NO3WetDepositionScale     = RegisterInput(Model, "NO3 wet deposition scaling factor", Dimensionless);
 	auto FWetDepositionScale       = RegisterInput(Model, "F wet deposition scaling factor", Dimensionless);
+
+	
+
 
 	auto CaWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Ca weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto MgWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Mg weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
@@ -190,17 +203,8 @@ void AddMagicModel(mobius_model *Model)
 	auto DenitrificationEq   = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
 	auto NO3ImmobilisationEq = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
 	auto NH4ImmobilisationEq = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
-	
-	
-	
-	
-	auto PrecipIn           = RegisterInput(Model, "Precipitation", MPerTs);
-	auto PrecipSeasonal     = RegisterInput(Model, "Precipitation seasonal distribution", Percent);
-	auto DischargeIn        = RegisterInput(Model, "Discharge", MPerTs);
-	auto DischargeSeasonal  = RegisterInput(Model, "Discharge seasonal distribution", Percent);
-	auto TemperatureIn      = RegisterInput(Model, "Temperature", DegreesCelsius);
-	auto PartialPressureCO2In= RegisterInput(Model, "CO2 partial pressure", Percent);
-	auto DOCConcentrationIn = RegisterInput(Model, "DOC concentration", MMolPerM3);
+
+
 	
 	
 	
