@@ -142,7 +142,7 @@ We have also started making a simple wrapper of Mobius to the R language, but th
 
 ![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
 
-There is now [documentation](Documentation/mobiview_documentation.pdf) for MobiView. Below is a quick start guide.
+There is [documentation](Documentation/mobiview_documentation.pdf) for MobiView. Below is a quick start guide.
 
 ### Getting MobiView
 
@@ -165,9 +165,8 @@ MobiView can load the same .dlls as the python wrapper. Most models now have app
 - If you want to calibrate the model and view **goodness of fit** statistics: Make sure your observation timeseries is in the input file as an 'additional timeseries' (see file format docs). Select the result series you want to calibrate for and your observation timeseries, and don't have any other timeseries selected. Also make sure you have only one index combination selected at a time. Select the 'Residuals' plot mode. The goodness of fit stats are displayed in the Results info text box.
 - Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
 - Right click the plot for options to change text, formatting and to export it to an image or pdf.
-- More in-depth documentation will follow later.
 
-There are a number of **known issues** with MobiView, e.g. relating to window sizing problems on some Windows 10 computers. See [here](https://github.com/NIVANorge/MobiView#needed-improvements-todo-list) for further details and possible workarounds. 
+There is a **known issue** with MobiView, relating to window scaling on some Windows 10 computers. See [here](https://github.com/NIVANorge/MobiView#needed-improvements-todo-list) for further details and possible workarounds. 
 
 
 ## Dependencies
