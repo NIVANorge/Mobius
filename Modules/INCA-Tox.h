@@ -413,7 +413,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachContaminantFlux,
 		return
-		  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration)
+		  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration) * 86400.0
 		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration)
 		+ RESULT(TotalReachSOCFlux) * RESULT(ReachSOCContaminantConcentration);
 	)
