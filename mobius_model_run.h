@@ -280,7 +280,7 @@ EndModelDefinition(mobius_model *Model)
 		
 		if(Spec.Type == EquationType_Cumulative)
 		{
-			//NOTE: Cumulative equations depend on the equations they cumulate.
+			//NOTE: Cumulative equations depend on the equations they cumulate (only).
 			Spec.DirectResultDependencies.insert(Spec.Cumulates);
 			continue;
 		}
@@ -894,11 +894,12 @@ EndModelDefinition(mobius_model *Model)
 						AllInputDependenciesForBatchGroup.insert(Spec.InputDependencies.begin(), Spec.InputDependencies.end());
 						AllResultDependenciesForBatchGroup.insert(Spec.DirectResultDependencies.begin(), Spec.DirectResultDependencies.end());
 						AllLastResultDependenciesForBatchGroup.insert(Spec.DirectLastResultDependencies.begin(), Spec.DirectLastResultDependencies.end());
-						//TODO: The following is a quick fix so that initial value equations get their parameters set correctly. However it causes unneeded parameters to be loaded at each step for the main execution. We should make a separate system for initial value equations.
+						//TODO: The following is a quick fix so that initial value equations get their parameters and inputs set correctly. However it causes unneeded parameters to be loaded at each step for the main execution. We should make a separate system for initial value equations.
 						if(IsValid(Spec.InitialValueEquation))
 						{
 							equation_spec &InitSpec = Model->Equations.Specs[Spec.InitialValueEquation.Handle];
 							AllParameterDependenciesForBatchGroup.insert(InitSpec.ParameterDependencies.begin(), InitSpec.ParameterDependencies.end());
+							AllInputDependenciesForBatchGroup.insert(InitSpec.InputDependencies.begin(), InitSpec.InputDependencies.end());
 						}
 					}
 					return false;
@@ -1444,6 +1445,13 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 			RunState->CurParameters[ParameterHandle] = *RunState->AtParameterLookup;
 			++RunState->AtParameterLookup;
 		}
+		for(input_h Input : BatchGroup.IterationData[CurrentLevel].InputsToRead)
+		{
+			size_t Offset = *RunState->AtInputLookup;
+			++RunState->AtInputLookup;
+			RunState->CurInputs[Input.Handle] = RunState->AllCurInputsBase[Offset];
+			RunState->CurInputWasProvided[Input.Handle] = DataSet->InputTimeseriesWasProvided[Offset];
+		}
 	}
 	
 	s32 BottomLevel = BatchGroup.IndexSets.Count - 1;
@@ -1746,12 +1754,27 @@ RunModel(mobius_data_set *DataSet)
 	//TODO: We may want to set this one timestep back for it to also be correct during the initial value run.
 	RunState.CurrentTime = expanded_datetime(ModelStartTime, Model->TimestepSize);
 	
-	//NOTE: Set up initial values;
+	//************ NOTE: Set up initial values;
 	RunState.AtResult          = RunState.AllCurResultsBase;
 	RunState.AtLastResult      = RunState.AllLastResultsBase;
 	RunState.AtParameterLookup = RunState.FastParameterLookup.Data;
+	RunState.AtInputLookup     = RunState.FastInputLookup.Data;
+	//NOTE: Initial value equations can access input timeseries. The timestep they access is either the model run timestep (if the input start date is the same as the model run start date), or the timestep before that.
+	size_t InitialValueInputTimestep = (size_t)InputDataStartOffsetTimesteps;
+	if(InitialValueInputTimestep > 0) --InitialValueInputTimestep;
+	RunState.AllCurInputsBase = DataSet->InputData + (InitialValueInputTimestep)*DataSet->InputStorageStructure.TotalCount;
+	//NOTE: We have to update the inputs that don't depend on any index sets here, as that is not handled by the "fast lookup system".
+	if(DataSet->InputStorageStructure.Units.Count != 0 && DataSet->InputStorageStructure.Units[0].IndexSets.Count == 0)
+	{
+		for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
+		{
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, InputHandle);
+			RunState.CurInputs[InputHandle] = RunState.AllCurInputsBase[Offset];
+		}
+	}
 	RunState.Timestep = -1;
 	ModelLoop(DataSet, &RunState, InitialValueSetupInnerLoop);
+	//***********
 	
 #if MOBIUS_PRINT_TIMING_INFO
 	u64 SetupDuration = GetTimerMilliseconds(&SetupTimer);
