@@ -747,6 +747,8 @@ There are a couple of things to be aware of when referencing {\tt RESULT}s insid
 \item You can not reference the {\tt RESULT} of an equation that is in a later batch. You can also not reference the {\tt RESULT} of an equation that comes in a previous batch \emph{unless} you use explicit indexing. This is an implementation limitation. If this is something that causes big problems for users, this is something we could try to improve. Note that this is again something you just have to be aware of while building the model, since the batch structure may not be apparent until a large part of the model has come together. You will usually not get error messages if you reference results that are not "available", but you may get a 0 or a result that is misindexed.
 \end{enumerate}
 
+You can also read the value of input time series. If the input data starts at the same date as the model run, you will get the value from that date, otherwise you will get the value from the timestep before.
+
 \subsubsection{Computed parameters (experimental feature)}
 
 If you have a value in the model that you know can be computed based on other parameters and will not change during model run, you can have this value as a computed parameter. Register it as a parameter in the usual way, then call {\tt ParameterIsComputedBy}.

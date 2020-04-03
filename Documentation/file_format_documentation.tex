@@ -483,6 +483,20 @@ Linear interpolation of time series.
 
 When you use linear interpolation, you can not use the {\tt to} directive to specify a constant interval, but you can instead do it by having two subsequent dates with the same value. Moreover, all dates in the list have to be sequentially increasing. Any dates before the first date in the provided list or after the last date will be given the constant value of the first date or the last date respectively.
 
+\subsubsection{Yearly repetition}
+
+You can make an input time series repeat the same pattern each year. The data provided for the first year of the input data interval is repeated for all of the other years.
+
+\begin{example}
+Yearly repetition.
+\begin{lstlisting}
+"Fertilizer nitrate" {"Agricultural"} repeat_yearly :
+1990-04-25 to 1990-05-04	6
+1990-06-10 to 1990-06-19	0.75
+1990-09-01 to 1990-09-10	0.75
+\end{lstlisting}
+\end{example}
+
 \subsubsection{Including multiple input files}
 
 If you have a lot of input data, it can be useful to organize it in many separate files. You need to have one master file that has all the "organisational" data. Then below the {\tt inputs} section in the master file, you can use an {\tt include\_file} directive to read timeseries from another file. The other file has to contain one or more entire timeseries (including the heading name and optional indexes). The path of the file you include should be relative to the location of the master file.
@@ -543,7 +557,7 @@ A Datetime can similarly be used for the model "Start date" parameter in the par
 \item The input start date and the model run start date have to be aligned so that the the model run start date is either zero or a full number of timesteps after the input start date.
 \item If a value in an input series is given a timestamp that is not perfectly aligned with the beginning of a timestep, it will be considered to belong to the timestep whose interval the timestamp is in. For instance, in a model with an hourly timestep, a value given a timestamp of 12:53:14 will be considered to belong to a timestep starting at 12:00:00 (given that the start date was at a whole hour).
 \item If more than one value is given for the same timestep, only the last one is used. This means that if you feed hourly data to a daily-timestep model, only the last value of each day is used.
-\item No processing, aggregation or interpolation is done to the data by Mobius. This is because this is something that should be done with care by the researcher and often has to be done differently for different types of data. There is no one-size-fits-all way to automate it without potentially causing mistakes or confusion.
+\item No processing, aggregation or interpolation is done to the data by Mobius (unless if you specify linear interpolation). This is because this is something that should be done with care by the researcher and often has to be done differently for different types of data. There is no one-size-fits-all way to automate it without potentially causing mistakes or confusion.
 \item Timeseries given in the dense format are always considered to be aligned with the timesteps of the model.
 \end{enumerate}
 
