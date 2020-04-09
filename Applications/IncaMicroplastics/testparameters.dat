@@ -54,11 +54,11 @@ parameters:
 
 ###################### "Soils" ######################
 "This is a quick box" :
-true true true
+true false false
 
 ###################### "Soils" "Landscape units" ######################
 "Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
-10 10
+0 0
 150 150
 100 100
 
