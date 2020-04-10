@@ -199,9 +199,9 @@ AddMagicCoreModel(mobius_model *Model)
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
-		double ECa             = PARAMETER(InitialECa)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
-		if(!PARAMETER(IsSoil)) ECa = 0.0;
-		return ECa + WaterVolume*initconc;
+		double SCECECa         = PARAMETER(InitialECa)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) SCECECa = 0.0;
+		return SCECECa + WaterVolume*initconc;
 	)
 	
 	EQUATION(Model, InitialMg,
@@ -209,9 +209,9 @@ AddMagicCoreModel(mobius_model *Model)
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
-		double EMg             = PARAMETER(InitialEMg)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
-		if(!PARAMETER(IsSoil)) EMg = 0.0;
-		return EMg + WaterVolume*initconc;
+		double SCECEMg         = PARAMETER(InitialEMg)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) SCECEMg = 0.0;
+		return SCECEMg + WaterVolume*initconc;
 	)
 	
 	EQUATION(Model, InitialNa,
@@ -219,9 +219,9 @@ AddMagicCoreModel(mobius_model *Model)
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
-		double ENa             = PARAMETER(InitialENa)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
-		if(!PARAMETER(IsSoil)) ENa = 0.0;
-		return ENa + WaterVolume*initconc;
+		double SCECENa         = PARAMETER(InitialENa)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) SCECENa = 0.0;
+		return SCECENa + WaterVolume*initconc;
 	)
 	
 	EQUATION(Model, InitialK,
@@ -229,9 +229,9 @@ AddMagicCoreModel(mobius_model *Model)
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
-		double EK              = PARAMETER(InitialEK)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
-		if(!PARAMETER(IsSoil)) EK = 0.0;
-		return EK + WaterVolume*initconc;
+		double SCECEK          = PARAMETER(InitialEK)*0.01*PARAMETER(CationExchangeCapacity)*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) SCECEK = 0.0;
+		return SCECEK + WaterVolume*initconc;
 	)
 	
 	EQUATION(Model, InitialNH4,
@@ -243,17 +243,57 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialSO4,
-		double initconc        = RESULT(SO4ExternalFlux) / RESULT(Discharge); // Assume initial steady state
-		double porosity        = PARAMETER(Porosity);
-		double WaterVolume     = PARAMETER(Depth);
-		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
-		double sm              = PARAMETER(Depth)*PARAMETER(BulkDensity);
-		//(Param.SO4MaxCap*2.0*Result.conc_SO4/(Param.SO4HalfSat + 2.0*Result.conc_SO4)) / Param.SO4MaxCap
-		//TODO: This is wrong! initconc is the total aqueous conc, not the free conc, which is what we should use!
-		double ESO4            = initconc / (PARAMETER(SO4HalfSat) + initconc);
-		if(!PARAMETER(IsSoil)) ESO4 = 0.0;
-		//return sm*ESO4 + WaterVolume*initconc;
-		return 14.1;
+
+		magic_param Param = {};
+		magic_init_input Input = {};
+		magic_init_result Result = {};
+		
+		Param.Depth              = PARAMETER(Depth);
+		Param.Temperature        = RESULT(Temperature);
+		Param.PartialPressureCO2 = RESULT(PartialPressureCO2);
+		Param.conc_DOC           = RESULT(DOCConcentration);
+		
+		Param.Log10AlOH3EquilibriumConst = PARAMETER(Log10AlOH3EquilibriumConst);
+		Param.HAlOH3Exponent             = PARAMETER(HAlOH3Exponent);
+		Param.pK1DOC                     = PARAMETER(PK1DOC);
+		Param.pK2DOC                     = PARAMETER(PK2DOC);
+		Param.pK3DOC                     = PARAMETER(PK3DOC);
+		Param.pK1AlDOC                   = PARAMETER(PK1AlDOC);
+		Param.pK2AlDOC                   = PARAMETER(PK2AlDOC);
+		
+		Param.Porosity                   = PARAMETER(Porosity);
+		Param.BulkDensity                = PARAMETER(BulkDensity);
+		Param.CationExchangeCapacity     = PARAMETER(CationExchangeCapacity);
+		Param.SO4HalfSat                 = PARAMETER(SO4HalfSat);
+		Param.SO4MaxCap                  = PARAMETER(SO4MaxCap);
+		
+		Input.conc_Ca  = RESULT(CaExternalFlux) / (RESULT(Discharge)*2.0);
+		Input.conc_Mg  = RESULT(MgExternalFlux) / (RESULT(Discharge)*2.0);
+		Input.conc_Na  = RESULT(NaExternalFlux) / RESULT(Discharge);
+		Input.conc_K   = RESULT(KExternalFlux) / RESULT(Discharge);
+		Input.conc_NH4 = RESULT(NH4ExternalFlux) / RESULT(Discharge);
+		Input.all_SO4  = RESULT(SO4ExternalFlux) / (RESULT(Discharge)*2.0);
+		Input.conc_Cl  = RESULT(ClExternalFlux) / RESULT(Discharge);
+		Input.conc_NO3 = RESULT(NO3ExternalFlux) / RESULT(Discharge);
+		Input.all_F    = RESULT(FExternalFlux) / RESULT(Discharge);
+		
+		Input.exchangeable_Ca = PARAMETER(InitialECa)*0.01;
+		Input.exchangeable_Mg = PARAMETER(InitialEMg)*0.01;
+		Input.exchangeable_Na = PARAMETER(InitialENa)*0.01;
+		Input.exchangeable_K  = PARAMETER(InitialEK)*0.01;
+		
+		bool issoil = PARAMETER(IsSoil);
+		double conv = PARAMETER(ConvergenceCriterion);
+		if(RunState__->Running)   // Safeguard so that we don't crash on initialisation run.
+		{
+			MagicCoreInitial(Input, Param, Result, issoil, conv);
+		}
+		//printf("SO4: %g\n", Result.conc_SO4);
+		//printf("CaAl: %g\n", Result.Log10CaAlSelectCoeff);
+		//printf("MgAl: %g\n", Result.Log10MgAlSelectCoeff);
+		//printf("NaAl: %g\n", Result.Log10NaAlSelectCoeff);
+		//printf("KAl: %g\n", Result.Log10KAlSelectCoeff);
+		return Result.conc_SO4;
 	)
 	
 	EQUATION(Model, InitialCl,

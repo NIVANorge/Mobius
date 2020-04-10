@@ -109,7 +109,7 @@ struct magic_coeff
 {
 	//TODO: Document these!
 	
-	double K_C[2];            // K_C[0]=[HCO3-][H+]/[CO2], K_CO2[1]=[CO3 2-][H+]/[HCO3-]
+	double K_C[2];            // K_C[0]=[HCO3-][H+]/[CO2], K_C[1]=[CO3 2-][H+]/[HCO3-]
 	double K_SO4[2];
 	double K_Al[4];
 	double K_F[6];
@@ -478,16 +478,16 @@ CalculateTotalAqueousAl(const magic_coeff &Coeff, double conc_H, double conc_Al,
 }
 
 double
-ComputeIonicStrength(const magic_output &Result, const magic_coeff &Coeff, double conc_AlHA)
+ComputeIonicStrength(const magic_coeff &Coeff, double conc_Ca, double conc_Mg, double conc_SO4, double conc_CO3, double conc_HA2M, double conc_H2AM, double conc_Na, double conc_K, double conc_NH4, double conc_Cl, double conc_NO3, double conc_F, double conc_H, double conc_HCO3, double conc_A3M, double conc_Al, double conc_AlHA)
 {
 	// Calculate the ionic strength of the aqueous solution, used to correct equilibrium constants with Debye-Huckel equation
 	
-	double H2 = Result.conc_H*Result.conc_H;
-	double F2 = Result.conc_F*Result.conc_F;
-	double F3 = F2*Result.conc_F;
+	double H2 = conc_H*conc_H;
+	double F2 = conc_F*conc_F;
+	double F3 = F2*conc_F;
 	
 	// Ionic strength is approximated using Debye-Huckel expression (changing umol/L to mol/L)
-	double Xxis = (4.0*(Result.conc_Ca + Result.conc_Mg + Result.conc_SO4 + Result.conc_CO3 + Result.conc_HA2M) + Result.conc_Na + Result.conc_K + Result.conc_NH4 + Result.conc_Cl + Result.conc_NO3 + Result.conc_F + Result.conc_H + Coeff.K_W/Result.conc_H + Result.conc_HCO3 + Result.conc_H2AM + 9.0*Result.conc_A3M + conc_AlHA + Result.conc_Al*(9.0 + 4.0*Result.conc_F*Coeff.K_F[0] + F2*Coeff.K_F[1] + F2*F2*Coeff.K_F[3] + 4.0*F2*F3*Coeff.K_F[4] + 9.0*F3*F3*Coeff.K_F[5] + Result.conc_SO4*Coeff.K_SO4[0] + Result.conc_SO4*Result.conc_SO4*Coeff.K_SO4[1] + 4.0*Coeff.K_Al[0]/Result.conc_H + Coeff.K_Al[1]/H2 + Coeff.K_Al[3]/(H2*H2)))*0.0000005;
+	double Xxis = (4.0*(conc_Ca + conc_Mg + conc_SO4 + conc_CO3 + conc_HA2M) + conc_Na + conc_K + conc_NH4 + conc_Cl + conc_NO3 + conc_F + conc_H + Coeff.K_W/conc_H + conc_HCO3 + conc_H2AM + 9.0*conc_A3M + conc_AlHA + conc_Al*(9.0 + 4.0*conc_F*Coeff.K_F[0] + F2*Coeff.K_F[1] + F2*F2*Coeff.K_F[3] + 4.0*F2*F3*Coeff.K_F[4] + 9.0*F3*F3*Coeff.K_F[5] + conc_SO4*Coeff.K_SO4[0] + conc_SO4*conc_SO4*Coeff.K_SO4[1] + 4.0*Coeff.K_Al[0]/conc_H + Coeff.K_Al[1]/H2 + Coeff.K_Al[3]/(H2*H2)))*0.0000005;
 	return sqrt(Xxis)/(1.0 + sqrt(Xxis));
 }
 
@@ -807,7 +807,7 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 	
 	Result.SumNegative = Result.SumAcidAnionConc + Coeff.K_W/Result.conc_H + Result.conc_HCO3 + 2.0*Result.conc_CO3 + Result.conc_H2AM + 2.0*Result.conc_HA2M + 3.0*Result.conc_A3M + Result.conc_Al*(Coeff.K_Al[3]/(H2*H2) + Coeff.K_F[3]*F2*F2 + 2.0*Coeff.K_F[4]*F2*F3 + 3.0*Coeff.K_F[5]*F3*F3 + Coeff.K_SO4[1]*Result.conc_SO4*Result.conc_SO4);
 	
-	Result.IonicStrength = ComputeIonicStrength(Result, Coeff, conc_AlHA);
+	Result.IonicStrength = ComputeIonicStrength(Coeff, Result.conc_Ca, Result.conc_Mg, Result.conc_SO4, Result.conc_CO3, Result.conc_HA2M, Result.conc_H2AM, Result.conc_Na, Result.conc_K, Result.conc_NH4, Result.conc_Cl, Result.conc_NO3, Result.conc_F, Result.conc_H, Result.conc_HCO3, Result.conc_A3M, Result.conc_Al, conc_AlHA);
 }
 
 
@@ -815,6 +815,7 @@ struct magic_init_input
 {
 	double conc_Ca;
 	double conc_Mg;
+	double conc_Na;
 	double conc_K;
 	double conc_NH4;
 	double all_SO4;
@@ -841,11 +842,11 @@ struct magic_init_result
 };
 
 void
-MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_output &Result, bool IsSoil, double Conv)
+MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_init_result &Result, bool IsSoil, double Conv)
 {
 	// This is supposed to be run once at the beginning of the simulation to compute some initial values.
 	
-	double SumBaseCationConc = 2.0*Input.conc_Ca + 2.0*Input.Conc_Mg + Input.conc_Na + Input.conc_K;
+	double SumBaseCationConc = 2.0*Input.conc_Ca + 2.0*Input.conc_Mg + Input.conc_Na + Input.conc_K;
 	magic_coeff Coeff = {};
 	//NOTE: Here we don't use the selectivity coefficients computed in SetEquilibriumConstants. If that changes, we have to compute SoilCationExchange;
 	double SoilCationExchange = 0.0;
@@ -854,15 +855,15 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	
 	//TODO: We should be able to refactor the below into a do/while loop.
 	
-	SetEquilibriumConstants(const magic_param &Param, Coeff, IsSoil, IonicStrength, SoilCationExchange);
+	SetEquilibriumConstants(Param, Coeff, IsSoil, Result.IonicStrength, SoilCationExchange);
 	
 	double conc_CO2 = Coeff.HenrysLawConstant*Param.PartialPressureCO2/100.0;
 
 	double pH = 5.0; //Initial estimate.
 	
-	double conc_H = 1.0 / pow(10.0, Result.pH - 6.0);
+	double conc_H = 1.0 / pow(10.0, pH - 6.0);
 	
-	double conc_Al = Coeff.GibbsAlSolubility * pow(Result.conc_H, Param.HAlOH3Exponent);
+	double conc_Al = Coeff.GibbsAlSolubility * pow(conc_H, Param.HAlOH3Exponent);
 	
 	Result.conc_SO4 = SolveFreeSO4(Coeff, Input.all_SO4, conc_Al);
 	
@@ -870,9 +871,9 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	
 	double SumAcidAnionConc = 2.0*Result.conc_SO4 + Input.conc_Cl + Input.conc_NO3 + conc_F;
 	
-	double conc_HCO3 = Coeff.K_CO2[0]*conc_CO2/conc_H;
+	double conc_HCO3 = Coeff.K_C[0]*conc_CO2/conc_H;
 	
-	double conc_CO3 = Coeff.K_CO2[1]*conc_HCO3/conc_H;
+	double conc_CO3 = Coeff.K_C[1]*conc_HCO3/conc_H;
 	
 	// Calculate anion charge (meq/m3) - from dissolved inorganic carbon species (convert mmol to meq)
 	double all_DIC = conc_HCO3 + 2.0*conc_CO3;
@@ -883,13 +884,13 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 		conc_H3A, conc_H2AM, conc_HA2M, conc_A3M, conc_AlA, conc_AlHA);
 	
 	// Calculate anion charge (meq/m3) - from dissolved organic carbon
-	Result.all_DOC = conc_H2AM + 2.0*conc_HA2M + 3.0*conc_A3M;
+	double all_DOC = conc_H2AM + 2.0*conc_HA2M + 3.0*conc_A3M;
 	
 	// Calculate net charge on all Al species (positive-negative) (meq/m3) - from H, AL3+, SO4, F and organic acid trivalent anion concens (mmol/m3)
 	double NetAlCharge = CalculateNetAlCharge(Coeff, conc_H, conc_Al, Result.conc_SO4, conc_F, conc_A3M);
 	
 	// Calculate charge balance for all aqueous ions
-	double ChargeBalance = SumBaseCationConc + NetAlCharge + conc_H + Input.conc_NH4 - SumAcidAnionConc - all_DIC - all_DOC - Coeff.K_W/Result.conc_H;
+	double ChargeBalance = SumBaseCationConc + NetAlCharge + conc_H + Input.conc_NH4 - SumAcidAnionConc - all_DIC - all_DOC - Coeff.K_W/conc_H;
 
 	if(abs(ChargeBalance) >= Conv)  // If charge balance is within convergence criterion, the solution has converged. Otherwise, do an iterative solution loop
 	{
@@ -899,25 +900,26 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 		{
 			pH += dpH;
 			
-			//TODO: we have to redo the following one since it takes a magic_result struct...
-			//Result.IonicStrength = ComputeIonicStrength();
+			Result.IonicStrength = ComputeIonicStrength(Coeff, Input.conc_Ca, Input.conc_Mg, Result.conc_SO4, conc_CO3, conc_HA2M, conc_H2AM, Input.conc_Na, Input.conc_K, Input.conc_NH4, Input.conc_Cl, Input.conc_NO3, conc_F, conc_H, conc_HCO3, conc_A3M, conc_Al, conc_AlHA);
 			
-			SetEquilibriumConstants(const magic_param &Param, Coeff, IsSoil, IonicStrength, SoilCationExchange);
+			SetEquilibriumConstants(Param, Coeff, IsSoil, Result.IonicStrength, SoilCationExchange);
 			
 			conc_CO2 = Coeff.HenrysLawConstant*Param.PartialPressureCO2/100.0;
-			conc_H = 1.0 / pow(10.0, Result.pH - 6.0);
-			conc_Al = Coeff.GibbsAlSolubility * pow(Result.conc_H, Param.HAlOH3Exponent);
+			conc_H = 1.0 / pow(10.0, pH - 6.0);
+			conc_Al = Coeff.GibbsAlSolubility * pow(conc_H, Param.HAlOH3Exponent);
+			//printf("pH %g, H %g, Al %g\n", pH, conc_H, conc_Al);
+			
 			Result.conc_SO4 = SolveFreeSO4(Coeff, Input.all_SO4, conc_Al);
 			conc_F = SolveFreeFluoride(Coeff, Input.all_F, conc_Al);
 			SumAcidAnionConc = 2.0*Result.conc_SO4 + Input.conc_Cl + Input.conc_NO3 + conc_F;
-			conc_HCO3 = Coeff.K_CO2[0]*conc_CO2/conc_H;
-			conc_CO3 = Coeff.K_CO2[1]*conc_HCO3/conc_H;
+			conc_HCO3 = Coeff.K_C[0]*conc_CO2/conc_H;
+			conc_CO3 = Coeff.K_C[1]*conc_HCO3/conc_H;
 			all_DIC = conc_HCO3 + 2.0*conc_CO3;
 			CalculateDOC(Coeff, Param.conc_DOC, conc_H, conc_Al,
 				conc_H3A, conc_H2AM, conc_HA2M, conc_A3M, conc_AlA, conc_AlHA);
-			Result.all_DOC = conc_H2AM + 2.0*conc_HA2M + 3.0*conc_A3M;
+			all_DOC = conc_H2AM + 2.0*conc_HA2M + 3.0*conc_A3M;
 			NetAlCharge = CalculateNetAlCharge(Coeff, conc_H, conc_Al, Result.conc_SO4, conc_F, conc_A3M);
-			double ChargeBalance0 = SumBaseCationConc + NetAlCharge + conc_H + Input.conc_NH4 - SumAcidAnionConc - all_DIC - all_DOC - Coeff.K_W/Result.conc_H;
+			double ChargeBalance0 = SumBaseCationConc + NetAlCharge + conc_H + Input.conc_NH4 - SumAcidAnionConc - all_DIC - all_DOC - Coeff.K_W/conc_H;
 			
 			if(abs(ChargeBalance0) < Conv) break;
 			
@@ -931,42 +933,15 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	
 	if(IsSoil)
 	{
-		double SoilCationExchange = Param.Depth * Param.BulkDensity * Param.CationExchangeCapacity;
-		
+	
 		double exchangeable_Al = 1.0 - Input.exchangeable_Ca - Input.exchangeable_Mg - Input.exchangeable_Na - Input.exchangeable_K;
 		
-		double Ratio = log10(exchangable_Al / conc_Al);
+		double Ratio = log10(exchangeable_Al / conc_Al);
 		
-		double K_AlCa = 2.0*Ratio + 3.0*log10(Input.conc_Ca / Input.exchangeable_Ca);
-		double K_AlMg = 2.0*Ratio + 3.0*log10(Input.conc_Mg / Input.exchangeable_Mg);
-		double K_AlNa = Ratio + 3.0*log10(Input.conc_Na / Input.exchangeable_Na);
-		double K_AlK  = Ratio + 3.0*log10(Input.conc_K / Input.exchangeable_K);
-
-		double Log10SCEC = log10(SoilCationExchange);
-		
-		Result.Log10CaAlSelectCoeff = 3.0*(Log10SCEC - K_AlCa) - 6.0;
-		Result.Log10MgAlSelectCoeff = 3.0*(Log10SCEC - K_AlMg) - 6.0;
-		Result.Log10NaAlSelectCoeff = 3.0*(Log10SCEC - K_AlNa) - 12.0;
-		Result.Log10KAlSelectCoeff  = 3.0*(Log10SCEC - K_AlK)  - 12.0;
-		
-		/*
-		TODO: Figure out if the above is correct, based on the below..
-		
-		Result.conc_Al = Coeff.GibbsAlSolubility * pow(Result.conc_H, Param.HAlOH3Exponent);
-		
-		CoeffOut.K_AlCa = Log10SCEC - (Param.Log10CaAlSelectCoeff + 6.0)/3.0;
-		CoeffOut.K_AlMg = Log10SCEC - (Param.Log10MgAlSelectCoeff + 6.0)/3.0;
-		CoeffOut.K_AlNa = Log10SCEC - (Param.Log10NaAlSelectCoeff + 12.0)/3.0;
-		CoeffOut.K_AlK  = Log10SCEC - (Param.Log10KAlSelectCoeff  + 12.0)/3.0;
-		
-		double XK0 = log10(exchangeable_Al/Coeff.GibbsAlSolubility)/3.0 - log10(Result.conc_H)*(Param.HAlOH3Exponent/3.0);
-		
-		CaExchange = pow(10.0, 2.0*XK0 + Coeff.K_AlCa);
-		
-		Result.conc_Ca = Input.total_Ca/(CaExchange + 2.0*WaterVolume);
-		
-		Result.exchangeable_Ca = Input.total_Ca/SoilCationExchange - Result.conc_Ca*2.0*WaterVolume/SoilCationExchange;
-		*/
+		Result.Log10CaAlSelectCoeff = 2.0*Ratio + 3.0*log10(Input.conc_Ca / Input.exchangeable_Ca) - 6.0;
+		Result.Log10MgAlSelectCoeff = 2.0*Ratio + 3.0*log10(Input.conc_Mg / Input.exchangeable_Mg) - 6.0;
+		Result.Log10NaAlSelectCoeff = Ratio + 3.0*log10(Input.conc_Na / Input.exchangeable_Na)     - 12.0;
+		Result.Log10KAlSelectCoeff  = Ratio + 3.0*log10(Input.conc_K / Input.exchangeable_K)       - 12.0;
 	}
 }
 

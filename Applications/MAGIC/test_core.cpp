@@ -3,23 +3,8 @@
 #include "../../Modules/MAGIC/MAGIC_Core.h"
 
 
-
-int main()
+void SetParam(magic_param &Param)
 {
-	magic_input Input = {};
-	magic_param Param = {};
-	magic_output Result = {};
-	
-	Input.total_Ca  = 5505.8;
-	Input.total_Mg  = 3870.2;
-	Input.total_Na  =  770.7;
-	Input.total_K   =  951.8;
-	Input.total_NH4 =    0.0;
-	Input.total_SO4 =   14.1;
-	Input.total_Cl  =   28.0;
-	Input.total_NO3 =    0.0;
-	Input.total_F   =    0.0;
-	
 	Param.Depth                      = 0.4;
 	Param.Temperature                = 5.0;
 	Param.PartialPressureCO2         = 0.3;
@@ -44,10 +29,29 @@ int main()
 	Param.Log10MgAlSelectCoeff       = -0.59;
 	Param.Log10NaAlSelectCoeff       = -1.09;
 	Param.Log10KAlSelectCoeff        = -6.81;
+}
+
+void TestCore()
+{
+	magic_input Input = {};
+	magic_param Param = {};
+	magic_output Result = {};
+	
+	Input.total_Ca  = 5505.8;
+	Input.total_Mg  = 3870.2;
+	Input.total_Na  =  770.7;
+	Input.total_K   =  951.8;
+	Input.total_NH4 =    0.0;
+	Input.total_SO4 =   14.1;
+	Input.total_Cl  =   28.0;
+	Input.total_NO3 =    0.0;
+	Input.total_F   =    0.0;
+	
+	SetParam(Param);
 	
 	bool IsSoil = true;
 	double Conv = 0.01;
-	double H_estimate = 1.0;
+	double H_estimate = 14.0;
 	//double IonicStrength = 0.0167825;
 	double IonicStrength = 0.0;
 	
@@ -89,4 +93,43 @@ int main()
 	printf("Base saturation soil is %g, should be 37.2\n", 100.0*Result.BaseSaturationSoil);
 	printf("Ca/Al ratio is %g, should be 10.4\n", Result.CaAlRatio);
 	printf("ionic strength is %g\n", Result.IonicStrength);
+}
+
+void TestInitCore()
+{
+	magic_param Param = {};
+	magic_init_input Input = {};
+	magic_init_result Result = {};
+
+	Input.conc_Ca  = 29.8/2.0;
+	Input.conc_Mg  = 26.4/2.0;
+	Input.conc_Na  = 137.1;
+	Input.conc_K   = 2.2;
+	Input.conc_NH4 = 0.0;
+	Input.all_SO4  = 35.9/2.0;
+	Input.conc_Cl  = 139.0;
+	Input.conc_NO3 = 0.0;
+	Input.all_F    = 0.0;
+	
+	Input.exchangeable_Ca = 0.185;
+	Input.exchangeable_Mg = 0.13;
+	Input.exchangeable_Na = 0.025;
+	Input.exchangeable_K  = 0.032;
+	
+	SetParam(Param);
+	
+	MagicCoreInitial(Input, Param, Result, true, 0.01);
+	
+	printf("conc_SO4 is %g, should be 35.9\n", Result.conc_SO4*2.0);
+	printf("Ca-Al is %g, should be -0.93\n", Result.Log10CaAlSelectCoeff);
+	printf("Mg-Al is %g, should be -0.59\n", Result.Log10MgAlSelectCoeff);
+	printf("Na-Al is %g, should be -1.09\n", Result.Log10NaAlSelectCoeff);
+	printf("K-Al is %g, should be -6.81\n", Result.Log10KAlSelectCoeff);
+}
+
+int main()
+{
+	TestCore();
+	printf("\n");
+	TestInitCore();
 }
