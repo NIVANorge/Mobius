@@ -166,9 +166,6 @@ true false false
 "Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 1
 
-"Mean channel slope" :     #(dimensionless) [1e-05, 0.1] Roughly equal to the length of the reach divided by the height difference between upper and lower part.
-2
-
 "Shear stress coefficient" :     #(dimensionless) [0.01, 10] Tuning parameter to account for the shear stress not being the same as in ideal conditions
 0.005
 

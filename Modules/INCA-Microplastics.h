@@ -345,7 +345,6 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto InitialSuspendedGrainMass        = RegisterParameterDouble(Model, SedimentReach, "Initial suspended grain mass", Kg, 1e2, 0.0, 1e8);
 	auto ConstantGrainDepositionToReach   = RegisterParameterDouble(Model, SedimentReach, "Constant grain deposition to reach", KgPerDay, 0.0, 0.0, 1e6, "Direct deposition to the reach not depending on erosion");
 	
-	auto MeanChannelSlope                 = RegisterParameterDouble(Model, Reaches, "Mean channel slope", Dimensionless, 0.001, 1e-5, 0.1, "Roughly equal to the length of the reach divided by the height difference between upper and lower part.");
 	auto ShearStressCoefficient           = RegisterParameterDouble(Model, Reaches, "Shear stress coefficient", Dimensionless, 1.0, 0.01, 10.0, "Tuning parameter to account for the shear stress not being the same as in ideal conditions");
 	auto EntrainmentCoefficient           = RegisterParameterDouble(Model, Reaches, "Entrainment coefficient", S2PerKg, 1.0, 1e-8, 1.0, "Tuning parameter to determine how the entrainment flux depends on the excess shear stress");  //TODO: Need new unit
 	auto MedianSedimentGrainSize          = RegisterParameterDouble(Model, Reaches, "Median bed sediment grain size", Metres, 0.00045, 0.0, 0.05, "The median of of the size of mineral bed sediments. Higher values shade small partices from entrainment.");
@@ -392,6 +391,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
 	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
+	
+	auto MeanChannelSlope = GetParameterDoubleHandle(Model, "Reach slope");
 	
 	auto ReachBottomWidth = GetParameterDoubleHandle(Model, "Reach bottom width");
 	
