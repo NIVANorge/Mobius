@@ -45,6 +45,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto DegreesCelsius = RegisterUnit(Model, "°C");
 	auto WPerM2         = RegisterUnit(Model, "W/m^2");
 	auto HPa            = RegisterUnit(Model, "HPa");
+	auto Percent        = RegisterUnit(Model, "%");
 	
 	auto LakeParams = RegisterParameterGroup(Model, "Lake");
 	
@@ -56,6 +57,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	
 	auto EpilimnionTemperatureLag = RegisterParameterDouble(Model, LakeParams, "Epilimnion temperature lag factor", Days, 1.0);
 	
+	auto SecchiDepth          = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.01, IncaDascru);
 	
@@ -81,21 +83,26 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto DiffusiveAirLakeExchangeFlux = RegisterEquation(Model, "Diffusive air-lake exchange flux", NgPerDay, LakeSolver);
 	
 	
+	auto CloudCover                           = RegisterEquation(Model, "Cloud cover", Dimensionless);
+	auto Albedo                               = RegisterEquation(Model, "Albedo", Dimensionless, LakeSolver);
 	auto ActualVaporPressure                  = RegisterEquation(Model, "Actual vapor pressure", HPa);
 	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2, LakeSolver);
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
 	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2, LakeSolver);
-	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2);
+	auto NetShortwaveRadiation                = RegisterEquation(Model, "Net shortwave radiation", WPerM2);
 	
 	auto EpilimnionAttn                       = RegisterEquation(Model, "Epilimnion attenuation fraction", Dimensionless);
 	
-	auto EpilimnionTemperature      = RegisterEquation(Model, "Epilimnion temperature", DegreesCelsius, LakeSolver);
+	auto EpilimnionTemperature      = RegisterEquationODE(Model, "Epilimnion temperature", DegreesCelsius, LakeSolver);
 	auto HypolimnionTemperature     = RegisterEquation(Model, "Hypolimnion temperature", DegreesCelsius);
 	
 	auto AirTemperature                     = GetInputHandle(Model, "Air temperature");
 	
 	auto ShortwaveRadiation                 = RegisterInput(Model, "Shortwave radiation", WPerM2);
+	auto RelativeHumidity                   = RegisterInput(Model, "Relative humidity", Percent);
 	
+	
+	auto SolarRadiationMax                  = GetEquationHandle(Model,  "Solar radiation on a clear sky day");
 	
 	auto ReachFlow                          = GetEquationHandle(Model, "Reach flow"); // m3/s
 	auto ReachWaterContaminantConcentration = GetEquationHandle(Model, "Reach water contaminant concentration"); // ng/m3
@@ -224,11 +231,17 @@ AddIncaToxLakeModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, EmittedLongwaveRadiation,
-		double watertkelv = RESULT(LakeSurfaceTemperature) + 273.15;
+		double watertkelv = RESULT(EpilimnionTemperature) + 273.15;
 		double stefanBoltzmannConst = 5.670367e-8;
+		double emissivity = 0.985;
 		
 		//TODO: emissivity could be different for snow/ice
-		return PARAMETER(Emissivity) * stefanBoltzmannConst * watertkelv * watertkelv * watertkelv * watertkelv;
+		return 0.985 * stefanBoltzmannConst * watertkelv * watertkelv * watertkelv * watertkelv;
+	)
+	
+	EQUATION(Model, CloudCover,
+		double cc = 0.9 * SafeDivide(INPUT(ShortwaveRadiation), RESULT(SolarRadiationMax)*11.5740741) + 0.1;
+		return Clamp01(cc);
 	)
 	
 	EQUATION(Model, DownwellingLongwaveRadation,
@@ -237,7 +250,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double airtkelv = INPUT(AirTemperature) + 273.15;
 		double stefanBoltzmannConst = 5.670367e-8;
 		
-		double cloudcover = INPUT(CloudCover);
+		double cloudcover = RESULT(CloudCover);
 		double vaporpressure = RESULT(ActualVaporPressure);
 		
 		double dew_point_temperature = 34.07 + 4157.0 / std::log(2.1718e8 / vaporpressure);    //(Henderson-Sellers 1984)
@@ -254,6 +267,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	EQUATION(Model, Albedo,
 		double albedo = 0.04;
 		if(RESULT(IsIce) > 0.0) albedo = 0.6;
+		return albedo;
 	)
 	
 	EQUATION(Model, LongwaveRadiation,
@@ -262,7 +276,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 		return longwave; 
 	)
 
-	EQUATION(Model, ShortwaveRadiation,
+	EQUATION(Model, NetShortwaveRadiation,
 		return (1.0 - RESULT(Albedo)) * INPUT(ShortwaveRadiation);
 	)
 	
@@ -270,7 +284,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double a = -2.7/PARAMETER(SecchiDepth);
 		
 		double top = (a*PARAMETER(LakeDepth) - 1.0)/(a*a);
-		double bot = exp(a*PARAMETER(EpilimnionThickness))*(a*(PARAMETER(LakeDepth)-PARAMETER(EpilimnionThickness)) - 1.0)/(a*a);
+		double bot = exp(a*PARAMETER(EpiliminionThickness))*(a*(PARAMETER(LakeDepth)-PARAMETER(EpiliminionThickness)) - 1.0)/(a*a);
 		
 		return (PARAMETER(LakeSurfaceArea)/PARAMETER(LakeDepth)) * (top - bot);
 	)
@@ -283,12 +297,10 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double epilimnionvolume = PARAMETER(LakeSurfaceArea)*(2.0*d-d0)*d0/(3.0*d);
 		
 		double longwave  = RESULT(LongwaveRadiation)*PARAMETER(LakeSurfaceArea);
-		double shortwave = RESULT(ShortwaveRadiation)*RESULT(EpilimnionAttn);
+		double shortwave = RESULT(NetShortwaveRadiation)*RESULT(EpilimnionAttn);
 		
 		return (longwave + shortwave)*86400.0 / (Cw * epilimnionvolume);
-	)
-	
-	EQUATION(Model, 
+	) 
 	
 	EndModule(Model);
 }
