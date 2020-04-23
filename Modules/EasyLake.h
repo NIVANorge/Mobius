@@ -520,8 +520,8 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto ConvectiveHeatFluxScale = RegisterEquation(Model, "Convective heat flux scale", WPerM2);
 	SetSolver(Model, ConvectiveHeatFluxScale, LakeSolver);
 	
-	auto SurfaceShearVelocity = RegisterEquation(Model, "Surface shear velocity", MPerS);
-	SetSolver(Model, SurfaceShearVelocity, LakeSolver);
+	//auto SurfaceShearVelocity = RegisterEquation(Model, "Surface shear velocity", MPerS);
+	//SetSolver(Model, SurfaceShearVelocity, LakeSolver);
 	
 	auto MeanLakeTemperature = RegisterEquationODE(Model, "Mean lake temperature", DegreesCelsius);
 	SetSolver(Model, MeanLakeTemperature, LakeSolver);
@@ -550,6 +550,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		return surfaceheatflux + surfaceshortwave * (1.0 + expah + (2.0 / (absorb*thickness))*(1.0 - expah)); 
 	)
 	
+	/*
 	EQUATION(Model, EpilimnionWaterDensity,
 		double dtemp = (RESULT(EpilimnionTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
 		return 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
@@ -570,7 +571,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	EQUATION(Model, EquilibriumEpilimnionThickess,
 		
 	)
-	
+	*/
 	
 	EQUATION(Model, LakeSurfaceTemperature,
 		//NOTE: In winter, this will be the temperature of the top of the ice/snow layer when that gets implemented.

@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Tox V0.1) at 2020-03-10 11:34:39
+# Parameter file generated for model INCA-Tox, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Tox V0.1) at 2020-04-23 13:49:01
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -46,6 +46,12 @@ parameters:
 
 "Contaminant degradation rate constant in the stream bed" :     #(1/day) [0, 1]
 0
+
+"Degradation rate response to one degree change in temperature" :     #(dimensionless) [1, 1.5]
+1.05
+
+"Temperature at which degradation rates are measured" :     #(°C) [-20, 50]
+20
 
 ###################### "Landscape units" ######################
 "Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling

@@ -37,6 +37,7 @@ AddIncaToxModule(mobius_model *Model)
 	auto GPerMol          = RegisterUnit(Model, "g/mol");
 	auto Cm3PerMol        = RegisterUnit(Model, "cm3/mol");
 	auto GPerCmPerSPerHundred = RegisterUnit(Model, "10^-2 g/cm/s");
+	auto DegreesCelsius   = RegisterUnit(Model, "°C");
 	
 	auto DepositionToLand         = RegisterInput(Model, "Contaminant deposition to land", NgPerM2PerDay);
 	auto DepositionToReach        = RegisterInput(Model, "Contaminant deposition to reach", NgPerDay);
@@ -69,6 +70,8 @@ AddIncaToxModule(mobius_model *Model)
 	auto GroundwaterContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in groundwater", PerDay, 0.0, 0.0, 1.0);
 	auto ReachContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream", PerDay, 0.0, 0.0, 1.0);
 	auto BedContaminantDegradationRateConstant      = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream bed", PerDay, 0.0, 0.0, 1.0);
+	auto DegradationResponseToTemperature           = RegisterParameterDouble(Model, Chemistry, "Degradation rate response to one degree change in temperature", Dimensionless, 1.0, 1.0, 1.5);
+	auto TemperatureAtWhichDegradationRatesAreMeasured = RegisterParameterDouble(Model, Chemistry, "Temperature at which degradation rates are measured", DegreesCelsius, 20.0, -20.0, 50.0);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
 	
@@ -132,9 +135,19 @@ AddIncaToxModule(mobius_model *Model)
 	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
+	auto SoilDegradationTemperatureModifier = RegisterEquation(Model, "Temperature modifier for degradation in soil", Dimensionless);
+	auto ReachDegradationTemperatureModifier = RegisterEquation(Model, "Temperature modifier for degradation in reach", Dimensionless);
 	
 	EQUATION(Model, SoilTemperatureKelvin,
 		return 273.15 + RESULT(SoilTemperature);
+	)
+	
+	EQUATION(Model, SoilDegradationTemperatureModifier,
+		return pow(PARAMETER(DegradationResponseToTemperature), RESULT(SoilTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured));
+	)
+	
+	EQUATION(Model, ReachDegradationTemperatureModifier,
+		return pow(PARAMETER(DegradationResponseToTemperature), RESULT(WaterTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured));
 	)
 	
 	
@@ -287,7 +300,7 @@ AddIncaToxModule(mobius_model *Model)
 		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
 		+ PARAMETER(SoilSOCMass)  * RESULT(SoilSOCContaminantConcentration);
 		
-		return PARAMETER(SoilContaminantDegradationRateConstant) * degradablemass;
+		return PARAMETER(SoilContaminantDegradationRateConstant) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInSoil,
@@ -308,7 +321,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
-		return PARAMETER(GroundwaterContaminantDegradationRateConstant) * degradablemass;
+		return PARAMETER(GroundwaterContaminantDegradationRateConstant) * RESULT(ReachDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInGroundwater,
@@ -419,7 +432,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
-		return RESULT(ContaminantMassInReach) * PARAMETER(ReachContaminantDegradationRateConstant);
+		return RESULT(ContaminantMassInReach) * RESULT(ReachDegradationTemperatureModifier) * PARAMETER(ReachContaminantDegradationRateConstant);
 	)
 	
 	
@@ -617,7 +630,7 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, BedContaminantDegradation,
-		return RESULT(BedContaminantMass) * PARAMETER(BedContaminantDegradationRateConstant);
+		return RESULT(BedContaminantMass) * RESULT(ReachDegradationTemperatureModifier) * PARAMETER(BedContaminantDegradationRateConstant);
 	)
 	
 	EQUATION(Model, BedContaminantMass,
