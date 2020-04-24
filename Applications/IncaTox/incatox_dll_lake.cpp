@@ -12,6 +12,7 @@
 #include "../../Modules/INCA-Sed.h"
 #include "../../Modules/SoilTemperature.h"
 #include "../../Modules/WaterTemperature.h"
+#include "../../Modules/SolarRadiation.h"
 #include "../../Modules/INCA-Tox-C.h"
 #include "../../Modules/INCA-Tox.h"
 #include "../../Modules/INCA-Tox-Lake.h"
@@ -28,6 +29,7 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
 	AddINCASedModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddWaterTemperatureModel(Model);
+	AddMaxSolarRadiationModule(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
 	AddIncaToxLakeModule(Model);
