@@ -46,6 +46,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto WPerM2         = RegisterUnit(Model, "W/m^2");
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto Percent        = RegisterUnit(Model, "%");
+	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
 	
 	auto LakeParams = RegisterParameterGroup(Model, "Lake");
 	
@@ -54,8 +55,6 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto LakeSurfaceArea      = RegisterParameterDouble(Model, LakeParams, "Surface area", M2, 0.0);
 	
 	auto PhotoDegradationRate = RegisterParameterDouble(Model, LakeParams, "Photo-degradation rate", Dimensionless, 0.0); //TODO: Other unit
-	
-	auto EpilimnionTemperatureLag = RegisterParameterDouble(Model, LakeParams, "Epilimnion temperature lag factor", Days, 1.0);
 	
 	auto SecchiDepth          = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
 	
@@ -100,7 +99,8 @@ AddIncaToxLakeModule(mobius_model *Model)
 	
 	auto ShortwaveRadiation                 = RegisterInput(Model, "Shortwave radiation", WPerM2);
 	auto RelativeHumidity                   = RegisterInput(Model, "Relative humidity", Percent);
-	
+	auto AirPressure                        = RegisterInput(Model, "Air pressure", HPa);
+	auto WindSpeed                          = GetInputHandle(Model, "Wind speed");
 	
 	auto SolarRadiationMax                  = GetEquationHandle(Model,  "Solar radiation on a clear sky day");
 	
@@ -303,6 +303,127 @@ AddIncaToxLakeModule(mobius_model *Model)
 		return (bot - top)/PARAMETER(LakeDepth);
 	)
 	
+	auto AirDensity                           = RegisterEquation(Model, "Air density", KgPerM3, LakeSolver);
+	auto Stability                            = RegisterEquation(Model, "Stability", Dimensionless, LakeSolver);
+	auto ActualSpecificHumidity               = RegisterEquation(Model, "Actual specific humidity", Dimensionless);
+	auto SaturationSpecificHumidity           = RegisterEquation(Model, "Saturation specific humidity", Dimensionless, LakeSolver);
+	auto TransferCoefficientForLatentHeatFlux = RegisterEquation(Model, "Transfer coefficient for latent heat flux", Dimensionless, LakeSolver);
+	auto TransferCoefficientForSensibleHeatFlux = RegisterEquation(Model, "Transfer coefficient for sensible heat flux", Dimensionless, LakeSolver); // unit?
+	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2, LakeSolver);
+	auto LatentHeatOfVaporization             = RegisterEquation(Model, "Latent heat of vaporization", Dimensionless, LakeSolver);
+	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2, LakeSolver);
+	
+	
+	EQUATION(Model, SaturationSpecificHumidity,
+		//NOTE: This assumes 'mixing ratio' ~= 'specific humidity', which is ok if vapor mass is significantly smaller than total air mass.
+	
+		double ratioconvertionfactor = 0.62198; //Converting molar ratio to mass ratio
+		
+		double svap = SaturationVaporPressure(RESULT(EpilimnionTemperature));
+		
+		//return ratioconvertionfactor * svap / (INPUT(AirPressure) - 0.377 * svap); //TODO: Find out what 0.377 is for. Shouldn't that just be 1?
+		return ratioconvertionfactor * svap / (INPUT(AirPressure) - svap);
+	)
+	
+	EQUATION(Model, ActualSpecificHumidity,
+		double ratioconvertionfactor = 0.62198;
+		double actualvaporpressure = RESULT(ActualVaporPressure);
+		
+		//return ratioconvertionfactor * actualvaporpressure / (INPUT(AirPressure) - 0.377*actualvaporpressure);
+		return ratioconvertionfactor * actualvaporpressure / (INPUT(AirPressure) - actualvaporpressure);
+	)
+	
+	EQUATION(Model, AirDensity,
+		double tempkelvin = INPUT(AirTemperature) + 273.15;
+		double specificgasconstdryair = 287.058; // J/(kg K)
+		double specificgasconstvapor  = 461.495; // (J/(kg K))
+		return ((INPUT(AirPressure) - RESULT(ActualVaporPressure)) / (tempkelvin*specificgasconstdryair)  +  RESULT(ActualVaporPressure) / (tempkelvin * specificgasconstvapor))* 100.0;   //Multiply by 100 for HPa -> Pa
+	)
+	
+	EQUATION(Model, Stability,
+		double WW = (INPUT(WindSpeed) + 1e-10);
+		double s0 = 0.25 * (RESULT(EpilimnionTemperature) - INPUT(AirTemperature)) / (WW * WW);
+		return s0 * std::abs(s0) / (std::abs(s0) + 0.01);
+	)
+	
+	EQUATION(Model, TransferCoefficientForSensibleHeatFlux,
+		double W = INPUT(WindSpeed);
+		
+		double ae_h; double be_h; double ce_h; double pe_h;
+		if(W < 2.2)        { ae_h = 0.0;   be_h = 1.185;   ce_h = 0.0;      pe_h = -0.157;}
+		else if (W < 5.0)  { ae_h = 0.927; be_h = 0.0546;  ce_h = 0.0;      pe_h = 1.0;  }
+		else if (W < 8.0)  { ae_h = 1.15;  be_h = 0.01;    ce_h = 0.0;      pe_h = 1.0;  }
+		else if (W < 25.0) { ae_h = 1.17;  be_h = 0.0075;  ce_h = -0.00045; pe_h = 1.0;  }
+		else               { ae_h = 1.652; be_h = -0.017;  ce_h = 0.0;      pe_h = 1.0;  }
+	
+		double WM8 = (W - 8.0);
+		double chd = (ae_h + be_h*std::exp(pe_h * std::log(W + 1e-12)) + ce_h*WM8*WM8)*1e-3;
+		
+		double s = RESULT(Stability);
+		if(s < 0.0)
+		{
+			double x;
+			if(s > -3.3) 	x = 0.1 + 0.03*s + 0.9*std::exp(4.8 * s);
+			else            x = 0.0;
+			
+			chd *= x;
+		}
+		else
+			chd *= (1.0 + 0.63 * std::sqrt(s));
+		
+		return chd;
+	)
+	
+	EQUATION(Model, TransferCoefficientForLatentHeatFlux,
+		double W = INPUT(WindSpeed);
+		
+		double ae_e; double be_e; double ce_e; double pe_e;   //NOTE: we can't use commas inside the EQUATION macro, or it screws up the comma counting of the preprocessor.
+		if(W < 2.2)        { ae_e = 0.0;   be_e = 1.23;    ce_e = 0.0;     pe_e = -0.16;}
+		else if (W < 5.0)  { ae_e = 0.969; be_e = 0.0521;  ce_e = 0.0;     pe_e = 1.0;  }
+		else if (W < 8.0)  { ae_e = 1.18;  be_e = 0.01;    ce_e = 0.0;     pe_e = 1.0;  }
+		else if (W < 25.0) { ae_e = 1.196; be_e = 0.008;   ce_e = -0.0004; pe_e = 1.0;  }
+		else               { ae_e = 1.68;  be_e = -0.016;  ce_e = 0.0;     pe_e = 1.0;  }
+	
+		double WM8 = (W - 8.0);
+		double ced = (ae_e + be_e*std::exp(pe_e * std::log(W + 1e-12)) + ce_e*WM8*WM8)*1e-3;
+		
+		double s = RESULT(Stability);
+		if(s < 0.0)
+		{
+			double x;
+			if(s > -3.3) 	x = 0.1 + 0.03*s + 0.9*std::exp(4.8 * s);
+			else            x = 0.0;
+			
+			ced *= x;
+		}
+		else
+			ced *= (1.0 + 0.63 * std::sqrt(s));
+		
+		if(W==0.0) ced =0.0;
+		
+		return ced;
+	)
+	
+	EQUATION(Model, SensibleHeatFlux,
+		double cpa        = 1008.0;
+		
+		return RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (INPUT(AirTemperature) - RESULT(EpilimnionTemperature));
+	)
+	
+	EQUATION(Model, LatentHeatOfVaporization,
+		//TODO: Should be different for snow..
+		return (2.5 - 0.00234*RESULT(EpilimnionTemperature))*1e6;  //TODO: Figure out unit of this!
+	)
+	
+	EQUATION(Model, LatentHeatFlux,
+		double latentheat = RESULT(TransferCoefficientForLatentHeatFlux) * RESULT(LatentHeatOfVaporization) * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
+		
+		//NOTE: In GOTM code they say they correct the sensible heat flux for rainfall, but actually only correct the latent heat flux! (Is this important?)
+	
+		//NOTE: Again, this is probably not correct for snow and ice.
+		return latentheat;// - INPUT(Precipitation) * RESULT(RainfallHeatfluxCorrection);
+	)
+	
 	EQUATION(Model, EpilimnionTemperature,
 		//return LAST_RESULT(EpilimnionTemperature) + (INPUT(AirTemperature) - LAST_RESULT(EpilimnionTemperature))/PARAMETER(EpilimnionTemperatureLag);
 		double Cw = 4.18e+6;             // Volumetric heat capacity of water (J K-1 m-3)
@@ -312,9 +433,17 @@ AddIncaToxLakeModule(mobius_model *Model)
 		
 		double longwave  = RESULT(LongwaveRadiation)*PARAMETER(LakeSurfaceArea);
 		double shortwave = RESULT(NetShortwaveRadiation)*PARAMETER(LakeSurfaceArea)*RESULT(EpilimnionAttn);
+		double sensible  = RESULT(SensibleHeatFlux)*PARAMETER(LakeSurfaceArea);
+		double latent    = RESULT(LatentHeatFlux)*PARAMETER(LakeSurfaceArea);
 		
-		return (longwave + shortwave)*86400.0 / (Cw * epilimnionvolume);
-	) 
+		if(LAST_RESULT(IsIce) > 0.0)
+		{
+			sensible = 0.0;
+			latent = 0.0;
+		}
+		
+		return (longwave + sensible + latent + shortwave)*86400.0 / (Cw * epilimnionvolume);
+	)
 	
 	EndModule(Model);
 }
