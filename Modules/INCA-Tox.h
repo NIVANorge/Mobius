@@ -9,7 +9,7 @@
 static void
 AddIncaToxModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox", "0.1");
+	BeginModule(Model, "INCA-Tox", "0.2");
 	
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");
@@ -41,6 +41,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	auto DepositionToLand         = RegisterInput(Model, "Contaminant deposition to land", NgPerM2PerDay);
 	auto DepositionToReach        = RegisterInput(Model, "Contaminant deposition to reach", NgPerDay);
+	auto AtmosphericContaminantConcentrationIn = RegisterInput(Model, "Atmospheric contaminant concentration", NgPerM3);
 	auto WindSpeed                = RegisterInput(Model, "Wind speed", MPerS);
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
@@ -265,7 +266,8 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DiffusiveAirSoilExchangeFlux,
-		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (1e-3*PARAMETER(AtmosphericContaminantConcentration) - RESULT(SoilAirContaminantConcentration));
+		double atmospheric = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (1e-3*atmospheric - RESULT(SoilAirContaminantConcentration));
 	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,
@@ -321,7 +323,7 @@ AddIncaToxModule(mobius_model *Model)
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
-		return PARAMETER(GroundwaterContaminantDegradationRateConstant) * RESULT(ReachDegradationTemperatureModifier) * degradablemass;
+		return PARAMETER(GroundwaterContaminantDegradationRateConstant) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInGroundwater,
@@ -602,7 +604,8 @@ AddIncaToxModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DiffusiveAirReachExchangeFlux,
-		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - PARAMETER(AtmosphericContaminantConcentration)/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
+		double atmospheric = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - atmospheric/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
 	)
 	
 	
@@ -650,8 +653,8 @@ AddIncaToxModule(mobius_model *Model)
 	EQUATION(Model, BedWaterContaminantConcentration,
 		double beddocmass = RESULT(ReachDOCMass) * RESULT(PoreWaterVolume) / RESULT(ReachVolume); //Assuming same concentration as in the reach
 		
-		return RESULT(BedContaminantMass) /
-			(RESULT(ReachWaterSOCPartitioningCoefficient)*RESULT(TotalBedSOCMass) + RESULT(ReachWaterDOCPartitioningCoefficient)*beddocmass + RESULT(PoreWaterVolume));
+		return SafeDivide(RESULT(BedContaminantMass),
+			(RESULT(ReachWaterSOCPartitioningCoefficient)*RESULT(TotalBedSOCMass) + RESULT(ReachWaterDOCPartitioningCoefficient)*beddocmass + RESULT(PoreWaterVolume)));
 	)	
 	
 	EQUATION(Model, BedSOCContaminantConcentration,
