@@ -16,12 +16,10 @@
 #include "../../Modules/INCA-Tox.h"
 
 
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename) {
-    
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("INCA-Tox");
+void
+DllBuildModel(mobius_model *Model)
+{
+	Model->Name = "INCA-Tox";
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
@@ -29,19 +27,4 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
 	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }

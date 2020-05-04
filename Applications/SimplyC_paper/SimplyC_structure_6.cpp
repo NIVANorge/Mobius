@@ -19,30 +19,13 @@
 #include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4_equilibrizing_DOC.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename)
+void
+DllBuildModel(mobius_model *Model)
 {
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("SimplyC");
+	Model->Name = "SimplyC";
 	
 	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel2(Model);
 	AddSimplyCModel(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }

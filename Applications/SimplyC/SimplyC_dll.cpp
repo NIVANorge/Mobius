@@ -23,12 +23,10 @@
 
 #include "../../Modules/SimplyQLakeAddon.h"
 
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename)
+void
+DllBuildModel(mobius_model *Model)
 {
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("SimplyC");
+	Model->Name = "SimplyC";
 	
 	//AddThornthwaitePETModule(Model);
 	AddDegreeDayPETModule(Model);
@@ -36,19 +34,4 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	AddSimplyQLakeAddon(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }

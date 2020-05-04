@@ -44,6 +44,36 @@ DllEncounteredError(char *ErrmsgOut)
 	return Code;
 }
 
+//This one has to be provided in each separate application
+void
+DllBuildModel(mobius_model *Model);
+
+DLLEXPORT void *
+DllSetupModel(char *ParameterFilename, char *InputFilename)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_model *Model = BeginModelDefinition("SimplyP");
+	
+	DllBuildModel(Model);
+	
+	ReadInputDependenciesFromFile(Model, InputFilename);
+	
+	EndModelDefinition(Model);
+	
+	mobius_data_set *DataSet = GenerateDataSet(Model);
+	
+	ReadParametersFromFile(DataSet, ParameterFilename);
+	ReadInputsFromFile(DataSet, InputFilename);
+	
+	return (void *)DataSet;
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
+
 DLLEXPORT const char *
 DllGetModelName(void *DataSetPtr)
 {

@@ -12,32 +12,13 @@
 #include "../../Modules/MAGIC/MAGICBasic.h"
 
 
-
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename)
+void
+DllBuildModel(mobius_model *Model)
 {
-    
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("MAGIC");
+	Model->Name = "MAGIC";
 	
 	AddMagicCoreModel(Model);
 	AddMagicModel(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
+
 	SetTimestepSize(Model, "1M");
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }

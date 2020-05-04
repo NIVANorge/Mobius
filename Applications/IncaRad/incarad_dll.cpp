@@ -16,12 +16,10 @@
 #include "../../Modules/INCA-Rad.h"
 
 
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename) {
-    
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("INCA-Rad");
+void
+DllBuildModel(mobius_model *Model)
+{
+	Model->Name = "INCA-Rad";
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
@@ -29,19 +27,4 @@ DllSetupModel(char *ParameterFilename, char *InputFilename) {
 	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaRadModule(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }

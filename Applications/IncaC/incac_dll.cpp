@@ -10,36 +10,17 @@
 
 #include "../../Modules/Persist.h"
 #include "../../Modules/SoilTemperature.h"
-//#include "../../Modules/WaterTemperature.h"
 #include "../../Modules/SolarRadiation.h"
 #include "../../Modules/INCA-C.h"
 
 
-
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename) {
-    
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("INCA-C");
+void
+DllBuildModel(mobius_model *Model)
+{
+	Model->Name = "INCA-C";
 	
 	AddPersistModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddSolarRadiationModule(Model);
 	AddINCACModel(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }

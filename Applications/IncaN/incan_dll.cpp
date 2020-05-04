@@ -15,32 +15,14 @@
 
 
 
-DLLEXPORT void *
-DllSetupModel(char *ParameterFilename, char *InputFilename)
+void
+DllBuildModel(mobius_model *Model)
 {
-    
-	CHECK_ERROR_BEGIN
-	
-	mobius_model *Model = BeginModelDefinition("INCA-N");
+	Model->Name = "INCA-N";
 	
 	AddPersistModel(Model);
 	//RegisterParameterGroup(Model, "Percolation", GetIndexSetHandle(Model, "Reaches")); //NOTE: Uncomment to make percolation matrices be per reach instead of per L.U.
 	AddSoilTemperatureModel(Model);
 	AddWaterTemperatureModel(Model);
 	AddIncaNModel(Model);
-	
-	ReadInputDependenciesFromFile(Model, InputFilename);
-	
-	EndModelDefinition(Model);
-	
-	mobius_data_set *DataSet = GenerateDataSet(Model);
-	
-	ReadParametersFromFile(DataSet, ParameterFilename);
-	ReadInputsFromFile(DataSet, InputFilename);
-	
-	return (void *)DataSet;
-	
-	CHECK_ERROR_END
-	
-	return 0;
 }
