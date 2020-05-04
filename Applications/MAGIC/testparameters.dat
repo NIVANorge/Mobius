@@ -93,18 +93,6 @@ true
 "(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 
-"(log10) Ca/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--0.926
-
-"(log10) Mg/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--0.586
-
-"(log10) Na/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--1.086
-
-"(log10) K/Al exchange selectivity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
--6.808
-
 "Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100]
 18.5
 

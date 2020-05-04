@@ -10,6 +10,7 @@
 
 #include "MAGIC_Core.h"
 
+
 static void
 AddMagicCoreModel(mobius_model *Model)
 {
@@ -47,25 +48,22 @@ AddMagicCoreModel(mobius_model *Model)
 	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0);
 	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 600.0, 0.0, 2000.0);
 	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 100.0, 0.0, 500.0);
-	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerM3, 0.0); //TODO
-	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0); //TODO
-	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0); //TODO
-	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0); //TODO
-	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
-	auto PK2DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 2nd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
-	auto PK3DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 3rd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0); //TODO
-	auto PK1AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]", Dimensionless, 0.0); //TODO
-	auto PK2AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0); //TODO
-	auto Log10CaAlSelectCoeff      = RegisterParameterDouble(Model, CompartmentParams, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	auto Log10MgAlSelectCoeff      = RegisterParameterDouble(Model, CompartmentParams, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	auto Log10NaAlSelectCoeff      = RegisterParameterDouble(Model, CompartmentParams, "(log10) Na/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
-	auto Log10KAlSelectCoeff       = RegisterParameterDouble(Model, CompartmentParams, "(log10) K/Al exchange selectivity coefficient", Dimensionless, 0.0); //TODO
+	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerM3, 0.0, 0.0, 1000.0);
+	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0, 0.0, 1.0);
+	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0, -10.0, 10.0);
+	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0, 1.0, 5.0);
+	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for tripriotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK2DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 2nd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK3DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 3rd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK1AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK2AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0, -10.0, 10.0);
 	
 	
 	auto InitialECa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Ca on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
 	auto InitialEMg            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Mg on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
 	auto InitialENa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Na on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
 	auto InitialEK             = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable K on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
+	
 	
 	auto FlowFractions = RegisterParameterGroup(Model, "Flow fractions", Compartment, Compartment);
 	
@@ -192,6 +190,11 @@ AddMagicCoreModel(mobius_model *Model)
 	auto InitialF            = RegisterEquationInitialValue(Model, "Initial F mass", MEqPerM2);
 	SetInitialValue(Model, TotalF, InitialF);
 	
+	auto Log10CaAlSelectCoeff      = RegisterEquation(Model, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless);
+	auto Log10MgAlSelectCoeff      = RegisterEquation(Model, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless);
+	auto Log10NaAlSelectCoeff      = RegisterEquation(Model, "(log10) Na/Al exchange selectivity coefficient", Dimensionless);
+	auto Log10KAlSelectCoeff       = RegisterEquation(Model, "(log10) K/Al exchange selectivity coefficient", Dimensionless);
+	
 	//TODO: Also have to compute selectivity coeffs
 	
 	EQUATION(Model, InitialCa,
@@ -288,13 +291,32 @@ AddMagicCoreModel(mobius_model *Model)
 		{
 			MagicCoreInitial(Input, Param, Result, issoil, conv);
 		}
-		//printf("SO4: %g\n", Result.conc_SO4);
-		//printf("CaAl: %g\n", Result.Log10CaAlSelectCoeff);
-		//printf("MgAl: %g\n", Result.Log10MgAlSelectCoeff);
-		//printf("NaAl: %g\n", Result.Log10NaAlSelectCoeff);
-		//printf("KAl: %g\n", Result.Log10KAlSelectCoeff);
+		
+		SET_RESULT(Log10CaAlSelectCoeff, Result.Log10CaAlSelectCoeff);
+		SET_RESULT(Log10MgAlSelectCoeff, Result.Log10MgAlSelectCoeff);
+		SET_RESULT(Log10NaAlSelectCoeff, Result.Log10NaAlSelectCoeff);
+		SET_RESULT(Log10KAlSelectCoeff, Result.Log10KAlSelectCoeff);
+		
 		return Result.conc_SO4;
 	)
+	
+	//NOTE: These stay constant through the run
+	EQUATION(Model, Log10CaAlSelectCoeff,
+		return LAST_RESULT(Log10CaAlSelectCoeff);
+	)
+	
+	EQUATION(Model, Log10MgAlSelectCoeff,
+		return LAST_RESULT(Log10MgAlSelectCoeff);
+	)
+	
+	EQUATION(Model, Log10NaAlSelectCoeff,
+		return LAST_RESULT(Log10NaAlSelectCoeff);
+	)
+	
+	EQUATION(Model, Log10KAlSelectCoeff,
+		return LAST_RESULT(Log10KAlSelectCoeff);
+	)
+	
 	
 	EQUATION(Model, InitialCl,
 		double initconc        = RESULT(ClExternalFlux) / RESULT(Discharge); // Assumes initial steady state
@@ -522,10 +544,10 @@ AddMagicCoreModel(mobius_model *Model)
 		Param.SO4HalfSat                 = PARAMETER(SO4HalfSat);
 		Param.SO4MaxCap                  = PARAMETER(SO4MaxCap);
 		
-		Param.Log10CaAlSelectCoeff       = PARAMETER(Log10CaAlSelectCoeff);
-		Param.Log10MgAlSelectCoeff       = PARAMETER(Log10MgAlSelectCoeff);
-		Param.Log10NaAlSelectCoeff       = PARAMETER(Log10NaAlSelectCoeff);
-		Param.Log10KAlSelectCoeff        = PARAMETER(Log10KAlSelectCoeff);
+		Param.Log10CaAlSelectCoeff       = RESULT(Log10CaAlSelectCoeff);
+		Param.Log10MgAlSelectCoeff       = RESULT(Log10MgAlSelectCoeff);
+		Param.Log10NaAlSelectCoeff       = RESULT(Log10NaAlSelectCoeff);
+		Param.Log10KAlSelectCoeff        = RESULT(Log10KAlSelectCoeff);
 		
 		bool   issoil     = PARAMETER(IsSoil);
 		double conv       = PARAMETER(ConvergenceCriterion);
