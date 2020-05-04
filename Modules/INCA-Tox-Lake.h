@@ -116,6 +116,8 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto ReachContaminantDegradationRateConstant = GetParameterDoubleHandle(Model, "Contaminant degradation rate constant in the stream");
 	
 	auto AtmosphericContaminantConcentrationIn = GetInputHandle(Model, "Atmospheric contaminant concentration");
+	auto DepositionToLand                      = GetInputHandle(Model, "Contaminant deposition to land");
+	
 	
 	auto DegradationResponseToTemperature = GetParameterDoubleHandle(Model, "Degradation rate response to one degree change in temperature");
 	auto TemperatureAtWhichDegradationRatesAreMeasured = GetParameterDoubleHandle(Model, "Temperature at which degradation rates are measured");
@@ -159,6 +161,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, EpilimnionContaminantDegradation,
+		//TODO: Using the reach value here makes it compute this for each reach!
 		return PARAMETER(ReachContaminantDegradationRateConstant)*RESULT(EpilimnionContaminantMass)*RESULT(EpilimnionDegradationTemperatureModifier);
 	)
 	
@@ -166,10 +169,12 @@ AddIncaToxLakeModule(mobius_model *Model)
 		return PARAMETER(ReachContaminantDegradationRateConstant)*RESULT(HypolimnionContaminantMass)*RESULT(HypolimnionDegradationTemperatureModifier);
 	)
 	
+	auto Reach = GetIndexSetHandle(Model, "Reaches");
 	
 	EQUATION(Model, EpilimnionContaminantMass,
-		double in = RESULT(ReachContaminantFlux);
-		double out = RESULT(ReachFlow)*RESULT(EpilimnionContaminantConc)*86400.0;     //NOTE: Assume lake outflow=inflow
+		auto LastReach = INDEX_NUMBER(Reach, INDEX_COUNT(Reach)-1);
+		double in = RESULT(ReachContaminantFlux, LastReach) + INPUT(DepositionToLand)*PARAMETER(LakeSurfaceArea);
+		double out = RESULT(ReachFlow, LastReach)*RESULT(EpilimnionContaminantConc)*86400.0;     //NOTE: Assume lake outflow=inflow
 		
 		return in - out - RESULT(LayerExchange) - RESULT(PhotoDegradation) - RESULT(DiffusiveAirLakeExchangeFlux)
 			- RESULT(EpilimnionContaminantDegradation);
