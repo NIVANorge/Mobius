@@ -107,6 +107,7 @@ struct magic_param
 
 struct magic_coeff
 {
+	//These are computed by the SetEquilibriumConstants routine.
 	//TODO: Document these!
 	
 	double K_C[2];            // K_C[0]=[HCO3-][H+]/[CO2], K_C[1]=[CO3 2-][H+]/[HCO3-]
@@ -845,16 +846,17 @@ void
 MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_init_result &Result, bool IsSoil, double Conv)
 {
 	// This is supposed to be run once at the beginning of the simulation to compute some initial values.
+	// It does almost exactly the same as the MagicCore, but instead of computing most exchangeable fractions, it assumes they are known and computes selectivity coefficients instead.
 	
 	double SumBaseCationConc = 2.0*Input.conc_Ca + 2.0*Input.conc_Mg + Input.conc_Na + Input.conc_K;
-	magic_coeff Coeff = {};
-	//NOTE: Here we don't use the selectivity coefficients computed in SetEquilibriumConstants. If that changes, we have to compute SoilCationExchange;
+	
+	//NOTE: Here we don't use the selectivity coefficients computed in SetEquilibriumConstants. So we don't use the SoilCationExchange value, i.e. we can just set it to 0.
 	double SoilCationExchange = 0.0;
 	
 	Result.IonicStrength = 0.0;
 	
 	//TODO: We should be able to refactor the below into a do/while loop.
-	
+	magic_coeff Coeff = {};
 	SetEquilibriumConstants(Param, Coeff, IsSoil, Result.IonicStrength, SoilCationExchange);
 	
 	double conc_CO2 = Coeff.HenrysLawConstant*Param.PartialPressureCO2/100.0;
@@ -907,7 +909,6 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 			conc_CO2 = Coeff.HenrysLawConstant*Param.PartialPressureCO2/100.0;
 			conc_H = 1.0 / pow(10.0, pH - 6.0);
 			conc_Al = Coeff.GibbsAlSolubility * pow(conc_H, Param.HAlOH3Exponent);
-			//printf("pH %g, H %g, Al %g\n", pH, conc_H, conc_Al);
 			
 			Result.conc_SO4 = SolveFreeSO4(Coeff, Input.all_SO4, conc_Al);
 			conc_F = SolveFreeFluoride(Coeff, Input.all_F, conc_Al);

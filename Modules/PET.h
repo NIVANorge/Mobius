@@ -181,3 +181,51 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	
 	EndModule(Model);
 }
+
+/*
+TODO: Finish the below...
+
+static void
+AddPenmanMonteithPETModule(mobius_model *Model)
+{
+	
+	
+	EQUATION(Model, AerodynamicResistance,
+	
+		double h    = PARAMETER(CanopyHeight);
+		double z_0c = PARAMETER(RoughnessParameterClosedCanopy);   // m
+		double L    = RESULT(LeafAreaIndex);
+		double tt   = (-1.0 + exp(0.909 - 3.03*z_0c/h));
+		double c_d  = tt*tt*tt*tt/4.0;                             // drag coefficient for individual canopy element 
+	
+		//Thom formulation (Thom 75):
+		double z_w = PARAMETER(HeightOfWindInstrument);
+		double z_om = //roughness length governing momentum transfer
+		double z_h = PARAMETER(HeightOfHumidityMeasurement);
+		double z_oh = 0.1*z_om; //roughness length governing transfer of heat and vapor
+		double d = //zero plane displacement height .. computation
+		double u_z = INPUT(WindSpeed);
+		double k = 0.41; //Kármán's constant
+		
+		r_a = log((z_w - d)/z_om)*log((z_h-d)/z_oh)/(k*k*u_z);
+		return r_a;
+	)
+	
+	EQUATION(Model, PotentialEvapotranspiration,
+		double lambda_v = RESULT(LatentHeatOfVaporization);        // J/kg
+		double delta    = RESULT(SlopeOfSaturationPressureCurve);  // Pa/K
+		double R_n      = RESULT(NetRadiation);                    // W/m2
+		double G        = RESULT(SoilHeatFlux);                    // W/m2
+		double v_s      = RESULT(SaturationVaporPressure);
+		double v_a      = RESULT(ActualVaporPressure);
+		double rho_a    = //air density at constant pressure
+		double c_p      = //specific heat capacity of air
+		double gamma    = RESULT(PsychrometricConstant);
+		double r_s      = RESULT(SurfaceResistance);
+		double r_a      = RESULT(AerodynamicResistance);
+		
+		return (1.0/lambda_v) * (delta*(R_n - G) + rho_a*c_p*(v_s - v_a)/r_a) / (delta + gamma*(1.0 + r_s/r_a));
+	)
+*/
+}
+

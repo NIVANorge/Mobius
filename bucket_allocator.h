@@ -5,6 +5,7 @@
 	This is an allocator useful for doing temporary allocation of memory, where you don't want to deallocate until you are finished with everything.
 	
 	It does not use multiple bucket sizes like a proper "bucket allocator", I just didn't find any other good name for it.
+	TODO: Probably should be renamed to linear_allocator
 	It is usually best to set the bucket size so high that you don't need to allocate many buckets in the common use case.
 	
 	Note, this is a very memory-inefficient implementation if it overflows the buckets a lot, as it does not go back to earlier buckets to see if they have space for a smaller allocation if they have overflowed once. So you typically want large bucket sizes compared to the allocation sizes.
@@ -153,7 +154,7 @@ struct array
 	inline T& operator[](size_t Index) { return Data[Index]; }
 	inline const T& operator[](size_t Index) const { return Data[Index]; }
 	
-	//NOTE: For C++ - style iteration
+	//NOTE: For C++11 - style iteration
 	inline T* begin() { return Data; }
 	inline T* end()   { return Data + Count; }
 	inline const T* begin() const { return Data; }
