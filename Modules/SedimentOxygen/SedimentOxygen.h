@@ -180,13 +180,12 @@ AddSedimentOxygenModule(mobius_model *Model)
 
 	auto SedSolver = RegisterSolver(Model, "Sediment solver", 0.1, IncaDascru);
 	
-	auto ConcOcean = RegisterEquation(Model, "C-1 - oxygen conc in ocean", UMolsPerCm3);
-	auto Conc0     = RegisterEquationODE(Model, "C0 - oxygen conc at boundary between ocean and sediment", UMolsPerCm3, SedSolver);
-	auto Conc1     = RegisterEquationODE(Model, "C1 - oxygen conc at center of production zone", UMolsPerCm3, SedSolver);
-	auto Conc2     = RegisterEquationODE(Model, "C2 - oxygen conc at boundary between prod and non-prod zones", UMolsPerCm3, SedSolver);
-	auto Conc3     = RegisterEquationODE(Model, "C3 - oxygen conc at center of non-production zone", UMolsPerCm3, SedSolver);
+	auto Conc0     = RegisterEquation(Model, "C0 - oxygen conc in ocean", UMolsPerCm3);
+	//auto Conc1     = RegisterEquationODE(Model, "C1 - oxygen conc at center of production zone", UMolsPerCm3, SedSolver);
+	//auto Conc2     = RegisterEquationODE(Model, "C2 - oxygen conc at boundary between prod and non-prod zones", UMolsPerCm3, SedSolver);
+	//auto Conc3     = RegisterEquationODE(Model, "C3 - oxygen conc at center of non-production zone", UMolsPerCm3, SedSolver);
 	
-	EQUATION(Model, ConcOcean,
+	EQUATION(Model, Conc0,
 		//NOTE: Garcia & Gordon 92
 		
 		double A0 = 5.80818;
@@ -217,6 +216,82 @@ AddSedimentOxygenModule(mobius_model *Model)
 		return O2;
 	)
 
+	
+	
+	#define ConcEq(LevIDX) \
+	auto Conc##LevIDX = RegisterEquationODE(Model, "C"#LevIDX , UMolsPerCm3, SedSolver);
+	
+	ConcEq(1)
+	ConcEq(2)
+	ConcEq(3)
+	ConcEq(4)
+	ConcEq(5)
+	ConcEq(6)
+	ConcEq(7)
+	ConcEq(8)
+	ConcEq(9)
+	ConcEq(10)
+	ConcEq(11)
+	ConcEq(12)
+	ConcEq(13)
+	ConcEq(14)
+	ConcEq(15)
+	ConcEq(16)
+	ConcEq(17)
+	ConcEq(18)
+	ConcEq(19)
+	ConcEq(20)
+	
+	auto Conc21 = RegisterEquation(Model, "C21", UMolsPerCm3);
+	EQUATION(Model, Conc21,
+		return 0.0;
+	)
+	
+	
+	#define LevelEq(LevIDXLow, LevIDX, LevIDXUp) \
+	EQUATION(Model, Conc##LevIDX,                                                          \
+		double Z    = PARAMETER(DBLThickness) - (double)LevIDX*0.1;                        \
+		double Zupp = Z + 0.1;                                                             \
+		double Zlow = Z - 0.1;                                                             \
+		double Cupp = RESULT(Conc##LevIDXUp);                                              \
+		double C    = RESULT(Conc##LevIDX);                                                \
+		double Clow = RESULT(Conc##LevIDXLow);                                             \
+		double D0   = RESULT(OxygenDiffusivityInWater);                                    \
+		double D    = D0*PARAMETER(SedimentPorosity);                                      \
+		double Dupp = Zupp > 0.0 ? D : D0;                                                 \
+		double Dlow = Zlow > 0.0 ? D : D0;                                                 \
+		double diff = Diffusion(Z, Zlow, Zupp, Dlow, Dupp, C, Clow, Cupp);                       \
+		double prod = RESULT(OxygenProductionRate)/PARAMETER(ProductionZoneThickness);     \
+		double Zprod = PARAMETER(ProductionZoneThickness);                                 \
+		if(Z > 0.0 || Z < -PARAMETER(ProductionZoneThickness)) prod = 0.0;                 \
+		double resp = RESULT(OxygenRespirationRate)*C;                                     \
+		return (diff + prod - resp)*3600.0;                                                \
+	)
+	
+	LevelEq(0, 1, 2)
+	LevelEq(1, 2, 3)
+	LevelEq(2, 3, 4)
+	LevelEq(3, 4, 5)
+	LevelEq(4, 5, 6)
+	LevelEq(5, 6, 7)
+	LevelEq(6, 7, 8)
+	LevelEq(7, 8, 9)
+	LevelEq(8, 9, 10)
+	LevelEq(9, 10, 11)
+	LevelEq(10, 11, 12)
+	LevelEq(11, 12, 13)
+	LevelEq(12, 13, 14)
+	LevelEq(13, 14, 15)
+	LevelEq(14, 15, 16)
+	LevelEq(15, 16, 17)
+	LevelEq(16, 17, 18)
+	LevelEq(17, 18, 19)
+	LevelEq(18, 19, 20)
+	LevelEq(19, 20, 21)
+	
+	
+	
+/*	
 	EQUATION(Model, Conc0,
 		double Zupp = PARAMETER(DBLThickness);
 		double Z    = 0.0;
@@ -276,6 +351,6 @@ AddSedimentOxygenModule(mobius_model *Model)
 		double resp = RESULT(OxygenRespirationRate)*C;
 		return (diff + prod - resp)*3600.0; // Convert 1/s to 1/h
 	)
-	
+*/
 	EndModule(Model);
 }

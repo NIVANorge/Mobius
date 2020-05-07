@@ -1,7 +1,7 @@
 
 #define MOBIUS_TIMESTEP_VERBOSITY 0
-#define MOBIUS_TEST_FOR_NAN 0
-#define MOBIUS_EQUATION_PROFILING 1
+#define MOBIUS_TEST_FOR_NAN 1
+#define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 1
 #define MOBIUS_INDEX_BOUNDS_TESTS 1
 
@@ -11,13 +11,15 @@
 #include "../../Modules/INCA-Sed.h"
 #include "../../Modules/SoilTemperature.h"
 #include "../../Modules/WaterTemperature.h"
+#include "../../Modules/SolarRadiation.h"
 #include "../../Modules/INCA-Tox-C.h"
 #include "../../Modules/INCA-Tox.h"
+#include "../../Modules/INCA-Tox-Lake.h"
 
 int main()
 {
-    const char *InputFile = "testinputs.dat";
-	const char *ParameterFile = "testparameters.dat";
+    const char *InputFile = "COWI/inputs_COWI.dat";
+	const char *ParameterFile = "COWI/params_COWI.dat";
 	
 	mobius_model *Model = BeginModelDefinition("INCA-Tox");
 	
@@ -25,8 +27,10 @@ int main()
 	AddINCASedModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddWaterTemperatureModel(Model);
+	AddMaxSolarRadiationModule(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
+	AddIncaToxLakeModule(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFile);
 	
