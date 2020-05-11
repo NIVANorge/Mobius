@@ -89,7 +89,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0);
 	
-	auto SoilFlowExponent        = RegisterParameterDouble(Model, HydrologyLand, "Soil water flow exponent", Dimensionless, 0.0);
+	//auto SoilFlowExponent        = RegisterParameterDouble(Model, HydrologyLand, "Soil water flow exponent", Dimensionless, 0.0);
 	
 	
 	// General parameters that vary by land class and reach
@@ -177,8 +177,6 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, SoilWaterFlow,
 		return (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)) * ActivationControl(RESULT(SoilWaterVolume), PARAMETER(SoilFieldCapacity), 0.01) / PARAMETER(SoilWaterTimeConstant);
-		
-		//return std::pow(PARAMETER(SoilWaterTimeConstant), PARAMETER(SoilFlowExponent) * (RESULT(SoilWaterVolume) - PARAMETER(SoilFieldCapacity)));
 	)
 	
 	
