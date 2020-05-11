@@ -1,11 +1,11 @@
-# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-05-06 14:09:09
+# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-05-11 12:43:39
 
 index_sets:
 
 parameters:
 ###################### (no index sets) ######################
 "Timesteps" :     #(days) [0, 18446744073709551615]
-10000
+1000
 
 "Start date" :     # [1000-01-01, 3000-12-31]
 1970-01-01
@@ -40,14 +40,20 @@ parameters:
 "Luminosity conversion factor" :     #(dimensionless) [0, 5] µmol(photons)/s per W (depends on desired PAR spectrum)
 4.1
 
-"Maximum O2 production" :     #(µmol(oxygen)/cm2/s) [0, 1000]
-0.007
+"Maximum O2 production at 20°C" :     #(µmol(oxygen)/cm2/s) [0, 1000]
+2e-05
 
 "Maximum light utilization" :     #(µmol(oxygen)/µmol(photons)) [0, 10]
-1e-07
+5e-11
 
-"Respiration rate at 20°C" :     #(1/s) [0, 0.01]
+"Production rate response to a 10° change in temperature (Q10)" :     #(dimensionless) [1, 4]
+2
+
+"Respiration rate at 20°C" :     #(µmol(oxygen)/µmol(TOC)/s) [0, 0.01]
 2e-05
+
+"TOC concentration" :     #(µmol(oxygen)/cm3) [0, 0.1]
+1
 
 "Respiration rate response to a 10° change in temperature (Q10)" :     #(dimensionless) [1, 4]
 2
@@ -55,12 +61,12 @@ parameters:
 "Ocean depth" :     #(m) [0, 200]
 10
 
-"Thickness of diffusive boundary layer" :     #(cm) [0, 30]
+"Upper layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the topmost one belonging to production zone
 5
 
-"Thickness of production zone" :     #(cm) [0, 30]
-5
+"Lower layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the lowest one belonging to the production zone
+6
 
-"Thickness of non-production zone" :     #(cm) [0, 200]
-30
+"Z resolution" :     #(cm) [0.001, 1] Thickness of each computed layer
+0.1
 

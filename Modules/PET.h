@@ -90,6 +90,8 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	auto EmissivityAtZero            = RegisterParameterDouble(Model, PETParams, "Net emissivity at 0 vapor pressure", Dimensionless, 0.34, 0.0, 1.0);
 	auto PressureEmissivityChange    = RegisterParameterDouble(Model, PETParams, "Change in emissivity caused by vapor pressure", InvRootkPa, 0.139, 0.0, 0.5);
 	
+	auto EarthAlbedo                 = RegisterParameterDouble(Model, PETParams, "Earth albedo", Dimensionless, 0.23, 0.0, 1.0);
+	
 	//NOTE: Since the hydrology module depends on this one being registered first, we have to register the snow depth equation we need from it. It does not matter, because when the hydrology module registers it later it will refer to the same entity.
 	auto SnowDepthAsWaterEquivalent = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
 
@@ -143,7 +145,8 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 		double sd   = RESULT(SnowDepthAsWaterEquivalent);
 		double srad = INPUT(SolarRadiation);
 		
-		if(sd < 0.5) return srad * (1.0 - 0.23);
+		double alb = PARAMETER(EarthAlbedo);
+		if(sd < 0.5) return srad * (1.0 - alb);
 		
 		return srad * (1.0 - 0.8);
 	)
