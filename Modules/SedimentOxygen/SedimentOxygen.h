@@ -24,6 +24,15 @@ DynamicViscosity(double Temperature, double Salinity, double Pressure)
 	return 2.414e-5*pow(10.0, 247.8 / (Temperature+273.15 - 140.0));
 }
 
+inline double
+Respiration(double Rate, double Conc, double Threshold)
+{
+	if(Conc < Threshold)
+	{
+		return Rate * (Conc / Threshold);
+	}
+	return Rate;
+}
 
 void
 AddSedimentOxygenModule(mobius_model *Model)
@@ -73,6 +82,7 @@ AddSedimentOxygenModule(mobius_model *Model)
 	auto RespirationAt20Degrees     = RegisterParameterDouble(Model, SedimentOx, "Respiration rate at 20°C", UMolsPerUMolsPerS, 0.0, 0.0, 0.01);
 	auto TOCConcentration           = RegisterParameterDouble(Model, SedimentOx, "TOC concentration", UMolsPerCm3, 0.0, 0.0, 0.1);
 	auto Q10Resp                    = RegisterParameterDouble(Model, SedimentOx, "Respiration rate response to a 10° change in temperature (Q10)", Dimensionless, 2.0, 1.0, 4.0);
+	auto RespirationCutoffThreshold = RegisterParameterDouble(Model, SedimentOx, "Respiration cutoff threshold", UMolsPerCm3, 10.0, 0.01, 100.0);
 	
 	auto OceanDepth                 = RegisterParameterDouble(Model, SedimentOx, "Ocean depth", M, 10.0, 0.0, 200.0);
 	//auto DBLThickness               = RegisterParameterDouble(Model, SedimentOx, "Thickness of diffusive boundary layer", Cm, 5.0, 0.0, 30.0);
@@ -341,7 +351,7 @@ AddSedimentOxygenModule(mobius_model *Model)
 		double diff = Diffusion(Z, Zlow, Zupp, Dlow, Dupp, C, Clow, Cupp);                 \
 		double prod = RESULT(OxygenProductionRate);                                        \
 		if(LevIDX < PARAMETER(UpperProductionIndex) || LevIDX > PARAMETER(LowerProductionIndex)) prod = 0.0;  \
-		double resp = RESULT(OxygenRespirationRate)*C;                                     \
+		double resp = Respiration(RESULT(OxygenRespirationRate), C, PARAMETER(RespirationCutoffThreshold));                                     \
 		return (diff + prod - resp)*3600.0;                                                \
 	)
 	
