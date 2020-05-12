@@ -18,6 +18,7 @@ inputs :
 
 include_file "langtjern_observed.dat"
 include_file "deposition.dat"
+include_file "langtjern_additional_met.dat"
 
 "Air temperature" :
 -17.21

@@ -13,6 +13,8 @@ additional_timeseries:
 
 inputs :
 
+include_file "storgama_additional_met.dat"
+
 "Air temperature" :
 1.4
 5.1
