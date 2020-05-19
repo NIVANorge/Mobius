@@ -116,9 +116,9 @@ AddMagicCoreModel(mobius_model *Model)
 	auto CaAlRatio         = RegisterEquation(Model, "Ca ion to aqueous Al molar ratio", Dimensionless);
 	
 	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MMolPerM3, CompartmentSolver);
-	SetInitialValue(Model, ConcH, 1.0);
+	//SetInitialValue(Model, ConcH, 1.0); //NOTE: This is computed in the initial value step instead.
 	auto IonicStrength = RegisterEquation(Model, "Ionic strength", Dimensionless);
-	SetInitialValue(Model, IonicStrength, 0.0);
+	//SetInitialValue(Model, IonicStrength, 0.0); //NOTE: This is computed in the initial value step instead.
 	
 	
 	auto CaInput       = RegisterEquation(Model, "Ca input from other compartments", MEqPerM2PerTs);
@@ -198,7 +198,7 @@ AddMagicCoreModel(mobius_model *Model)
 	//TODO: Also have to compute selectivity coeffs
 	
 	EQUATION(Model, InitialCa,
-		double initconc        = RESULT(CaExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = (RESULT(CaExternalFlux) + RESULT(CaInput)) / RESULT(Discharge); // Assume initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -208,7 +208,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialMg,
-		double initconc        = RESULT(MgExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = (RESULT(MgExternalFlux) + RESULT(MgInput)) / RESULT(Discharge); // Assume initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -218,7 +218,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialNa,
-		double initconc        = RESULT(NaExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = (RESULT(NaExternalFlux) + RESULT(NaInput)) / RESULT(Discharge); // Assume initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -228,7 +228,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialK,
-		double initconc        = RESULT(KExternalFlux) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = (RESULT(KExternalFlux) + RESULT(KInput)) / RESULT(Discharge); // Assume initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -238,7 +238,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialNH4,
-		double initconc        = RESULT(NH4ExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = (RESULT(NH4ExternalFlux) + RESULT(NH4Input)) / RESULT(Discharge); // Assumes initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -246,6 +246,8 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialSO4,
+
+		double initconc = (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / RESULT(Discharge); //Concentration of all SO4
 
 		magic_param Param = {};
 		magic_init_input Input = {};
@@ -275,10 +277,11 @@ AddMagicCoreModel(mobius_model *Model)
 		Input.conc_Na  = RESULT(NaExternalFlux) / RESULT(Discharge);
 		Input.conc_K   = RESULT(KExternalFlux) / RESULT(Discharge);
 		Input.conc_NH4 = RESULT(NH4ExternalFlux) / RESULT(Discharge);
-		Input.all_SO4  = RESULT(SO4ExternalFlux) / (RESULT(Discharge)*2.0);
+		Input.all_SO4  = initconc/2.0;
 		Input.conc_Cl  = RESULT(ClExternalFlux) / RESULT(Discharge);
 		Input.conc_NO3 = RESULT(NO3ExternalFlux) / RESULT(Discharge);
 		Input.all_F    = RESULT(FExternalFlux) / RESULT(Discharge);
+		
 		
 		Input.exchangeable_Ca = PARAMETER(InitialECa)*0.01;
 		Input.exchangeable_Mg = PARAMETER(InitialEMg)*0.01;
@@ -296,8 +299,20 @@ AddMagicCoreModel(mobius_model *Model)
 		SET_RESULT(Log10MgAlSelectCoeff, Result.Log10MgAlSelectCoeff);
 		SET_RESULT(Log10NaAlSelectCoeff, Result.Log10NaAlSelectCoeff);
 		SET_RESULT(Log10KAlSelectCoeff, Result.Log10KAlSelectCoeff);
+		SET_RESULT(IonicStrength, Result.IonicStrength);
+		SET_RESULT(ConcH, Result.conc_H);
 		
-		return Result.conc_SO4;
+		
+		double exchangeable_SO4 = (PARAMETER(SO4MaxCap)*2.0*Result.conc_SO4/(PARAMETER(SO4HalfSat) + 2.0*Result.conc_SO4));
+		
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		double SMESO4        = exchangeable_SO4*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		if(!PARAMETER(IsSoil)) SMESO4 = 0.0;
+		double total_SO4 = SMESO4 + WaterVolume*initconc;
+		
+		return total_SO4;
 	)
 	
 	//NOTE: These stay constant through the run
@@ -319,7 +334,7 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, InitialCl,
-		double initconc        = RESULT(ClExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = (RESULT(ClExternalFlux) + RESULT(ClInput)) / RESULT(Discharge); // Assumes initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -327,7 +342,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, InitialNO3,
-		double initconc        = RESULT(NO3ExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = (RESULT(NO3ExternalFlux) + RESULT(NO3Input)) / RESULT(Discharge); // Assumes initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -336,7 +351,7 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, InitialF,
-		double initconc        = RESULT(FExternalFlux) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = (RESULT(FExternalFlux) + RESULT(FInput)) / RESULT(Discharge); // Assumes initial steady state
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
