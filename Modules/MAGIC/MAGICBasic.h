@@ -95,15 +95,15 @@ void AddMagicModel(mobius_model *Model)
 	auto NO3Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto FWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	
-	auto CaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto MgSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto NaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Na sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto KSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "K sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto NH4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NH4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto SO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "SO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto ClSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Cl sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto NO3Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NO3 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
-	auto FSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "F sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0);
+	auto CaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto MgSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto NaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Na sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto KSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "K sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto NH4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NH4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto SO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "SO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto ClSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Cl sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto NO3Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NO3 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto FSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "F sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	
 	auto CaSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto MgSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
@@ -191,10 +191,10 @@ void AddMagicModel(mobius_model *Model)
 	auto NH4ExternalFluxWithoutImmobilisation = RegisterEquation(Model, "NH4 flux disregarding discharge and immobilisation", MEqPerM2PerTs);
 	*/
 	
-	auto Nitrification      = RegisterParameterDouble(Model, CAndN, "Nitrification", MMolPerM2PerYear, 0.0, -100.0, 500.0, "Negative rate sets value as % of inputs");
-	auto Denitrification    = RegisterParameterDouble(Model, CAndN, "Denitrification", MMolPerM2PerYear, 0.0, -100.0, 500.0, "Negative rate sets value as % of inputs");
-	auto NO3Immobilisation  = RegisterParameterDouble(Model, CAndN, "NO3 immobilisation", MMolPerM2PerYear, 0.0, -100.0, 500.0, "Negative rate sets value as % of inputs");
-	auto NH4Immobilisation  = RegisterParameterDouble(Model, CAndN, "NH4 immobilisation", MMolPerM2PerYear, 0.0, -100.0, 500.0, "Negative rate sets value as % of inputs");
+	auto Nitrification      = RegisterParameterDouble(Model, CAndN, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto Denitrification    = RegisterParameterDouble(Model, CAndN, "Denitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto NO3Immobilisation  = RegisterParameterDouble(Model, CAndN, "NO3 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto NH4Immobilisation  = RegisterParameterDouble(Model, CAndN, "NH4 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	auto Mineralisation     = RegisterParameterDouble(Model, CAndN, "Mineralisation", MMolPerM2PerYear, 0.0, 0.0, 500.0);
 	
 	auto NO3Inputs           = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
@@ -310,11 +310,11 @@ void AddMagicModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, NO3Inputs,
-		return RESULT(NO3Deposition) + RESULT(FractionOfYear) * (PARAMETER(NO3Weathering) + PARAMETER(NO3Sources) - PARAMETER(NO3Sinks)) + RESULT(NitrificationEq);   // TODO: is it correct to subtract sinks here?
+		return RESULT(NO3Deposition) + RESULT(FractionOfYear) * (PARAMETER(NO3Weathering) + PARAMETER(NO3Sources)) + RESULT(NitrificationEq);
 	)
 	
 	EQUATION(Model, NH4Inputs,
-		return RESULT(NH4Deposition) + RESULT(FractionOfYear) * (PARAMETER(NH4Weathering) + PARAMETER(Mineralisation) + PARAMETER(NH4Sources) - PARAMETER(NH4Sinks));   // TODO: is it correct to subtract sinks here?
+		return RESULT(NH4Deposition) + RESULT(FractionOfYear) * (PARAMETER(NH4Weathering) + PARAMETER(Mineralisation) + PARAMETER(NH4Sources));
 	)
 	
 	EQUATION(Model, NitrificationEq,
@@ -351,39 +351,75 @@ void AddMagicModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, CaExternalFlux,
-		return RESULT(CaDeposition) + (PARAMETER(CaWeathering) + PARAMETER(CaSources) - PARAMETER(CaSinks))*RESULT(FractionOfYear);   // sources+sinks, etc.
+		double in = RESULT(CaDeposition) + (PARAMETER(CaWeathering) + PARAMETER(CaSources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(CaSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, MgExternalFlux,
-		return RESULT(MgDeposition) + (PARAMETER(MgWeathering) + PARAMETER(MgSources) - PARAMETER(MgSinks))*RESULT(FractionOfYear);
+		double in = RESULT(MgDeposition) + (PARAMETER(MgWeathering) + PARAMETER(MgSources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(MgSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, NaExternalFlux,
-		return RESULT(NaDeposition) + (PARAMETER(NaWeathering) + PARAMETER(NaSources) - PARAMETER(NaSinks))*RESULT(FractionOfYear);
+		double in = RESULT(NaDeposition) + (PARAMETER(NaWeathering) + PARAMETER(NaSources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(NaSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, KExternalFlux,
-		return RESULT(KDeposition) + (PARAMETER(KWeathering) + PARAMETER(KSources) - PARAMETER(KSinks))*RESULT(FractionOfYear);
+		double in = RESULT(KDeposition) + (PARAMETER(KWeathering) + PARAMETER(KSources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(KSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, SO4ExternalFlux,
-		return RESULT(SO4Deposition) + (PARAMETER(SO4Weathering) + PARAMETER(SO4Sources) - PARAMETER(SO4Sinks))*RESULT(FractionOfYear);
+		double in = RESULT(SO4Deposition) + (PARAMETER(SO4Weathering) + PARAMETER(SO4Sources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(SO4Sinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, ClExternalFlux,
-		return RESULT(ClDeposition) + (PARAMETER(ClWeathering) + PARAMETER(ClSources) - PARAMETER(ClSinks))*RESULT(FractionOfYear);
+		double in = RESULT(ClDeposition) + (PARAMETER(ClWeathering) + PARAMETER(ClSources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(ClSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, FExternalFlux,
-		return RESULT(FDeposition) + (PARAMETER(FWeathering) + PARAMETER(FSources) - PARAMETER(FSinks))*RESULT(FractionOfYear);
+		double in = RESULT(FDeposition) + (PARAMETER(FWeathering) + PARAMETER(FSources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(FSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
 	)
 	
 	EQUATION(Model, NO3ExternalFlux,
-		return RESULT(NO3Inputs) - RESULT(DenitrificationEq) - RESULT(NO3ImmobilisationEq);
+		double in = RESULT(NO3Inputs);
+		double sink = PARAMETER(NO3Sinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2 - RESULT(DenitrificationEq) - RESULT(NO3ImmobilisationEq);
 	)
 	
-	EQUATION(Model, NH4ExternalFlux, 
-		return RESULT(NH4Inputs) - RESULT(NitrificationEq) - RESULT(NH4ImmobilisationEq);
+	EQUATION(Model, NH4ExternalFlux,
+		double in = RESULT(NH4Inputs);
+		double sink = PARAMETER(NH4Sinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2 - RESULT(NitrificationEq) - RESULT(NH4ImmobilisationEq);
 	)
 	
 	

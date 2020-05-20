@@ -95,7 +95,7 @@ AddMagicCoreModel(mobius_model *Model)
 	auto ExchangeableMg    = RegisterEquation(Model, "Exchangeable Mg on soil as % of CEC", Percent);
 	auto ExchangeableNa    = RegisterEquation(Model, "Exchangeable Na on soil as % of CEC", Percent);
 	auto ExchangeableK     = RegisterEquation(Model, "Exchangeable K on soil as % of CEC", Percent);
-	auto ExchangeableSO4   = RegisterEquation(Model, "Exchangeable SO4 on soil as % of CEC", Percent);
+	auto ExchangeableSO4   = RegisterEquation(Model, "Exchangeable SO4 on soil as % of max cap", Percent);
 	auto BaseSaturationSoil = RegisterEquation(Model, "Base saturation of soil (ECa + EMg + ENa + EK)", Percent);
 
 	auto ConcHCO3          = RegisterEquation(Model, "HCO3 (Bicarbonate) ionic concentration", MMolPerM3);
