@@ -7,7 +7,7 @@ GenerateDataSet(mobius_model *Model)
 	{
 		MOBIUS_FATAL_ERROR("ERROR: Attempted to generate a data set before the model was finalized using an EndModelDefinition call." << std::endl);
 	}
-	mobius_data_set *DataSet = new mobius_data_set {};  //NOTE: The {} ensures that all member pointers are set initialized to 0. This is important.
+	mobius_data_set *DataSet = new mobius_data_set {};  //NOTE: The {} ensures that all member pointers are initialized to 0. This is important.
 	
 	DataSet->Model = Model;
 	
@@ -143,19 +143,13 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 		}
 	}
 	
-	//NOTE: We don't copy any of the following as they will be re-generated when you try to run the DataSet.
-	//std::vector<parameter_value> FastParameterLookup;
-	//std::vector<size_t> FastInputLookup;
-	//std::vector<size_t> FastResultLookup;
-	//std::vector<size_t> FastLastResultLookup;
-	
 	return Copy;
 }
 
 static void
 SetupStorageStructureSpecifer(storage_structure *Structure, index_t *IndexCounts, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
 {
-	// Call FirstUnusedHandle   TotalHandleCount or something like that instead?
+	//TODO Call FirstUnusedHandle   TotalHandleCount or something like that instead?
 	
 	size_t UnitCount = Structure->Units.Count;
 	Structure->TotalCountForUnit = BucketMemory->Allocate<size_t>(UnitCount);

@@ -66,7 +66,7 @@ def initialize(dllname) :
 	mobiusdll.DllGetIndexSetsCount.argtypes = [ctypes.c_void_p]
 	mobiusdll.DllGetIndexSetsCount.restype = ctypes.c_uint64
 	
-	mobiusdll.DllGetIndexSets.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p)]
+	mobiusdll.DllGetIndexSets.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_char_p)]
 
 	mobiusdll.DllGetIndexCount.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 	mobiusdll.DllGetIndexCount.restype = ctypes.c_uint64
@@ -445,7 +445,8 @@ class DataSet :
 		num = mobiusdll.DllGetIndexSetsCount(self.datasetptr)
 		check_dll_error()
 		array = (ctypes.c_char_p * num)()
-		mobiusdll.DllGetIndexSets(self.datasetptr, array)
+		typearray = (ctypes.c_char_p * num)()    #NOTE to not break the API, we don't return this. Maybe fix later?
+		mobiusdll.DllGetIndexSets(self.datasetptr, array, typearray)
 		check_dll_error()
 		return [string.decode('utf-8') for string in array]
 		

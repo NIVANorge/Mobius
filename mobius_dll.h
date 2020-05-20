@@ -53,10 +53,9 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition("SimplyP");
+	mobius_model *Model = BeginModelDefinition();
 	
 	DllBuildModel(Model);
-	
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	
 	EndModelDefinition(Model);
@@ -70,9 +69,84 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	
 	CHECK_ERROR_END
 	
-	return 0;
+	return nullptr;
 }
 
+DLLEXPORT void *
+DllSetupModelBlankIndexSets(char *InputFilename)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_model *Model = BeginModelDefinition();
+	
+	DllBuildModel(Model);
+	ReadInputDependenciesFromFile(Model, InputFilename);
+	
+	EndModelDefinition(Model);
+	
+	mobius_data_set *DataSet = GenerateDataSet(Model);
+	
+	return (void *)DataSet;
+	
+	CHECK_ERROR_END
+	
+	return nullptr;
+}
+
+DLLEXPORT void
+DllReadInputs(void *DataSetPtr, char *InputFilename)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	ReadInputsFromFile(DataSet, InputFilename);
+	
+	CHECK_ERROR_END
+}
+
+DLLEXPORT void
+DllSetIndexes(void *DataSetPtr, char *IndexSetName, u64 IndexCount, char **IndexNames)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	std::vector<token_string> IndexNames2;
+	IndexNames2.reserve(IndexCount);
+	for(size_t Idx = 0; Idx < IndexCount; ++Idx) IndexNames2.push_back(token_string(IndexNames[Idx]));
+	
+	SetIndexes(DataSet, token_string(IndexSetName), IndexNames2);
+	
+	CHECK_ERROR_END
+}
+
+struct dll_branch_index
+{
+	char *IndexName;
+	u64 BranchCount;
+	char **BranchNames;
+};
+DLLEXPORT void
+DllSetBranchIndexes(void *DataSetPtr, char *IndexSetName, u64 IndexCount, dll_branch_index *Indexes)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	std::vector<std::pair<token_string, std::vector<token_string>>> Inputs;
+	Inputs.reserve(IndexCount);
+	for(size_t Idx = 0; Idx < IndexCount; ++Idx)
+	{
+		dll_branch_index &Data = Indexes[Idx];
+		std::pair<token_string, std::vector<token_string>> Branches;
+		Branches.first = token_string(Data.IndexName);
+		Branches.second.reserve(Data.BranchCount);
+		for(size_t Bch = 0; Bch < Data.BranchCount; ++Bch) Branches.second.push_back(token_string(Data.BranchNames[Bch]));
+		Inputs.push_back(Branches);
+	}
+	
+	SetBranchIndexes(DataSet, token_string(IndexSetName), Inputs);
+	
+	CHECK_ERROR_END
+}
 
 DLLEXPORT const char *
 DllGetModelName(void *DataSetPtr)
@@ -465,7 +539,7 @@ DllGetIndexSetsCount(void *DataSetPtr)
 }
 
 DLLEXPORT void
-DllGetIndexSets(void *DataSetPtr, const char **NamesOut)
+DllGetIndexSets(void *DataSetPtr, const char **NamesOut, const char **TypesOut)
 {
 	CHECK_ERROR_BEGIN
 	
@@ -473,7 +547,9 @@ DllGetIndexSets(void *DataSetPtr, const char **NamesOut)
 	const mobius_model *Model = DataSet->Model;
 	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{
-		NamesOut[IndexSetHandle - 1] = GetName(Model, index_set_h {IndexSetHandle});
+		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
+		NamesOut[IndexSetHandle - 1] = Spec.Name;
+		TypesOut[IndexSetHandle - 1] = Spec.Type == IndexSetType_Basic ? "basic" : "branched";
 	}
 	
 	CHECK_ERROR_END
