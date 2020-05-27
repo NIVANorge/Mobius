@@ -1222,9 +1222,11 @@ inline void
 SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValueEquation)
 {
 	REGISTRATION_BLOCK(Model)
-	if(Model->Equations.Specs[InitialValueEquation.Handle].Type != EquationType_InitialValue)
+	equation_type Type = Model->Equations.Specs[InitialValueEquation.Handle].Type;
+	if(Type != EquationType_InitialValue && Type != EquationType_Basic)
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the equation " << GetName(Model, InitialValueEquation) << " as an initial value of another equation, but it was not registered as an equation of type EquationInitialValue." << std::endl);
+		//NOTE: We found out that sometimes we want the ability to force an equation to be its own initial value equation.
+		MOBIUS_FATAL_ERROR("ERROR: Tried to set the equation " << GetName(Model, InitialValueEquation) << " as an initial value of another equation, but it was not registered as an equation of type EquationInitialValue or Equation." << std::endl);
 	}
 	
 	Model->Equations.Specs[Equation.Handle].InitialValueEquation = InitialValueEquation;
