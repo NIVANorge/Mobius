@@ -15,7 +15,7 @@
 int main()
 {
     const char *InputFile     = "testinputs.dat";
-	const char *ParameterFile = "testparameters.dat";
+	const char *ParameterFile = "testparameters2.dat";
 	
 	mobius_model *Model = BeginModelDefinition("MAGIC");
 	
