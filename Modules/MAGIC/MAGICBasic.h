@@ -49,11 +49,11 @@ void AddMagicModel(mobius_model *Model)
 	
 	auto DischargePar          = RegisterParameterDouble(Model, ClimateParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
 	auto TemperaturePar        = RegisterParameterDouble(Model, ClimateParams, "Temperature", DegreesCelsius, 0.0, -20.0, 40.0, "Default value for timesteps where no input series value is provided");
-	auto PartialPressureCO2Par = RegisterParameterDouble(Model, ClimateParams, "CO2 partial pressure", Percent, 20.0, 0.1, 40.0, "Default value for timesteps where no input series value is provided");
-	auto DOCConcentrationPar   = RegisterParameterDouble(Model, ClimateParams, "DOC concentration", MMolPerM3, 0.0, 0.0, 500.0, "Default value for timesteps where no input series value is provided");
+	auto PartialPressureCO2Par = RegisterParameterDouble(Model, ClimateParams, "CO2 partial pressure", Percent, 0.3, 0.1, 2.0, "Default value for timesteps where no input series value is provided");
+	auto OAConcentrationPar   = RegisterParameterDouble(Model, ClimateParams, "Organic acid concentration", MMolPerM3, 0.0, 0.0, 500.0, "Default value for timesteps where no input series value is provided");
 
 	
-	
+	auto IsTopLayer                = RegisterParameterBool(Model, DepositionCompartment, "This is a top layer", true, "Whether or not this compartment should receive deposition.");
 	auto CaDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Ca dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto MgDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Mg dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto NaDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Na dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
@@ -70,7 +70,7 @@ void AddMagicModel(mobius_model *Model)
 	auto DischargeSeasonal         = RegisterInput(Model, "Discharge seasonal distribution", Percent);
 	auto TemperatureIn             = RegisterInput(Model, "Temperature", DegreesCelsius);
 	auto PartialPressureCO2In      = RegisterInput(Model, "CO2 partial pressure", Percent);
-	auto DOCConcentrationIn        = RegisterInput(Model, "DOC concentration", MMolPerM3);
+	auto OAConcentrationIn        = RegisterInput(Model, "Organic acid concentration", MMolPerM3);
 
 	auto CaWetDepositionScale      = RegisterInput(Model, "Ca wet deposition scaling factor", Dimensionless);
 	auto MgWetDepositionScale      = RegisterInput(Model, "Mg wet deposition scaling factor", Dimensionless);
@@ -122,7 +122,7 @@ void AddMagicModel(mobius_model *Model)
 	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
 	auto Temperature        = RegisterEquation(Model, "Temperature", DegreesCelsius);
 	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
-	auto DOCConcentration   = RegisterEquation(Model, "DOC concentration", MMolPerM3);
+	auto OAConcentration   = RegisterEquation(Model, "Organic acid concentration", MMolPerM3);
 	
 	auto CompartmentSolver = GetSolverHandle(Model, "Compartment solver");
 	
@@ -244,10 +244,10 @@ void AddMagicModel(mobius_model *Model)
 		return par;
 	)
 	
-	EQUATION(Model, DOCConcentration,
+	EQUATION(Model, OAConcentration,
 		//TODO: 0 is actually a legitimate value here too though...
-		double par = PARAMETER(DOCConcentrationPar);
-		double in = INPUT(DOCConcentrationIn);
+		double par = PARAMETER(OAConcentrationPar);
+		double in = INPUT(OAConcentrationIn);
 		if(in > 0.0) return in;
 		return par;
 	)
@@ -255,54 +255,63 @@ void AddMagicModel(mobius_model *Model)
 	EQUATION(Model, CaDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(CaWetDepositionScale)) scale = INPUT(CaWetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(CaWetDeposition)*scale*PARAMETER(CaDryDepositionFactor);
 	)
 	
 	EQUATION(Model, MgDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(MgWetDepositionScale)) scale = INPUT(MgWetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(MgWetDeposition)*scale*PARAMETER(MgDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NaDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(NaWetDepositionScale)) scale = INPUT(NaWetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(NaWetDeposition)*scale*PARAMETER(NaDryDepositionFactor);
 	)
 	
 	EQUATION(Model, KDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(KWetDepositionScale)) scale = INPUT(KWetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(KWetDeposition)*scale*PARAMETER(KDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NH4Deposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(NH4WetDepositionScale)) scale = INPUT(NH4WetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(NH4WetDeposition)*scale*PARAMETER(NH4DryDepositionFactor);
 	)
 	
 	EQUATION(Model, SO4Deposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(SO4WetDepositionScale)) scale = INPUT(SO4WetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(SO4WetDeposition)*scale*PARAMETER(SO4DryDepositionFactor);
 	)
 	
 	EQUATION(Model, ClDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(ClWetDepositionScale)) scale = INPUT(ClWetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(ClWetDeposition)*scale*PARAMETER(ClDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NO3Deposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(NO3WetDepositionScale)) scale = INPUT(NO3WetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(NO3WetDeposition)*scale*PARAMETER(NO3DryDepositionFactor);
 	)
 	
 	EQUATION(Model, FDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(FWetDepositionScale)) scale = INPUT(FWetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		return RESULT(Precipitation)*PARAMETER(FWetDeposition)*scale*PARAMETER(FDryDepositionFactor);
 	)
 	

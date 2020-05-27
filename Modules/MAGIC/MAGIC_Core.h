@@ -833,6 +833,7 @@ struct magic_init_input
 struct magic_init_result
 {
 	double conc_SO4;
+	double conc_F;
 	double conc_H;
 	
 	double Log10CaAlSelectCoeff;      // Selectivity coefficient for Ca/Al exchange (log10)
@@ -871,9 +872,9 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	
 	Result.conc_SO4 = SolveFreeSO4(Coeff, Input.all_SO4, conc_Al);
 	
-	double conc_F = SolveFreeFluoride(Coeff, Input.all_F, conc_Al);
+	Result.conc_F = SolveFreeFluoride(Coeff, Input.all_F, conc_Al);
 	
-	double SumAcidAnionConc = 2.0*Result.conc_SO4 + Input.conc_Cl + Input.conc_NO3 + conc_F;
+	double SumAcidAnionConc = 2.0*Result.conc_SO4 + Input.conc_Cl + Input.conc_NO3 + Result.conc_F;
 	
 	double conc_HCO3 = Coeff.K_C[0]*conc_CO2/Result.conc_H;
 	
@@ -891,7 +892,7 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	double all_DOC = conc_H2AM + 2.0*conc_HA2M + 3.0*conc_A3M;
 	
 	// Calculate net charge on all Al species (positive-negative) (meq/m3) - from H, AL3+, SO4, F and organic acid trivalent anion concens (mmol/m3)
-	double NetAlCharge = CalculateNetAlCharge(Coeff, Result.conc_H, conc_Al, Result.conc_SO4, conc_F, conc_A3M);
+	double NetAlCharge = CalculateNetAlCharge(Coeff, Result.conc_H, conc_Al, Result.conc_SO4, Result.conc_F, conc_A3M);
 	
 	// Calculate charge balance for all aqueous ions
 	double ChargeBalance = SumBaseCationConc + NetAlCharge + Result.conc_H + Input.conc_NH4 - SumAcidAnionConc - all_DIC - all_DOC - Coeff.K_W/Result.conc_H;
@@ -904,7 +905,7 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 		{
 			Result.pH += dpH;
 			
-			Result.IonicStrength = ComputeIonicStrength(Coeff, Input.conc_Ca, Input.conc_Mg, Result.conc_SO4, conc_CO3, conc_HA2M, conc_H2AM, Input.conc_Na, Input.conc_K, Input.conc_NH4, Input.conc_Cl, Input.conc_NO3, conc_F, Result.conc_H, conc_HCO3, conc_A3M, conc_Al, conc_AlHA);
+			Result.IonicStrength = ComputeIonicStrength(Coeff, Input.conc_Ca, Input.conc_Mg, Result.conc_SO4, conc_CO3, conc_HA2M, conc_H2AM, Input.conc_Na, Input.conc_K, Input.conc_NH4, Input.conc_Cl, Input.conc_NO3, Result.conc_F, Result.conc_H, conc_HCO3, conc_A3M, conc_Al, conc_AlHA);
 			
 			SetEquilibriumConstants(Param, Coeff, IsSoil, Result.IonicStrength, SoilCationExchange);
 			
@@ -913,15 +914,15 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 			conc_Al = Coeff.GibbsAlSolubility * pow(Result.conc_H, Param.HAlOH3Exponent);
 			
 			Result.conc_SO4 = SolveFreeSO4(Coeff, Input.all_SO4, conc_Al);
-			conc_F = SolveFreeFluoride(Coeff, Input.all_F, conc_Al);
-			SumAcidAnionConc = 2.0*Result.conc_SO4 + Input.conc_Cl + Input.conc_NO3 + conc_F;
+			Result.conc_F = SolveFreeFluoride(Coeff, Input.all_F, conc_Al);
+			SumAcidAnionConc = 2.0*Result.conc_SO4 + Input.conc_Cl + Input.conc_NO3 + Result.conc_F;
 			conc_HCO3 = Coeff.K_C[0]*conc_CO2/Result.conc_H;
 			conc_CO3 = Coeff.K_C[1]*conc_HCO3/Result.conc_H;
 			all_DIC = conc_HCO3 + 2.0*conc_CO3;
 			CalculateDOC(Coeff, Param.conc_DOC, Result.conc_H, conc_Al,
 				conc_H3A, conc_H2AM, conc_HA2M, conc_A3M, conc_AlA, conc_AlHA);
 			all_DOC = conc_H2AM + 2.0*conc_HA2M + 3.0*conc_A3M;
-			NetAlCharge = CalculateNetAlCharge(Coeff, Result.conc_H, conc_Al, Result.conc_SO4, conc_F, conc_A3M);
+			NetAlCharge = CalculateNetAlCharge(Coeff, Result.conc_H, conc_Al, Result.conc_SO4, Result.conc_F, conc_A3M);
 			double ChargeBalance0 = SumBaseCationConc + NetAlCharge + Result.conc_H + Input.conc_NH4 - SumAcidAnionConc - all_DIC - all_DOC - Coeff.K_W/Result.conc_H;
 			
 			if(abs(ChargeBalance0) < Conv) break;

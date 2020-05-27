@@ -39,11 +39,13 @@ AddMagicCoreModel(mobius_model *Model)
 	auto ConvergenceCriterion      = RegisterParameterDouble(Model, GeneralParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
 	auto SolverStep                = RegisterParameterDouble(Model, GeneralParams, "Solver sub-step length", Ts, 0.1, 1e-3, 1.0);
 	
+	auto CatchmentArea             = RegisterParameterDouble(Model, GeneralParams, "Catchment area", Km2, 1.0, 0.0, 100000.0);
+	
 	auto Compartment = RegisterIndexSet(Model, "Compartment");
 	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters", Compartment);
 	
 	auto IsSoil                    = RegisterParameterBool(Model, CompartmentParams, "This is a soil compartment", true);
-	auto Area                      = RegisterParameterDouble(Model, CompartmentParams, "Surface area", Km2, 1.0, 0.0, 100000.0);
+	auto RelativeArea              = RegisterParameterDouble(Model, CompartmentParams, "Relative area", Dimensionless, 1.0, 0.0, 1.0, "The fraction of the catchment covered by this compartment");
 	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0);
 	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0);
 	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 600.0, 0.0, 2000.0);
@@ -142,8 +144,6 @@ AddMagicCoreModel(mobius_model *Model)
 	auto NO3Output     = RegisterEquation(Model, "NO3 output via discharge", MEqPerM2PerTs, CompartmentSolver);
 	auto FOutput       = RegisterEquation(Model, "F output via discharge", MEqPerM2PerTs, CompartmentSolver);
 	
-	
-	//TODO: Initial value for these:
 	auto TotalCa       = RegisterEquationODE(Model, "Total Ca mass", MEqPerM2, CompartmentSolver);
 	auto TotalMg       = RegisterEquationODE(Model, "Total Mg mass", MEqPerM2, CompartmentSolver);
 	auto TotalNa       = RegisterEquationODE(Model, "Total Na mass", MEqPerM2, CompartmentSolver);
@@ -159,7 +159,7 @@ AddMagicCoreModel(mobius_model *Model)
 	auto Discharge          = RegisterEquation(Model, "Discharge", MPerTs);
 	auto Temperature        = RegisterEquation(Model, "Temperature", DegreesCelsius);
 	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
-	auto DOCConcentration   = RegisterEquation(Model, "DOC concentration", MMolPerM3);
+	auto OAConcentration    = RegisterEquation(Model, "Organic acid concentration", MMolPerM3);
 	
 	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
 	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
@@ -170,6 +170,25 @@ AddMagicCoreModel(mobius_model *Model)
 	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
 	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
 	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
+	
+	auto InitialConcCa       = RegisterEquationInitialValue(Model, "Initial Ca concentration", MMolPerM3);
+	SetInitialValue(Model, ConcCa, InitialConcCa);
+	auto InitialConcMg       = RegisterEquationInitialValue(Model, "Initial Mg concentration", MMolPerM3);
+	SetInitialValue(Model, ConcMg, InitialConcMg);
+	auto InitialConcNa       = RegisterEquationInitialValue(Model, "Initial Na concentration", MMolPerM3);
+	SetInitialValue(Model, ConcNa, InitialConcNa);
+	auto InitialConcK        = RegisterEquationInitialValue(Model, "Initial K concentration", MMolPerM3);
+	SetInitialValue(Model, ConcK, InitialConcK);
+	auto InitialConcNH4      = RegisterEquationInitialValue(Model, "Initial NH4 concentration", MMolPerM3);
+	SetInitialValue(Model, ConcNH4, InitialConcNH4);
+	auto InitialConcAllSO4   = RegisterEquationInitialValue(Model, "Initial total sulfate in solution", MMolPerM3);
+	SetInitialValue(Model, ConcAllSO4, InitialConcAllSO4);
+	auto InitialConcCl       = RegisterEquationInitialValue(Model, "Initial Cl concentration", MMolPerM3);
+	SetInitialValue(Model, ConcCl, InitialConcCl);
+	auto InitialConcNO3      = RegisterEquationInitialValue(Model, "Initial NO3 concentration", MMolPerM3);
+	SetInitialValue(Model, ConcNO3, InitialConcNO3);
+	auto InitialConcAllF     = RegisterEquationInitialValue(Model, "Initial total fluoride in solution", MMolPerM3);
+	SetInitialValue(Model, ConcAllF, InitialConcAllF);
 	
 	auto InitialCa           = RegisterEquationInitialValue(Model, "Initial Ca mass", MEqPerM2);
 	SetInitialValue(Model, TotalCa, InitialCa);
@@ -190,15 +209,61 @@ AddMagicCoreModel(mobius_model *Model)
 	auto InitialF            = RegisterEquationInitialValue(Model, "Initial F mass", MEqPerM2);
 	SetInitialValue(Model, TotalF, InitialF);
 	
+	//NOTE: We need to force this equation to have itself as its initial value computation, otherwise it doesn't get evaluated and just has a 0 initial value, causing initial input fluxes to other compartments to be wrong.
+	SetInitialValue(Model, CaOutput, CaOutput);
+	SetInitialValue(Model, MgOutput, MgOutput);
+	SetInitialValue(Model, NaOutput, NaOutput);
+	SetInitialValue(Model, KOutput, KOutput);
+	SetInitialValue(Model, NH4Output, NH4Output);
+	SetInitialValue(Model, SO4Output, SO4Output);
+	SetInitialValue(Model, ClOutput, ClOutput);
+	SetInitialValue(Model, NO3Output, NO3Output);
+	SetInitialValue(Model, FOutput, FOutput);
+	
 	auto Log10CaAlSelectCoeff      = RegisterEquation(Model, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless);
 	auto Log10MgAlSelectCoeff      = RegisterEquation(Model, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless);
 	auto Log10NaAlSelectCoeff      = RegisterEquation(Model, "(log10) Na/Al exchange selectivity coefficient", Dimensionless);
 	auto Log10KAlSelectCoeff       = RegisterEquation(Model, "(log10) K/Al exchange selectivity coefficient", Dimensionless);
 	
-	//TODO: Also have to compute selectivity coeffs
+
+	EQUATION(Model, InitialConcCa,
+		return (RESULT(CaExternalFlux) + RESULT(CaInput)) / (2.0 * RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcMg,
+		return (RESULT(MgExternalFlux) + RESULT(MgInput)) / (2.0 * RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcNa,
+		return (RESULT(NaExternalFlux) + RESULT(NaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcK,
+		return (RESULT(KExternalFlux) + RESULT(KInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcNH4,
+		return (RESULT(NH4ExternalFlux) + RESULT(NH4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcAllSO4,
+		return (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / (2.0*RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcCl,
+		return (RESULT(ClExternalFlux) + RESULT(ClInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcNO3,
+		return (RESULT(NO3ExternalFlux) + RESULT(NO3Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcAllF,
+		return (RESULT(FExternalFlux) + RESULT(FInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
 	
 	EQUATION(Model, InitialCa,
-		double initconc        = (RESULT(CaExternalFlux) + RESULT(CaInput)) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = RESULT(ConcCa)*2.0;  //MMol->MEq
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -208,7 +273,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialMg,
-		double initconc        = (RESULT(MgExternalFlux) + RESULT(MgInput)) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = RESULT(ConcMg)*2.0;
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -218,7 +283,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialNa,
-		double initconc        = (RESULT(NaExternalFlux) + RESULT(NaInput)) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = RESULT(ConcNa);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -228,7 +293,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialK,
-		double initconc        = (RESULT(KExternalFlux) + RESULT(KInput)) / RESULT(Discharge); // Assume initial steady state
+		double initconc        = RESULT(ConcK);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -238,7 +303,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialNH4,
-		double initconc        = (RESULT(NH4ExternalFlux) + RESULT(NH4Input)) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = RESULT(ConcNH4);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -246,9 +311,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialSO4,
-
-		double initconc = (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / RESULT(Discharge); //Concentration of all SO4
-
+		
 		magic_param Param = {};
 		magic_init_input Input = {};
 		magic_init_result Result = {};
@@ -256,7 +319,7 @@ AddMagicCoreModel(mobius_model *Model)
 		Param.Depth              = PARAMETER(Depth);
 		Param.Temperature        = RESULT(Temperature);
 		Param.PartialPressureCO2 = RESULT(PartialPressureCO2);
-		Param.conc_DOC           = RESULT(DOCConcentration);
+		Param.conc_DOC           = RESULT(OAConcentration);
 		
 		Param.Log10AlOH3EquilibriumConst = PARAMETER(Log10AlOH3EquilibriumConst);
 		Param.HAlOH3Exponent             = PARAMETER(HAlOH3Exponent);
@@ -272,15 +335,15 @@ AddMagicCoreModel(mobius_model *Model)
 		Param.SO4HalfSat                 = PARAMETER(SO4HalfSat);
 		Param.SO4MaxCap                  = PARAMETER(SO4MaxCap);
 		
-		Input.conc_Ca  = RESULT(CaExternalFlux) / (RESULT(Discharge)*2.0);
-		Input.conc_Mg  = RESULT(MgExternalFlux) / (RESULT(Discharge)*2.0);
-		Input.conc_Na  = RESULT(NaExternalFlux) / RESULT(Discharge);
-		Input.conc_K   = RESULT(KExternalFlux) / RESULT(Discharge);
-		Input.conc_NH4 = RESULT(NH4ExternalFlux) / RESULT(Discharge);
-		Input.all_SO4  = initconc/2.0;
-		Input.conc_Cl  = RESULT(ClExternalFlux) / RESULT(Discharge);
-		Input.conc_NO3 = RESULT(NO3ExternalFlux) / RESULT(Discharge);
-		Input.all_F    = RESULT(FExternalFlux) / RESULT(Discharge);
+		Input.conc_Ca  = RESULT(ConcCa);
+		Input.conc_Mg  = RESULT(ConcMg);
+		Input.conc_Na  = RESULT(ConcNa);
+		Input.conc_K   = RESULT(ConcK);
+		Input.conc_NH4 = RESULT(ConcNH4);
+		Input.all_SO4  = RESULT(ConcAllSO4);
+		Input.conc_Cl  = RESULT(ConcCl);
+		Input.conc_NO3 = RESULT(ConcNO3);
+		Input.all_F    = RESULT(ConcAllF);
 		
 		
 		Input.exchangeable_Ca = PARAMETER(InitialECa)*0.01;
@@ -302,6 +365,7 @@ AddMagicCoreModel(mobius_model *Model)
 		SET_RESULT(IonicStrength, Result.IonicStrength);
 		SET_RESULT(ConcH, Result.conc_H);
 		
+		double initconc = RESULT(ConcAllSO4)*2.0; //Initial total concentration in solution.
 		
 		double exchangeable_SO4 = (PARAMETER(SO4MaxCap)*2.0*Result.conc_SO4/(PARAMETER(SO4HalfSat) + 2.0*Result.conc_SO4));
 		
@@ -315,26 +379,8 @@ AddMagicCoreModel(mobius_model *Model)
 		return total_SO4;
 	)
 	
-	//NOTE: These stay constant through the run
-	EQUATION(Model, Log10CaAlSelectCoeff,
-		return LAST_RESULT(Log10CaAlSelectCoeff);
-	)
-	
-	EQUATION(Model, Log10MgAlSelectCoeff,
-		return LAST_RESULT(Log10MgAlSelectCoeff);
-	)
-	
-	EQUATION(Model, Log10NaAlSelectCoeff,
-		return LAST_RESULT(Log10NaAlSelectCoeff);
-	)
-	
-	EQUATION(Model, Log10KAlSelectCoeff,
-		return LAST_RESULT(Log10KAlSelectCoeff);
-	)
-	
-	
 	EQUATION(Model, InitialCl,
-		double initconc        = (RESULT(ClExternalFlux) + RESULT(ClInput)) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = RESULT(ConcCl);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -342,7 +388,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, InitialNO3,
-		double initconc        = (RESULT(NO3ExternalFlux) + RESULT(NO3Input)) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = RESULT(ConcNO3);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -351,7 +397,7 @@ AddMagicCoreModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, InitialF,
-		double initconc        = (RESULT(FExternalFlux) + RESULT(FInput)) / RESULT(Discharge); // Assumes initial steady state
+		double initconc        = RESULT(ConcF);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -359,44 +405,62 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	
+	//NOTE: These stay constant through the run
+	EQUATION(Model, Log10CaAlSelectCoeff,
+		CURRENT_INDEX(Compartment);                  //NOTE: Otherwise, this doesn't have an index set dependency properly registered.
+		return LAST_RESULT(Log10CaAlSelectCoeff);
+	)
 	
+	EQUATION(Model, Log10MgAlSelectCoeff,
+		CURRENT_INDEX(Compartment);
+		return LAST_RESULT(Log10MgAlSelectCoeff);
+	)
 	
+	EQUATION(Model, Log10NaAlSelectCoeff,
+		CURRENT_INDEX(Compartment);
+		return LAST_RESULT(Log10NaAlSelectCoeff);
+	)
+	
+	EQUATION(Model, Log10KAlSelectCoeff,
+		CURRENT_INDEX(Compartment);
+		return LAST_RESULT(Log10KAlSelectCoeff);
+	)
 	
 	
 	EQUATION(Model, CaOutput,
-		return RESULT(Discharge)*2.0*RESULT(ConcCa);
+		return RESULT(Discharge)*2.0*RESULT(ConcCa) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, MgOutput,
-		return RESULT(Discharge)*2.0*RESULT(ConcMg);
+		return RESULT(Discharge)*2.0*RESULT(ConcMg) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NaOutput,
-		return RESULT(Discharge)*RESULT(ConcNa);
+		return RESULT(Discharge)*RESULT(ConcNa) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, KOutput,
-		return RESULT(Discharge)*RESULT(ConcK);
+		return RESULT(Discharge)*RESULT(ConcK) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NH4Output,
-		return RESULT(Discharge)*RESULT(ConcNH4);
+		return RESULT(Discharge)*RESULT(ConcNH4) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, SO4Output,
-		return RESULT(Discharge)*2.0*RESULT(ConcAllSO4);
+		return RESULT(Discharge)*2.0*RESULT(ConcAllSO4) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, ClOutput,
-		return RESULT(Discharge)*RESULT(ConcCl);
+		return RESULT(Discharge)*RESULT(ConcCl) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NO3Output,
-		return RESULT(Discharge)*RESULT(ConcNO3);
+		return RESULT(Discharge)*RESULT(ConcNO3) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, FOutput,
-		return RESULT(Discharge)*RESULT(ConcAllF);
+		return RESULT(Discharge)*RESULT(ConcAllF) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, CaInput,
@@ -404,9 +468,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(CaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(CaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, MgInput,
@@ -414,9 +478,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(MgOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(MgOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NaInput,
@@ -424,9 +488,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(NaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(NaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, KInput,
@@ -434,9 +498,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(KOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(KOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NH4Input,
@@ -444,9 +508,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(NH4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(NH4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, SO4Input,
@@ -454,9 +518,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(SO4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(SO4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, ClInput,
@@ -464,9 +528,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(ClOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(ClOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NO3Input,
@@ -474,9 +538,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(NO3Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(NO3Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, FInput,
@@ -484,9 +548,9 @@ AddMagicCoreModel(mobius_model *Model)
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(FOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(Area, OtherCompartment);
+			input += RESULT(FOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
-		return input / PARAMETER(Area);
+		return input / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, TotalCa,
@@ -543,7 +607,7 @@ AddMagicCoreModel(mobius_model *Model)
 		Param.Depth       = PARAMETER(Depth);
 		Param.Temperature = RESULT(Temperature);
 		Param.PartialPressureCO2 = RESULT(PartialPressureCO2);
-		Param.conc_DOC    = RESULT(DOCConcentration);
+		Param.conc_DOC    = RESULT(OAConcentration);
 		
 		Param.Log10AlOH3EquilibriumConst = PARAMETER(Log10AlOH3EquilibriumConst);
 		Param.HAlOH3Exponent             = PARAMETER(HAlOH3Exponent);
