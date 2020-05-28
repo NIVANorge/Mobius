@@ -143,7 +143,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double temp = RESULT(EpilimnionTemperature);
 		if(is > 0.0)
 		{
-			if(temp > 0.0) return 0.0;
+			if(temp > 0.0 && days >= 6.0) return 0.0;
 			return 1.0;
 		}
 		else
