@@ -105,6 +105,17 @@ DllReadInputs(void *DataSetPtr, char *InputFilename)
 }
 
 DLLEXPORT void
+DllReadParameters(void *DataSetPtr, char *ParameterFilename)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	ReadParametersFromFile(DataSet, ParameterFilename);
+	
+	CHECK_ERROR_END
+}
+
+DLLEXPORT void
 DllSetIndexes(void *DataSetPtr, char *IndexSetName, u64 IndexCount, char **IndexNames)
 {
 	CHECK_ERROR_BEGIN

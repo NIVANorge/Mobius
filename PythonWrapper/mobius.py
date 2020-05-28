@@ -6,6 +6,9 @@ mobiusdll = None
 
 class TimestepSize(ctypes.Structure):
 	_fields_ = [("type", ctypes.c_int), ("magnitude", ctypes.c_int)]
+	
+class dll_branch_index(ctypes.Structure):
+	_fields_ = [("IndexName", ctypes.c_char_p), ("BranchCount", ctypes.c_uint64), ("BranchNames", ctypes.POINTER(ctypes.c_char_p))]
 
 def initialize(dllname) :
 	global mobiusdll
@@ -17,6 +20,17 @@ def initialize(dllname) :
 	
 	mobiusdll.DllSetupModel.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
 	mobiusdll.DllSetupModel.restype  = ctypes.c_void_p
+	
+	mobiusdll.DllSetupModelBlankIndexSets.argtypes = [ctypes.c_char_p]
+	mobiusdll.DllSetupModelBlankIndexSets.restype  = ctypes.c_void_p
+	
+	mobiusdll.DllReadInputs.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+	
+	mobiusdll.DllReadParameters.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+	
+	mobiusdll.DllSetIndexes.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char_p)]
+		
+	mobiusdll.DllSetBranchIndexes.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint64, ctypes.POINTER(dll_branch_index)]
 
 	mobiusdll.DllRunModel.argtypes = [ctypes.c_void_p]
 
@@ -147,6 +161,34 @@ class DataSet :
 		datasetptr = mobiusdll.DllSetupModel(_CStr(parameterfilename), _CStr(inputfilename))
 		check_dll_error()
 		return cls(datasetptr)
+		
+	@classmethod
+	def setup_with_blank_index_sets(cls, inputfilename) :
+		datasetptr = mobiusdll.DllSetupModelBlankIndexSets(_CStr(inputfilename))
+		check_dll_error()
+		return cls(datasetptr)
+	
+	def set_indexes(self, index_set, indexes):
+		mobiusdll.DllSetIndexes(self.datasetptr, _CStr(index_set), len(indexes), _PackIndexes(indexes))
+		check_dll_error()
+		
+	def set_branch_indexes(self, index_set, indexes):
+		index_data = (dll_branch_index * len(indexes))()
+		for idx in range(len(indexes)) :
+			name, branch_inputs = indexes[idx]
+			index_data[idx].IndexName = _CStr(name)
+			index_data[idx].BranchCount = len(branch_inputs)
+			index_data[idx].BranchNames = _PackIndexes(branch_inputs)
+		mobiusdll.DllSetBranchIndexes(self.datasetptr, _CStr(index_set), len(indexes), index_data)
+		check_dll_error()
+	
+	def read_inputs(self, inputfilename) :
+		mobiusdll.DllReadInputs(self.datasetptr, _CStr(inputfilename))
+		check_dll_error()
+		
+	def read_parameters(self, parfilename) :
+		mobiusdll.DllReadParameters(self.datasetptr, _CStr(parfilename))
+		check_dll_error()
 		
 	def run_model(self) :
 		'''
