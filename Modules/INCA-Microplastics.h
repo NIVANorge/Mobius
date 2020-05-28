@@ -158,8 +158,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto SplashDetachmentScalingFactor          = RegisterParameterDouble(Model, SedimentLand, "Splash detachment scaling factor", SPerM, 0.001);
 	auto FlowErosionPotential                   = RegisterParameterDouble(Model, SedimentLand, "Flow erosion potential", KgPerSPerKm2, 0.074);
 	auto SplashDetachmentSoilErodibility        = RegisterParameterDouble(Model, SedimentLand, "Splash detachment soil erodibility", KgPerM2PerS, 1.0);
-	auto InitialSurfaceStore                    = RegisterParameterDouble(Model, SedimentLand, "Initial surface grain store", KgPerKm2, 100.0);
-	auto InitialImmobileStore                   = RegisterParameterDouble(Model, SedimentLand, "Initial immobile grain store", KgPerKm2, 100.0);
+	auto InitialSurfaceStore                    = RegisterParameterDouble(Model, SedimentLand, "Initial surface grain store", KgPerKm2, 0.0);
+	auto InitialImmobileStore                   = RegisterParameterDouble(Model, SedimentLand, "Initial immobile grain store", KgPerKm2, 0.0);
 	auto GrainInput                             = RegisterParameterDouble(Model, SedimentLand, "Grain input to land", KgPerKm2PerDay, 0.0);
 	
 	auto TransferMatrix = RegisterParameterGroup(Model, "Transfer matrix", Class, Class);
@@ -341,8 +341,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	auto SedimentReach = RegisterParameterGroup(Model, "Grain characteristics by subcatchment", Class, Reach);
 	
 	auto EffluentGrainConcentration       = RegisterParameterDouble(Model, SedimentReach, "Effluent grain concentration", MgPerL, 0.0, 0.0, 1e3, "Mass concentration of this type of particle in effluent input flow");
-	auto InitialMassOfBedGrainPerUnitArea = RegisterParameterDouble(Model, SedimentReach, "Initial mass of bed grain per unit area", KgPerM2, 10, 0.0, 1e3);
-	auto InitialSuspendedGrainMass        = RegisterParameterDouble(Model, SedimentReach, "Initial suspended grain mass", Kg, 1e2, 0.0, 1e8);
+	auto InitialMassOfBedGrainPerUnitArea = RegisterParameterDouble(Model, SedimentReach, "Initial mass of bed grain per unit area", KgPerM2, 0.0, 0.0, 1e3);
+	auto InitialSuspendedGrainMass        = RegisterParameterDouble(Model, SedimentReach, "Initial suspended grain mass", Kg, 0.0, 0.0, 1e8);
 	auto ConstantGrainDepositionToReach   = RegisterParameterDouble(Model, SedimentReach, "Constant grain deposition to reach", KgPerDay, 0.0, 0.0, 1e6, "Direct deposition to the reach not depending on erosion");
 	
 	auto ShearStressCoefficient           = RegisterParameterDouble(Model, Reaches, "Shear stress coefficient", Dimensionless, 1.0, 0.01, 10.0, "Tuning parameter to account for the shear stress not being the same as in ideal conditions");
@@ -446,13 +446,17 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ClassCriticalShieldsParameter,
-		return 0.5588*RESULT(SedimentBedCriticalShieldsParameter) * std::pow(PARAMETER(SmallestDiameterOfClass) / PARAMETER(MedianSedimentGrainSize), -0.503);
+		//double a = PARAMETER(SmallestDiameterOfClass);
+		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
+		return 0.5588*RESULT(SedimentBedCriticalShieldsParameter) * std::pow(a / PARAMETER(MedianSedimentGrainSize), -0.503);
 	)
 	
 	EQUATION(Model, ClassCriticalShearStress,
+		//double a = PARAMETER(SmallestDiameterOfClass);
+		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
 		double earthsurfacegravity = 9.807;
 		double waterdensity = 1000.0;  // TODO: Temperature dependence?
-		return RESULT(ClassCriticalShieldsParameter) * (PARAMETER(DensityOfClass) - waterdensity) * earthsurfacegravity * PARAMETER(SmallestDiameterOfClass);
+		return RESULT(ClassCriticalShieldsParameter) * (PARAMETER(DensityOfClass) - waterdensity) * earthsurfacegravity * a;
 	)
 	
 	EQUATION(Model, MaxGrainSizeForEntrainment,
