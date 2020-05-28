@@ -54,9 +54,11 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto EpiliminionThickness = RegisterParameterDouble(Model, LakeParams, "Epilimnion thickness", Metres, 0.0);
 	auto LakeSurfaceArea      = RegisterParameterDouble(Model, LakeParams, "Surface area", M2, 0.0);
 	
-	auto QuantumYield = RegisterParameterDouble(Model, LakeParams, "Quantum yield", Dimensionless, 0.0, 0.0, 1.0, "For photodegradation"); //TODO: Other unit
+	auto OpticalCrossection = RegisterParameterDouble(Model, LakeParams, "Optical crossection", Dimensionless, 255.0, 0.0, 1000.0, "For photodegradation"); //TODO: Other unit
 	
 	auto SecchiDepth          = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
+	
+	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0);
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.01, IncaDascru);
 	
@@ -211,21 +213,15 @@ AddIncaToxLakeModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, PhotoDegradation,
-		double oc_Nitro = 0.01; // m2/mg             Optical cross-section of DOM
-		double qy_Nitro = PARAMETER(QuantumYield);  // mg /mol quanta   Quantum yield
+		double oc_Nitro = PARAMETER(OpticalCrossection); // m2/mol Nitro            Optical cross-section of DOM
+		double qy_Nitro = 0.45;  // mol Nitro /mol quanta   Quantum yield
 		
-		double f_par = 0.45; //Fract.                of PAR in incoming solar radiation
-		double e_par = 240800.0; // J/mol              Average energy of Par photons
+		double f_uv = 0.06; //Fract.                of PAR in incoming solar radiation
+		double e_uv = 351843.0; // J/mol              Average energy of Par photons
 		
-		double d = PARAMETER(LakeDepth);
-		double d0 = PARAMETER(EpiliminionThickness);
-		double epilimnionvolume = PARAMETER(LakeSurfaceArea)*(2.0*d-d0)*d0/(3.0*d);
-		
-	
 		//‒oc_Nitro * qy_Nitro f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * [Nitrosamines]" in mg N m-3 d-1
 		double shortwave = RESULT(NetShortwaveRadiation)*RESULT(EpilimnionAttn)*PARAMETER(LakeSurfaceArea);
-		return oc_Nitro * qy_Nitro * (f_par / e_par) * 86400.0 * shortwave * RESULT(EpilimnionContaminantMass)*1e-6;
-		//return 0.0;
+		return oc_Nitro * qy_Nitro * (f_uv / e_uv) * 86400.0 * shortwave * RESULT(EpilimnionContaminantMass)*1e-6;
 	)
 	
 	
@@ -233,7 +229,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double atmospheric = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
 		double flux = RESULT(AirWaterTransferVelocity) * (RESULT(EpilimnionContaminantConc) - atmospheric/RESULT(AirWaterPartitioningCoefficient)) * PARAMETER(LakeSurfaceArea);
 		if(LAST_RESULT(IsIce) > 0.0) flux = 0.0;
-		return flux;
+		return PARAMETER(DiffusiveExchangeScale)*flux;
 	)
 	
 	
