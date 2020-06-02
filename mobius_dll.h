@@ -127,6 +127,11 @@ DllSetIndexes(void *DataSetPtr, char *IndexSetName, u64 IndexCount, char **Index
 	
 	SetIndexes(DataSet, token_string(IndexSetName), IndexNames2);
 	
+	if(DataSet->AllIndexesHaveBeenSet)
+	{
+		AllocateParameterStorage(DataSet);
+	}
+	
 	CHECK_ERROR_END
 }
 
@@ -155,6 +160,11 @@ DllSetBranchIndexes(void *DataSetPtr, char *IndexSetName, u64 IndexCount, dll_br
 	}
 	
 	SetBranchIndexes(DataSet, token_string(IndexSetName), Inputs);
+	
+	if(DataSet->AllIndexesHaveBeenSet)
+	{
+		AllocateParameterStorage(DataSet);
+	}
 	
 	CHECK_ERROR_END
 }
@@ -601,6 +611,9 @@ DllGetParameterIndexSetsCount(void *DataSetPtr, char *ParameterName)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->ParameterStorageStructure.HasBeenSetUp) return 0;
+	
 	entity_handle ParameterHandle = GetParameterHandle(DataSet->Model, ParameterName);
 	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
 	return DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets.Count;
@@ -616,6 +629,9 @@ DllGetParameterIndexSets(void *DataSetPtr, char *ParameterName, const char **Nam
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->ParameterStorageStructure.HasBeenSetUp) return;
+	
 	entity_handle ParameterHandle = GetParameterHandle(DataSet->Model, ParameterName);
 	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
 	size_t Idx = 0;

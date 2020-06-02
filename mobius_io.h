@@ -495,16 +495,18 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		
 		std::vector<size_t> Offsets;
 		
+		const std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
+		
 		while(true)
 		{
 			Token = Stream.PeekToken();
+			
 			if(Token.Type == TokenType_OpenBrace)
 			{
 				std::vector<token_string> IndexNames;
 				
 				Stream.ReadQuotedStringList(IndexNames);
 				
-				const std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 				if(IndexNames.size() != IndexSets.size())
 				{
 					Stream.PrintErrorHeader();
@@ -528,6 +530,11 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		
 		if(Offsets.empty())
 		{
+			if(IndexSets.size() > 0)
+			{
+				Stream.PrintErrorHeader();
+				MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input " << InputName << std::endl);
+			}
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input.Handle);
 			Offsets.push_back(Offset);
 		}

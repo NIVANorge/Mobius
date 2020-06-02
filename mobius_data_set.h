@@ -591,7 +591,7 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 			auto Find = DataSet->IndexNamesToHandle[IndexSetHandle].find(InputName);
 			if(Find == DataSet->IndexNamesToHandle[IndexSetHandle].end())
 			{
-				MOBIUS_FATAL_ERROR("ERROR: The index \"" << InputName << "\" appears an input to the index \"" << IndexName << "\", in the index set " << IndexSetName << ", before it itself is declared." << std::endl);
+				MOBIUS_FATAL_ERROR("ERROR: The index \"" << InputName << "\" appears as an input to the index \"" << IndexName << "\", in the index set " << IndexSetName << ", before it itself is declared." << std::endl);
 			}
 			index_t InputIndex = {IndexSetHandle, Find->second};
 			DataSet->BranchInputs[IndexSetHandle][IndexIndex][InputIdxIdx] = InputIndex;
