@@ -388,6 +388,8 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	SetInitialValue(Model, SuspendedGrainMass, InitialSuspendedGrainMass);
 	SetSolver(Model, SuspendedGrainMass, InstreamSedimentSolver);
 	
+	auto SuspendedGrainConcentration         = RegisterEquation(Model, "Suspended grain concentration", MgPerL);
+	
 	
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");
 	auto EffluentTimeseries = GetInputHandle(Model, "Effluent flow");
@@ -523,6 +525,10 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 			- RESULT(ReachSuspendedGrainOutput)
 			- RESULT(GrainAbstraction)
 			+ PARAMETER(ReachLength) * PARAMETER(ReachBottomWidth) * (RESULT(GrainEntrainment) - RESULT(GrainDeposition));
+	)
+	
+	EQUATION(Model, SuspendedGrainConcentration,
+		return 1000.0 * SafeDivide(RESULT(SuspendedGrainMass), RESULT(ReachVolume));
 	)
 	
 	/// Transferring mass between classes due to breakdown and other causes.
