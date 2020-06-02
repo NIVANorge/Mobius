@@ -34,6 +34,9 @@ AddPersistModel(mobius_model *Model)
 	auto MilligramsPerLiter   = RegisterUnit(Model, "mg/l");
 
 
+	auto SolverPrecGroup = RegisterParameterGroup(Model, "Solver resolution");
+	auto SolverPrec      = RegisterParameterDouble(Model, SolverPrecGroup, "Solver resolution", Dimensionless, 0.1, 0.001, 0.5, "Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km");
+
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	auto Land = RegisterParameterGroup(Model, "Hydrology by land class", LandscapeUnits);
 	
@@ -306,7 +309,7 @@ AddPersistModel(mobius_model *Model)
 	auto AbstractionTimeseries = RegisterInput(Model, "Abstraction flow", MetresCubedPerSecond);
 	auto EffluentTimeseries    = RegisterInput(Model, "Effluent flow", MetresCubedPerSecond);
 
-	auto ReachSolver = RegisterSolver(Model, "Reach solver", 0.1, IncaDascru);
+	auto ReachSolver = RegisterSolver(Model, "Reach solver", SolverPrec, IncaDascru);
 	
 	auto DiffuseFlowOutput = RegisterEquation(Model, "Diffuse flow output", MetresCubedPerSecond);
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MetresCubedPerSecond);
