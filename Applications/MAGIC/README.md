@@ -1,4 +1,4 @@
-# Magic
+# MAGIC
 
 This is an adaptation of the MAGIC model (The Model of Acidification of Groundwater In Catchments)
 
