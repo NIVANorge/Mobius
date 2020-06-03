@@ -17,10 +17,10 @@ The following model implementations are probably correct and have been tested on
 - INCA-P
 - INCA-MP
 - INCA-Sed
+- INCA-Tox
 
 The following models are in development and are not finished
 - SimplyC
-- INCA-Tox
 - MAGIC
 - EasyLake
 
