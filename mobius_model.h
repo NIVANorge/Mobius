@@ -786,7 +786,22 @@ inline Type Get##Typename##Handle(const mobius_model *Model, const token_string 
 		MOBIUS_FATAL_ERROR("ERROR: Tried to look up the handle of the " << #Typename << " \"" << Name << "\", but it was not registered with the model." << std::endl); \
 	} \
 	return { Handle }; \
-}
+} \
+inline Type Get##Typename##Handle(const mobius_model *Model, const token_string &Name, bool &Success) \
+{ \
+	entity_handle Handle = 0; \
+	auto Find = Model->Registry.NameToHandle.find(Name); \
+	if(Find != Model->Registry.NameToHandle.end()) \
+	{ \
+		Success = true; \
+		Handle = Find->second; \
+	} \
+	else \
+	{ \
+		Success = false; \
+	} \
+	return { Handle }; \
+} \
 
 GET_ENTITY_HANDLE(equation_h, Equations, Equation)
 GET_ENTITY_HANDLE(input_h, Inputs, Input)
@@ -813,6 +828,22 @@ GetParameterHandle(const mobius_model *Model, const token_string &Name) //NOTE: 
 	else
 	{
 		MOBIUS_FATAL_ERROR("ERROR: Tried to find the Parameter \"" << Name << "\", but it was not registered with the model." << std::endl);
+	}
+	return Handle;
+}
+inline entity_handle
+GetParameterHandle(const mobius_model *Model, const token_string &Name, bool &Success)
+{
+	entity_handle Handle = 0;
+	auto Find = Model->Parameters.NameToHandle.find(Name);
+	if(Find != Model->Parameters.NameToHandle.end())
+	{
+		Success = true;
+		Handle = Find->second;
+	}
+	else
+	{
+		Success = false;
 	}
 	return Handle;
 }

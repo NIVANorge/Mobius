@@ -788,6 +788,23 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName)
 	return {IndexSet, 0};
 }
 
+inline index_t
+GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName, bool &Success)
+{
+	auto &IndexMap = DataSet->IndexNamesToHandle[IndexSet.Handle];
+	auto Find = IndexMap.find(IndexName);
+	if(Find != IndexMap.end())
+	{
+		Success = true;
+		return {IndexSet, Find->second};
+	}
+	else
+	{
+		Success = false;
+	}
+	return {IndexSet, 0};
+}
+
 static void
 SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_value Value, parameter_type Type)
 {

@@ -576,12 +576,12 @@ In many cases, your input data will a priori exist in a .csv format or an .xlsx 
 
 \subsection{Error messages}
 
-Most often if you get an error during the parsing of a parameter or input file, it will tell you exactly at which line and column in the file that the error happened. Right now an exception to that is if you provided a name of a model entity (index set, index, parameter or input) that the model did not recognize. In that case it will tell you the name that it did not recognize, but it will not say where or in which file it happened. This will hopefully be improved soon. Here is a non-exhaustive list of error messages you could encounter.
+Most often if you get an error during the parsing of a parameter or input file, it will tell you at which line and column in the file that the error happened. Here is a non-exhaustive list of error messages you could encounter.
 
 \begin{example}
 The message:
 \begin{lstlisting}
-ERROR: Tried to look up the handle of the IndexSet "landscape units", but it was not registered with the model.
+ERROR: In file langtjernparameters.dat line 4 column 1: The index set "landscape units" was not registered with the model.
 \end{lstlisting}
 The culprit line:
 \begin{lstlisting}
@@ -605,19 +605,19 @@ Explanation: '\ae' is not a valid token (though you can still use that character
 \begin{example}
 The message:
 \begin{lstlisting}
-ERROR: In file langtjerninputs.dat line 12 column 27: Did not get the right amount of indexes for input Air temperature
+ERROR: In file langtjerninputs.dat line 12 column 27: Did not get the right amount of indexes for input Air temperature. Expected 2, got 1.
 \end{lstlisting}
 The culprit line:
 \begin{lstlisting}[mathescape]
 "Air temperature" {"Bork"}:
 \end{lstlisting}
-In this case you have declared "Air temperature" to depend on either 0 or 2 or more index sets.
+In this case you have declared "Air temperature" to depend on either 2 index sets.
 \end{example}
 
 \begin{example}
 The message:
 \begin{lstlisting}
-ERROR: Tried the index name Bork with the index set Reaches, but that index set does not contain that index.
+ERROR: In file langtjerninputs.dat line 12 column 27: The index "Bork" was not registered with the index set "Reaches".
 \end{lstlisting}
 The culprit line:
 \begin{lstlisting}[mathescape]

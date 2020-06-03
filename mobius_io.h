@@ -268,7 +268,13 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				if(Token.Type != TokenType_QuotedString) break;
 				
 				token_string IndexSetName = Stream.ExpectQuotedString();
-				index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName);
+				bool Found;
+				index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName, Found);
+				if(!Found)
+				{
+					Stream.PrintErrorHeader();
+					MOBIUS_FATAL_ERROR("The index set \"" << IndexSetName << "\" was not registered with the model.\n")
+				}
 				Stream.ExpectToken(TokenType_Colon);
 				if(Model->IndexSets.Specs[IndexSet.Handle].Type == IndexSetType_Basic)
 				{
@@ -356,14 +362,20 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				token_string ParameterName = Stream.ExpectQuotedString();
 				Stream.ExpectToken(TokenType_Colon);
 				
-				entity_handle ParameterHandle = GetParameterHandle(Model, ParameterName);
+				bool Found;
+				entity_handle ParameterHandle = GetParameterHandle(Model, ParameterName, Found);
+				if(!Found)
+				{
+					Stream.PrintErrorHeader();
+					MOBIUS_FATAL_ERROR("The parameter \"" << ParameterName << "\" was not registered with the model.\n");
+				}
 				
 				const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 				
 				if(Spec.ShouldNotBeExposed)
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("The parameter " << ParameterName << " is computed by the model, and should not be provided in a parameter file." << std::endl);
+					MOBIUS_FATAL_ERROR("The parameter \"" << ParameterName << "\" is computed by the model, and should not be provided in a parameter file." << std::endl);
 				}
 				
 				parameter_type Type = Spec.Type;
@@ -491,7 +503,13 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		
 		token_string InputName = Token.StringValue;
 		
-		input_h Input = GetInputHandle(Model, InputName);
+		bool Found;
+		input_h Input = GetInputHandle(Model, InputName, Found);
+		if(!Found)
+		{
+			Stream.PrintErrorHeader();
+			MOBIUS_FATAL_ERROR("The input \"" << InputName << "\" was not registered with the model.\n");
+		}
 		
 		std::vector<size_t> Offsets;
 		
@@ -510,12 +528,18 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				if(IndexNames.size() != IndexSets.size())
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input " << InputName << std::endl);
+					MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input \"" << InputName << "\". Got " << IndexNames.size() << ", expected " << IndexSets.size() << ".\n");
 				}
 				index_t Indexes[256]; //This could cause a buffer overflow, but will not do so in practice.
 				for(size_t IdxIdx = 0; IdxIdx < IndexNames.size(); ++IdxIdx)
 				{
-					Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
+					bool Found;
+					Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx], Found);
+					if(!Found)
+					{
+						Stream.PrintErrorHeader();
+						MOBIUS_FATAL_ERROR("The index \"" << IndexNames[IdxIdx] << "\" was not registered with the index set \"" << GetName(Model, IndexSets[IdxIdx]) << "\"\n");
+					}
 				}
 				
 				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexSets.size(), DataSet->IndexCounts, Input.Handle);
@@ -533,7 +557,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			if(IndexSets.size() > 0)
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input " << InputName << std::endl);
+				MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input \"" << InputName << "\". Got 0, expected " << IndexSets.size() << ".\n");
 			}
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input.Handle);
 			Offsets.push_back(Offset);
@@ -910,7 +934,14 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 				{
 					Token = Stream.ReadToken();
 					token_string InputName = Token.StringValue;
-					input_h Input = GetInputHandle(Model, InputName);
+					bool Found;
+					input_h Input = GetInputHandle(Model, InputName, Found);
+					if(!Found)
+					{
+						Stream.PrintErrorHeader();
+						MOBIUS_FATAL_ERROR("The input \"" << InputName << "\" was not registered with the model.\n");
+					}
+					
 					std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 					if(!IndexSets.empty()) //TODO: OR we could just clear it and give a warning..
 					{
@@ -924,7 +955,14 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 					
 					for(token_string IndexSetName : IndexSetNames)
 					{
-						IndexSets.push_back(GetIndexSetHandle(Model, IndexSetName));
+						bool Found;
+						index_set_h IndexSetHandle = GetIndexSetHandle(Model, IndexSetName, Found);
+						if(!Found)
+						{
+							Stream.PrintErrorHeader();
+							MOBIUS_FATAL_ERROR("The index set \"" << IndexSetName << "\" was not registered with the model.\n");
+						}
+						IndexSets.push_back(IndexSetHandle);
 					}
 				}
 				else break;
