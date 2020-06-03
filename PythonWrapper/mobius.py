@@ -158,21 +158,41 @@ class DataSet :
 	
 	@classmethod
 	def setup_from_parameter_and_input_files(cls, parameterfilename, inputfilename) :
+		'''
+		Set up a complete dataset from the given parameter and input files
+		'''
 		datasetptr = mobiusdll.DllSetupModel(_CStr(parameterfilename), _CStr(inputfilename))
 		check_dll_error()
 		return cls(datasetptr)
 		
 	@classmethod
 	def setup_with_blank_index_sets(cls, inputfilename) :
+		'''
+		Set up an incomplete dataset. The input file is only provided to structure the index set dependencies of inputs, and is not used to read in input data at this point. The dataset can not be used before all index sets are set either using set_indexes and set_indexes_branched, and/or read_parameters
+		'''
 		datasetptr = mobiusdll.DllSetupModelBlankIndexSets(_CStr(inputfilename))
 		check_dll_error()
 		return cls(datasetptr)
 	
 	def set_indexes(self, index_set, indexes):
+		'''
+		Set the indexes of an index set. This can only be done on an incomplete dataset, and only on an index set that has not yet received indexes.
+		
+		Arguments:
+				index_set        -- string. The name of the index set. Example : "Lanscape units"
+				indexes          -- list of strings.
+		'''
 		mobiusdll.DllSetIndexes(self.datasetptr, _CStr(index_set), len(indexes), _PackIndexes(indexes))
 		check_dll_error()
 		
 	def set_branch_indexes(self, index_set, indexes):
+		'''
+		Set the indexes of a branched index set. This can only be done on an incomplete dataset, and only on an index set that has not yet received indexes.
+		
+		Arguments:
+				index_set        -- string. The name of the index set. Example : "Reaches"
+				indexes          -- list of pairs (index, inputs), where index is the (string) name of a new index, and inputs is a list of strings containing other names of input branches to this index.
+		'''
 		index_data = (dll_branch_index * len(indexes))()
 		for idx in range(len(indexes)) :
 			name, branch_inputs = indexes[idx]
@@ -183,10 +203,16 @@ class DataSet :
 		check_dll_error()
 	
 	def read_inputs(self, inputfilename) :
+		'''
+		Read in input data into an incomplete dataset.
+		'''
 		mobiusdll.DllReadInputs(self.datasetptr, _CStr(inputfilename))
 		check_dll_error()
 		
 	def read_parameters(self, parfilename) :
+		'''
+		Read in index set and parameter data into an incomplete dataset. Any index sets that are not given indexes in this parameter file has to have been given indexes prior to this call using set_indexes and/or set_indexes_branched.
+		'''
 		mobiusdll.DllReadParameters(self.datasetptr, _CStr(parfilename))
 		check_dll_error()
 		
