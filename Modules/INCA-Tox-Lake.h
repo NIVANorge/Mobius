@@ -29,6 +29,12 @@ SaturationVaporPressure(double Temperature)
 }
 
 
+inline double
+AttnIndefiniteIntegral(double z, double a, double D)
+{
+	return exp(-a*z)*(a*(z-D)) / (a*a*D);
+}
+
 
 void
 AddIncaToxLakeModule(mobius_model *Model)
@@ -220,8 +226,8 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double e_uv = 351843.0; // J/mol              Average energy of Par photons
 		
 		//‒oc_Nitro * qy_Nitro f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * [Nitrosamines]" in mg N m-3 d-1
-		double shortwave = RESULT(NetShortwaveRadiation)*RESULT(EpilimnionAttn)*PARAMETER(LakeSurfaceArea);
-		return oc_Nitro * qy_Nitro * (f_uv / e_uv) * 86400.0 * shortwave * RESULT(EpilimnionContaminantMass)*1e-6;
+		double shortwave = RESULT(NetShortwaveRadiation)*RESULT(EpilimnionAttn);
+		return oc_Nitro * qy_Nitro * (f_uv / e_uv) * 86400.0 * shortwave * RESULT(EpilimnionContaminantMass);
 	)
 	
 	
@@ -313,12 +319,17 @@ AddIncaToxLakeModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, EpilimnionAttn,
-		double a = -2.7/PARAMETER(SecchiDepth);
+		double a = 2.7/PARAMETER(SecchiDepth);
+		double D = PARAMETER(LakeDepth);
+		double d = PARAMETER(EpiliminionThickness);
 		
-		double top = (a*PARAMETER(LakeDepth) - 1.0)/(a*a);
-		double bot = exp(a*PARAMETER(EpiliminionThickness))*(a*(PARAMETER(LakeDepth)-PARAMETER(EpiliminionThickness)) - 1.0)/(a*a);
+		double top = AttnIndefiniteIntegral(0.0, a, D);
+		double bot = AttnIndefiniteIntegral(d, a, D);
 		
-		return (bot - top)/PARAMETER(LakeDepth);
+		double vv = (D - (1.0 - d/D)*(D-d));
+		
+		//return (bot - top);
+		return 3.0*(bot - top)/vv;
 	)
 	
 	auto AirDensity                           = RegisterEquation(Model, "Air density", KgPerM3, LakeSolver);
@@ -450,7 +461,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double epilimnionvolume = PARAMETER(LakeSurfaceArea)*(2.0*d-d0)*d0/(3.0*d);
 		
 		double longwave  = RESULT(LongwaveRadiation)*PARAMETER(LakeSurfaceArea);
-		double shortwave = RESULT(NetShortwaveRadiation)*PARAMETER(LakeSurfaceArea)*RESULT(EpilimnionAttn);
+		double shortwave = RESULT(NetShortwaveRadiation)*PARAMETER(LakeSurfaceArea)*(1.0-exp(-2.7*PARAMETER(EpiliminionThickness) / PARAMETER(SecchiDepth)));
 		double sensible  = RESULT(SensibleHeatFlux)*PARAMETER(LakeSurfaceArea);
 		double latent    = RESULT(LatentHeatFlux)*PARAMETER(LakeSurfaceArea);
 		
