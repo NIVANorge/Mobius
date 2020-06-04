@@ -61,12 +61,19 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 		X[Idx] = x0[Idx];
 	}
 
+	try
+	{
 	size_t NSteps = integrate_adaptive( 
 			make_controlled< rosenbrock4< double > >( AbsErr, RelErr ),
 			std::make_pair( boost_ode_system(EquationFunction), boost_ode_system_jacobi(JacobiFunction) ),
 			X, 0.0 , 1.0 , h 
 			/*TODO: add an observer to handle errors? */);
-			
+	}
+	catch(...)
+	{
+		//TODO: Better handling to get a proper description of the error?
+		MOBIUS_FATAL_ERROR("ERROR: An error occurred in the Rosenbrock4 solver.\n");
+	}
 	//std::cout << "N steps : " << NSteps << std::endl;
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
