@@ -82,15 +82,14 @@ This document is a work in progress.
 
 \section{The toolbar}
 
-The toolbar has 10 buttons.
+The toolbar has 9 buttons.
 
 \begin{enumerate}
 \item Load (ctrl-O). This asks you to select a model dll, an input file, and a parameter file. (On Linux, you load a shared object .so file instead of a dll). The input and parameter files have to be of the .dat format described in the Mobius file format documentation. You can click load even if you have a model and dataset loaded already. This will delete all data from the earlier dataset from memory, so be sure to save any changes you want to keep first.
 \item Save parameters (ctrl-S). This saves any edits you have made to the parameters to the current working parameter file (usually the one you loaded).
 \item Save parameters as (alt-S). Saves the parameters to a new file. The new file is now the current working file.
 \item Search parameters (ctrl-F). Opens a new window that allows you to search for parameters by name. Any matching parameters are displayed in a list, and clicking an item in the list takes you to the right parameter group in the main view. The search is a case-insensitive substring search.
-\item Edit indexes (ctrl-E). You can edit what indexes are in each index set. If you add a nex index, the parameters indexed by that index will be given default values. Note that you can currently not set branch connectivity of branched index sets here. This still has to be done in the parameter file (for now). Moreover, removing indexes from branched index sets may not work correctly.
-\item Visualize reach branches (ctrl-R). Only works for models that have an index set called 'Reaches'. Opens a new window that visualizes the connectivity of the indexes in this branched index set (e.g. the connectivity of river sections). No information about actual length or position is used in the visualization, only connectivity.
+\item Edit indexes (ctrl-E). Opens a new window. You can edit what indexes are in each index set. For non-branched index sets, each index is a line in the text field. If you add a nex index or rename one, the parameters indexed by that index will be given default values. You can also edit the branch connections of branched index sets. The input ids have to be a comma-separated list of numbers of the id's of the input branches to the given branch. In the visualization of the branch connections of the branched index set, no information about actual length or position is used in the visualization, only connectivity.
 \item Run model (F7). Runs the model using the parameters that are loaded in the MobiView interface, taking into account any edits. (It does not matter if the edits have been saved to file or not). Results from the latest model run are available for plotting.
 \item View model equation batch structure. This displays the equation batch structure, as described in the Mobius model builder documentation. This is mostly interesting if you are a model developer, as it can provide some debug information for your work-in-progress model.
 \item Save baseline (ctrl-B). Saves a background copy of the current dataset. This is only used in the "Compare baseline" plot mode.
