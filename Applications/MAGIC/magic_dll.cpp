@@ -10,6 +10,7 @@
 
 #include "../../Modules/MAGIC/MAGIC_Core_Wrapper.h"
 #include "../../Modules/MAGIC/MAGICBasic.h"
+#include "../../Modules/MAGIC/MAGIC_CarbonNitrogen.h"
 
 
 void
@@ -19,6 +20,7 @@ DllBuildModel(mobius_model *Model)
 	
 	AddMagicCoreModel(Model);
 	AddMagicModel(Model);
+	AddSimpleMagicCarbonNitrogenModel(Model);
 
 	SetTimestepSize(Model, "1M");
 }
