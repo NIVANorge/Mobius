@@ -231,7 +231,8 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilTDPOutput,
 		//TODO: Should consider using "integrated" values here similar to in the equation for the TDP mass value..
-		return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * (1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow) * PARAMETER(LandUseProportions); 
+		double flow = (1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow) + RESULT(InfiltrationExcess);
+		return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * flow * PARAMETER(LandUseProportions); 
 	)
 	
 	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
