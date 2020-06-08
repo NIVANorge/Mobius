@@ -281,6 +281,13 @@ The index of agreement is
 1 - \frac{\sum_{i\in I}(o_i-m_i)^2}{\sum_{i\in I}(|m_i-\overline{o}| + |o_i-\overline{o}|)^2}.
 \]
 
+\subsubsection{KGE}
+KGE is the Kling-Gupta efficiency \cite{klinggupta09}
+\[
+1 - \sqrt{(r-1)^2 + (\beta-1)^2 + (\delta-1)^2}
+\]
+where $r$ is the square root of the coefficient of determination $r^2$, $\beta=\overline{m}/\overline{o}$, and $\delta=Cv(m)/Cv(o)$, $Cv(x)=\sigma(x)/\overline{x}$, $\sigma$ being the standard deviation.
+
 \subsubsection{Spearman's RCC}
 Spearman's rank correlation coefficient \cite{spearman04} is computed as follows: For a time series $x=\{x_i\}_{i\in_I}$, let $\mathrm{rank}(x_i)$ be the index of $x_i$ (starting from 1) in the list $\mathrm{sort}(x)$, where $\mathrm{sort}(x)$ is $x$ sorted from smallest to largest. The rank correlation coefficient can then be computed as
 \[
