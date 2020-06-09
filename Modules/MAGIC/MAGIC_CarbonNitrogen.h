@@ -108,8 +108,8 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	auto NitrEff            = RegisterParameterDouble(Model, CAndN, "Nitrogen efficiency", Percent, 50.0, 0.0, 100.0);
 	auto DecompEff          = RegisterParameterDouble(Model, CAndN, "Decomposition efficiency", Percent, 5.0, 0.0, 100.0);
 	
-	auto PlantsAccessNitrogen    = RegisterParameterBool(Model, CAndN, "Plants have access to organic nitrogen", true);
-	auto PlantsUseInorganicFirst = RegisterParameterBool(Model, CAndN, "Plants use inorganic nitrogen before soil", true);
+	//auto PlantsAccessNitrogen    = RegisterParameterBool(Model, CAndN, "Plants have access to organic nitrogen", true);
+	//auto PlantsUseInorganicFirst = RegisterParameterBool(Model, CAndN, "Plants use inorganic nitrogen before soil", true);
 	//auto PoreWaterNAvailableForRetention
 	//auto MicrobesUtilizeSoilNH4BeforeNO3
 	auto InitialOrganicC    = RegisterParameterDouble(Model, CAndN, "Initial organic C", MolPerM2, 0.0, 0.0, 5000.0);
@@ -139,6 +139,42 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	auto PoolCN             = RegisterEquation(Model, "Pool C/N", MolPerMol, CompartmentSolver);
 	
+	auto TurnoverC          = RegisterEquation(Model, "Organic C turnover", MMolPerM2PerTs);
+	auto RetainedC          = RegisterEquation(Model, "Organic C retained as decomposer biomass", MMolPerM2PerTs);
+	auto DepletedC          = RegisterEquation(Model, "Organic C depleted", MMolPerM2PerTs);
+	auto RespiredC          = RegisterEquation(Model, "Organic C respired as CO2", MMolPerM2PerTs);
+	auto SolubilizedC       = RegisterEquation(Model, "Organic C solubilized as DOC", MMolPerM2PerTs);
+	
+	auto DecomposerCN       = RegisterEquation(Model, "Decomposer C/N", MolPerMol);
+	auto TurnoverN          = RegisterEquation(Model, "Organic N turnover", MMolPerM2PerTs);
+	auto RetainedN          = RegisterEquation(Model, "Organic N retained as decomposer biomass", MMolPerM2PerTs);
+	auto SolubilizedN       = RegisterEquation(Model, "Organic N solubilized", MMolPerM2PerTs);
+	auto NUsedByDecomp      = RegisterEquation(Model, "Oragnic N used by decomposers", MMolPerM2PerTs);
+	auto NDeficit           = RegisterEquation(Model, "Excess organic N needed by decomposers", MMolPerM2PerTs);
+	auto MineralizedN       = RegisterEquation(Model, "Organic N mineralized as NH4", MMolPerM2PerTs);
+	auto DepletedN          = RegisterEquation(Model, "Organic N depleted", MMolPerM2PerTs);
+	
+	
+	auto NitrificationEq     = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
+	auto DenitrificationEq   = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
+	auto NO3ImmobilisationEq = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
+	auto NH4ImmobilisationEq = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
+	auto NO3UptakeEq         = RegisterEquation(Model, "NO3 plant uptake", MMolPerM2PerTs);
+	auto NH4UptakeEq         = RegisterEquation(Model, "NH4 plant uptake", MMolPerM2PerTs);
+	
+	
+	//NOTE: The following 4 are required as an "interface" to the rest of the MAGIC model
+	auto NO3Inputs           = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
+	auto NH4Inputs           = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
+	auto NO3ProcessesLoss    = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
+	auto NH4ProcessesLoss    = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
+	
+	
+	
+	auto FractionOfYear = GetEquationHandle(Model, "Fraction of year");
+	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 basic inputs");
+	auto NH4BasicInputs = GetEquationHandle(Model, "NH4 basic inputs");
+	
 	/*
 	1) d(SOC)/dt = litter C – (FC3 + FC4)   		- SOM C mass balance
 	2) FC1 = FC2 + (FC3 + FC4)              		- decomposer turnover C balance
@@ -152,15 +188,15 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, TurnoverC,
-		return PARAMETER(OrganicCDecomp);     //FC1
+		return PARAMETER(OrganicCDecomp)*RESULT(FractionOfYear);     //FC1
 	)
 	
 	EQUATION(Model, RetainedC,
-		return RESULT(CTurnover)*PARAMETER(CarbEff);              //FC2
+		return RESULT(CTurnover)*PARAMETER(CarbEff)*0.01;              //FC2
 	)
 	
 	EQUATION(Model, DepletedC,
-		return RESULT(CTurnover)*(1.0 - PARAMETER(CarbEff));      //FC1 - FC2
+		return RESULT(CTurnover)*(1.0 - PARAMETER(CarbEff)*0.01);      //FC1 - FC2
 	)
 	
 	EQUATION(Model, RespiredC,
@@ -172,9 +208,9 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, OrganicC,
-		double in     = PARAMETER(OrganicCInput);
-		double out    = PARAMETER(OrganicCOutput);
-		double litter = PARAMETER(OrganicCLitter);
+		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear);
+		double out    = PARAMETER(OrganicCOutput)*RESULT(FractionOfYear);
+		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear);
 		return in - out + litter - RESULT(DepletedC);
 	)
 	
@@ -195,7 +231,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, TurnoverN,
-		return PARAMETER(TurnoverC)/RESULT(DecomposerCN);    //FN1
+		return RESULT(TurnoverC)/RESULT(DecomposerCN);    //FN1
 	)
 	
 	EQUATION(Model, RetainedN,
@@ -207,7 +243,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, NUsedByDecomp,
-		return (RESULT(TurnoverN) - RESULT(SolubilizedN))*PARAMETER(NitrEff);  //FN5
+		return (RESULT(TurnoverN) - RESULT(SolubilizedN))*PARAMETER(NitrEff)*0.01;  //FN5
 	)
 	
 	EQUATION(Model, NDeficit,
@@ -236,40 +272,14 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 		double outCN  = PARAMETER(OutputCN);
 		if(outcn == 0.0)  outCN  = poolCN;
 		
-		double in     = PARAMETER(OrganicCInput)/PARAMETER(InputCN);
-		double out    = PARAMETER(OrganicCOutput)/outCN;
-		double litter = PARAMETER(OrganicCLitter)/PARAMETER(LitterCN);
+		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear)/PARAMETER(InputCN);
+		double out    = PARAMETER(OrganicCOutput)*RESULT(FractionOfYear)/outCN;
+		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear)/PARAMETER(LitterCN);
 		
 		return in - out + litter - RESULT(DepletedN);
 	)
 	
 	//TODO: The following has to be updated to match the new fluxes above:
-	
-	
-	
-	
-	//NOTE: The following 4 are required as an "interface" to the rest of the MAGIC model
-	auto NO3Inputs           = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
-	auto NH4Inputs           = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
-	auto NO3ProcessesLoss    = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
-	auto NH4ProcessesLoss    = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
-	
-	auto NitrificationEq     = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
-	auto DenitrificationEq   = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
-	auto NO3ImmobilisationEq = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
-	auto NH4ImmobilisationEq = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
-	
-	auto FractionOfYear = GetEquationHandle(Model, "Fraction of year");
-	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 basic inputs");
-	auto NH4BasicInputs = GetEquationHandle(Model, "NH4 basic inputs");
-	
-	EQUATION(Model, NO3Inputs,
-		return RESULT(NO3BasicInputs) + RESULT(NitrificationEq);
-	)
-	
-	EQUATION(Model, NH4Inputs,
-		return RESULT(NH4BasicInputs) + RESULT(FractionOfYear) * PARAMETER(Mineralisation);
-	)
 	
 	EQUATION(Model, NitrificationEq,
 		double nitr = PARAMETER(Nitrification);
@@ -288,27 +298,56 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, NO3ImmobilisationEq,
-		double immob = PARAMETER(NO3Immobilisation);
-		double result = immob * RESULT(FractionOfYear);
-		double in = RESULT(NO3Inputs);
-		if(immob < 0.0) result = -immob*0.01*in;
-		return result;
+		//TODO: allow toggling preferential immob.
+		//TODO: guard against going below 0
+		double deficit = RESULT(NDeficit);
+		double frac = RESULT(TotalNO3) / (RESULT(TotalNO3 + TotalNH4));
+		return deficit * frac;
 	)
 	
 	EQUATION(Model, NH4ImmobilisationEq,
-		double immob = PARAMETER(NH4Immobilisation);
-		double result = immob * RESULT(FractionOfYear);
-		double in = RESULT(NH4Inputs);
-		if(immob < 0.0) result = -immob*0.01*in;
+		//TODO: allow toggling preferential immob.
+		//TODO: guard against going below 0
+		double deficit = RESULT(NDeficit);
+		double frac = RESULT(TotalNH4) / (RESULT(TotalNO3 + TotalNH4));
+		return deficit * frac;
+	)
+	
+	//TODO: Plants should have access to uptake of organic N (if toggled)
+	//TODO: Budged immob and plant uptake to be restrained by each other (toggling preferentiality)
+	
+	EQUATION(Model, NO3UptakeEq,
+		double uptake = PARAMETER(PlantNO3Uptake);
+		double result = uptake * RESULT(FractionOfYear);
+		double in = RESULT(NO3Inputs);
+		if(uptake < 0.0) result = -uptake*0.01*in;
 		return result;
 	)
 	
+	EQUATION(Model, NH4UptakeEq,
+		double uptake = PARAMETER(PlantNO3Uptake);
+		double result = uptake * RESULT(FractionOfYear);
+		double in = RESULT(NO3Inputs);
+		if(uptake < 0.0) result = -uptake*0.01*in;
+		return result;
+	)
+	
+	
+	
+	EQUATION(Model, NO3Inputs,
+		return RESULT(NO3BasicInputs) + RESULT(NitrificationEq);
+	)
+	
+	EQUATION(Model, NH4Inputs,
+		return RESULT(NH4BasicInputs) + RESULT(MineralizedN);
+	)
+	
 	EQUATION(Model, NO3ProcessesLoss,
-		return RESULT(DenitrificationEq) + RESULT(NO3ImmobilisationEq);
+		return RESULT(DenitrificationEq) + RESULT(NO3ImmobilisationEq) + RESULT(NO3UptakeEq);
 	)
 	
 	EQUATION(Model, NH4ProcessesLoss,
-		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq);
+		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq) + RESULT(NO4UptakeEq);
 	)
 	
 	
