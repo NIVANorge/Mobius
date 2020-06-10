@@ -448,7 +448,6 @@ DllGetParameterUIntMinMax(void *DataSetPtr, char *Name, u64 *MinOut, u64 *MaxOut
 {
 	CHECK_ERROR_BEGIN
 	
-	//TODO: We don't check that the requested parameter was of type uint!
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
 	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
@@ -1040,7 +1039,7 @@ DllGetBranchInputsCount(void *DataSetPtr, const char *IndexSetName, const char *
 	
 	if(Spec.Type != IndexSetType_Branched)
 	{
-		MOBIUS_FATAL_ERROR("Tried to read branch inputs from the index set " << IndexSetName << ", but that is not a branched index set." << std::endl);
+		MOBIUS_FATAL_ERROR("ERROR: Tried to read branch inputs from the index set " << IndexSetName << ", but that is not a branched index set." << std::endl);
 	}
 	
 	index_t Index = GetIndex(DataSet, IndexSet, IndexName);
