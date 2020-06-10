@@ -19,7 +19,7 @@ int main()
 {
 	mobius_model *Model = BeginModelDefinition("SimplyP");
 	
-	AddThornthwaitePETModule(Model)
+	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSimplySedimentModule(Model);
 	AddSimplyPModel(Model);
