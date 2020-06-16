@@ -13,16 +13,17 @@ AddSimplyCModel(mobius_model *Model)
 	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
 
 	// Units
-	auto Dimensionless = RegisterUnit(Model);
-	auto Kg			= RegisterUnit(Model, "kg");
-	auto KgPerKm2   = RegisterUnit(Model, "kg/km2");
-	auto KgPerDay   = RegisterUnit(Model, "kg/day");
+	auto Dimensionless  = RegisterUnit(Model);
+	auto Kg			    = RegisterUnit(Model, "kg");
+	auto KgPerKm2       = RegisterUnit(Model, "kg/km2");
+	auto KgPerDay       = RegisterUnit(Model, "kg/day");
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km2/day");
-	auto Km2PerDay  = RegisterUnit(Model, "km2/day");
-	auto MgPerL		 = RegisterUnit(Model, "mg/l");
-	auto MgPerLPerDay = RegisterUnit(Model, "mg/l/day");
-	auto MgPerLPerDayPerC  = RegisterUnit(Model, "mg/l/day/°C");
-	auto MgPerLPerDayPerMgPerL = RegisterUnit(Model, "mg/l/day/(mg/l)");
+	auto Km2PerDay      = RegisterUnit(Model, "km2/day");
+	auto MgPerL		    = RegisterUnit(Model, "mg/l");
+	auto MgPerLPerDay   = RegisterUnit(Model, "mg/l/day");
+	auto PerC           = RegisterUnit(Model, "1/°C");
+	auto PerMgPerL      = RegisterUnit(Model, "1/(mg/l)");
+	auto PerDay         = RegisterUnit(Model, "1/day"); 
 
 	// Set up index sets
 	auto Reach          = GetIndexSetHandle(Model, "Reaches"); //Defined in SimplyQ.h
@@ -41,9 +42,9 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that don't vary with land class or sub-catchment/reach
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
 	
-	auto SoilTemperatureDOCLinearCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", MgPerLPerDayPerC, 0.0);
+	auto SoilTemperatureDOCLinearCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0);
 
-	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", MgPerLPerDayPerMgPerL, 0.0, 0.0, 20.0);
+	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0);
 	
 
 #ifdef SIMPLYQ_GROUNDWATER
@@ -53,8 +54,10 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
 	
-	auto BaselineSoilDOCCreationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC creation rate", MgPerLPerDay, 0.1, 0.0, 100.0);
+	auto BaselineSoilDOCCreationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0);
 	auto BaselineSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0");
+	auto SoilDOCMineralisationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "DOC mineralisation rate", PerDay, 0.0, 0.0, 1.0);
+	auto UseBaselineConc              = RegisterParameterBool(Model, CarbonParamsLand, "Compute mineralisation rate from baseline conc.", true);
 
 	// EQUATIONS
 
@@ -74,18 +77,20 @@ AddSimplyCModel(mobius_model *Model)
 	// Equation from soil temperature module
 	auto SoilTemperature       = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");
 
+	auto FieldCapacity = GetParameterDoubleHandle(Model, "Soil field capacity");
 
-	auto SoilDOCCreationRate = RegisterEquation(Model, "Soil DOC creation rate", MgPerLPerDay);
+
+	auto SoilDOCDissolution = RegisterEquation(Model, "Soil organic carbon net dissolution", KgPerKm2PerDay, LandSolver);
+	auto SoilDOCMineralisation = RegisterEquation(Model, "Soil DOC mineralisation", KgPerKm2PerDay, LandSolver);
 	// Carbon equations which vary by land class
-	auto SoilWaterDOCMass             = RegisterEquationODE(Model, "Soil water DOC mass", KgPerKm2);
-	SetSolver(Model, SoilWaterDOCMass, LandSolver);
+	auto SoilWaterDOCMass             = RegisterEquationODE(Model, "Soil water DOC mass", KgPerKm2, LandSolver);
 	//SetInitialValue
 
 	auto SoilWaterDOCConcentration = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL);
 	SetSolver(Model, SoilWaterDOCConcentration, LandSolver);
 	
-	auto InfiltrationExcessCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerKm2PerDay);
-	SetSolver(Model, InfiltrationExcessCarbonFluxToReach, LandSolver);
+	auto QuickFlowCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerKm2PerDay);
+	SetSolver(Model, QuickFlowCarbonFluxToReach, LandSolver);
 	
 	auto SoilWaterCarbonFlux = RegisterEquation(Model, "Soil water carbon flux", KgPerKm2PerDay);
 	SetSolver(Model, SoilWaterCarbonFlux, LandSolver);
@@ -96,19 +101,32 @@ AddSimplyCModel(mobius_model *Model)
 	ResetEveryTimestep(Model, DailyMeanSoilwaterCarbonFluxToReach);
 	
 	
-	EQUATION(Model, SoilDOCCreationRate,
-		return PARAMETER(BaselineSoilDOCCreationRate) + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition);
+	auto SoilDOCMineralisationRateComputation = RegisterEquationInitialValue(Model, "Soil DOC mineralisation rate", PerDay);
+	ParameterIsComputedBy(Model, SoilDOCMineralisationRate, SoilDOCMineralisationRateComputation, false); //false signifies parameter should be exposed in user interface.
+	
+	EQUATION(Model, SoilDOCMineralisationRateComputation,
+		double usebaseline = PARAMETER(UseBaselineConc);
+		double mineralisationrate = PARAMETER(SoilDOCMineralisationRate);
+		double mineralisationrate0 = PARAMETER(BaselineSoilDOCCreationRate) / PARAMETER(BaselineSoilDOCConcentration);
+		if(usebaseline) return mineralisationrate0;
+		return mineralisationrate;
 	)
 	
-	auto FieldCapacity = GetParameterDoubleHandle(Model, "Soil field capacity");
+	
+	EQUATION(Model, SoilDOCDissolution,
+		// mg/(l day) * mm = kg/(km2 day)
+		return RESULT(SoilWaterVolume)*PARAMETER(BaselineSoilDOCCreationRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
+	)
+	
+	EQUATION(Model, SoilDOCMineralisation,
+		return RESULT(SoilWaterDOCMass)*PARAMETER(SoilDOCMineralisationRate);
+	)
 	
 	EQUATION(Model, SoilWaterDOCMass,
-		double destructionrate = PARAMETER(BaselineSoilDOCCreationRate) / PARAMETER(BaselineSoilDOCConcentration);
-	
 		return
-			  RESULT(SoilDOCCreationRate) * RESULT(SoilWaterVolume)   // mg/(l day) * mm = kg/(km2 day)
-			- destructionrate*RESULT(SoilWaterDOCMass)
-			- RESULT(InfiltrationExcessCarbonFluxToReach)
+			  RESULT(SoilDOCDissolution)
+			- RESULT(SoilDOCMineralisation)
+			- RESULT(QuickFlowCarbonFluxToReach)
 			- RESULT(SoilWaterCarbonFlux);
 	)
 	
@@ -116,7 +134,7 @@ AddSimplyCModel(mobius_model *Model)
 		return SafeDivide(RESULT(SoilWaterDOCMass), RESULT(SoilWaterVolume));    // kg / (mm * km2) -> mg/l has conversion factor of 1 
 	)
 	
-	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
+	EQUATION(Model, QuickFlowCarbonFluxToReach,
 		return RESULT(InfiltrationExcess) * RESULT(SoilWaterDOCConcentration);
 	)
 
@@ -137,7 +155,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	auto TotalSoilwaterCarbonFluxToReach = RegisterEquationCumulative(Model, "Soilwater carbon flux to reach summed over landscape units", DailyMeanSoilwaterCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 	
-	auto TotalInfiltrationExcessCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", InfiltrationExcessCarbonFluxToReach, LandscapeUnits, LandUseProportions);
+	auto TotalQuickFlowCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", QuickFlowCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 
 #ifdef SIMPLYQ_GROUNDWATER	
 	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
@@ -171,7 +189,7 @@ AddSimplyCModel(mobius_model *Model)
 			upstreamflux += RESULT(DailyMeanStreamDOCFlux, *Input);
 		)
 		return
-			(RESULT(TotalInfiltrationExcessCarbonFlux)
+			(RESULT(TotalQuickFlowCarbonFlux)
 			+ RESULT(TotalSoilwaterCarbonFluxToReach)) * PARAMETER(CatchmentArea)
 #ifdef SIMPLYQ_GROUNDWATER
 			+ RESULT(GroundwaterFluxToReach)

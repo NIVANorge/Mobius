@@ -239,33 +239,22 @@ AddSimplyPModel(mobius_model *Model)
 	
 	// Reach equations	
 	
-	auto StreamTDPFlux = RegisterEquation(Model, "Reach TDP flux", KgPerDay);
-	SetSolver(Model, StreamTDPFlux, ReachSolver);
-	
-	auto StreamPPFlux  = RegisterEquation(Model, "Reach PP flux", KgPerDay);
-	SetSolver(Model, StreamPPFlux, ReachSolver);
-	
-	auto StreamTDPMass = RegisterEquationODE(Model, "Reach TDP mass", Kg);
+	auto StreamTDPFlux = RegisterEquation(Model, "Reach TDP flux", KgPerDay, ReachSolver);
+	auto StreamPPFlux  = RegisterEquation(Model, "Reach PP flux", KgPerDay, ReachSolver);
+	auto StreamTDPMass = RegisterEquationODE(Model, "Reach TDP mass", Kg, ReachSolver);
 	SetInitialValue(Model, StreamTDPMass, 0.0);
-	SetSolver(Model, StreamTDPMass, ReachSolver);
-	
-	auto StreamPPMass  = RegisterEquationODE(Model, "Reach PP mass", Kg);
+	auto StreamPPMass  = RegisterEquationODE(Model, "Reach PP mass", Kg, ReachSolver);
 	SetInitialValue(Model, StreamPPMass, 0.0);
-	SetSolver(Model, StreamPPMass, ReachSolver);
-	
-	auto DailyMeanStreamTDPFlux = RegisterEquationODE(Model, "Reach daily mean TDP flux", KgPerDay);
+	auto DailyMeanStreamTDPFlux = RegisterEquationODE(Model, "Reach daily mean TDP flux", KgPerDay, ReachSolver);
 	SetInitialValue(Model, DailyMeanStreamTDPFlux, 0.0);
-	SetSolver(Model, DailyMeanStreamTDPFlux, ReachSolver);
 	ResetEveryTimestep(Model, DailyMeanStreamTDPFlux);
 	
-	auto DailyMeanStreamPPFlux = RegisterEquationODE(Model, "Reach daily mean PP flux", KgPerDay);
+	auto DailyMeanStreamPPFlux = RegisterEquationODE(Model, "Reach daily mean PP flux", KgPerDay, ReachSolver);
 	SetInitialValue(Model, DailyMeanStreamPPFlux, 0.0);
-	SetSolver(Model, DailyMeanStreamPPFlux, ReachSolver);
 	ResetEveryTimestep(Model, DailyMeanStreamPPFlux);
 	
 	auto ReachTDPInputFromUpstream = RegisterEquation(Model, "Reach TDP input from upstream", KgPerDay);
-	auto ReachPPInputFromErosion   = RegisterEquation(Model, "Reach PP input from erosion and entrainment", KgPerDay);
-	SetSolver(Model, ReachPPInputFromErosion, ReachSolver);
+	auto ReachPPInputFromErosion   = RegisterEquation(Model, "Reach PP input from erosion and entrainment", KgPerDay, ReachSolver);
 	//auto TotalReachPPInputFromErosion = RegisterEquationCumulative(Model, "Total reach PP input from erosion", ReachPPInputFromErosion, LandscapeUnits);
 	auto ReachPPInputFromUpstream  = RegisterEquation(Model, "Reach PP input from upstream", KgPerDay);
 	

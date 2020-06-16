@@ -160,18 +160,13 @@ AddSimplyHydrologyModule(mobius_model *Model)
 
 	// Soil water equations
 	
-	auto SoilWaterFlow = RegisterEquation(Model, "Soil water flow", MmPerDay); // Total flow out of soil box (including that which then goes to GW)
-	SetSolver(Model, SoilWaterFlow, LandSolver);
-	
-	auto Evapotranspiration = RegisterEquation(Model, "Evapotranspiration", MmPerDay);
-	SetSolver(Model, Evapotranspiration, LandSolver);
-	
-	auto SoilWaterVolume = RegisterEquationODE(Model, "Soil water volume", Mm);
+	auto SoilWaterFlow = RegisterEquation(Model, "Soil water flow", MmPerDay, LandSolver); // Total flow out of soil box (including that which then goes to GW)
+	auto Evapotranspiration = RegisterEquation(Model, "Evapotranspiration", MmPerDay, LandSolver);
+
+	auto SoilWaterVolume = RegisterEquationODE(Model, "Soil water volume", Mm, LandSolver);
 	SetInitialValue(Model, SoilWaterVolume, SoilFieldCapacity);
-	SetSolver(Model, SoilWaterVolume, LandSolver);
 	
-	auto DailyMeanSoilWaterFlow = RegisterEquationODE(Model, "Daily mean soil water flow", MmPerDay);
-	SetSolver(Model, DailyMeanSoilWaterFlow, LandSolver);
+	auto DailyMeanSoilWaterFlow = RegisterEquationODE(Model, "Daily mean soil water flow", MmPerDay, LandSolver);
 	ResetEveryTimestep(Model, DailyMeanSoilWaterFlow);
 	
 	EQUATION(Model, SoilWaterFlow,
@@ -234,33 +229,23 @@ AddSimplyHydrologyModule(mobius_model *Model)
 
 #ifdef SIMPLYQ_GROUNDWATER
 	auto InitialGroundwaterVolume = RegisterEquationInitialValue(Model, "Initial groundwater volume", Mm);
-	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm);
+	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm, ReachSolver);
 	SetInitialValue(Model, GroundwaterVolume, InitialGroundwaterVolume);
-	SetSolver(Model, GroundwaterVolume, ReachSolver);
-	
-	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay);
-	SetSolver(Model, GroundwaterFlow, ReachSolver);
+	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay, ReachSolver);
 #endif
 
 	auto ReachFlowInputFromUpstream    = RegisterEquation(Model, "Reach flow input from upstream", M3PerSecond);
-	//SetSolver(Model, ReachFlowInputFromUpstream, ReachSolver);
-	
-	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Reach flow input from land", M3PerSecond);
-	SetSolver(Model, ReachFlowInputFromLand, ReachSolver);
-
-	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", M3);
+	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Reach flow input from land", M3PerSecond, ReachSolver);
+	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", M3, ReachSolver);
 	auto InitialReachVolume = RegisterEquationInitialValue(Model, "Initial reach volume", M3); 
 	SetInitialValue(Model, ReachVolume, InitialReachVolume);
-	SetSolver(Model, ReachVolume, ReachSolver);
 	
-	auto ReachFlow          = RegisterEquation(Model, "Reach flow (end-of-day)", M3PerSecond);
+	auto ReachFlow          = RegisterEquation(Model, "Reach flow (end-of-day)", M3PerSecond, ReachSolver);
 	auto InitialReachFlow   = RegisterEquationInitialValue(Model, "Initial reach flow", M3PerSecond);
 	SetInitialValue(Model, ReachFlow, InitialReachFlow);
-	SetSolver(Model, ReachFlow, ReachSolver);
 	
-	auto DailyMeanReachFlow = RegisterEquationODE(Model, "Reach flow (daily mean, cumecs)", M3PerSecond);
+	auto DailyMeanReachFlow = RegisterEquationODE(Model, "Reach flow (daily mean, cumecs)", M3PerSecond, ReachSolver);
 	SetInitialValue(Model, DailyMeanReachFlow, 0.0);
-	SetSolver(Model, DailyMeanReachFlow, ReachSolver);
 	ResetEveryTimestep(Model, DailyMeanReachFlow);
 	
 	auto DailyMeanReachFlowMm = RegisterEquation(Model, "Reach flow (daily mean, mm/day)", MmPerDay);

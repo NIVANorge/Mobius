@@ -14,8 +14,8 @@
 
 int main()
 {
-    const char *InputFile = "IMPASSE/inputs_Mobius.dat";
-	const char *ParameterFile = "IMPASSE/parameters_MP.dat";
+    const char *InputFile = "Beaver/BeaverInputFinal_mf.dat";
+	const char *ParameterFile = "Beaver/BeaverManningsparameter_mnf.dat";
 	
 	mobius_model *Model = BeginModelDefinition("INCA-Microplastics");
 	
