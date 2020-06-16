@@ -7,8 +7,8 @@ start_date : 1986-01-01
 timesteps : 10957
 
 additional_timeseries :
-"Discharge"                  unit "m3/s"
-"Discharge mm/day"           unit "mm/day"
+"Observed flow"                  unit "m3/s"
+"Observed flow mm/day"           unit "mm/day"
 "Observed DOC"               unit "mg/l"
 "Soil temperature at 15cm"   unit "°C"
 "Soil temperature at 20cm"   unit "°C"

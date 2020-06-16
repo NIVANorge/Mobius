@@ -83,8 +83,10 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilDOCDissolution = RegisterEquation(Model, "Soil organic carbon net dissolution", KgPerKm2PerDay, LandSolver);
 	auto SoilDOCMineralisation = RegisterEquation(Model, "Soil DOC mineralisation", KgPerKm2PerDay, LandSolver);
 	// Carbon equations which vary by land class
+	
+	auto InitialSoilWaterDOCMass      = RegisterEquationInitialValue(Model, "Initial soil water DOC mass", KgPerKm2);
 	auto SoilWaterDOCMass             = RegisterEquationODE(Model, "Soil water DOC mass", KgPerKm2, LandSolver);
-	//SetInitialValue
+	SetInitialValue(Model, SoilWaterDOCMass, InitialSoilWaterDOCMass);
 
 	auto SoilWaterDOCConcentration = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL);
 	SetSolver(Model, SoilWaterDOCConcentration, LandSolver);
@@ -112,6 +114,10 @@ AddSimplyCModel(mobius_model *Model)
 		return mineralisationrate;
 	)
 	
+	EQUATION(Model, InitialSoilWaterDOCMass,
+		return PARAMETER(BaselineSoilDOCConcentration) * PARAMETER(FieldCapacity);
+	)
+	
 	
 	EQUATION(Model, SoilDOCDissolution,
 		// mg/(l day) * mm = kg/(km2 day)
@@ -135,6 +141,7 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, QuickFlowCarbonFluxToReach,
+		//TODO: This only works well if the soil water volume is significantly larger than the quick flow. Otherwise, we should have some additional dissolution here!
 		return RESULT(InfiltrationExcess) * RESULT(SoilWaterDOCConcentration);
 	)
 

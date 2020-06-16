@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC, containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-06-16 14:54:35
+# Parameter file generated for model SimplyC, containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-06-16 15:59:15
 
 index_sets:
 "Reaches" : {"Birkenes"}
@@ -19,7 +19,7 @@ parameters:
 0
 
 "PET multiplication factor" :     #(dimensionless) [1, 2]
-1.28
+1.0210140517131
 
 "Net emissivity at 0 vapor pressure" :     #(dimensionless) [0, 1]
 0.34
@@ -31,7 +31,7 @@ parameters:
 250
 
 "Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5]
-5
+0.379815454230771
 
 "Snow melt offset temperature" :     #(°C) [-4, 4] Snow begins melting above this temperature
 1
@@ -40,7 +40,7 @@ parameters:
 2
 
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
-0
+1.12847666889904e-06
 
 "Soil field capacity" :     #(mm) [0, 1000]
 80
@@ -55,10 +55,10 @@ parameters:
 0
 
 "Soil temperature DOC creation linear coefficient" :     #(1/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.09
+0.0593769709400724
 
 "Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20]
-0.22
+0.2
 
 ###################### "Reaches" ######################
 "Catchment area" :     #(km^2) [0, 10000]
@@ -97,19 +97,19 @@ false
 
 ###################### "Landscape units" ######################
 "Soil water time constant" :     #(days) [0.01, 40]
-1
+0.785375712417811
 
 "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)" :     #(1E-6 m2/s) [0.01, 0.8]
 0.03
 
 "Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100]
-3
+2.99785561375556
 
 "Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0
-3.9
+4.67005420932225
 
 "DOC mineralisation rate" :     #(1/day) [0, 1]
-0.769230769230769
+0.641931652050487
 
 "Compute mineralisation rate from baseline conc." :
 true
