@@ -54,16 +54,16 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
 	
-	auto BaselineSoilDOCCreationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0);
-	auto BaselineSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0");
-	auto SoilDOCMineralisationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "DOC mineralisation rate", PerDay, 0.0, 0.0, 1.0);
-	auto UseBaselineConc              = RegisterParameterBool(Model, CarbonParamsLand, "Compute mineralisation rate from baseline conc.", true);
+	auto BaselineSoilDOCDissolutionRate = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0);
+	auto BaselineSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0");
+	auto SoilDOCMineralisationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "DOC mineralisation+sorption rate", PerDay, 0.0, 0.0, 1.0);
+	auto UseBaselineConc              = RegisterParameterBool(Model, CarbonParamsLand, "Compute mineralisation+sorption rate from baseline conc.", true, "If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration");
 
 	// EQUATIONS
 
 	// Equations defined in hydrology module required here
 	auto SoilWaterVolume 			 = GetEquationHandle(Model, "Soil water volume");
-	auto InfiltrationExcess          = GetEquationHandle(Model, "Infiltration excess");
+	auto QuickFlow                   = GetEquationHandle(Model, "Quick flow");
 	auto SoilWaterFlow   		     = GetEquationHandle(Model, "Soil water flow");
 #ifdef SIMPLYQ_GROUNDWATER
 	auto GroundwaterFlow             = GetEquationHandle(Model, "Groundwater flow");
@@ -80,8 +80,8 @@ AddSimplyCModel(mobius_model *Model)
 	auto FieldCapacity = GetParameterDoubleHandle(Model, "Soil field capacity");
 
 
-	auto SoilDOCDissolution = RegisterEquation(Model, "Soil organic carbon net dissolution", KgPerKm2PerDay, LandSolver);
-	auto SoilDOCMineralisation = RegisterEquation(Model, "Soil DOC mineralisation", KgPerKm2PerDay, LandSolver);
+	auto SoilDOCDissolution = RegisterEquation(Model, "Soil organic carbon dissolution", KgPerKm2PerDay, LandSolver);
+	auto SoilDOCMineralisation = RegisterEquation(Model, "Soil DOC mineralisation+sorption", KgPerKm2PerDay, LandSolver);
 	// Carbon equations which vary by land class
 	
 	auto InitialSoilWaterDOCMass      = RegisterEquationInitialValue(Model, "Initial soil water DOC mass", KgPerKm2);
@@ -106,12 +106,23 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilDOCMineralisationRateComputation = RegisterEquationInitialValue(Model, "Soil DOC mineralisation rate", PerDay);
 	ParameterIsComputedBy(Model, SoilDOCMineralisationRate, SoilDOCMineralisationRateComputation, false); //false signifies parameter should be exposed in user interface.
 	
+	auto SoilBaselineDOCConcentrationComputation = RegisterEquationInitialValue(Model, "Soil baseline DOC concentration", MgPerL);
+	ParameterIsComputedBy(Model, BaselineSoilDOCConcentration, SoilBaselineDOCConcentrationComputation, false);
+	
 	EQUATION(Model, SoilDOCMineralisationRateComputation,
 		double usebaseline = PARAMETER(UseBaselineConc);
 		double mineralisationrate = PARAMETER(SoilDOCMineralisationRate);
-		double mineralisationrate0 = PARAMETER(BaselineSoilDOCCreationRate) / PARAMETER(BaselineSoilDOCConcentration);
+		double mineralisationrate0 = PARAMETER(BaselineSoilDOCDissolutionRate) / PARAMETER(BaselineSoilDOCConcentration);
 		if(usebaseline) return mineralisationrate0;
 		return mineralisationrate;
+	)
+	
+	EQUATION(Model, SoilBaselineDOCConcentrationComputation,
+		double usebaseline = PARAMETER(UseBaselineConc);
+		double baseline = PARAMETER(BaselineSoilDOCConcentration);
+		double baseline0 = PARAMETER(BaselineSoilDOCDissolutionRate) / PARAMETER(SoilDOCMineralisationRate);
+		if(usebaseline) return baseline;
+		return baseline0;
 	)
 	
 	EQUATION(Model, InitialSoilWaterDOCMass,
@@ -121,7 +132,7 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilDOCDissolution,
 		// mg/(l day) * mm = kg/(km2 day)
-		return RESULT(SoilWaterVolume)*PARAMETER(BaselineSoilDOCCreationRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
+		return RESULT(SoilWaterVolume)*PARAMETER(BaselineSoilDOCDissolutionRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
 	)
 	
 	EQUATION(Model, SoilDOCMineralisation,
@@ -141,8 +152,9 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, QuickFlowCarbonFluxToReach,
-		//TODO: This only works well if the soil water volume is significantly larger than the quick flow. Otherwise, we should have some additional dissolution here!
-		return RESULT(InfiltrationExcess) * RESULT(SoilWaterDOCConcentration);
+		double dissolution_volume = RESULT(SoilWaterVolume) + RESULT(QuickFlow);
+		double conc = SafeDivide(RESULT(SoilWaterDOCMass), dissolution_volume);
+		return RESULT(QuickFlow) * conc;
 	)
 
 	EQUATION(Model, SoilWaterCarbonFlux,

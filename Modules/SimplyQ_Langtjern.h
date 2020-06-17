@@ -141,7 +141,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	//Before adding SimplyQ to a model, add one of the PET modules from PET.h . It will provide a "Potential evapotranspiration" timeseries.
 	auto PotentialEvapotranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
 	
-	auto InfiltrationExcess = RegisterEquation(Model, "Infiltration excess", MmPerDay);
+	auto InfiltrationExcess = RegisterEquation(Model, "Quick flow", MmPerDay);
 	auto Infiltration       = RegisterEquation(Model, "Infiltration", MmPerDay);
 	
 	EQUATION(Model, InfiltrationExcess,
