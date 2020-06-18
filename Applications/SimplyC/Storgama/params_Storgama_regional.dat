@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC, containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-06-16 15:57:31
+# Parameter file generated for model SimplyC, containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-06-17 15:40:07
 
 index_sets:
 "Reaches" : {"Storgama"}
@@ -19,7 +19,7 @@ parameters:
 0
 
 "PET multiplication factor" :     #(dimensionless) [1, 2]
-1.08935799181962
+0.7
 
 "Net emissivity at 0 vapor pressure" :     #(dimensionless) [0, 1]
 0.34
@@ -34,7 +34,7 @@ parameters:
 3.15268497878498
 
 "Snow melt offset temperature" :     #(°C) [-4, 4] Snow begins melting above this temperature
-1
+0
 
 "Snow fall multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor to take into account possible inaccuracies in snow fall measurements
 2
@@ -108,9 +108,9 @@ true
 "Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0
 8.92732932098762
 
-"DOC mineralisation rate" :     #(1/day) [0, 1]
+"DOC mineralisation+sorption rate" :     #(1/day) [0, 1]
 0.336046749416909
 
-"Compute mineralisation rate from baseline conc." :
+"Compute mineralisation+sorption rate from baseline conc." :     # If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration
 true
 

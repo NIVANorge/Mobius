@@ -58,6 +58,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
 	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
 	auto SnowMeltOffsetTemperature = RegisterParameterDouble(Model, Snow, "Snow melt offset temperature", DegreesCelsius, 0.0, -4.0, 4.0, "Snow begins melting above this temperature");
+	auto TemperatureAtWhichPrecipFallsAsSnow = RegisterParameterDouble(Model, Snow, "Temperature at which precipitation falls as snow", DegreesCelsius, 0.0, -4.0, 4.0, "Precipitation falls as snow below this temperature");
 	auto SnowMultiplier          = RegisterParameterDouble(Model, Snow, "Snow fall multiplier", Dimensionless, 1.0, 0.5, 1.5, "Adjustment factor to take into account possible inaccuracies in snow fall measurements");
 	
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
@@ -114,12 +115,12 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, PrecipitationFallingAsSnow,
 		double precip = INPUT(Precipitation) * PARAMETER(SnowMultiplier);
-		return (INPUT(AirTemperature) < 0) ? precip : 0.0;
+		return (INPUT(AirTemperature) <= PARAMETER(TemperatureAtWhichPrecipFallsAsSnow)) ? precip : 0.0;
 	)
 	
 	EQUATION(Model, PrecipitationFallingAsRain,
 		double precip = INPUT(Precipitation);
-		return (INPUT(AirTemperature) > 0) ? precip : 0.0;
+		return (INPUT(AirTemperature) > PARAMETER(TemperatureAtWhichPrecipFallsAsSnow)) ? precip : 0.0;
 	)
 	
 	EQUATION(Model, PotentialDailySnowmelt,

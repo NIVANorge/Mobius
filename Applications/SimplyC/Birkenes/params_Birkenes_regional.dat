@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC, containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-06-16 15:59:15
+# Parameter file generated for model SimplyC, containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyC Vtest_03) at 2020-06-17 15:57:47
 
 index_sets:
 "Reaches" : {"Birkenes"}
@@ -19,7 +19,7 @@ parameters:
 0
 
 "PET multiplication factor" :     #(dimensionless) [1, 2]
-1.0210140517131
+1.3
 
 "Net emissivity at 0 vapor pressure" :     #(dimensionless) [0, 1]
 0.34
@@ -49,13 +49,13 @@ parameters:
 0.04
 
 "Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
--0.08
+-0.01
 
 "Initial soil temperature" :     #(°C) [-30, 40]
 0
 
 "Soil temperature DOC creation linear coefficient" :     #(1/°C) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.0593769709400724
+0.0593769709400725
 
 "Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20]
 0.2
@@ -97,20 +97,20 @@ false
 
 ###################### "Landscape units" ######################
 "Soil water time constant" :     #(days) [0.01, 40]
-0.785375712417811
+0.785375712417813
 
 "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)" :     #(1E-6 m2/s) [0.01, 0.8]
-0.03
+0.09
 
 "Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100]
-2.99785561375556
+3
 
 "Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water volume = field capacity, Soil temperature = 0, SO4 deposition = 0
-4.67005420932225
+4.69
 
-"DOC mineralisation rate" :     #(1/day) [0, 1]
-0.641931652050487
+"DOC mineralisation+sorption rate" :     #(1/day) [0, 1]
+0.639658848614072
 
-"Compute mineralisation rate from baseline conc." :
+"Compute mineralisation+sorption rate from baseline conc." :     # If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration
 true
 
