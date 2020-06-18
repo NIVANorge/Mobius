@@ -520,6 +520,10 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 	
 	for(size_t IndexIndex = 0; IndexIndex < IndexNames.size(); ++IndexIndex)
 	{
+		if(IndexNames[IndexIndex].Length == 0)
+		{
+			MOBIUS_FATAL_ERROR("ERROR: Indexes can't be empty strings.\n");
+		}
 		const char *IndexName = IndexNames[IndexIndex].Copy(&DataSet->BucketMemory).Data;
 		DataSet->IndexNames[IndexSetHandle][IndexIndex] = IndexName;
 		DataSet->IndexNamesToHandle[IndexSetHandle][IndexName] = IndexIndex;
@@ -572,6 +576,11 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 	index_t IndexIndex = {IndexSetHandle, 0};
 	for(const auto &InputData : Inputs)
 	{
+		if(InputData.first.Length == 0)
+		{
+			MOBIUS_FATAL_ERROR("ERROR: Indexes can't be empty strings.\n");
+		}
+		
 		const char *IndexName = InputData.first.Copy(&DataSet->BucketMemory).Data;
 
 		const std::vector<token_string> &InputNames = InputData.second;
