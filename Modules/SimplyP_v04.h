@@ -88,7 +88,7 @@ AddSimplyPModel(mobius_model *Model)
 	
 	// Equations defined in other modules
 	auto SoilWaterVolume                = GetEquationHandle(Model, "Soil water volume");
-	auto InfiltrationExcess             = GetEquationHandle(Model, "Infiltration excess");
+	auto QuickFlow                      = GetEquationHandle(Model, "Quick flow");
 	auto SoilWaterFlow                  = GetEquationHandle(Model, "Soil water flow");	
 	auto ReachVolume                    = GetEquationHandle(Model, "Reach volume");
 	auto ReachFlow                      = GetEquationHandle(Model, "Reach flow (end-of-day)");
@@ -152,7 +152,7 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilTDPMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double b = (RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(InfiltrationExcess)) / LAST_RESULT(SoilWaterVolume);
+		double b = (RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow)) / LAST_RESULT(SoilWaterVolume);
 		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
 		double value = a / b + (LAST_RESULT(SoilTDPMass) - a / b) * exp(-b);
 		
@@ -168,7 +168,7 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilLabilePMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double b0 = RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(InfiltrationExcess);
+		double b0 = RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow);
 		double b = b0 / LAST_RESULT(SoilWaterVolume);
 		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
 		//TODO: factor out calculations of b0, a? Would probably not matter that much to speed though.
@@ -231,7 +231,7 @@ AddSimplyPModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilTDPOutput,
 		//TODO: Should consider using "integrated" values here similar to in the equation for the TDP mass value..
-		double flow = (1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow) + RESULT(InfiltrationExcess);
+		double flow = (1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow) + RESULT(QuickFlow);
 		return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * flow * PARAMETER(LandUseProportions); 
 	)
 	

@@ -56,7 +56,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	// Equations defined in hydrology module required here
 	auto SoilWaterVolume 			 = GetEquationHandle(Model, "Soil water volume");
-	auto InfiltrationExcess          = GetEquationHandle(Model, "Infiltration excess");
+	auto QuickFlow                   = GetEquationHandle(Model, "Quick flow");
 	auto SoilWaterFlow   		     = GetEquationHandle(Model, "Soil water flow");
 #ifdef SIMPLYQ_GROUNDWATER
 	auto GroundwaterFlow             = GetEquationHandle(Model, "Groundwater flow");
@@ -74,7 +74,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	auto SoilWaterCarbonConcentration = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL);
 	
-	auto InfiltrationExcessCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerDay);
+	auto QuickFlowCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerDay);
 	
 	auto SoilwaterCarbonFlux = RegisterEquation(Model, "Soil water carbon flux", KgPerDay);
 	SetSolver(Model, SoilwaterCarbonFlux, LandSolver);
@@ -88,14 +88,14 @@ AddSimplyCModel(mobius_model *Model)
 		return PARAMETER(BaselineSoilDOCConcentration) + (PARAMETER(SoilTemperatureDOCLinearCoefficient) + PARAMETER(SoilTemperatureDOCSquareCoefficient) * RESULT(SoilTemperature)) * RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition);
 	)
 	
-	EQUATION(Model, InfiltrationExcessCarbonFluxToReach,
+	EQUATION(Model, QuickFlowCarbonFluxToReach,
 		double quickDOCconcentration;
 		
-		double f_melt = PARAMETER(ProportionToQuickFlow)*RESULT(SnowMelt)/RESULT(InfiltrationExcess);
+		double f_melt = PARAMETER(ProportionToQuickFlow)*RESULT(SnowMelt)/RESULT(QuickFlow);
 		double f_rain = 1.0-f_melt;
 		double soilwaterDOCconc = RESULT(SoilWaterCarbonConcentration);
 		double meltDOCconc      = PARAMETER(SnowMeltDOCConcentration);
-		if (RESULT(InfiltrationExcess)>0.) quickDOCconcentration = f_melt*meltDOCconc + f_rain*soilwaterDOCconc;
+		if (RESULT(QuickFlow)>0.) quickDOCconcentration = f_melt*meltDOCconc + f_rain*soilwaterDOCconc;
 		else quickDOCconcentration = soilwaterDOCconc;
 
 		if(!PARAMETER(DiluteSnow))
@@ -103,7 +103,7 @@ AddSimplyCModel(mobius_model *Model)
 			quickDOCconcentration = RESULT(SoilWaterCarbonConcentration);
 		}
 		
-		return RESULT(InfiltrationExcess)
+		return RESULT(QuickFlow)
 			   * ConvertMgPerLToKgPerMm(quickDOCconcentration, PARAMETER(CatchmentArea));
 	)
 
@@ -124,7 +124,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	auto TotalSoilwaterCarbonFluxToReach = RegisterEquationCumulative(Model, "Soilwater carbon flux to reach summed over landscape units", DailyMeanSoilwaterCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 	
-	auto TotalInfiltrationExcessCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", InfiltrationExcessCarbonFluxToReach, LandscapeUnits, LandUseProportions);
+	auto TotalQuickFlowCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", QuickFlowCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 
 #ifdef SIMPLYQ_GROUNDWATER	
 	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
@@ -158,7 +158,7 @@ AddSimplyCModel(mobius_model *Model)
 			upstreamflux += RESULT(DailyMeanStreamDOCFlux, *Input);
 		)
 		return
-			RESULT(TotalInfiltrationExcessCarbonFlux)
+			RESULT(TotalQuickFlowCarbonFlux)
 			+ RESULT(TotalSoilwaterCarbonFluxToReach)
 #ifdef SIMPLYQ_GROUNDWATER
 			+ RESULT(GroundwaterFluxToReach)

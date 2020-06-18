@@ -140,10 +140,10 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	//Before adding SimplyQ to a model, add one of the PET modules from PET.h . It will provide a "Potential evapotranspiration" timeseries.
 	auto PotentialEvapotranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
 	
-	auto InfiltrationExcess = RegisterEquation(Model, "Infiltration excess", MmPerDay);
+	auto QuickFlow          = RegisterEquation(Model, "Quick flow", MmPerDay);
 	auto Infiltration       = RegisterEquation(Model, "Infiltration", MmPerDay);
 	
-	EQUATION(Model, InfiltrationExcess,
+	EQUATION(Model, QuickFlow,
 		return PARAMETER(ProportionToQuickFlow) * RESULT(HydrologicalInputToSoilBox);
 	)
 	
@@ -307,9 +307,9 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	EQUATION(Model, ReachFlowInputFromLand,
 		//Flow from land in mm/day, converted to m3/s
 #ifdef SIMPLYQ_GROUNDWATER
-		double fromland = RESULT(InfiltrationExcess) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
+		double fromland = RESULT(QuickFlow) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
 #else
-		double fromland = RESULT(InfiltrationExcess) + RESULT(TotalSoilWaterFlow);
+		double fromland = RESULT(QuickFlow) + RESULT(TotalSoilWaterFlow);
 #endif
 		return ConvertMmPerDayToM3PerSecond(fromland, PARAMETER(CatchmentArea));
 	)
