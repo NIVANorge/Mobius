@@ -1059,7 +1059,8 @@ We logically separate application building from model building. By application b
 
 \apientry{BeginModelDefinition}{Application building procedure.}{
 \apipar{const char *Name}{(optional) The name of the model.}
-\apipar{const char *Version}{(optional) The version of the model.}
+\apipar{bool UseEndDate}{(optional) Set this to true if you want an "End date" parameter instead of a "Timesteps" parameter.}
+\apipar{const char *TimestepSize}{(optional) You can provide the timestep resolution here instead of calling {\tt SetTimestepSize} later. Default is 1 day.}
 \apiret{A {\tt mobius\_model*} pointer to a newly created model object.}
 \apidesc{Heap-allocates a new model object. The model object can be freed using {\tt delete}.}
 }
