@@ -14,7 +14,7 @@
 
 
 mobius_model *
-DllBuildModel(mobius_model *Model)
+DllBuildModel()
 {
 	mobius_model *Model = BeginModelDefinition("PERSiST");
 	
