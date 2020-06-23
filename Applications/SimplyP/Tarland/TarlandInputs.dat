@@ -5,7 +5,9 @@
 
 
 start_date : 1981-01-01
-timesteps : 10957
+end_date   : 2010-12-31
+ 
+#timesteps : 10957
 
 additional_timeseries :  		  # All observed at Coull
 "observed Q"        unit "m^3/s"  

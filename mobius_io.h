@@ -865,6 +865,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 
 		if(Section.Equals("timesteps"))
 		{
+			//TODO: Guard against both 'timesteps' and 'end_date' being set?
 			Stream.ExpectToken(TokenType_Colon);
 			Timesteps = Stream.ExpectUInt();
 		}
@@ -873,6 +874,24 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 			Stream.ExpectToken(TokenType_Colon);
 			DataSet->InputDataStartDate = Stream.ExpectDateTime();
 			DataSet->InputDataHasSeparateStartDate = true;
+		}
+		else if(Section.Equals("end_date"))
+		{
+			if(!DataSet->InputDataHasSeparateStartDate)
+			{
+				Stream.PrintErrorHeader();
+				MOBIUS_FATAL_ERROR("The start date has to be provided before the end date");
+			}
+			Stream.ExpectToken(TokenType_Colon);
+			datetime EndDate = Stream.ExpectDateTime();
+			s64 Step = FindTimestep(DataSet->InputDataStartDate, EndDate, Model->TimestepSize);
+			Step += 1;    //NOTE: Because the end date is inclusive. 
+			if(Step <= 0)
+			{
+				Stream.PrintErrorHeader();
+				MOBIUS_FATAL_ERROR("The input data end date was set to be earlier than the input data start date.\n");
+			}
+			Timesteps = (u64)Step;
 		}
 		else if(Section.Equals("inputs"))
 		{
@@ -898,7 +917,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 	
 	if(Timesteps == 0)
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Timesteps in the input file " << Filename << " is set to 0." << std::endl);
+		MOBIUS_FATAL_ERROR("ERROR: Timesteps in the input file " << Filename << " is either not provided or set to 0." << std::endl);
 	}
 	AllocateInputStorage(DataSet, Timesteps);
 	
