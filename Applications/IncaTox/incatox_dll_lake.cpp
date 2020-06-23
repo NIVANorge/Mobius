@@ -18,10 +18,10 @@
 #include "../../Modules/INCA-Tox-Lake.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-Tox";
+	mobius_model *Model = BeginModelDefinition("INCA-Tox + Lake");
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
@@ -31,4 +31,6 @@ DllBuildModel(mobius_model *Model)
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
 	AddIncaToxLakeModule(Model);
+	
+	return Model;
 }

@@ -60,7 +60,7 @@ WriteParameterValue(FILE *File, parameter_value Value, parameter_type Type)
 }
 
 static void
-WriteParameterValues(FILE *File, entity_handle ParameterHandle, parameter_type Type, mobius_data_set *DataSet, index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
+WriteParameterValues(FILE *File, entity_handle ParameterHandle, parameter_type Type, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
 {
 	if(IndexSetCount == 0)
 	{
@@ -168,6 +168,74 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	
 	fprintf(File, "\nparameters:\n");
 
+	for(entity_handle ModuleHandle = 0; ModuleHandle < Model->Modules.Count(); ++ModuleHandle)
+	{
+		if(ModuleHandle != 0)
+		{
+			//NOTE: For module-less parameters
+			const module_spec &Module = Model->Modules.Specs[ModuleHandle];
+			fprintf(File, "\n###################### %s V%s ######################\n", Module.Name, Module.Version);
+		}
+		
+		for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
+		{
+			const parameter_group_spec &Group = Model->ParameterGroups.Specs[ParameterGroupHandle];
+			if(Group.Module.Handle == ModuleHandle)
+			{
+				fprintf(File, "\n###################### %s {", Group.Name);
+				if(Group.IndexSets.size() == 0) fprintf(File, "no index sets");
+				int Count = 0;
+				for(index_set_h IndexSet : Group.IndexSets)
+				{
+					if(Count > 0) fprintf(File, " ");
+					fprintf(File, "\"%s\"", GetName(Model, IndexSet));
+					++Count;
+				}
+				fprintf(File, "} ######################\n\n");
+				
+				for(entity_handle ParameterHandle : Group.Parameters)
+				{
+					const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
+					
+					if(Spec.ShouldNotBeExposed) continue;
+					
+					fprintf(File, "\"%s\" :", Spec.Name);
+					bool PrintedPnd = false;
+					if(IsValid(Spec.Unit))
+					{
+						fprintf(File, "     #(%s)", GetName(Model, Spec.Unit));
+						PrintedPnd = true;
+					}
+					if(Spec.Type != ParameterType_Bool)
+					{
+						if(!PrintedPnd) fprintf(File, "     #");
+						PrintedPnd = true;
+						fprintf(File, " [");
+						WriteParameterValue(File, Spec.Min, Spec.Type);
+						fprintf(File, ", ");
+						WriteParameterValue(File, Spec.Max, Spec.Type);
+						fprintf(File, "]");
+					}
+					if(Spec.Description)
+					{
+						if(!PrintedPnd) fprintf(File, "     #");
+						fprintf(File, " %s", Spec.Description);
+					}
+					fprintf(File, "\n");
+					
+					size_t IndexSetCount = Group.IndexSets.size();
+					index_t *CurrentIndexes = AllocClearedArray(index_t, IndexSetCount);
+					
+					WriteParameterValues(File, ParameterHandle, Spec.Type, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
+					
+					fprintf(File, "\n\n");
+					free(CurrentIndexes);
+				}
+			}
+		}
+		
+	}
+/*
 	for(storage_unit_specifier &Unit : DataSet->ParameterStorageStructure.Units)
 	{
 		array<index_set_h> &IndexSets = Unit.IndexSets;
@@ -218,7 +286,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 			free(CurrentIndexes);
 		}
 	}
-	
+*/
 	fclose(File);
 }
 

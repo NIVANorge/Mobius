@@ -1,4 +1,4 @@
-# Parameter file generated for model PERSiST, containing modules (PERSiST V1.4) at 2020-02-06 14:49:23
+# Parameter file generated for model PERSiST, containing modules (PERSiST V1.4) at 2020-06-23 15:49:20
 
 index_sets:
 "Landscape units" : {"All"}
@@ -6,14 +6,26 @@ index_sets:
 "Reaches" : {"Coull"}
 
 parameters:
-###################### (no index sets) ######################
+
+###################### System {no index sets} ######################
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2002-08-01
+
 "Timesteps" :     #(days) [0, 18446744073709551615]
 1826
 
-"Start date" :     # [1000-01-01, 3000-12-31]
-2002-08-01
 
-###################### "Landscape units" ######################
+###################### PERSiST V1.4 ######################
+
+###################### Solver resolution {no index sets} ######################
+
+"Solver resolution" :     #(dimensionless) [0.001, 0.5] Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km
+0.1
+
+
+###################### Hydrology by land class {"Landscape units"} ######################
+
 "Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
 1
 
@@ -38,17 +50,9 @@ parameters:
 "Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
 0
 
-###################### "Landscape units" "Soils" "Soils" ######################
-"Percolation matrix" :     #(dimensionless) [0, 1]
-0 1 0
-1 0.35 0.65
-1 0 1
 
-###################### "Soils" ######################
-"This is a quick box" :
-true false false
+###################### Soil characteristics by land class {"Soils" "Landscape units"} ######################
 
-###################### "Soils" "Landscape units" ######################
 "Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
 0
 300
@@ -94,7 +98,15 @@ true false false
 430
 300
 
-###################### "Reaches" ######################
+
+###################### Soil box type {"Soils"} ######################
+
+"This is a quick box" :
+true false false
+
+
+###################### Reach and subcatchment characteristics {"Reaches"} ######################
+
 "Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
 50.6
 
@@ -131,7 +143,17 @@ true false false
 "Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
 0.87
 
-###################### "Reaches" "Landscape units" ######################
+
+###################### Land use percentages {"Reaches" "Landscape units"} ######################
+
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
 100
+
+
+###################### Percolation {"Landscape units" "Soils" "Soils"} ######################
+
+"Percolation matrix" :     #(dimensionless) [0, 1]
+0 1 0
+1 0.35 0.65
+1 0 1
 
