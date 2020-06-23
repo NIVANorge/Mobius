@@ -1,10 +1,10 @@
 # Recent large updates
 
+**(2020-06-23):** You can now make your model use an "End date" parameter instead of a "Timesteps" parameter.
+
 **(2020-05-04):** Simplified the way one sets up new model .dlls, making it more efficient and flexible.
 
 **(2019-12-19):** **We just discovered that there has been a bug during the last month where models have not correctly been able to determine what day of year they are in**. It has affected the following models: SimplyP, INCA-N, INCA-P, INCA-C, Tutorial3. If you have downloaded or compiled one of these models between November 19. and now, you should download or compile a new version now that it has been fixed. We apologize for the inconvenience!
-
-**(2019-11-25):** It is now possible to customize the timestep size when building a model. MobiView and model dlls compiled before and after this change may not compatible with each other respectively.
 
 
 
