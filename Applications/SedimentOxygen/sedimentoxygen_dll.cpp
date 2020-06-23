@@ -12,12 +12,12 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "Sediment oxygen";
+	mobius_model *Model = BeginModelDefinition("Sediment oxygen", false, "1h");
 	
 	AddSedimentOxygenModule(Model);
-
-	SetTimestepSize(Model, "1h");
+	
+	return Model;
 }

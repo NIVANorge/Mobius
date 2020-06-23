@@ -313,36 +313,27 @@ AddPersistModel(mobius_model *Model)
 	
 	auto DiffuseFlowOutput = RegisterEquation(Model, "Diffuse flow output", MetresCubedPerSecond);
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MetresCubedPerSecond);
-	auto ReachAbstraction  = RegisterEquation(Model, "Reach abstraction", MetresCubedPerSecond);
-	SetSolver(Model, ReachAbstraction, ReachSolver);
+	auto ReachAbstraction  = RegisterEquation(Model, "Reach abstraction", MetresCubedPerSecond, ReachSolver);
 	
 	auto TotalDiffuseFlowOutput = RegisterEquationCumulative(Model, "Total diffuse flow output", DiffuseFlowOutput, LandscapeUnits);
 	
-	auto ReachCrossSectionArea    = RegisterEquation(Model, "Reach cross section area", MetersSquared);
-	SetSolver(Model, ReachCrossSectionArea, ReachSolver);
-	auto ReachDepth               = RegisterEquation(Model, "Reach depth", Meters);
-	SetSolver(Model, ReachDepth, ReachSolver);
-	auto ReachTopWidth            = RegisterEquation(Model, "Reach top width", Meters);
-	SetSolver(Model, ReachTopWidth, ReachSolver);
-	auto ReachWettedPerimeter     = RegisterEquation(Model, "Reach wetted perimeter", Meters);
-	SetSolver(Model, ReachWettedPerimeter, ReachSolver);
-	auto ReachHydraulicRadius     = RegisterEquation(Model, "Reach hydraulic radius", Meters);
-	SetSolver(Model, ReachHydraulicRadius, ReachSolver);
-	auto ReachVelocity            = RegisterEquation(Model, "Reach velocity", MetresPerSecond);
-	SetSolver(Model, ReachVelocity, ReachSolver);
+	auto ReachCrossSectionArea    = RegisterEquation(Model, "Reach cross section area", MetersSquared, ReachSolver);
+	auto ReachDepth               = RegisterEquation(Model, "Reach depth", Meters, ReachSolver);
+	auto ReachTopWidth            = RegisterEquation(Model, "Reach top width", Meters, ReachSolver);
+	auto ReachWettedPerimeter     = RegisterEquation(Model, "Reach wetted perimeter", Meters, ReachSolver);
+	auto ReachHydraulicRadius     = RegisterEquation(Model, "Reach hydraulic radius", Meters, ReachSolver);
+	auto ReachVelocity            = RegisterEquation(Model, "Reach velocity", MetresPerSecond, ReachSolver);
 	
 	auto InitialReachFlow         = RegisterEquationInitialValue(Model, "Initial reach flow", MetresCubedPerSecond);
-	//auto ReachFlow                = RegisterEquationODE(Model, "Reach flow", MetresCubedPerSecond);
-	auto ReachFlow                = RegisterEquation(Model, "Reach flow", MetresCubedPerSecond);
-	SetSolver(Model, ReachFlow, ReachSolver);
+	auto ReachFlow                = RegisterEquation(Model, "Reach flow", MetresCubedPerSecond, ReachSolver);
 	SetInitialValue(Model, ReachFlow, InitialReachFlow);
 	
 	auto InitialReachVolume       = RegisterEquationInitialValue(Model, "Initial reach volume", MetersCubed);
-	auto ReachVolume              = RegisterEquationODE(Model, "Reach volume", MetersCubed);
-	SetSolver(Model, ReachVolume, ReachSolver);
+	auto ReachVolume              = RegisterEquationODE(Model, "Reach volume", MetersCubed, ReachSolver);
 	SetInitialValue(Model, ReachVolume, InitialReachVolume);
 	
-	
+	auto DailyMeanReachFlow       = RegisterEquationODE(Model, "Reach flow (daily mean)", MetresCubedPerSecond, ReachSolver);
+	ResetEveryTimestep(Model, DailyMeanReachFlow);
 	
 	
 	// Stream flow (m3/s) = Catchment Area (km2)
@@ -357,7 +348,7 @@ AddPersistModel(mobius_model *Model)
 		double reachInput = RESULT(TotalDiffuseFlowOutput) + IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		
 		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachFlow, *Input);
+			reachInput += RESULT(DailyMeanReachFlow, *Input);
 		)
 
 		return reachInput;
@@ -424,6 +415,10 @@ AddPersistModel(mobius_model *Model)
 	
 	EQUATION(Model, ReachVolume,
 		return (RESULT(ReachFlowInput) - RESULT(ReachAbstraction) - RESULT(ReachFlow)) * 86400.0;
+	)
+	
+	EQUATION(Model, DailyMeanReachFlow,
+		return RESULT(ReachFlow);
 	)
 	
 	EndModule(Model);

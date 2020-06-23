@@ -12,11 +12,13 @@
 #include "../../Modules/INCA-Sed.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-Sed";
+	mobius_model *Model = BeginModelDefinition("INCA-Sed");
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
+	
+	return Model;
 }

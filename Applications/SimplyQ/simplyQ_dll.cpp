@@ -14,11 +14,14 @@
 #include "../../Modules/SimplyQ.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "SimplyQ";
+	mobius_model *Model = BeginModelDefinition("SimplyQ");
 	
-	AddThornthwaitePETModule(Model);
+	//AddThornthwaitePETModule(Model);
+	AddDegreeDayPETModule(Model);
 	AddSimplyHydrologyModule(Model);
+	
+	return Model;
 }

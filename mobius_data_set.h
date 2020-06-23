@@ -448,15 +448,36 @@ GetTimesteps(mobius_data_set *DataSet)
 {
 	const mobius_model *Model = DataSet->Model;
 	
+	//TODO: Check that the parameter was actually registered with the correct type and that it does not have any index set dependencies.
+	
+	auto FindEndDate = Model->Parameters.NameToHandle.find("End date");
+	if(FindEndDate != Model->Parameters.NameToHandle.end())
+	{
+		entity_handle EndDateHandle = FindEndDate->second;
+		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, EndDateHandle);
+		datetime EndDate = DataSet->ParameterData[Offset].ValTime;
+		datetime StartDate = GetStartDate(DataSet);
+		
+		s64 Step = FindTimestep(StartDate, EndDate, DataSet->Model->TimestepSize);
+		Step += 1;    //NOTE: Because the end date is inclusive. 
+		if(Step <= 0)
+		{
+			MOBIUS_FATAL_ERROR("The model run start date was set to be later than the model run end date.\n");
+		}
+		
+		return (u64)Step;
+	}
+		
+		
 	auto FindTimestep = Model->Parameters.NameToHandle.find("Timesteps");
 	if(FindTimestep != Model->Parameters.NameToHandle.end())
 	{
 		entity_handle TimestepHandle = FindTimestep->second;
 		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, TimestepHandle);
-		return DataSet->ParameterData[Offset].ValUInt; //TODO: Check that it was actually registered with the correct type and that it does not have any index set dependencies.
+		return DataSet->ParameterData[Offset].ValUInt; 
 	}
 	
-	return 100;
+	return 1;
 }
 
 

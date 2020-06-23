@@ -16,10 +16,10 @@
 #include "../../Modules/INCA-Tox.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-Tox";
+	mobius_model *Model = BeginModelDefinition("INCA-Tox");
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
@@ -27,4 +27,6 @@ DllBuildModel(mobius_model *Model)
 	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
+	
+	return Model;
 }

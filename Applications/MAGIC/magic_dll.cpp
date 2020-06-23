@@ -13,14 +13,17 @@
 #include "../../Modules/MAGIC/MAGIC_CarbonNitrogen.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "MAGIC";
+	mobius_model *Model = BeginModelDefinition("MAGIC", false, "1M");
 	
 	AddMagicCoreModel(Model);
 	AddMagicModel(Model);
-	AddSimpleMagicCarbonNitrogenModel(Model);
+	
+	//Carbon and nitrogen
+	//AddSimpleMagicCarbonNitrogenModel(Model);
+	AddMicrobialMagicCarbonNitrogenModel(Model);
 
-	SetTimestepSize(Model, "1M");
+	return Model;
 }

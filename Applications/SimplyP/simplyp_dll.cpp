@@ -9,13 +9,15 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "SimplyP";
+	mobius_model *Model = BeginModelDefinition("SimplyP");
 	
 	AddSimplyPHydrologyModule(Model);
 	AddSimplyPSedimentModule(Model);
 	AddSimplyPPhosphorusModule(Model);
 	AddSimplyPInputToWaterBodyModule(Model);
+	
+	return Model;
 }

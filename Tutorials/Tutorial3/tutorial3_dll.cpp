@@ -4,12 +4,14 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
 	//NOTE: This is just an example of creating a model .dll that can be used with the python wrapper or MobiView.
 	
-	Model->Name = "Giblet-Thrasher model";
+	mobius_model *Model = BeginModelDefinition("Giblet-Thrasher model");
 	
 	AddGibletThrasherModel(Model);
+	
+	return Model;
 }

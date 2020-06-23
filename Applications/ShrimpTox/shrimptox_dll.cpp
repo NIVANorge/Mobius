@@ -11,12 +11,12 @@
 #include "../../Modules/EcoTox/ShrimpTox.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "Shrimp tox";
+	mobius_model *Model = BeginModelDefinition("Shrimp tox", false, "3M");
 	
 	AddShrimpToxModel(Model);
 	
-	SetTimestepSize(Model, "3M");
+	return Model;
 }

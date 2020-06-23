@@ -15,14 +15,16 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-N";
+	mobius_model *Model = BeginModelDefinition("INCA-N");
 	
 	AddPersistModel(Model);
 	//RegisterParameterGroup(Model, "Percolation", GetIndexSetHandle(Model, "Reaches")); //NOTE: Uncomment to make percolation matrices be per reach instead of per L.U.
 	AddSoilTemperatureModel(Model);
 	AddWaterTemperatureModel(Model);
 	AddIncaNModel(Model);
+	
+	return Model;
 }

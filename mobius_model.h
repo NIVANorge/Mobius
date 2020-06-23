@@ -871,9 +871,9 @@ SetTimestepSize(mobius_model *Model, const char *Format)
 	
 	Model->TimestepSize = ParseTimestepSize(Format);
 	
+	//TODO: This should change the unit of the "Timesteps" parameter!
 	//TODO: Do we want to put any restrictions on it? Can be weird if somebody set a timestep of e.g. 61 seconds.
 }
-
 
 inline void
 AddPreprocessingStep(mobius_model *Model, mobius_preprocessing_step PreprocessingStep)

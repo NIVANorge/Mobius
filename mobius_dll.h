@@ -45,17 +45,16 @@ DllEncounteredError(char *ErrmsgOut)
 }
 
 //This one has to be provided in each separate application
-void
-DllBuildModel(mobius_model *Model);
+mobius_model *
+DllBuildModel();
 
 DLLEXPORT void *
 DllSetupModel(char *ParameterFilename, char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition();
+	mobius_model *Model = DllBuildModel();
 	
-	DllBuildModel(Model);
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	
 	EndModelDefinition(Model);
@@ -77,9 +76,7 @@ DllSetupModelBlankIndexSets(char *InputFilename)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_model *Model = BeginModelDefinition();
-	
-	DllBuildModel(Model);
+	mobius_model *Model = DllBuildModel();
 	ReadInputDependenciesFromFile(Model, InputFilename);
 	
 	EndModelDefinition(Model);
@@ -293,7 +290,7 @@ DllGetResultSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCou
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	size_t Timesteps = GetTimesteps(DataSet);
+	size_t Timesteps = DataSet->TimestepsLastRun;
 	
 	GetResultSeries(DataSet, Name, IndexNames, (size_t)IndexCount, WriteTo, Timesteps);
 	
@@ -307,7 +304,7 @@ DllGetInputSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCoun
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	size_t Timesteps = GetTimesteps(DataSet);
+	size_t Timesteps = GetTimesteps(DataSet); //TODO: Use DataSet->TimestepsLastRun??
 	if(!AlignWithResults)
 	{
 		Timesteps = DataSet->InputDataTimesteps;

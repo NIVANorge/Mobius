@@ -1,6 +1,6 @@
 
 static mobius_model *
-BeginModelDefinition(const char *Name = "(unnamed model)")
+BeginModelDefinition(const char *Name = "(unnamed model)", bool UseEndDate = false, const char *TimestepSize = "1D")
 {
 	mobius_model *Model = new mobius_model {};
 	
@@ -9,13 +9,21 @@ BeginModelDefinition(const char *Name = "(unnamed model)")
 	Model->DefinitionTimer = BeginTimer();
 	
 	Model->Name = Name;
-	
-	auto Days 	      = RegisterUnit(Model, "days");
+
 	auto System       = RegisterParameterGroup(Model, "System");
-	RegisterParameterUInt(Model, System, "Timesteps", Days, 100);
-	RegisterParameterDate(Model, System, "Start date", "1970-1-1");
+	RegisterParameterDate(Model, System, "Start date", "1970-1-1", "1000-1-1", "3000-1-1", "The start date is inclusive");
 	
-	SetTimestepSize(Model, "1D");   // One day as default
+	if(UseEndDate)
+	{
+		RegisterParameterDate(Model, System, "End date", "1970-1-1", "1000-1-1", "3000-1-1", "The end date is inclusive");
+	}
+	else
+	{
+		auto Days 	      = RegisterUnit(Model, "days");              //TODO: This should be reactive to the timestep size!!
+		RegisterParameterUInt(Model, System, "Timesteps", Days, 1);
+	}
+	
+	SetTimestepSize(Model, TimestepSize);
 	
 	return Model;
 }
@@ -1394,7 +1402,7 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 }
 
 
-inline void
+inline double
 SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_h Equation)
 {
 	
@@ -1429,6 +1437,8 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 	RunState->AtResult[ResultStorageLocation] = Initial;
 	RunState->CurResults[Equation.Handle] = Initial;
 	RunState->LastResults[Equation.Handle] = Initial;
+	
+	return Initial;
 }
 
 INNER_LOOP_BODY(InitialValueSetupInnerLoop)
@@ -1454,15 +1464,27 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 		}
 	}
 	
+#if MOBIUS_TIMESTEP_VERBOSITY >= 2
+	index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
+	for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+	index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
+	std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
+#endif	
+	
 	s32 BottomLevel = BatchGroup.IndexSets.Count - 1;
 	if(CurrentLevel == BottomLevel)
-	{
+	{	
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			for(equation_h Equation : Batch.InitialValueOrder)
 			{
-				SetupInitialValue(DataSet, RunState, Equation);
+				double Initial = SetupInitialValue(DataSet, RunState, Equation);
+#if MOBIUS_TIMESTEP_VERBOSITY >= 3
+				for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+				std::cout << "\t" << GetName(Model, Equation) << " = " << Initial << std::endl;
+#endif
+				
 			}
 		}
 		

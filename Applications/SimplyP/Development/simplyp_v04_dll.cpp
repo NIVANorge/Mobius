@@ -14,13 +14,15 @@
 #include "../../../Modules/SimplyP_v04.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "SimplyP";
+	mobius_model *Model = BeginModelDefinition("SimplyP", true);   //'true' signifies that we want an "End date" parameter instead of a "Timesteps" parameter
 	
 	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSimplySedimentModule(Model);
 	AddSimplyPModel(Model);
+	
+	return Model;
 }

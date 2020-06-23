@@ -8,15 +8,17 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/Persist.h"
-//#include "../../Modules/Persist_Manning.h"
+//#include "../../Modules/Persist.h"
+#include "../../Modules/Persist_Manning.h"
 
 
 
-void
+mobius_model *
 DllBuildModel(mobius_model *Model)
 {
-	Model->Name = "PERSiST";
+	mobius_model *Model = BeginModelDefinition("PERSiST");
 	
 	AddPersistModel(Model);
+	
+	return Model;
 }

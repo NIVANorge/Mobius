@@ -12,10 +12,12 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "Easy-Lake";
+	mobius_model *Model = BeginModelDefinition("Easy-Lake");
 	
 	AddEasyLakePhysicalModule(Model);
+	
+	return Model;
 }

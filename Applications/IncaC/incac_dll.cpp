@@ -14,13 +14,15 @@
 #include "../../Modules/INCA-C.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-C";
+	mobius_model *Model = BeginModelDefinition("INCA-C");
 	
 	AddPersistModel(Model);
 	AddSoilTemperatureModel(Model);
 	AddSolarRadiationModule(Model);
 	AddINCACModel(Model);
+	
+	return Model;
 }

@@ -6,11 +6,14 @@ index_sets:
 
 parameters:
 ###################### (no index sets) ######################
-"Timesteps" :     #(days) [0, 18446744073709551615]
-485
+#"Timesteps" :     #(days) [0, 18446744073709551615]
+#485
 
 "Start date" :     # [1000-01-01, 3000-12-31]
 2004-01-01
+
+"End date" :
+2005-04-30
 
 "Latitude" :     #(°C) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
 59.6

@@ -17,10 +17,10 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-P";
+	mobius_model *Model = BeginModelDefinition("INCA-P");
 	
 	AddPersistModel(Model);
 	AddSoilTemperatureModel(Model);
@@ -28,4 +28,6 @@ DllBuildModel(mobius_model *Model)
 	AddSolarRadiationModule(Model);
 	AddINCASedModel(Model);
 	AddINCAPModel(Model);
+	
+	return Model;
 }

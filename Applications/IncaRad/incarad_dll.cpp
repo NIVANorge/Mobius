@@ -16,10 +16,10 @@
 #include "../../Modules/INCA-Rad.h"
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-Rad";
+	mobius_model *Model = BeginModelDefinition("INCA-Rad");
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
@@ -27,4 +27,6 @@ DllBuildModel(mobius_model *Model)
 	AddWaterTemperatureModel(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaRadModule(Model);
+	
+	return Model;
 }

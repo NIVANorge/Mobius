@@ -14,12 +14,14 @@
 
 
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "INCA-Microplastics";
+	mobius_model *Model = BeginModelDefinition("INCA-Microplastics");
 	
 	AddPersistModel(Model);
 	AddWaterTemperatureModel(Model);
 	AddINCAMicroplasticsModel(Model);
+	
+	return Model;
 }

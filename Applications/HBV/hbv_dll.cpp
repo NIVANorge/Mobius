@@ -10,9 +10,12 @@
 #include "../../Modules/HBV.h"
 
 
-void DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "HBV";
+	mobius_model *Model = BeginModelDefinition("HBV");
 	
 	AddHBVModel(Model);
+	
+	return Model;
 }

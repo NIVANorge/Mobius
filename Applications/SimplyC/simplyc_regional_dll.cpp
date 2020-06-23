@@ -22,10 +22,10 @@
 
 #include "../../Modules/SimplyQLakeAddon.h"
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "SimplyC";
+	mobius_model *Model = BeginModelDefinition("SimplyC");
 	
 	AddMaxSolarRadiationModule(Model);
 	AddPriestleyTaylorPETModule2(Model);
@@ -33,4 +33,6 @@ DllBuildModel(mobius_model *Model)
 	AddSimplyQLakeAddon(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);
+	
+	return Model;
 }

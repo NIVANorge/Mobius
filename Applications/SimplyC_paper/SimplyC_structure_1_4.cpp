@@ -12,20 +12,18 @@
 								 //Comment out this line if you don't want groundwater           
 #include "../../Modules/SimplyQ.h"
 
-
-//#include "../../Modules/SimplyC.h"
-//#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_exp_temp_SO4_groundwater_transport.h"
-//#include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
 #include "../../Modules/Alternate_versions_of_simplyC/SimplyC_polynomial_temp_SO4.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
-void
-DllBuildModel(mobius_model *Model)
+mobius_model *
+DllBuildModel()
 {
-	Model->Name = "SimplyC";
+	mobius_model *Model = BeginModelDefinition("SimplyC");
 	
 	AddThornthwaitePETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);
+	
+	return Model;
 }
