@@ -511,6 +511,10 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 	
 	*/
 	
+	
+	
+	//TODO: We should guard against values being out of range here, so that we don't run into infinite loop problems
+	
 	double SoilCationExchange;
 	double WaterVolume;
 	double SO4AdsorptionCap;
@@ -850,6 +854,10 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 {
 	// This is supposed to be run once at the beginning of the simulation to compute some initial values.
 	// It does almost exactly the same as the MagicCore, but instead of computing most exchangeable fractions, it assumes they are known and computes selectivity coefficients instead.
+	
+	
+	//TODO: We should guard against values being out of range here, so that we don't run into infinite loop problems
+	
 	
 	double SumBaseCationConc = 2.0*Input.conc_Ca + 2.0*Input.conc_Mg + Input.conc_Na + Input.conc_K;
 	

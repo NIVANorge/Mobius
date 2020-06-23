@@ -311,7 +311,7 @@ AddMagicCoreModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialSO4,
-		
+
 		magic_param Param = {};
 		magic_init_input Input = {};
 		magic_init_result Result = {};
@@ -344,7 +344,6 @@ AddMagicCoreModel(mobius_model *Model)
 		Input.conc_Cl  = RESULT(ConcCl);
 		Input.conc_NO3 = RESULT(ConcNO3);
 		Input.all_F    = RESULT(ConcAllF);
-		
 		
 		Input.exchangeable_Ca = PARAMETER(InitialECa)*0.01;
 		Input.exchangeable_Mg = PARAMETER(InitialEMg)*0.01;
@@ -594,15 +593,15 @@ AddMagicCoreModel(mobius_model *Model)
 		magic_param Param;
 		magic_output Result;
 		
-		Input.total_Ca    = LAST_RESULT(TotalCa);
-		Input.total_Mg    = LAST_RESULT(TotalMg);
-		Input.total_Na    = LAST_RESULT(TotalNa);
-		Input.total_K     = LAST_RESULT(TotalK);
-		Input.total_NH4   = LAST_RESULT(TotalNH4);
-		Input.total_SO4   = LAST_RESULT(TotalSO4);
-		Input.total_Cl    = LAST_RESULT(TotalCl);
-		Input.total_NO3   = LAST_RESULT(TotalNO3);
-		Input.total_F     = LAST_RESULT(TotalF);
+		Input.total_Ca    = RESULT(TotalCa);
+		Input.total_Mg    = RESULT(TotalMg);
+		Input.total_Na    = RESULT(TotalNa);
+		Input.total_K     = RESULT(TotalK);
+		Input.total_NH4   = RESULT(TotalNH4);
+		Input.total_SO4   = RESULT(TotalSO4);
+		Input.total_Cl    = RESULT(TotalCl);
+		Input.total_NO3   = RESULT(TotalNO3);
+		Input.total_F     = RESULT(TotalF);
 		
 		Param.Depth       = PARAMETER(Depth);
 		Param.Temperature = RESULT(Temperature);

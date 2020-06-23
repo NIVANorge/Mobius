@@ -86,7 +86,7 @@ AddSimpleMagicCarbonNitrogenModel(mobius_model *Model)
 	EndModule(Model);
 }
 
-#if 0
+
 static void
 AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 {
@@ -95,6 +95,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Percent          = RegisterUnit(Model, "%");
 	auto MolPerM2         = RegisterUnit(Model, "mol/m2");
+	auto MMolPerM2        = RegisterUnit(Model, "mmol/m2");
 	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
 	auto MMolPerM2PerTs   = RegisterUnit(Model, "mmol/m2/month");
 	auto MolPerMol        = RegisterUnit(Model, "mol/mol");
@@ -132,12 +133,31 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	auto CompartmentSolver = GetSolverHandle(Model, "Compartment solver");
 	
-	auto OrganicC           = RegisterEquationODE(Model, "Organic C", MMolPerM2, CompartmentSolver);
-	SetInitialValue(Model, OrganicC, InitialOrganicC); //TODO: ooops! unit!
-	auto OrganicN           = RegisterEquationODE(Model, "Organic N", MMolPerM2, CompartmentSolver);
-	SetInitialValue(Model, OrganicN, InitialOrganicN); //TODO: ooops! unit!
+	auto OrganicC           = RegisterEquation(Model, "Organic C", MMolPerM2);
+	auto InitialOrganicCScaled = RegisterEquationInitialValue(Model, "Initial organic C", MMolPerM2);
+	SetInitialValue(Model, OrganicC, InitialOrganicCScaled);
+	auto OrganicN           = RegisterEquation(Model, "Organic N", MMolPerM2);
+	auto InitialOrganicNScaled = RegisterEquationInitialValue(Model, "Initial organic N", MMolPerM2);
+	SetInitialValue(Model, OrganicN, InitialOrganicNScaled);
 	
-	auto PoolCN             = RegisterEquation(Model, "Pool C/N", MolPerMol, CompartmentSolver);
+	auto PoolCN             = RegisterEquation(Model, "Pool C/N", MolPerMol);
+	auto InitialPoolCN      = RegisterEquationInitialValue(Model, "Initial pool C/N", MolPerMol);
+	SetInitialValue(Model, PoolCN, InitialPoolCN);
+	
+	EQUATION(Model, InitialOrganicCScaled,
+		std::cout << "org c init " << PARAMETER(InitialOrganicC)*1000.0 << '\n';
+		return PARAMETER(InitialOrganicC)*1000.0;
+	)
+	
+	EQUATION(Model, InitialOrganicNScaled,
+		return PARAMETER(InitialOrganicN)*1000.0;
+	)
+	
+	EQUATION(Model, InitialPoolCN,
+		return SafeDivide(PARAMETER(InitialOrganicC), PARAMETER(InitialOrganicN));
+	)
+	
+	
 	
 	auto TurnoverC          = RegisterEquation(Model, "Organic C turnover", MMolPerM2PerTs);
 	auto RetainedC          = RegisterEquation(Model, "Organic C retained as decomposer biomass", MMolPerM2PerTs);
@@ -170,10 +190,16 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	auto NH4ProcessesLoss    = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
 	
 	
+	//NOTE! If we don't say these are 0 in initialization we get a nan computation
+	SetInitialValue(Model, NO3ImmobilisationEq, 0.0);
+	SetInitialValue(Model, NH4ImmobilisationEq, 0.0);
+	
 	
 	auto FractionOfYear = GetEquationHandle(Model, "Fraction of year");
 	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 basic inputs");
 	auto NH4BasicInputs = GetEquationHandle(Model, "NH4 basic inputs");
+	auto TotalNO3       = GetEquationHandle(Model, "Total NO3 mass");
+	auto TotalNH4       = GetEquationHandle(Model, "Total NH4 mass");
 	
 	/*
 	1) d(SOC)/dt = litter C – (FC3 + FC4)   		- SOM C mass balance
@@ -184,7 +210,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	*/
 	
 	EQUATION(Model, PoolCN,
-		return SafeDivide(RESULT(OrganicC), RESULT(OrganicN));
+		return SafeDivide(LAST_RESULT(OrganicC), LAST_RESULT(OrganicN));
 	)
 	
 	EQUATION(Model, TurnoverC,
@@ -192,11 +218,11 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, RetainedC,
-		return RESULT(CTurnover)*PARAMETER(CarbEff)*0.01;              //FC2
+		return RESULT(TurnoverC)*PARAMETER(CarbEff)*0.01;              //FC2
 	)
 	
 	EQUATION(Model, DepletedC,
-		return RESULT(CTurnover)*(1.0 - PARAMETER(CarbEff)*0.01);      //FC1 - FC2
+		return RESULT(TurnoverC)*(1.0 - PARAMETER(CarbEff)*0.01);      //FC1 - FC2
 	)
 	
 	EQUATION(Model, RespiredC,
@@ -211,7 +237,10 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear);
 		double out    = PARAMETER(OrganicCOutput)*RESULT(FractionOfYear);
 		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear);
-		return in - out + litter - RESULT(DepletedC);
+
+		return 
+			  LAST_RESULT(OrganicC)
+			+ in - out + litter - RESULT(DepletedC);
 	)
 	
 	/*
@@ -226,7 +255,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	EQUATION(Model, DecomposerCN,
 		double poolCN = RESULT(PoolCN);
 		double dcmpCN = PARAMETER(DecompCN);
-		if(dcmpcn == 0.0) dcmpCN = poolCN;
+		if(dcmpCN <= 0.0) dcmpCN = poolCN;
 		return dcmpCN;
 	)
 	
@@ -252,8 +281,9 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	EQUATION(Model, MineralizedN,
 		double retainedN = RESULT(RetainedN);
-		double Nused     = RESULT(NUsedByDecomp)
-		double mineralized = RESULT(TurnoverN) - RESULT(SolubilizedN) - RESULT(orgNUsedByDecomp);  //FN3
+		double Nused     = RESULT(NUsedByDecomp);
+		double mineralized = RESULT(TurnoverN) - RESULT(SolubilizedN) - RESULT(NUsedByDecomp);  //FN3
+		
 		if(Nused > retainedN)
 		{
 			//FN3 = FN3 + (FN5 – FN2)
@@ -270,13 +300,15 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	EQUATION(Model, OrganicN,
 		double poolCN = RESULT(PoolCN);
 		double outCN  = PARAMETER(OutputCN);
-		if(outcn == 0.0)  outCN  = poolCN;
+		if(outCN == 0.0)  outCN  = poolCN;
 		
 		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear)/PARAMETER(InputCN);
 		double out    = PARAMETER(OrganicCOutput)*RESULT(FractionOfYear)/outCN;
 		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear)/PARAMETER(LitterCN);
 		
-		return in - out + litter - RESULT(DepletedN);
+		return
+			  LAST_RESULT(OrganicN)
+			+ in - out + litter - RESULT(DepletedN);
 	)
 	
 	//TODO: The following has to be updated to match the new fluxes above:
@@ -300,16 +332,20 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	EQUATION(Model, NO3ImmobilisationEq,
 		//TODO: allow toggling preferential immob.
 		//TODO: guard against going below 0
+		//std::cout << "timestep is " << CURRENT_TIMESTEP() << " last totalno3 is " << LAST_RESULT(TotalNO3) << '\n';
+		
 		double deficit = RESULT(NDeficit);
-		double frac = RESULT(TotalNO3) / (RESULT(TotalNO3 + TotalNH4));
+		double frac = LAST_RESULT(TotalNO3) / (LAST_RESULT(TotalNO3) + LAST_RESULT(TotalNH4));
 		return deficit * frac;
 	)
 	
 	EQUATION(Model, NH4ImmobilisationEq,
 		//TODO: allow toggling preferential immob.
 		//TODO: guard against going below 0
+		//std::cout << "timestep is " << CURRENT_TIMESTEP() << " last totalno3 is " << LAST_RESULT(TotalNO3) << '\n';
+		
 		double deficit = RESULT(NDeficit);
-		double frac = RESULT(TotalNH4) / (RESULT(TotalNO3 + TotalNH4));
+		double frac = LAST_RESULT(TotalNH4) / (LAST_RESULT(TotalNO3) + LAST_RESULT(TotalNH4));
 		return deficit * frac;
 	)
 	
@@ -320,14 +356,15 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 		double uptake = PARAMETER(PlantNO3Uptake);
 		double result = uptake * RESULT(FractionOfYear);
 		double in = RESULT(NO3Inputs);
+		double total = LAST_RESULT(TotalNO3);
 		if(uptake < 0.0) result = -uptake*0.01*in;
 		return result;
 	)
 	
 	EQUATION(Model, NH4UptakeEq,
-		double uptake = PARAMETER(PlantNO3Uptake);
+		double uptake = PARAMETER(PlantNH4Uptake);
 		double result = uptake * RESULT(FractionOfYear);
-		double in = RESULT(NO3Inputs);
+		double in = RESULT(NH4Inputs);
 		if(uptake < 0.0) result = -uptake*0.01*in;
 		return result;
 	)
@@ -347,13 +384,13 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, NH4ProcessesLoss,
-		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq) + RESULT(NO4UptakeEq);
+		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq) + RESULT(NH4UptakeEq);
 	)
 	
 	
 	EndModule(Model);
 }
-#endif
+
 
 /*
 	auto OrganicCInput                    = RegisterParameterDouble(Model, CAndN, "Organic C input", MMolPerM2PerYear, 0.0, 0.0, 1e6); 
