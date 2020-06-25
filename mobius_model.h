@@ -379,18 +379,19 @@ struct equation_batch
 	//NOTE: These are used for optimizing estimation of the Jacobian in case that is needed by a solver.
 	array<array<size_t>>     ODEIsDependencyOfODE;
 	array<array<equation_h>> ODEIsDependencyOfNonODE;
-	
-	array<equation_h> InitialValueOrder; //NOTE: The initial value setup of equations happens in a different order than the execution order during model run because the intial value equations may have different dependencies than the equations they are initial values for.
 };
 
 struct equation_batch_group
 {
+	size_t FirstBatch;
+	size_t LastBatch;
+	
 	array<index_set_h> IndexSets;
 	
 	array<equation_h>     LastResultsToReadAtBase;  //Unfortunately we need this for LAST_RESULTs of equations with 0 index set dependencies.
 	array<iteration_data> IterationData;
-	size_t FirstBatch;
-	size_t LastBatch;
+	
+	array<equation_h> InitialValueOrder; //NOTE: The initial value setup of equations happens in a different order than the execution order during model run because the intial value equations may have different dependencies than the equations they are initial values for.
 };
 
 

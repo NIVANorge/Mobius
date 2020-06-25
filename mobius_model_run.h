@@ -829,6 +829,8 @@ EndModelDefinition(mobius_model *Model)
 			
 			BatchGroup.FirstBatch = BatchIdx;
 			
+			std::vector<equation_h> InitialValueOrder;
+			
 			while(BatchIdx != BatchBuild.size() && BatchBuild[BatchIdx].IndexSetDependencies == IndexSets)
 			{
 				equation_batch_template &BatchTemplate = BatchBuild[BatchIdx];
@@ -848,30 +850,29 @@ EndModelDefinition(mobius_model *Model)
 					EquationBelongsToBatchGroup[Equation.Handle] = BatchGroupIdx;
 					return false;
 				});
-
-				
-				//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch A depends on the (initial) value of an equation in batch B and batch A is before batch B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
-				//TODO: We should report an error if that happens!
-				//NOTE: Currently we only allow for initial value equations to be sorted differently than their parent equations within the same batch (this was needed in some of the example models).
-				std::vector<equation_h> InitialValueOrder;
 				
 				ForAllBatchEquations(Batch,
 				[Model, &Batch, &InitialValueOrder](equation_h Equation)
 				{
 					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
-					if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the visit)
+					if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the topological sort below)
 					{
-						TopologicalSortEquationsInitialValueVisit(Model, Equation, InitialValueOrder);
+						InitialValueOrder.push_back(Equation);
 					}
 					return false;
 				});
 				
-				Batch.InitialValueOrder = CopyDataToArray(&Model->BucketMemory, InitialValueOrder.data(), InitialValueOrder.size());
-				
 				++BatchIdx;
 			}
-			
 			BatchGroup.LastBatch = BatchIdx - 1;
+			
+			//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A is before batch group B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
+			//TODO: We should report an error if that happens!
+			//NOTE: Currently we only allow for initial value equations to be sorted differently than their parent equations within the same batch (this was needed in some of the example models).
+			
+			TopologicalSortEquations(Model, InitialValueOrder, TopologicalSortEquationsInitialValueVisit);
+			
+			BatchGroup.InitialValueOrder = CopyDataToArray(&Model->BucketMemory, InitialValueOrder.data(), InitialValueOrder.size());
 			
 			++BatchGroupIdx;
 		}
@@ -883,10 +884,10 @@ EndModelDefinition(mobius_model *Model)
 		size_t BatchGroupIdx = 0;
 		for(equation_batch_group &BatchGroup : Model->BatchGroups)
 		{
-			std::set<entity_handle>     AllParameterDependenciesForBatchGroup;
-			std::set<equation_h>   AllResultDependenciesForBatchGroup;
-			std::set<equation_h>   AllLastResultDependenciesForBatchGroup;
-			std::set<input_h>      AllInputDependenciesForBatchGroup;
+			std::set<entity_handle> AllParameterDependenciesForBatchGroup;
+			std::set<equation_h>    AllResultDependenciesForBatchGroup;
+			std::set<equation_h>    AllLastResultDependenciesForBatchGroup;
+			std::set<input_h>       AllInputDependenciesForBatchGroup;
 			
 			for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 			{
@@ -1443,7 +1444,7 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 
 INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 {
-	// TODO: IMPORTANT!! If an initial value equation depends on the result of an equation from a different batch than itself, that is not guaranteed to work correctly.
+	// TODO: IMPORTANT!! If an initial value equation depends on the result of an equation from a different batch group than itself, that is not guaranteed to work correctly.
 	// TODO: Currently we don't report an error if that happens!
 	
 	const mobius_model *Model = DataSet->Model;
@@ -1474,18 +1475,14 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 	s32 BottomLevel = BatchGroup.IndexSets.Count - 1;
 	if(CurrentLevel == BottomLevel)
 	{	
-		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
+		for(equation_h Equation : BatchGroup.InitialValueOrder)
 		{
-			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-			for(equation_h Equation : Batch.InitialValueOrder)
-			{
-				double Initial = SetupInitialValue(DataSet, RunState, Equation);
+			double Initial = SetupInitialValue(DataSet, RunState, Equation);
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-				for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-				std::cout << "\t" << GetName(Model, Equation) << " = " << Initial << std::endl;
+			for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+			std::cout << "\t" << GetName(Model, Equation) << " = " << Initial << std::endl;
 #endif
-				
-			}
+			
 		}
 		
 		RunState->AtResult += DataSet->ResultStorageStructure.Units[BatchGroupIdx].Handles.Count; //NOTE: This works because we set the storage structure up to mirror the batch group structure.

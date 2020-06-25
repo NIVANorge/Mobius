@@ -1,4 +1,4 @@
-#define MOBIUS_TIMESTEP_VERBOSITY 1
+#define MOBIUS_TIMESTEP_VERBOSITY 0
 //NOTE: the g++ compiler flag ffast-math will make it so that isnan does not work correctly, so don't use that flag.
 #define MOBIUS_TEST_FOR_NAN 1
 #define MOBIUS_EQUATION_PROFILING 0
