@@ -1193,10 +1193,13 @@ INNER_LOOP_BODY(RunInnerLoop)
 	}
 
 #if MOBIUS_TIMESTEP_VERBOSITY >= 2
-	index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-	for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-	index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
-	std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
+	if(CurrentLevel >= 0)
+	{
+		index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
+		for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+		index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
+		std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
+	}
 #endif
 	
 	if(CurrentLevel == BottomLevel)
@@ -1269,9 +1272,6 @@ INNER_LOOP_BODY(RunInnerLoop)
 					//NOTE: Values are not written to ResultData before the entire solution process is finished. So during the solver process one can ONLY read intermediary results from equations belonging to this solver using RESULT(H), never RESULT(H, Idx1,...) etc. However there is no reason one would want to do that any way.
 					for(equation_h Equation : Batch.EquationsODE)
 					{
-//#if MOBIUS_TEST_FOR_NAN
-//						NaNTest(Model, RunState, x0[EquationIdx], Equation);
-//#endif
 						RunState->CurResults[Equation.Handle] = x0[EquationIdx];
 						++EquationIdx;
 					}
@@ -1280,9 +1280,6 @@ INNER_LOOP_BODY(RunInnerLoop)
 					for(equation_h Equation : Batch.Equations)
 					{
 						double ResultValue = CallEquation(Model, RunState, Equation);
-//#if MOBIUS_TEST_FOR_NAN
-//						NaNTest(Model, RunState, ResultValue, Equation);
-//#endif
 						RunState->CurResults[Equation.Handle] = ResultValue;
 					}
 					
@@ -1464,13 +1461,16 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 			RunState->CurInputWasProvided[Input.Handle] = DataSet->InputTimeseriesWasProvided[Offset];
 		}
 	}
-	
+
 #if MOBIUS_TIMESTEP_VERBOSITY >= 2
-	index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-	for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-	index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
-	std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
-#endif	
+	if(CurrentLevel >= 0)
+	{
+		index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
+		for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+		index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
+		std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
+	}
+#endif
 	
 	s32 BottomLevel = BatchGroup.IndexSets.Count - 1;
 	if(CurrentLevel == BottomLevel)
@@ -1482,7 +1482,6 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 			for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 			std::cout << "\t" << GetName(Model, Equation) << " = " << Initial << std::endl;
 #endif
-			
 		}
 		
 		RunState->AtResult += DataSet->ResultStorageStructure.Units[BatchGroupIdx].Handles.Count; //NOTE: This works because we set the storage structure up to mirror the batch group structure.
@@ -1791,6 +1790,9 @@ RunModel(mobius_data_set *DataSet)
 			RunState.CurInputs[InputHandle] = RunState.AllCurInputsBase[Offset];
 		}
 	}
+#if MOBIUS_TIMESTEP_VERBOSITY >= 1
+	std::cout << "Initial value step:" << std::endl;
+#endif
 	RunState.Timestep = -1;
 	ModelLoop(DataSet, &RunState, InitialValueSetupInnerLoop);
 	//***********
