@@ -1,6 +1,7 @@
 import ctypes
 import numpy as np
 import datetime as dt
+import warnings
 
 mobiusdll = None
 
@@ -17,6 +18,9 @@ def initialize(dllname) :
 	
 	mobiusdll.DllEncounteredError.argtypes = [ctypes.c_char_p]
 	mobiusdll.DllEncounteredError.restype = ctypes.c_int
+	
+	mobiusdll.DllEncounteredWarning.argtypes = [ctypes.c_char_p]
+	mobiusdll.DllEncounteredWarning.restype = ctypes.c_int
 	
 	mobiusdll.DllSetupModel.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
 	mobiusdll.DllSetupModel.restype  = ctypes.c_void_p
@@ -146,10 +150,17 @@ def _PackIndexes(indexes):
 	return (ctypes.c_char_p * len(cindexes))(*cindexes)
 	
 def check_dll_error() :
-	errmsgbuf = ctypes.create_string_buffer(1024)
-	errcode = mobiusdll.DllEncounteredError(errmsgbuf)
+	msgbuf = ctypes.create_string_buffer(1024)
+	
+	warncode  = mobiusdll.DllEncounteredWarning(msgbuf)
+	if warncode == 1 :
+		warnmsg = msgbuf.value.decode('utf-8')
+		#warnings.warn(warnmsg)
+		print(warnmsg)
+
+	errcode = mobiusdll.DllEncounteredError(msgbuf)
 	if errcode == 1 :
-		errmsg = errmsgbuf.value.decode('utf-8')
+		errmsg = msgbuf.value.decode('utf-8')
 		raise RuntimeError(errmsg)
 	
 class DataSet :
@@ -286,7 +297,8 @@ class DataSet :
 			A numpy.array containing the specified timeseries.
 		'''
 		if alignwithresults :
-			timesteps = mobiusdll.DllGetTimesteps(self.datasetptr)
+			#timesteps = mobiusdll.DllGetTimesteps(self.datasetptr)
+			timesteps = self.get_parameter_uint('Timesteps', [])    #NOTE: DllGetTimesteps returns TimestepsLastRun, so can not be used unless model has been run!!
 		else :
 			timesteps = mobiusdll.DllGetInputTimesteps(self.datasetptr)
 		check_dll_error()
@@ -364,7 +376,7 @@ class DataSet :
 		else :
 			strvalue = value
 		
-		mobiusdll.DllSetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), value.encode('utf-8'))
+		mobiusdll.DllSetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), strvalue.encode('utf-8'))
 		check_dll_error()
 		
 	def get_parameter_double(self, name, indexes) :

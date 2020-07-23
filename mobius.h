@@ -67,6 +67,10 @@ typedef int8_t  s8;
 	exit(1);}
 #endif
 
+#if !defined(MOBIUS_WARNING)
+	#define MOBIUS_WARNING(Msg) std::cout << Msg;
+#endif
+
 #include "mobius_math.h"
 #include "mobius_util.h"
 #include "bucket_allocator.h"

@@ -832,7 +832,7 @@ There are a few prerequisites for allowing you to do this
 Even if you explicitly index only one index set, the parameter can have more than one index set dependency. When you explicitly index only the rightmost index set dependency, the index of the other index sets is as usual inferred to be the current index of these index sets in the execution state. Moreover, the call will register a dependency for {\tt PercolationOut} on the higher other set(s) that were automatically inferred, but not on {\tt SoilBoxes}. (Though, {\tt PercolationOut} does get a dependency on  {\tt SoilBoxes} any way from the call to {\tt CURRENT\_INDEX(SoilBoxes)}).
 
 \begin{example}
-Equation {\tt A} refers to {\tt PARAMETER(B, IX)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units"\}, where "Landscape units" is the immediate dependency, and "Reaches" is a dependency of the parent group of the immediate group. The index {\tt IX} will refer to an index of "Landscape units". The framework determines that {\tt A} has to index over "Reaches".
+Equation {\tt A} refers to {\tt PARAMETER(B, IX)} in its equation body. Parameter {\tt B} has the dependencies \{"Reaches", "Landscape units"\}. The index {\tt IX} will refer to an index of "Landscape units". The framework determines that {\tt A} has to index over "Reaches".
 \end{example}
 
 You can also provide more than one explicit index.

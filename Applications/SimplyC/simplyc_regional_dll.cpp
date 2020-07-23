@@ -29,6 +29,9 @@ DllBuildModel()
 	
 	AddMaxSolarRadiationModule(Model);
 	AddPriestleyTaylorPETModule2(Model);
+	
+	//AddDegreeDayPETModule(Model);
+	
 	AddSimplyHydrologyModule(Model);
 	AddSimplyQLakeAddon(Model);
 	AddSoilTemperatureModel(Model);

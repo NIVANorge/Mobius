@@ -4,6 +4,9 @@
 static int Dll_GlobalErrorCode = 0;
 std::stringstream Dll_GlobalErrstream;
 
+static int Dll_GlobalWarningCode = 0;
+std::stringstream Dll_GlobalWarningStream;
+
 #define MOBIUS_PARTIAL_ERROR(Msg) \
 	{Dll_GlobalErrstream << Msg; \
 	Dll_GlobalErrorCode = 1;}
@@ -12,6 +15,9 @@ std::stringstream Dll_GlobalErrstream;
 	{MOBIUS_PARTIAL_ERROR(Msg) \
 	throw 1;}
 
+#define MOBIUS_WARNING(Msg) \
+	{Dll_GlobalWarningStream << Msg; \
+	Dll_GlobalWarningCode = 1;}
 
 #include "mobius.h"
 
@@ -37,9 +43,22 @@ DllEncounteredError(char *ErrmsgOut)
 	
 	int Code = Dll_GlobalErrorCode;
 	
-	//NOTE: Since IPython does not seem to reload the dll when you restart it (normally), we have to clear this.
 	Dll_GlobalErrorCode = 0;
 	Dll_GlobalErrstream.str(std::string());
+	
+	return Code;
+}
+
+DLLEXPORT int
+DllEncounteredWarning(char *WarningmsgOut)
+{
+	std::string WarnStr = Dll_GlobalWarningStream.str();
+	strcpy(WarningmsgOut, WarnStr.c_str());
+	
+	int Code = Dll_GlobalWarningCode;
+	
+	Dll_GlobalWarningCode = 0;
+	Dll_GlobalWarningStream.str(std::string());
 	
 	return Code;
 }
@@ -304,7 +323,7 @@ DllGetInputSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCoun
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	size_t Timesteps = GetTimesteps(DataSet); //TODO: Use DataSet->TimestepsLastRun??
+	size_t Timesteps = GetTimesteps(DataSet);
 	if(!AlignWithResults)
 	{
 		Timesteps = DataSet->InputDataTimesteps;

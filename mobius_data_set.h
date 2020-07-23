@@ -86,7 +86,11 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	if(DataSet->ParameterData) Copy->ParameterData = CopyArray(parameter_value, DataSet->ParameterStorageStructure.TotalCount, DataSet->ParameterData);
 	CopyStorageStructure(&DataSet->ParameterStorageStructure, &Copy->ParameterStorageStructure, Model->Parameters.Count(), &Copy->BucketMemory);
 	
-	if(DataSet->InputData) Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
+	if(DataSet->InputData)
+	{
+		Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
+	}
+	else Copy->InputData = nullptr; //Should not be necessary...
 	CopyStorageStructure(&DataSet->InputStorageStructure, &Copy->InputStorageStructure, Model->Inputs.Count(), &Copy->BucketMemory);
 	Copy->InputDataStartDate = DataSet->InputDataStartDate;
 	Copy->InputDataHasSeparateStartDate = DataSet->InputDataHasSeparateStartDate;
@@ -1152,9 +1156,6 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	
 	const mobius_model *Model = DataSet->Model;
 	
-	//TODO: If we ask for more values than we could get, should there not be an error?
-	u64 NumToWrite = Min(WriteSize, DataSet->InputDataTimesteps);
-	
 	input_h Input = GetInputHandle(Model, Name);
 	
 	size_t StorageUnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
@@ -1173,14 +1174,19 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
 	double *Lookup = DataSet->InputData + Offset;
 	
+	s64 TimestepOffset = 0;
 	if(AlignWithResults && DataSet->InputDataHasSeparateStartDate)
 	{
 		//NOTE: In case the user asked for a input timeseries that starts at the start of the modelrun rather than at the start of the input series.
 		datetime DataSetStartDate = GetStartDate(DataSet);
 		datetime InputStartDate   = DataSet->InputDataStartDate;
-		s64 TimestepOffset = FindTimestep(InputStartDate, DataSetStartDate, Model->TimestepSize);
+		TimestepOffset = FindTimestep(InputStartDate, DataSetStartDate, Model->TimestepSize);
 		Lookup += TimestepOffset * DataSet->InputStorageStructure.TotalCount;
 	}
+	
+	//TODO: If we ask for more values than we could get, should there not be an error?
+	s64 NumToWrite = Min((s64)WriteSize, (s64)DataSet->InputDataTimesteps - TimestepOffset);
+	NumToWrite = Max(0, NumToWrite);
 	
 	for(size_t Idx = 0; Idx < NumToWrite; ++Idx)
 	{
