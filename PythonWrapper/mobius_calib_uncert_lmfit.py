@@ -279,7 +279,7 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
     
     return np.concatenate(residuals)
 
-def minimize_residuals(params, dataset, comparisons, residual_method=calculate_residuals, method='nelder', norm=False, 
+def minimize_residuals(params, dataset, comparisons, residual_method=calculate_residuals, iter_cb=None, method='nelder', norm=False, 
                        skip_timesteps=0):
     """ Lest squares minimisation of the residuals. See
             
@@ -316,7 +316,8 @@ def minimize_residuals(params, dataset, comparisons, residual_method=calculate_r
                          fcn_kws={'norm':norm,
                                   'skip_timesteps':skip_timesteps,
                                  },
-                         nan_policy='omit',                         
+                         nan_policy='omit',
+						 iter_cb=iter_cb,
                         )
     
     # Run minimizer
