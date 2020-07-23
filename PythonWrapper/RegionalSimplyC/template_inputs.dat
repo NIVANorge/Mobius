@@ -1,0 +1,11 @@
+#NOTE: Just used for structure. Actual data is copied from other files
+
+
+timesteps :  9861
+start_date : 1986-01-01
+
+additional_timeseries :
+"Observed flow"
+"Observed DOC"
+
+inputs :
