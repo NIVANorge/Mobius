@@ -56,7 +56,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	auto Snow = RegisterParameterGroup(Model, "Snow");
 	
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
-	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
+	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0, "", "DDFmelt");
 	auto SnowMeltOffsetTemperature = RegisterParameterDouble(Model, Snow, "Snow melt offset temperature", DegreesCelsius, 0.0, -4.0, 4.0, "Snow begins melting above this temperature");
 	auto TemperatureAtWhichPrecipFallsAsSnow = RegisterParameterDouble(Model, Snow, "Temperature at which precipitation falls as snow", DegreesCelsius, 0.0, -4.0, 4.0, "Precipitation falls as snow below this temperature");
 	auto SnowMultiplier          = RegisterParameterDouble(Model, Snow, "Snow fall multiplier", Dimensionless, 1.0, 0.5, 1.5, "Adjustment factor to take into account possible inaccuracies in snow fall measurements");
@@ -64,14 +64,13 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
-	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0); //Max ok, or breaks model?
-	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0);
+	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "", "fquick");
 #ifdef SIMPLYQ_GROUNDWATER
-	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
-	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
+	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
+	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0, "", "Tg");
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
 #endif
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRootM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
+	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRootM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types", "mann") ;
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
@@ -88,15 +87,15 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	// Terrestrial hydrology parameters that vary by land class
 	auto HydrologyLand = RegisterParameterGroup(Model, "Hydrology land", LandscapeUnits);
 	
-	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0);
-	
+	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0, "", "Ts");
+	auto SoilFieldCapacity       = RegisterParameterDouble(Model, HydrologyLand, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 	//auto SoilFlowExponent        = RegisterParameterDouble(Model, HydrologyLand, "Soil water flow exponent", Dimensionless, 0.0);
 	
 	
 	// General parameters that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land cover", Reach, LandscapeUnits);
 	
-	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0);
+	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0, "", "lu");
 	
 	// Inputs
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);

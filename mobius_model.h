@@ -186,6 +186,7 @@ struct parameter_spec
 	
 	unit_h Unit;
 	const char *Description;
+	const char *ShortName;
 	
 	equation_h IsComputedBy; //NOTE: We allow certain parameters to be computed by an initial value equation rather than being provided by a parameter file.
 	bool ShouldNotBeExposed; //NOTE: Any user interface or file handler should not deal with a parameter if ShouldNotBeExposed = true;
@@ -998,7 +999,7 @@ RegisterInput(mobius_model *Model, const char *Name, unit_h Unit = {0}, bool IsA
 }
 
 inline parameter_double_h
-RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, double Default, double Min = -DBL_MAX, double Max = DBL_MAX, const char *Description = 0)
+RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, double Default, double Min = -DBL_MAX, double Max = DBL_MAX, const char *Description = 0, const char *ShortName = 0)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -1012,6 +1013,7 @@ RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char
 	Spec.Group = Group;
 	Spec.Unit = Unit;
 	Spec.Description = Description;
+	Spec.ShortName = ShortName;
 	
 	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
 
@@ -1019,7 +1021,7 @@ RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char
 }
 
 inline parameter_uint_h
-RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, u64 Default, u64 Min = 0, u64 Max = 0xffffffffffffffff, const char *Description = 0)
+RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, u64 Default, u64 Min = 0, u64 Max = 0xffffffffffffffff, const char *Description = 0, const char *ShortName = 0)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -1033,6 +1035,7 @@ RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *
 	Spec.Group = Group;
 	Spec.Unit = Unit;
 	Spec.Description = Description;
+	Spec.ShortName = ShortName;
 	
 	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
 	
@@ -1040,7 +1043,7 @@ RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *
 }
 
 inline parameter_bool_h
-RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *Name, bool Default, const char *Description = 0)
+RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *Name, bool Default, const char *Description = 0, const char *ShortName = 0)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -1053,6 +1056,7 @@ RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *
 	Spec.Max.ValBool = true;
 	Spec.Group = Group;
 	Spec.Description = Description;
+	Spec.ShortName = ShortName;
 	
 	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
 	
@@ -1060,7 +1064,7 @@ RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *
 }
 
 inline parameter_time_h
-RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *Name, const char *Default, const char *Min = "1000-1-1", const char *Max = "3000-12-31", const char *Description = 0)
+RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *Name, const char *Default, const char *Min = "1000-1-1", const char *Max = "3000-12-31", const char *Description = 0, const char *ShortName = 0)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -1086,6 +1090,7 @@ RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *
 	
 	Spec.Group = Group;
 	Spec.Description = Description;
+	Spec.ShortName = ShortName;
 	
 	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
 
@@ -1139,7 +1144,7 @@ ParameterIsComputedBy(mobius_model *Model, parameter_uint_h Parameter, equation_
 inline void
 SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBody, bool Override = false)
 {
-	//REGISTRATION_BLOCK(Model) //NOTE: We can't use REGISTRATION_BLOCK since the user don't call the SetEquation explicitly, it is called through the macro EQUATION, and so they would not understand the error message.
+	//REGISTRATION_BLOCK(Model) //NOTE: We can't use REGISTRATION_BLOCK since the user don't call the SetEquation explicitly, it is called through the macro EQUATION, and so the error message would be confusing.
 	if(Model->Finalized)
 	{
 		PrintRegistrationErrorHeader(Model);

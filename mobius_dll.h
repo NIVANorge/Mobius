@@ -493,6 +493,21 @@ DllGetParameterDescription(void *DataSetPtr, char *Name)
 }
 
 DLLEXPORT const char *
+DllGetParameterShortName(void *DataSetPtr, char *Name)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
+	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
+	return Spec.ShortName;
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
+DLLEXPORT const char *
 DllGetParameterUnit(void *DataSetPtr, char *Name)
 {
 	CHECK_ERROR_BEGIN
