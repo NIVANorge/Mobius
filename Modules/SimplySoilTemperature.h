@@ -26,7 +26,7 @@ AddSoilTemperatureModel(mobius_model *Model)
 	auto SoilTempParamsGlobal = RegisterParameterGroup(Model, "Global soil temperature parameters");
 	
 	// To do: need this parameter?
-	auto SnowDepthSoilTemperatureFactor	    = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Snow depth / soil temperature factor", PerCm, -0.2, -3.0, -0.001, "Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth");
+	auto SnowDepthSoilTemperatureFactor	    = RegisterParameterDouble(Model, SoilTempParamsGlobal, "Snow depth / soil temperature factor", PerCm, -0.2, -3.0, -0.001, "Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth", "depthST");
 	// Note: Compared to orginal Rankinen et al. 2004 model, have grouped together the SnowDepthSoilTemperatureFactor together with
 	// the snow water equivalent factor (as these two are just multiplied anyway, and one is a tuning param, so may as well incorporate the other)
 	// Have adjusted the default, min and max param values accordingly.
@@ -48,7 +48,7 @@ AddSoilTemperatureModel(mobius_model *Model)
 	//auto SpecificHeatCapacitySoil			= RegisterParameterDouble(Model, SoilTempParamsLand, "Specific heat capacity of soil", MegaJoulesPerCubicMetrePerDegreeCelsius, 1.1);
 	
 	// Replaced with:
-	auto SoilThermalConductivityOverHeatCapacity = RegisterParameterDouble(Model, SoilTempParamsLand, "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)", MetresSquaredPerSecondEMinus6, 0.4, 0.01, 0.8);
+	auto SoilThermalConductivityOverHeatCapacity = RegisterParameterDouble(Model, SoilTempParamsLand, "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)", MetresSquaredPerSecondEMinus6, 0.4, 0.01, 0.8, "", "STC");   //UGH! TODO: put most of the name in the 'description field'. However, lots of param files have to be updated :(
 	
 	// Inputs
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");  //NOTE: This should be declared by the main model

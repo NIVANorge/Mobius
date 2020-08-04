@@ -42,9 +42,9 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that don't vary with land class or sub-catchment/reach
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
 	
-	auto SoilTemperatureDOCLinearCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 20.0);
+	auto SoilTemperatureDOCLinearCoefficient = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 20.0, "", "kT");
 
-	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0);
+	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0, "", "kSO4");
 	
 
 #ifdef SIMPLYQ_GROUNDWATER
@@ -54,9 +54,9 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
 	
-	auto BaselineSoilDOCDissolutionRate = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0);
-	auto BaselineSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0");
-	auto SoilDOCMineralisationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "DOC mineralisation+sorption rate", PerDay, 0.0, 0.0, 1.0);
+	auto BaselineSoilDOCDissolutionRate = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0, "", "cDOC");
+	auto BaselineSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0", "baseDOC");
+	auto SoilDOCMineralisationRate    = RegisterParameterDouble(Model, CarbonParamsLand, "DOC mineralisation+sorption rate", PerDay, 0.0, 0.0, 1.0, "", "dDOC");
 	auto UseBaselineConc              = RegisterParameterBool(Model, CarbonParamsLand, "Compute mineralisation+sorption rate from baseline conc.", true, "If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration");
 
 	// EQUATIONS

@@ -211,7 +211,7 @@ AddPriestleyTaylorPETModule2(mobius_model *Model)
 	
 	auto PETParams = RegisterParameterGroup(Model, "Potential evapotranspiration");
 	
-	auto PETMultiplicationFactor     = RegisterParameterDouble(Model, PETParams, "PET multiplication factor", Dimensionless, 1.28, 1.0, 2.0);
+	auto PETMultiplicationFactor     = RegisterParameterDouble(Model, PETParams, "PET multiplication factor", Dimensionless, 1.28, 1.0, 2.0, "", "alphaPET");
 	auto EmissivityAtZero            = RegisterParameterDouble(Model, PETParams, "Net emissivity at 0 vapor pressure", Dimensionless, 0.34, 0.0, 1.0);
 	auto PressureEmissivityChange    = RegisterParameterDouble(Model, PETParams, "Change in emissivity caused by vapor pressure", InvRootkPa, 0.139, 0.0, 0.5);
 	

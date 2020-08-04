@@ -113,18 +113,18 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	auto Snow = RegisterParameterGroup(Model, "Snow");
 	
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
-	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
+	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0, "", "DDFmelt");
 	
 	// Hydrology parameters that hopefully don't vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
-	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0);
-	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, Hydrology, "PET multiplication factor", Dimensionless, 1.0, 0.0, 1.0);
-	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0);
-	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0);
-	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0);
+	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "", "fquick");
+	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, Hydrology, "PET multiplication factor", Dimensionless, 1.0, 0.0, 1.0, "", "alphaPET");
+	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
+	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
+	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0, "", "Tgw");
 	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0);
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRouteM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types") ;
+	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRouteM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types", "Cmann") ;
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
@@ -142,7 +142,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	// Terrestrial hydrology parameters that vary by land class
 	auto HydrologyLand = RegisterParameterGroup(Model, "Hydrology land", LandscapeUnits);
 	
-	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.05, 40.0, "Note: arable and improved grassland are grouped as 'agricultural' land, and only the arable soil hydrology parameters are used");
+	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.05, 40.0, "Note: arable and improved grassland are grouped as 'agricultural' land, and only the arable soil hydrology parameters are used", "Ts");
 	
 	// General parameters that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Subcatchment characteristics by land class", Reach, LandscapeUnits);
@@ -214,12 +214,10 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	//NOTE: Ideally we would want the soil water volume equations to just be one equation that is autoindexed over landscape units, but that would create a difficulty when merging outflow from the landscape units to the reach as we could not do that inside the same solver (currently). Also, we could not let one instance of the calculation span both Arable and Improved-grassland as is done with Agricultural here.
 	
 
-	auto AgriculturalSoilWaterFlow = RegisterEquation(Model, "Agricultural soil water flow", MmPerDay);
-	SetSolver(Model, AgriculturalSoilWaterFlow, SimplyPSolver);
+	auto AgriculturalSoilWaterFlow = RegisterEquation(Model, "Agricultural soil water flow", MmPerDay, SimplyPSolver);
 	
-	auto AgriculturalSoilWaterVolume = RegisterEquationODE(Model, "Agricultural soil water volume", Mm);
+	auto AgriculturalSoilWaterVolume = RegisterEquationODE(Model, "Agricultural soil water volume", Mm, SimplyPSolver);
 	SetInitialValue(Model, AgriculturalSoilWaterVolume, SoilFieldCapacity);
-	SetSolver(Model, AgriculturalSoilWaterVolume, SimplyPSolver);
 	
 	EQUATION(Model, AgriculturalSoilWaterFlow,
 		double smd = PARAMETER(SoilFieldCapacity) - RESULT(AgriculturalSoilWaterVolume);
@@ -234,12 +232,10 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 			- RESULT(AgriculturalSoilWaterFlow);	
 	)
 	
-	auto SeminaturalSoilWaterFlow = RegisterEquation(Model, "Semi-natural soil water flow", MmPerDay);
-	SetSolver(Model, SeminaturalSoilWaterFlow, SimplyPSolver);
+	auto SeminaturalSoilWaterFlow = RegisterEquation(Model, "Semi-natural soil water flow", MmPerDay, SimplyPSolver);
 	
-	auto SeminaturalSoilWaterVolume = RegisterEquationODE(Model, "Semi-natural soil water volume", Mm);
+	auto SeminaturalSoilWaterVolume = RegisterEquationODE(Model, "Semi-natural soil water volume", Mm, SimplyPSolver);
 	SetInitialValue(Model, SeminaturalSoilWaterVolume, SoilFieldCapacity);
-	SetSolver(Model, SeminaturalSoilWaterVolume, SimplyPSolver);
 	
 	EQUATION(Model, SeminaturalSoilWaterFlow,
 		double smd = PARAMETER(SoilFieldCapacity) - RESULT(SeminaturalSoilWaterVolume);
@@ -254,8 +250,7 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 			- RESULT(SeminaturalSoilWaterFlow);	
 	)
 	
-	auto TotalSoilWaterFlow       = RegisterEquation(Model, "Landuse weighted soil water flow", MmPerDay);
-	SetSolver(Model, TotalSoilWaterFlow, SimplyPSolver);
+	auto TotalSoilWaterFlow       = RegisterEquation(Model, "Landuse weighted soil water flow", MmPerDay, SimplyPSolver);
 	
 	EQUATION(Model, TotalSoilWaterFlow,
 		double f_A = PARAMETER(LandUseProportions, Arable) + PARAMETER(LandUseProportions, ImprovedGrassland);
@@ -298,32 +293,25 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	)
 
 	auto InitialGroundwaterVolume = RegisterEquationInitialValue(Model, "Initial groundwater volume", Mm);
-	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm);
+	auto GroundwaterVolume        = RegisterEquationODE(Model, "Groundwater volume", Mm, SimplyPSolver);
 	SetInitialValue(Model, GroundwaterVolume, InitialGroundwaterVolume);
-	SetSolver(Model, GroundwaterVolume, SimplyPSolver);
 	
-	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay);
-	SetSolver(Model, GroundwaterFlow, SimplyPSolver);
+	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay, SimplyPSolver);
 	
-	auto ReachFlowInputFromUpstream    = RegisterEquation(Model, "Reach flow input from upstream", M3PerSecond);
-	SetSolver(Model, ReachFlowInputFromUpstream, SimplyPSolver);
+	auto ReachFlowInputFromUpstream    = RegisterEquation(Model, "Reach flow input from upstream", M3PerSecond, SimplyPSolver);
 	
-	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Reach flow input from land", M3PerSecond);
-	SetSolver(Model, ReachFlowInputFromLand, SimplyPSolver);
+	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Reach flow input from land", M3PerSecond, SimplyPSolver);
 
-	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", M3);
+	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", M3, SimplyPSolver);
 	auto InitialReachVolume = RegisterEquationInitialValue(Model, "Initial reach volume", M3); 
 	SetInitialValue(Model, ReachVolume, InitialReachVolume);
-	SetSolver(Model, ReachVolume, SimplyPSolver);
 	
-	auto ReachFlow          = RegisterEquation(Model, "Reach flow (end-of-day)", M3PerSecond);
+	auto ReachFlow          = RegisterEquation(Model, "Reach flow (end-of-day)", M3PerSecond, SimplyPSolver);
 	auto InitialReachFlow   = RegisterEquationInitialValue(Model, "Initial reach flow", M3PerSecond);
 	SetInitialValue(Model, ReachFlow, InitialReachFlow);
-	SetSolver(Model, ReachFlow, SimplyPSolver);
 	
-	auto DailyMeanReachFlow = RegisterEquationODE(Model, "Reach flow (daily mean, cumecs)", M3PerSecond);
+	auto DailyMeanReachFlow = RegisterEquationODE(Model, "Reach flow (daily mean, cumecs)", M3PerSecond, SimplyPSolver);
 	SetInitialValue(Model, DailyMeanReachFlow, 0.0);
-	SetSolver(Model, DailyMeanReachFlow, SimplyPSolver);
 	ResetEveryTimestep(Model, DailyMeanReachFlow);
 	
 	auto DailyMeanReachFlowMm = RegisterEquation(Model, "Reach flow (daily mean, mm/day)", MmPerDay);
@@ -472,8 +460,8 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	// Global sediment parameters (don't vary by land use/sub-catchment/reach
 	auto Sediment = RegisterParameterGroup(Model, "Sediment");
 	
-	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 150.0, 0.0, 1000.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land");
-	auto SedimentInputNonlinearCoefficient = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0); 
+	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 150.0, 0.0, 1000.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land", "ksed");
+	auto SedimentInputNonlinearCoefficient = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0, "", "psed"); 
 	auto DayOfYearWhenSoilErodibilityIsMaxSpring = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for spring-grown crops", JulianDay, 60, 30, 335, "Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment");
 	auto DayOfYearWhenSoilErodibilityIsMaxAutumn = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for autumn-grown crops", JulianDay, 304, 30, 335, "Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment");
 	
@@ -490,8 +478,8 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	
 	// Sediment params that vary by land class
 	auto SedimentLand = RegisterParameterGroup(Model, "Sediment land", LandscapeUnits);
-	auto VegetationCoverFactor                   = RegisterParameterDouble(Model, SedimentLand, "Vegetation cover factor", Dimensionless, 0.2, 0.0, 1.0, "Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.");
-	auto ReductionOfLoadInSediment               = RegisterParameterDouble(Model, SedimentLand, "Reduction of load in sediment", Dimensionless, 0.0, 0.0, 1.0, "Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc."); //Note: may be better indexing this by reach? TO DO
+	auto VegetationCoverFactor                   = RegisterParameterDouble(Model, SedimentLand, "Vegetation cover factor", Dimensionless, 0.2, 0.0, 1.0, "Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.", "kveg");
+	auto ReductionOfLoadInSediment               = RegisterParameterDouble(Model, SedimentLand, "Reduction of load in sediment", Dimensionless, 0.0, 0.0, 1.0, "Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.", "kload"); //Note: may be better indexing this by reach? TO DO
 	
 	// Start equations
 	
@@ -508,19 +496,15 @@ AddSimplyPSedimentModule(mobius_model *Model)
 	auto ReachSedimentInputCoefficient         = RegisterEquation(Model, "Sediment input coefficient", KgPerM3);
 	auto TotalReachSedimentInputCoefficient    = RegisterEquationCumulative(Model, "Sediment input coefficient summed over land classes", ReachSedimentInputCoefficient, LandscapeUnits);
 	
-	auto SuspendedSedimentFlux = RegisterEquation(Model, "Reach suspended sediment flux", KgPerDay);
-	SetSolver(Model, SuspendedSedimentFlux, SimplyPSolver);
+	auto SuspendedSedimentFlux = RegisterEquation(Model, "Reach suspended sediment flux", KgPerDay, SimplyPSolver);
 	
-	auto ReachSedimentInput = RegisterEquation(Model, "Reach sediment input (erosion and entrainment)", KgPerDay);
-	SetSolver(Model, ReachSedimentInput, SimplyPSolver);
+	auto ReachSedimentInput = RegisterEquation(Model, "Reach sediment input (erosion and entrainment)", KgPerDay, SimplyPSolver);
 	
-	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Reach suspended sediment mass", Kg);
+	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Reach suspended sediment mass", Kg, SimplyPSolver);
 	SetInitialValue(Model, SuspendedSedimentMass, 0.0);
-	SetSolver(Model, SuspendedSedimentMass, SimplyPSolver);
 	
-	auto DailyMeanSuspendedSedimentFlux = RegisterEquationODE(Model, "Reach daily mean suspended sediment flux", KgPerDay);
+	auto DailyMeanSuspendedSedimentFlux = RegisterEquationODE(Model, "Reach daily mean suspended sediment flux", KgPerDay, SimplyPSolver);
 	SetInitialValue(Model, DailyMeanSuspendedSedimentFlux, 0.0);
-	SetSolver(Model, DailyMeanSuspendedSedimentFlux, SimplyPSolver);
 	ResetEveryTimestep(Model, DailyMeanSuspendedSedimentFlux);
 	
 	auto SuspendedSedimentConcentration = RegisterEquation(Model, "Reach suspended sediment concentration", MgPerL); //Volume-weighted daily mean
@@ -644,8 +628,8 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	auto PhosphorousSorptionCoefficient = RegisterParameterDouble(Model, Phosphorous, "Phosphorous sorption coefficient", MmPerKg, 1.13e-4, 0.0, 0.1, "Gradient of linear relationship between labile P and TDP concentration. Value only read in from file if calibration run mode is set to false, otherwise it is estimated by the model");
 	auto NetAnnualPInputAgricultural    = RegisterParameterDouble(Model, Phosphorous, "Net annual P input to agricultural soil", KgPerHaPerYear, 10.0, -100.0, 100.0);
 	auto NetAnnualPInputNewlyConverted  = RegisterParameterDouble(Model, Phosphorous, "Net annual P input to newly-converted soil", KgPerHaPerYear, -5.0, -100.0, 100.0);
-	auto GroundwaterTDPConcentration    = RegisterParameterDouble(Model, Phosphorous, "Groundwater TDP concentration", MgPerL, 0.02, 0.0, 10.0);
-	auto PPEnrichmentFactor             = RegisterParameterDouble(Model, Phosphorous, "Particulate P enrichment factor", Dimensionless, 1.6, 1.0, 5.0, "P content of eroded material compared to P content of bulk soils");
+	auto GroundwaterTDPConcentration    = RegisterParameterDouble(Model, Phosphorous, "Groundwater TDP concentration", MgPerL, 0.02, 0.0, 10.0, "", "TDPgw");
+	auto PPEnrichmentFactor             = RegisterParameterDouble(Model, Phosphorous, "Particulate P enrichment factor", Dimensionless, 1.6, 1.0, 5.0, "P content of eroded material compared to P content of bulk soils", "EPP");
 	auto SRPFraction                    = RegisterParameterDouble(Model, Phosphorous, "SRP fraction", Dimensionless, 0.7, 0.0, 1.0, "Factor to multiply TDP by to estimate instream SRP concentration");
 	
 	
@@ -658,12 +642,12 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	// Phosphorus parameters that vary by sub-catchment/reach
 	auto PhosphorousReach = RegisterParameterGroup(Model, "Phosphorous reach", Reach);
-	auto EffluentTDP                    = RegisterParameterDouble(Model, PhosphorousReach, "Reach effluent TDP inputs", KgPerDay, 0.1, 0.0, 10.0);
+	auto EffluentTDP                    = RegisterParameterDouble(Model, PhosphorousReach, "Reach effluent TDP inputs", KgPerDay, 0.1, 0.0, 10.0, "", "TDPeff");
 	auto NCType                         = RegisterParameterUInt(Model, Phosphorous, "Newly-converted type", Dimensionless, 2, 0, 2, "0=Agricultural (from semi-natural), 2=Semi-natural (from agricultural), anything else=None"); //TO DO: Replace this with a derived parameter, using proportion of newly-converted params
 	
 	// Phorphorus parameters that vary by land class
 	auto PhosphorousLand = RegisterParameterGroup(Model, "Phosphorous land", LandscapeUnits);
-	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run. Note: arable and improved grassland are grouped as 'agricultural' and only the arable value is used; semi-natural initial EPC0 is assumed to be zero");
+	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run. Note: arable and improved grassland are grouped as 'agricultural' and only the arable value is used; semi-natural initial EPC0 is assumed to be zero", "TDPsw");
 	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0, "Note: arable and improved grassland are grouped as 'agricultural' land, so only the arable and semi-natural values are read in");
 	
 	// Params that vary by reach and land class (add to existing group)
@@ -802,12 +786,10 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	auto SoilFieldCapacity = GetParameterDoubleHandle(Model, "Soil field capacity");
 
-	auto NewlyConvertedSoilWaterVolume = RegisterEquation(Model, "Newly-converted soil water volume", Mm);
+	auto NewlyConvertedSoilWaterVolume = RegisterEquation(Model, "Newly-converted soil water volume", Mm, SimplyPSolver);
 	SetInitialValue(Model, NewlyConvertedSoilWaterVolume, SoilFieldCapacity); //NOTE: This is needed for the Labile P + TDP computations in the first timestep!
-	SetSolver(Model, NewlyConvertedSoilWaterVolume, SimplyPSolver);
 	
-	auto NewlyConvertedSoilWaterFlow   = RegisterEquation(Model, "Newly-converted soil water flow", Mm);
-	SetSolver(Model, NewlyConvertedSoilWaterFlow, SimplyPSolver);
+	auto NewlyConvertedSoilWaterFlow   = RegisterEquation(Model, "Newly-converted soil water flow", Mm, SimplyPSolver);
 	
 	auto InitialNewlyConvertedSoilWaterEPC0 = RegisterEquationInitialValue(Model, "Initial newly-converted soil water EPC0", KgPerMm);
 	auto NewlyConvertedSoilWaterEPC0   = RegisterEquation(Model, "Newly-converted soil water EPC0", KgPerMm);
@@ -924,28 +906,22 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	// Reach equations	
 	
-	auto StreamTDPFlux = RegisterEquation(Model, "Reach TDP flux", KgPerDay);
-	SetSolver(Model, StreamTDPFlux, SimplyPSolver);
+	auto StreamTDPFlux = RegisterEquation(Model, "Reach TDP flux", KgPerDay, SimplyPSolver);
 	
-	auto StreamPPFlux  = RegisterEquation(Model, "Reach PP flux", KgPerDay);
-	SetSolver(Model, StreamPPFlux, SimplyPSolver);
+	auto StreamPPFlux  = RegisterEquation(Model, "Reach PP flux", KgPerDay, SimplyPSolver);
 	
-	auto StreamTDPMass = RegisterEquationODE(Model, "Reach TDP mass", Kg);
+	auto StreamTDPMass = RegisterEquationODE(Model, "Reach TDP mass", Kg, SimplyPSolver);
 	SetInitialValue(Model, StreamTDPMass, 0.0);
-	SetSolver(Model, StreamTDPMass, SimplyPSolver);
 	
-	auto StreamPPMass  = RegisterEquationODE(Model, "Reach PP mass", Kg);
+	auto StreamPPMass  = RegisterEquationODE(Model, "Reach PP mass", Kg, SimplyPSolver);
 	SetInitialValue(Model, StreamPPMass, 0.0);
-	SetSolver(Model, StreamPPMass, SimplyPSolver);
 	
-	auto DailyMeanStreamTDPFlux = RegisterEquationODE(Model, "Reach daily mean TDP flux", KgPerDay);
+	auto DailyMeanStreamTDPFlux = RegisterEquationODE(Model, "Reach daily mean TDP flux", KgPerDay, SimplyPSolver);
 	SetInitialValue(Model, DailyMeanStreamTDPFlux, 0.0);
-	SetSolver(Model, DailyMeanStreamTDPFlux, SimplyPSolver);
 	ResetEveryTimestep(Model, DailyMeanStreamTDPFlux);
 	
-	auto DailyMeanStreamPPFlux = RegisterEquationODE(Model, "Reach daily mean PP flux", KgPerDay);
+	auto DailyMeanStreamPPFlux = RegisterEquationODE(Model, "Reach daily mean PP flux", KgPerDay, SimplyPSolver);
 	SetInitialValue(Model, DailyMeanStreamPPFlux, 0.0);
-	SetSolver(Model, DailyMeanStreamPPFlux, SimplyPSolver);
 	ResetEveryTimestep(Model, DailyMeanStreamPPFlux);
 	
 	EQUATION(Model, StreamTDPFlux,
