@@ -101,12 +101,14 @@ def plot_reach_structure(dataset, reach_index_set='Reaches'):
 
     return g
     
-def get_double_parameters_as_dataframe(dataset):
+def get_double_parameters_as_dataframe(dataset, use_model_short_names=True, index_short_name={}):
     """ Get all 'double' parameters declared in the model 'dataset' object and return a dataframe
         summarising parameter names, units, prior ranges etc.
         
     Args:
         dataset: A Mobius 'dataset' object.
+        use_model_short_names : bool (default:True). Set to true if parameter short names should be generated based on data registered in the model (if possible).
+        index_short_name : Dictionary. Used to determine short names of indexes. For instance index_short_dict={'Forest' : 'F', 'Reach0' : 'r0'} etc. Generated short names will have the form parname_idx0_idx1 etc., where parname is a short name of the parameter, and idx0, idx1 etc. are short names of the associated indexes.
         
     Returns:
         Dataframe of model parameters.
@@ -120,6 +122,7 @@ def get_double_parameters_as_dataframe(dataset):
 
     # Container for results
     par_dict = {'name':[],
+                'short_name':[],
                 'unit':[],
                 'index':[],
                 'min_value':[],
@@ -130,20 +133,29 @@ def get_double_parameters_as_dataframe(dataset):
         # Get par properties
         unit = dataset.get_parameter_unit(par)
         par_min, par_max = dataset.get_parameter_double_min_max(par)
+        short_name0 = dataset.get_parameter_short_name(par)
 
         par_index_sets = dataset.get_parameter_index_sets(par)
         par_indexes = [dataset.get_indexes(i) for i in par_index_sets]
 
         for par_index in list(itertools.product(*par_indexes)):
             par_val = dataset.get_parameter_double(par, par_index)
-
+            
+            if use_model_short_names and len(short_name0) > 0:
+                short_name = short_name0
+                if len(par_index) > 0 :
+                    short_name += '_' + '_'.join([(index_short_name[idx] if idx in index_short_name else idx) for idx in par_index])
+            else:
+                short_name = 'placeholder'
+            
             # Add to results
             par_dict['name'].append(par)
             par_dict['unit'].append(unit)
             par_dict['index'].append(par_index)
             par_dict['min_value'].append(par_min)
             par_dict['initial_value'].append(par_val)
-            par_dict['max_value'].append(par_max)        
+            par_dict['max_value'].append(par_max)			
+            par_dict['short_name'].append(short_name)
 
     return pd.DataFrame(par_dict)
 

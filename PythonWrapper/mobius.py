@@ -113,6 +113,9 @@ def initialize(dllname) :
 	mobiusdll.DllGetParameterDescription.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 	mobiusdll.DllGetParameterDescription.restype = ctypes.c_char_p
 	
+	mobiusdll.DllGetParameterShortName.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+	mobiusdll.DllGetParameterShortName.restype = ctypes.c_char_p
+	
 	mobiusdll.DllGetParameterUnit.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 	mobiusdll.DllGetParameterUnit.restype = ctypes.c_char_p
 	
@@ -482,7 +485,15 @@ class DataSet :
 		'''
 		desc = mobiusdll.DllGetParameterDescription(self.datasetptr, _CStr(name))
 		check_dll_error()
-		return desc.decode('utf-8')
+		return '' if desc is None else desc.decode('utf-8') 
+		
+	def get_parameter_short_name(self, name):
+		'''
+		Retrieve (as a string) a short name (identifier) of the parameter with the given name
+		'''
+		sn = mobiusdll.DllGetParameterShortName(self.datasetptr, _CStr(name))
+		check_dll_error()
+		return '' if sn is None else sn.decode('utf-8')
 		
 	def get_parameter_unit(self, name):
 		'''
