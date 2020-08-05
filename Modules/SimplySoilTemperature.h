@@ -48,7 +48,7 @@ AddSoilTemperatureModel(mobius_model *Model)
 	//auto SpecificHeatCapacitySoil			= RegisterParameterDouble(Model, SoilTempParamsLand, "Specific heat capacity of soil", MegaJoulesPerCubicMetrePerDegreeCelsius, 1.1);
 	
 	// Replaced with:
-	auto SoilThermalConductivityOverHeatCapacity = RegisterParameterDouble(Model, SoilTempParamsLand, "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)", MetresSquaredPerSecondEMinus6, 0.4, 0.01, 0.8, "", "STC");   //UGH! TODO: put most of the name in the 'description field'. However, lots of param files have to be updated :(
+	auto SoilThermalConductivityOverHeatCapacity = RegisterParameterDouble(Model, SoilTempParamsLand, "Soil thermal conductivity over specific heat capacity", MetresSquaredPerSecondEMinus6, 0.4, 0.01, 0.8, "Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)", "STC");
 	
 	// Inputs
 	auto AirTemperature = GetInputHandle(Model, "Air temperature");  //NOTE: This should be declared by the main model

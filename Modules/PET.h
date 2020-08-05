@@ -192,7 +192,7 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 static void
 AddPriestleyTaylorPETModule2(mobius_model *Model)
 {
-	//NOTE: This is the same as above, but with net radiation provided
+	//NOTE: This is the same as above, but with net radiation provided, and the scaling factor is per land use
 	
 	BeginModule(Model, "Priestley-Taylor PET", "0.1");
 	
@@ -209,9 +209,12 @@ AddPriestleyTaylorPETModule2(mobius_model *Model)
 	auto Mm             = RegisterUnit(Model, "mm");
 	
 	
-	auto PETParams = RegisterParameterGroup(Model, "Potential evapotranspiration");
+	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	
-	auto PETMultiplicationFactor     = RegisterParameterDouble(Model, PETParams, "PET multiplication factor", Dimensionless, 1.28, 1.0, 2.0, "", "alphaPET");
+	auto PETParams = RegisterParameterGroup(Model, "Potential evapotranspiration");
+	auto PETScaling = RegisterParameterGroup(Model, "Potential evapotranspiration by land use", LandscapeUnits);
+	
+	auto PETMultiplicationFactor     = RegisterParameterDouble(Model, PETScaling, "PET multiplication factor", Dimensionless, 1.28, 0.3, 4.0, "", "alphaPET");
 	auto EmissivityAtZero            = RegisterParameterDouble(Model, PETParams, "Net emissivity at 0 vapor pressure", Dimensionless, 0.34, 0.0, 1.0);
 	auto PressureEmissivityChange    = RegisterParameterDouble(Model, PETParams, "Change in emissivity caused by vapor pressure", InvRootkPa, 0.139, 0.0, 0.5);
 	
