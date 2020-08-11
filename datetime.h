@@ -418,6 +418,14 @@ struct expanded_datetime
 
 
 static s64
+DivideDown(s64 a, s64 b){
+    s64 r = a/b;
+    if(r < 0 && r*b != a)
+        return r - 1;
+    return r;
+}
+
+static s64
 FindTimestep(datetime Start, datetime Current, timestep_size Timestep)
 {
 	s64 Diff;
@@ -438,9 +446,7 @@ FindTimestep(datetime Start, datetime Current, timestep_size Timestep)
 		Diff = (CM - SM + 12*(CY-SY));
 	}
 	
-	if(Diff >= 0) return Diff / (s64)Timestep.Magnitude;
-	
-	return (-Diff + 1) / (s64)Timestep.Magnitude - 1;    //NOTE: This rounds  -Diff/Timestep.Magnitude down to nearest whole integer (as opposed to towards 0).
+	return DivideDown(Diff, (s64)Timestep.Magnitude);
 }
 
 

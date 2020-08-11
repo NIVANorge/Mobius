@@ -36,6 +36,7 @@ TODOs:
 #include <sstream>
 #include <iomanip>
 
+
 //NOTE: we use the intrin header for __rdtsc(); The intrinsic is in different headers for different compilers. If you compile with a different compiler than what is already set up you have to add in some lines below.
 #if defined(__GNUC__) || defined(__GNUG__)
 	#include <x86intrin.h>

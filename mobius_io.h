@@ -813,6 +813,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				}
 				else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
 				{
+					//NOTE: Fill the rest of the time series with the last value read
 					for(size_t Offset : Offsets)
 					{
 						double *Base = DataSet->InputData + Offset;
@@ -829,10 +830,17 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				}
 				
 				double Value = Stream.ExpectDouble();
+				
 				if(AtBeginning)
 				{
 					PrevValue = Value;
-					AtBeginning = false;
+					if(CurDate < PrevDate)
+					{
+						//NOTE: The first given date is before the start of the input series
+						PrevDate = CurDate;
+						AtBeginning = false;
+						continue;
+					}
 				}
 				
 				if(CurDate < PrevDate)
@@ -845,12 +853,11 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				{
 					double *Base = DataSet->InputData + Offset;
 					LinearInterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate);
-					
-					//std::cout << "interpolate " << PrevValue << " - " << Value << " from " << PrevDate.ToString() << " to " << CurDate.ToString() << "\n";
 				}
 				
 				PrevValue = Value;
 				PrevDate  = CurDate;
+				AtBeginning = false;
 			}
 		}
 		
