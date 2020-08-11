@@ -1,10 +1,10 @@
-# Recent large updates
+# Recent significant changes
+
+**(2020-08-11):** You can now use special (non-ascii) characters in paths for input and parameter files (at least on Windows).
 
 **(2020-06-23):** You can now make your model use an "End date" parameter instead of a "Timesteps" parameter.
 
 **(2020-05-04):** Simplified the way one sets up new model .dlls, making it more efficient and flexible.
-
-**(2019-12-19):** **We just discovered that there has been a bug during the last month where models have not correctly been able to determine what day of year they are in**. It has affected the following models: SimplyP, INCA-N, INCA-P, INCA-C, Tutorial3. If you have downloaded or compiled one of these models between November 19. and now, you should download or compile a new version now that it has been fixed. We apologize for the inconvenience!
 
 
 
