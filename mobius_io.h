@@ -103,7 +103,14 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 		MOBIUS_FATAL_ERROR("ERROR: Tried to write parameters to a file before parameter data was allocated." << std::endl);
 	}
 	
-	FILE *File = fopen(Filename, "w");
+	FILE *File;
+#ifdef _WIN32
+	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
+	_wfopen_s(&File, (wchar_t *)Filename16.data(), L"w");
+#else
+	fopen_s(&File, Filename, "w");
+#endif
+
 	if(!File)
 	{	
 		MOBIUS_PARTIAL_ERROR("Tried to open file " << Filename << ", but were not able to." << std::endl);
