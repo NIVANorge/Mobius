@@ -1,6 +1,6 @@
 # Recent significant changes
 
-**(2020-08-11):** You can now use special (non-ascii) characters in paths for input and parameter files (at least on Windows).
+**(2020-08-11):** You can now use special (non-ascii) characters in paths for input and parameter files (at least on Windows, and probably on other platforms too).
 
 **(2020-06-23):** You can now make your model use an "End date" parameter instead of a "Timesteps" parameter.
 
