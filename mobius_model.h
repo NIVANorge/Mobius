@@ -1270,8 +1270,7 @@ SetInitialValue(mobius_model *Model, equation_h Equation, parameter_double_h Ini
 	
 	if(Model->Equations.Specs[Equation.Handle].Unit != Model->Parameters.Specs[InitialValue.Handle].Unit)
 	{
-		//TODO: Need a MOBIUS_WARNING() so that this is also channeled to MobiView or the python wrapper
-		std::cout << "WARNING: The equation " << GetName(Model, Equation) << " was registered with a different unit than its initial value parameter " << GetName(Model, InitialValue) << std::endl;
+		MOBIUS_WARNING("WARNING: The equation " << GetName(Model, Equation) << " was registered with a different unit than its initial value parameter " << GetName(Model, InitialValue) << std::endl);
 	}
 }
 
@@ -1301,7 +1300,7 @@ SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValu
 	if(Model->Equations.Specs[Equation.Handle].Unit != Model->Equations.Specs[InitialValueEquation.Handle].Unit)
 	{
 		PrintRegistrationErrorHeader(Model);
-		std::cout << "WARNING: The equation " << GetName(Model, Equation) << " was registered with a different unit than its initial value equation " << GetName(Model, InitialValueEquation) << std::endl;
+		MOBIUS_WARNING("WARNING: The equation " << GetName(Model, Equation) << " was registered with a different unit than its initial value equation " << GetName(Model, InitialValueEquation) << std::endl);
 	}
 }
 
@@ -1369,8 +1368,7 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	
 	if(!Spec.UsesErrorControl)
 	{
-		//TODO MOBIUS_WARNING
-		std::cout << "WARNING: Registered error tolerances with the solver " << Name << ", but the attached solver function does not support error control." << std::endl;
+		MOBIUS_WARNING("WARNING: Registered error tolerances with the solver " << Name << ", but the attached solver function does not support error control." << std::endl);
 	}
 	
 	Spec.RelErr = RelErr;

@@ -355,7 +355,7 @@ EndModelDefinition(mobius_model *Model)
 			
 			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
 			{
-				std::cout << "ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl;
+				MOBIUS_FATAL_ERROR("ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl);
 			}
 			
 			if(ResultDependency.Indexes.size() == 0)
@@ -374,7 +374,7 @@ EndModelDefinition(mobius_model *Model)
 			entity_handle DepResultHandle = ResultDependency.Handle;
 			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
 			{
-				std::cout << "ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl;
+				MOBIUS_FATAL_ERROR("ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl);
 			}
 			
 			if(ResultDependency.Indexes.size() == 0)
@@ -1877,7 +1877,7 @@ PrintEquationDependencies(mobius_model *Model)
 {
 	if(!Model->Finalized)
 	{
-		std::cout << "WARNING: Tried to print equation dependencies before the model was finalized" << std::endl;
+		MOBIUS_WARNING("WARNING: Tried to print equation dependencies before the model was finalized" << std::endl);
 		return;
 	}
 	
