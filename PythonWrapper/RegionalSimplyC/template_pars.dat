@@ -145,7 +145,7 @@ false
 0.05
 
 "Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20]
-0.05
+0.0001
 
 
 ###################### Carbon land {"Landscape units"} ######################

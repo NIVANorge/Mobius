@@ -74,7 +74,7 @@ def main() :
 		datasets.append(dataset)
 		
 	#Use one of the datasets to set up calibration settings
-	params = setup_calibration_params(datasets[0])
+	params = setup_calibration_params(datasets[0], do_doc=False)
 	
 	mi, res = cu.minimize_residuals(params, datasets, comparisons, residual_method=resid, method='leastsq', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
 	
@@ -94,7 +94,7 @@ def main() :
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		print('\n\n')
 		
-		dataset.write_parameters_to_file('MobiusFiles/params_multiopt_%d_%s.dat' % (catch_no, catch_name))
+		dataset.write_parameters_to_file('MobiusFiles/multiopt_params_%d_%s.dat' % (catch_no, catch_name))
 
 if __name__ == "__main__":
 	main()

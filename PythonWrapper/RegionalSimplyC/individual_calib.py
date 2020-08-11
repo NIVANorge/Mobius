@@ -74,7 +74,7 @@ def main() :
 		
 		dataset.run_model()
 		
-		params = setup_calibration_params(dataset)
+		params = setup_calibration_params(dataset, do_doc=False)
 		
 		print('Initial GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
