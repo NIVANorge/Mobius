@@ -167,9 +167,7 @@ WriteResultsToJson(mobius_data_set *DataSet, const char *Filename)
 	Out << Json.dump(1,'\t') << std::endl;
 	Out.close();
 	if(!Out)
-	{
-		MOBIUS_PARTIAL_ERROR("ERROR: Could not write to file " << Filename << std::endl);
-	}
+		FatalError("ERROR: Could not write to file \"", Filename, "\".\n");
 }
 
 static void
@@ -218,13 +216,9 @@ ReadInputsFromJson(mobius_data_set *DataSet, const char *Filename)
 	Ifs >> JData;
  
 	if (JData.find("timesteps") != JData.end())
-	{
 		DataSet->InputDataTimesteps = (u64)JData["timesteps"].get<u64>();
-	}
 	else
-	{
-		MOBIUS_FATAL_ERROR("Input file " << Filename << " does not declare the number of timesteps for the input data." << std::endl);
-	}
+		FatalError("Input file \"", Filename, "\" does not declare the number of timesteps for the input data.\n");
     
 	if (JData.find("start_date") != JData.end())
 	{
@@ -234,10 +228,7 @@ ReadInputsFromJson(mobius_data_set *DataSet, const char *Filename)
 		datetime Date(DateStr.c_str(), &ParseSuccess);
 		
 		if(!ParseSuccess)
-		{
-			MOBIUS_PARTIAL_ERROR("ERROR: In file " << Filename << ": ");
-			MOBIUS_FATAL_ERROR("Unrecognized date format \"" << DateStr << "\". Supported format: Y-m-d" << std::endl);
-		}
+			FatalError("ERROR: In file \"", Filename, "\": Unrecognized date format \"", DateStr, "\". Supported format: Y-m-d.\n");
 		
 		DataSet->InputDataHasSeparateStartDate = true;
 		DataSet->InputDataStartDate = Date;
@@ -429,9 +420,7 @@ ReadParametersFromJson(mobius_data_set *DataSet, const char *Filename)
 			const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
 			
 			if(Spec.ShouldNotBeExposed)
-			{
-				MOBIUS_FATAL_ERROR("ERROR: In file " << Filename << ". The parameter " << ParameterName << " is computed by the model, and should not be provided in a parameter file." << std::endl);
-			}
+				FatalError("ERROR: In file \"", Filename, "\". The parameter \"", ParameterName, "\" is computed by the model, and should not be provided in a parameter file.\n");
 			
 			if(Spec.Type == ParameterType_Double)
 			{

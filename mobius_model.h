@@ -770,7 +770,7 @@ GetName(const mobius_model *Model, entity_type Type, entity_handle Handle)
 		break;
 		
 		default:
-		MOBIUS_FATAL_ERROR("ERROR: (internal) ended up with wrong entity type!?" << std::endl);
+		FatalError("ERROR: (internal) ended up with wrong entity type!?\n");
 		return "unknown entity type";
 	}
 }
@@ -788,9 +788,9 @@ inline Type Get##Typename##Handle(const mobius_model *Model, const token_string 
 	{ \
 		if(!Model->Finalized && IsValid(Model->CurrentModule)) \
 		{ \
-			MOBIUS_PARTIAL_ERROR("While building module " << GetName(Model, Model->CurrentModule) << ":\n"); \
+			ErrorPrint("While building module \"", GetName(Model, Model->CurrentModule), ":\n"); \
 		} \
-		MOBIUS_FATAL_ERROR("ERROR: Tried to look up the handle of the " << #Typename << " \"" << Name << "\", but it was not registered with the model." << std::endl); \
+		FatalError("ERROR: Tried to look up the handle of the ", #Typename, " \"", Name, "\", but it was not registered with the model.\n"); \
 	} \
 	return { Handle }; \
 } \
@@ -829,16 +829,12 @@ GetParameterHandle(const mobius_model *Model, const token_string &Name) //NOTE: 
 	entity_handle Handle = 0;
 	auto Find = Model->Parameters.NameToHandle.find(Name);
 	if(Find != Model->Parameters.NameToHandle.end())
-	{
 		Handle = Find->second;
-	}
 	else
 	{
 		if(!Model->Finalized && IsValid(Model->CurrentModule))
-		{
-			MOBIUS_PARTIAL_ERROR("While building module " << GetName(Model, Model->CurrentModule) << ":\n");
-		}
-		MOBIUS_FATAL_ERROR("ERROR: Tried to find the Parameter \"" << Name << "\", but it was not registered with the model." << std::endl);
+			ErrorPrint("While building module \"", GetName(Model, Model->CurrentModule), "\":\n");
+		FatalError("ERROR: Tried to find the Parameter \"", Name, "\", but it was not registered with the model.\n");
 	}
 	return Handle;
 }
@@ -853,9 +849,7 @@ GetParameterHandle(const mobius_model *Model, const token_string &Name, bool &Su
 		Handle = Find->second;
 	}
 	else
-	{
 		Success = false;
-	}
 	return Handle;
 }
 
@@ -863,7 +857,7 @@ GetParameterHandle(const mobius_model *Model, const token_string &Name, bool &Su
 #define REGISTRATION_BLOCK(Model) \
 if(Model->Finalized) \
 { \
-	MOBIUS_FATAL_ERROR("ERROR: You can not call the function " << __func__ << " on the model after it has been finalized using EndModelDefinition." << std::endl); \
+	FatalError("ERROR: You can not call the function ", __func__, " on the model after it has been finalized using EndModelDefinition.\n"); \
 }
 
 inline void
@@ -939,9 +933,7 @@ inline void
 PrintRegistrationErrorHeader(mobius_model *Model)
 {
 	if(IsValid(Model->CurrentModule))
-	{
-		MOBIUS_PARTIAL_ERROR("While building module " << GetName(Model, Model->CurrentModule) << ":\n");
-	}
+		ErrorPrint("While building module ", GetName(Model, Model->CurrentModule), ":\n");
 }
 
 inline index_t
@@ -954,13 +946,11 @@ RequireIndex(mobius_model *Model, index_set_h IndexSet, const char *IndexName)
 	{
 		PrintRegistrationErrorHeader(Model);
 		//TODO: Get rid of this requirement? However that may lead to issues with index order in branched index sets later.
-		MOBIUS_FATAL_ERROR("ERROR: We only allow requiring indexes for basic index sets, " << Spec.Name << " is of a different type." << std::endl);
+		FatalError("ERROR: We only allow requiring indexes for basic index sets, \"", Spec.Name, "\" is of a different type.\n");
 	}
 	auto Find = std::find(Spec.RequiredIndexes.begin(), Spec.RequiredIndexes.end(), IndexName);
 	if(Find != Spec.RequiredIndexes.end())
-	{
 		return index_t(IndexSet, (u32)std::distance(Spec.RequiredIndexes.begin(), Find)); //NOTE: This is its position in the vector.
-	}
 	else
 	{
 		Spec.RequiredIndexes.push_back(IndexName);
@@ -1085,7 +1075,7 @@ RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *
 	if(!ParseSuccessAll)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: Unrecognized date format for default, min or max value when registering the parameter " << Name << std::endl);
+		FatalError("ERROR: Unrecognized date format for default, min or max value when registering the parameter \"", Name, "\".\n");
 	}
 	
 	Spec.Group = Group;
@@ -1107,12 +1097,12 @@ ParameterIsComputedBy(mobius_model *Model, parameter_double_h Parameter, equatio
 	if(EqSpec.Type != EquationType_InitialValue)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the equation " << EqSpec.Name << " to compute the parameter " << Spec.Name << ", but " << EqSpec.Name << " is not an initial value equation." << std::endl);
+		FatalError("ERROR: Tried to set the equation \"", EqSpec.Name, "\" to compute the parameter \"", Spec.Name, "\", but \"", EqSpec.Name, "\" is not an initial value equation.\n");
 	}
 	if(EqSpec.Unit != Spec.Unit)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: The equation " << EqSpec.Name << " has a different unit from the parameter " << Spec.Name << ", that it is trying to compute." << std::endl);
+		FatalError("ERROR: The equation \"", EqSpec.Name, "\" has a different unit from the parameter \"", Spec.Name, "\", that it is set to compute.\n");
 	}
 	
 	Spec.IsComputedBy = Equation;
@@ -1129,12 +1119,12 @@ ParameterIsComputedBy(mobius_model *Model, parameter_uint_h Parameter, equation_
 	if(EqSpec.Type != EquationType_InitialValue)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the equation " << EqSpec.Name << " to compute the parameter " << Spec.Name << ", but " << EqSpec.Name << " is not an initial value equation." << std::endl);
+		FatalError("ERROR: Tried to set the equation \"", EqSpec.Name, "\" to compute the parameter \"", Spec.Name, "\", but \"", EqSpec.Name, "\" is not an initial value equation.\n");
 	}
 	if(EqSpec.Unit != Spec.Unit)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: The equation " << EqSpec.Name << " has a different unit from the parameter " << Spec.Name << ", that it is trying to compute." << std::endl);
+		FatalError("ERROR: The equation \"", EqSpec.Name, "\" has a different unit from the parameter \"", Spec.Name, "\", that it is set to compute.\n");
 	}
 	
 	Spec.IsComputedBy = Equation;
@@ -1148,17 +1138,16 @@ SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBo
 	if(Model->Finalized)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: You can not define an EQUATION body for the model after it has been finalized using EndModelDefinition." << std::endl);
+		FatalError("ERROR: You can not define an EQUATION body for the model after it has been finalized using EndModelDefinition.\n");
 	}
 	
 	if(!Override && Model->Equations.Specs[Equation.Handle].EquationIsSet)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: The equation body for " << GetName(Model, Equation) << " is already defined. It can not be defined twice unless it is explicitly overridden." << std::endl);
+		FatalError("ERROR: The equation body for \"", GetName(Model, Equation), "\" is already defined. It can not be defined twice unless it is explicitly overridden using OVERRIDE_EQUATION.\n");
 	}
 	
 	Model->EquationBodies[Equation.Handle] = EquationBody;
-
 	Model->Equations.Specs[Equation.Handle].EquationIsSet = true;
 }
 
@@ -1171,7 +1160,7 @@ SetSolver(mobius_model *Model, equation_h Equation, solver_h Solver)
 	if(Type != EquationType_Basic && Type != EquationType_ODE)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set a solver for the equation " << GetName(Model, Equation) << ", but it is not a basic equation or ODE equation, and so can not be given a solver." << std::endl);
+		FatalError("ERROR: Tried to set a solver for the equation \"", GetName(Model, Equation), "\", but it is not a basic equation or ODE equation, and so can not be given a solver.\n");
 	}
 	Model->Equations.Specs[Equation.Handle].Solver = Solver;
 }
@@ -1184,18 +1173,14 @@ RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h So
 	entity_handle Equation = Model->Equations.Register(Name);
 	
 	if(Model->EquationBodies.size() <= Equation)
-	{
 		Model->EquationBodies.resize(Equation + 1, {});
-	}
 	
 	Model->Equations.Specs[Equation].Type = Type;
 	Model->Equations.Specs[Equation].Unit = Unit;
 	Model->Equations.Specs[Equation].Module = Model->CurrentModule;
 	
 	if(IsValid(Solver))
-	{
 		SetSolver(Model, equation_h {Equation}, Solver);
-	}
 	
 	return {Equation};
 }
@@ -1229,7 +1214,7 @@ RegisterEquationCumulative(mobius_model *Model, const char *Name, equation_h Cum
 	if(CumulateSpec.Type == EquationType_InitialValue)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: The cumulation equation " << Name << " was set to cumulate an initial value equation (" << CumulateSpec.Name << "). This is not supported." << std::endl);
+		FatalError("ERROR: The cumulation equation \"", Name, "\" was set to cumulate an initial value equation \"", CumulateSpec.Name, "\". This is not supported.\n");
 	}
 	
 	unit_h Unit = Model->Equations.Specs[Cumulates.Handle].Unit;
@@ -1270,7 +1255,7 @@ SetInitialValue(mobius_model *Model, equation_h Equation, parameter_double_h Ini
 	
 	if(Model->Equations.Specs[Equation.Handle].Unit != Model->Parameters.Specs[InitialValue.Handle].Unit)
 	{
-		MOBIUS_WARNING("WARNING: The equation " << GetName(Model, Equation) << " was registered with a different unit than its initial value parameter " << GetName(Model, InitialValue) << std::endl);
+		WarningPrint("WARNING: The equation \"", GetName(Model, Equation), "\" was registered with a different unit than its initial value parameter \"", GetName(Model, InitialValue), "\".\n");
 	}
 }
 
@@ -1292,7 +1277,7 @@ SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValu
 	{
 		PrintRegistrationErrorHeader(Model);
 		//NOTE: We found out that sometimes we want the ability to force an equation to be its own initial value equation. So we also allow basic equations
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the equation " << GetName(Model, InitialValueEquation) << " as an initial value of another equation, but it was not registered as an equation of type EquationInitialValue or Equation." << std::endl);
+		FatalError("ERROR: Tried to set the equation \"", GetName(Model, InitialValueEquation), "\" as an initial value of another equation, but it was not registered as an equation of type EquationInitialValue or Equation.\n");
 	}
 	
 	Model->Equations.Specs[Equation.Handle].InitialValueEquation = InitialValueEquation;
@@ -1300,7 +1285,7 @@ SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValu
 	if(Model->Equations.Specs[Equation.Handle].Unit != Model->Equations.Specs[InitialValueEquation.Handle].Unit)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_WARNING("WARNING: The equation " << GetName(Model, Equation) << " was registered with a different unit than its initial value equation " << GetName(Model, InitialValueEquation) << std::endl);
+		WarningPrint("WARNING: The equation \"", GetName(Model, Equation), "\" was registered with a different unit than its initial value equation \"", GetName(Model, InitialValueEquation), "\".\n");
 	}
 }
 
@@ -1314,7 +1299,7 @@ ResetEveryTimestep(mobius_model *Model, equation_h Equation)
 	if(Spec.Type != EquationType_ODE)
 	{
 		PrintRegistrationErrorHeader(Model);
-		MOBIUS_FATAL_ERROR("ERROR: Called ResetEveryTimestep on the equation " << Spec.Name << ", but this functionality is only available for ODE equations." << std::endl);
+		FatalError("ERROR: Called ResetEveryTimestep on the equation \"", Spec.Name, "\", but this functionality is only available for ODE equations.\n");
 	}
 	
 	Spec.ResetEveryTimestep = true;
@@ -1367,9 +1352,7 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	solver_spec &Spec = Model->Solvers.Specs[Solver.Handle];
 	
 	if(!Spec.UsesErrorControl)
-	{
-		MOBIUS_WARNING("WARNING: Registered error tolerances with the solver " << Name << ", but the attached solver function does not support error control." << std::endl);
-	}
+		WarningPrint("WARNING: Registered error tolerances with the solver \"", Name, "\", but the attached solver function does not support error control.\n");
 	
 	Spec.RelErr = RelErr;
 	Spec.AbsErr = AbsErr;

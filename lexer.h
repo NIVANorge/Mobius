@@ -59,9 +59,8 @@ struct token_stream
 		fopen_s(&File, Filename, "rb");
 #endif
 		if(!File)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: Tried to open file " << Filename << ", but was not able to.");
-		}
+			FatalError("ERROR: Tried to open file ", Filename, ", but was not able to.\n");
+
 		fseek(File, 0, SEEK_END);
 		FileDataLength = ftell(File);
 		fseek(File, 0, SEEK_SET);
@@ -69,7 +68,7 @@ struct token_stream
 		if(FileDataLength == 0)
 		{
 			fclose(File);
-			MOBIUS_FATAL_ERROR("ERROR: File " << Filename << " has 0 length.");
+			FatalError("ERROR: File ", Filename, " has 0 length.\n");
 		}
 		
 		FileData = (char *)malloc(FileDataLength + 1);
@@ -78,16 +77,14 @@ struct token_stream
 			size_t ReadSize = fread(FileData, 1, FileDataLength, File);
 			if(ReadSize != FileDataLength)
 			{
-				MOBIUS_FATAL_ERROR("ERROR: Was unable to read the entire file " << Filename);
+				FatalError("ERROR: Was unable to read the entire file ", Filename);
 			}
 			FileData[FileDataLength] = '\0';
 		}
 		fclose(File);
 		
 		if(!FileData)
-		{
-			MOBIUS_FATAL_ERROR("Unable to allocate enough memory to read in file " << Filename << std::endl);
-		}
+			FatalError("Unable to allocate enough memory to read in file ", Filename, '\n');
 		
 		AtChar = -1;
 		
@@ -160,7 +157,7 @@ token_stream::PrintErrorHeader(bool CurrentColumn)
 {
 	u32 Col = StartColumn;
 	if(CurrentColumn) Col = Column;
-	MOBIUS_PARTIAL_ERROR("ERROR: In file " << Filename << " line " << (StartLine+1) << " column " << (Col) << ": ");
+	ErrorPrint("ERROR: In file ", Filename, " line ", (StartLine+1), " column ", Col, ": ");
 }
 
 token
@@ -192,12 +189,10 @@ token_stream::ExpectToken(token_type Type)
 	if(Token.Type != Type)
 	{
 		PrintErrorHeader();
-		MOBIUS_PARTIAL_ERROR("Expected a token of type " << TokenNames[Type] << ", got a(n) " << TokenNames[Token.Type]);
+		ErrorPrint("Expected a token of type ", TokenNames[Type], ", got a(n) ", TokenNames[Token.Type]);
 		if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_UnquotedString)
-		{
-			MOBIUS_PARTIAL_ERROR(" (" << Token.StringValue << ")");
-		}
-		MOBIUS_FATAL_ERROR(std::endl);
+			ErrorPrint(" (", Token.StringValue, ")");
+		FatalError('\n');
 	}
 	return Token;
 }
@@ -307,7 +302,7 @@ token_stream::ReadTokenInternal_()
 			else
 			{
 				PrintErrorHeader(true);
-				MOBIUS_FATAL_ERROR("Found a token of unknown type" << std::endl);
+				FatalError("Found a token of unknown type.\n");
 			}
 			TokenHasStarted = true;
 			StartLine = Line;
@@ -344,13 +339,10 @@ token_stream::ReadTokenInternal_()
 				
 				return;
 			}
-			else if (c != '"')
+			else if (c != '"' && c == '\n')
 			{
-				if(c == '\n')
-				{
-					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Newline within quoted string." << std::endl);
-				}
+				PrintErrorHeader();
+				FatalError("Newline within quoted string.\n");
 			}
 		}
 		else if(Token.Type == TokenType_UnquotedString)
@@ -408,7 +400,7 @@ token_stream::ReadTokenInternal_()
 					else
 					{
 						PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Misplaced minus in numeric literal." << std::endl);
+						FatalError("Misplaced minus in numeric literal.\n");
 					}
 				}
 				else
@@ -432,7 +424,7 @@ token_stream::ReadTokenInternal_()
 				if(HasComma || HasExponent || IsNegative)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Mixing numeric notation with time notation." << std::endl);
+					FatalError("Mixing numeric notation with time notation.\n");
 				}
 			}
 			else if(c == '+')
@@ -440,7 +432,7 @@ token_stream::ReadTokenInternal_()
 				if(!HasExponent || NumericPos != 0)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Misplaced plus in numeric literal." << std::endl);
+					FatalError("Misplaced plus in numeric literal.\n");
 				}
 				//ignore the plus.
 			}
@@ -449,12 +441,12 @@ token_stream::ReadTokenInternal_()
 				if(HasExponent)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Comma in exponent in numeric literal." << std::endl);
+					FatalError("Comma in exponent in numeric literal.\n");
 				}
 				if(HasComma)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("More than one comma in a numeric literal." << std::endl);
+					FatalError("More than one comma in a numeric literal.\n");
 				}
 				NumericPos = 0;
 				HasComma = true;
@@ -464,7 +456,7 @@ token_stream::ReadTokenInternal_()
 				if(HasExponent)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("More than one exponent sign ('e' or 'E') in a numeric literal." << std::endl);
+					FatalError("More than one exponent sign ('e' or 'E') in a numeric literal.\n");
 				}
 				NumericPos = 0;
 				HasExponent = true;
@@ -478,7 +470,7 @@ token_stream::ReadTokenInternal_()
 					if(Exponent > MaxExponent)
 					{
 						PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Too large exponent in numeric literal" << std::endl);
+						FatalError("Too large exponent in numeric literal.\n");
 					}
 				}
 				else if(HasComma)
@@ -486,7 +478,7 @@ token_stream::ReadTokenInternal_()
 					if(!MultiplyByTenAndAdd(&AfterComma, (u64)(c - '0')))
 					{
 						PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Overflow after comma in numeric literal (too many digits)." << std::endl);
+						FatalError("Overflow after comma in numeric literal (too many digits).\n");
 					}
 					DigitsAfterComma++;
 				}
@@ -495,7 +487,7 @@ token_stream::ReadTokenInternal_()
 					if(!MultiplyByTenAndAdd(&BeforeComma, (u64)(c - '0')))
 					{
 						PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Overflow in numeric literal (too many digits). If this is a double, try to use scientific notation instead." << std::endl);
+						FatalError("Overflow in numeric literal (too many digits). If this is a double, try to use scientific notation instead.\n");
 					}
 				}
 				++NumericPos;
@@ -527,7 +519,7 @@ token_stream::ReadTokenInternal_()
 				if(DatePos == 3)
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Too many '" << Separator << "' signs in date or time literal." << std::endl);
+					FatalError("Too many '", Separator, "' signs in date or time literal.\n");
 				}
 			}
 			else if(isdigit(c))
@@ -535,7 +527,7 @@ token_stream::ReadTokenInternal_()
 				if(!MultiplyByTenAndAdd(&Date[DatePos], (u64)(c - '0')))
 				{
 					PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Overflow in numeric literal (too many digits)." << std::endl);
+					FatalError("Overflow in numeric literal (too many digits).\n");
 				}
 			}
 			else
@@ -587,7 +579,7 @@ token_stream::ReadTokenInternal_()
 		if(DatePos != 2)
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Invalid date (time) literal. Has to be on the form YYYY-MM-DD (hh:mm:ss)." << std::endl);
+			FatalError("Invalid date (time) literal. Has to be on the form YYYY-MM-DD (hh:mm:ss).\n");
 		}
 		bool Success;
 		if(Token.Type == TokenType_Date)
@@ -602,7 +594,7 @@ token_stream::ReadTokenInternal_()
 		if(!Success)
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("The date or time " << Token.StringValue << " does not exist." << std::endl);
+			FatalError("The date or time ", Token.StringValue, " does not exist.\n");
 		}
 	}
 	
@@ -621,7 +613,7 @@ u64 token_stream::ExpectUInt()
 	if(!Token.IsUInt)
 	{
 		PrintErrorHeader();
-		MOBIUS_FATAL_ERROR("Got a value that is signed, with a comma or with an exponent when expecting an unsigned integer." << std::endl);
+		FatalError("Got a value that is signed, with a comma or with an exponent when expecting an unsigned integer.\n");
 	}
 	return Token.UIntValue;
 }
@@ -675,12 +667,12 @@ token_stream::ReadQuotedStringList(std::vector<token_string> &ListOut)
 		else if(Token.Type == TokenType_EOF)
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("End of file before list was ended." << std::endl);
+			FatalError("End of file before list was ended.\n");
 		}
 		else
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Unexpected token." << std::endl);
+			FatalError("Unexpected token.\n");
 		}
 	}
 }
@@ -708,12 +700,12 @@ token_stream::ReadQuotedStringList(std::vector<const char *> &ListOut)
 		else if(Token.Type == TokenType_EOF)
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("End of file before list was ended." << std::endl);
+			FatalError("End of file before list was ended.\n");
 		}
 		else
 		{
 			PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Unexpected token." << std::endl);
+			FatalError("Unexpected token.\n");
 		}
 	}
 }

@@ -38,25 +38,16 @@ static void
 PrintPartialDependencyTrace(mobius_model *Model, equation_h Equation, bool First = false)
 {
 	if(!First)
-	{
-		MOBIUS_PARTIAL_ERROR("<- ");
-	}
+		ErrorPrint("<- ");
 	else
-	{
-		MOBIUS_PARTIAL_ERROR("   ");
-	}
-	
+		ErrorPrint("   ");
 	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	if(IsValid(Spec.Solver))
-	{
-		MOBIUS_PARTIAL_ERROR("\"" << GetName(Model, Spec.Solver) << "\" (");
-	}
-	MOBIUS_PARTIAL_ERROR("\"" << GetName(Model, Equation) << "\"");
+		ErrorPrint("\"", GetName(Model, Spec.Solver), "\" (");
+	ErrorPrint("\"", GetName(Model, Equation), "\"");
 	if(IsValid(Spec.Solver))
-	{
-		MOBIUS_PARTIAL_ERROR(")")
-	}
-	MOBIUS_PARTIAL_ERROR(std::endl);
+		ErrorPrint(")");
+	ErrorPrint('\n');
 }
 
 static bool
@@ -72,7 +63,7 @@ TopologicalSortEquationsVisit(mobius_model *Model, equation_h Equation, std::vec
 	if(Visited) return true;
 	if(TempVisited)
 	{
-		MOBIUS_PARTIAL_ERROR("ERROR: There is a circular dependency between the equations :" << std::endl);
+		ErrorPrint("ERROR: There is a circular dependency between the equations :\n");
 		PrintPartialDependencyTrace(Model, Equation, true);
 		return false;
 	}
@@ -102,7 +93,7 @@ TopologicalSortEquationsInSolverVisit(mobius_model *Model, equation_h Equation, 
 	if(Spec.Visited) return true;
 	if(Spec.TempVisited)
 	{
-		MOBIUS_PARTIAL_ERROR("ERROR: There is a circular dependency between the non-ode equations within a solver :" << std::endl);
+		ErrorPrint("ERROR: There is a circular dependency between the non-ode equations within a solver :\n");
 		PrintPartialDependencyTrace(Model, Equation, true);
 		return false;
 	}
@@ -139,7 +130,7 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 	if(Spec.Visited) return true;
 	if(Spec.TempVisited)
 	{
-		MOBIUS_PARTIAL_ERROR("ERROR: There is a circular dependency between the initial value of the equations :" << std::endl);
+		ErrorPrint("ERROR: There is a circular dependency between the initial value of the equations :\n");
 		PrintPartialDependencyTrace(Model, Equation, true);
 		return false;
 	}
@@ -176,9 +167,7 @@ TopologicalSortEquations(mobius_model *Model, std::vector<equation_h> &Equations
 	{
 		bool Success = Visit(Model, Equation, Temporary);
 		if(!Success)
-		{
-			MOBIUS_FATAL_ERROR("");
-		}
+			FatalError("");
 	}
 	
 	for(size_t Idx = 0; Idx < Equations.size(); ++Idx)
@@ -261,9 +250,7 @@ static void
 EndModelDefinition(mobius_model *Model)
 {
 	if(Model->Finalized)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Called EndModelDefinition twice on the same model." << std::endl);
-	}
+		FatalError("ERROR: Called EndModelDefinition twice on the same model.\n");
 	
 	bucket_allocator TemporaryBucket;
 	TemporaryBucket.Initialize(1024*1024);  //NOTE: It would be very strange if we need more space than this for each temporary array.
@@ -294,9 +281,7 @@ EndModelDefinition(mobius_model *Model)
 		}
 		
 		if(!Model->Equations.Specs[EquationHandle].EquationIsSet)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: The equation body for the registered equation " << GetName(Model, equation_h {EquationHandle}) << " has not been defined." << std::endl);
-		}
+			FatalError("ERROR: The equation body for the registered equation \"", GetName(Model, equation_h {EquationHandle}), "\" has not been defined.\n");
 		
 		// Clear dependency registrations from evaluation of previous equation.
 		RunState.Clear();
@@ -313,15 +298,12 @@ EndModelDefinition(mobius_model *Model)
 			parameter_spec &ParSpec = Model->Parameters.Specs[ParameterHandle];
 			std::vector<index_set_h>& IndexSetDependencies = ParSpec.IndexSetDependencies;
 			if(ParameterDependency.NumExplicitIndexes > IndexSetDependencies.size())
-			{
-				MOBIUS_FATAL_ERROR("ERROR: In equation " << Spec.Name << ". The parameter " << ParSpec.Name << " is referenced with more explicit indexes than the number of index sets this parameter depends on." << std::endl);
-			}
+				FatalError("ERROR: In equation \"", Spec.Name, "\". The parameter \"", ParSpec.Name, "\" is referenced with more explicit indexes than the number of index sets this parameter depends on.\n");
+			
 			size_t NumImplicitIndexes = IndexSetDependencies.size() - ParameterDependency.NumExplicitIndexes;
 			
 			if(NumImplicitIndexes > 0)
-			{
 				Spec.IndexSetDependencies.insert(IndexSetDependencies.begin(), IndexSetDependencies.begin() + NumImplicitIndexes);
-			}
 			
 			if(ParameterDependency.NumExplicitIndexes == 0)
 			{
@@ -354,14 +336,10 @@ EndModelDefinition(mobius_model *Model)
 			entity_handle DepResultHandle = ResultDependency.Handle;
 			
 			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
-			{
-				MOBIUS_FATAL_ERROR("ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl);
-			}
+				FatalError("ERROR: The equation \"", GetName(Model, equation_h {EquationHandle}), "\" depends explicitly on the result of the equation \"", GetName(Model, equation_h {DepResultHandle}), "\" which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that \"", GetName(Model, equation_h {DepResultHandle}), "\" is an initial value for.\n");
 			
 			if(ResultDependency.Indexes.size() == 0)
-			{
 				Spec.DirectResultDependencies.insert(equation_h {DepResultHandle});
-			}
 			else
 			{
 				Spec.CrossIndexResultDependencies.insert(equation_h {DepResultHandle}); //TODO: Do we really need to keep this separately?
@@ -373,18 +351,12 @@ EndModelDefinition(mobius_model *Model)
 		{
 			entity_handle DepResultHandle = ResultDependency.Handle;
 			if(Model->Equations.Specs[DepResultHandle].Type == EquationType_InitialValue)
-			{
-				MOBIUS_FATAL_ERROR("ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " depends explicitly on the result of the equation " << GetName(Model, equation_h {DepResultHandle}) << " which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that " << GetName(Model, equation_h {DepResultHandle}) << " is an initial value for." << std::endl);
-			}
+				FatalError("ERROR: The equation \"", GetName(Model, equation_h {EquationHandle}), "\" depends explicitly on the (last) result of the equation \"", GetName(Model, equation_h {DepResultHandle}), "\" which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that \"", GetName(Model, equation_h {DepResultHandle}), "\" is an initial value for.\n");
 			
 			if(ResultDependency.Indexes.size() == 0)
-			{
 				Spec.DirectLastResultDependencies.insert(equation_h {DepResultHandle});
-			}
 			else
-			{
 				Spec.IndexedResultAndLastResultDependencies.push_back(ResultDependency);
-			}
 		}
 		
 		//NOTE: Every equation always depends on its initial value equation if it has one.
@@ -392,9 +364,7 @@ EndModelDefinition(mobius_model *Model)
 		//TODO: Figure out if this may break something, and if we need a specialized system for this?
 		equation_h EqInitialValue = Model->Equations.Specs[EquationHandle].InitialValueEquation;
 		if(IsValid(EqInitialValue))
-		{
 			Spec.DirectLastResultDependencies.insert(EqInitialValue);
-		}
 	}
 	
 	{
@@ -413,9 +383,7 @@ EndModelDefinition(mobius_model *Model)
 					|| !EqSpec.IndexedResultAndLastResultDependencies.empty()
 					|| !EqSpec.InputDependencies.empty()
 				)
-				{
-					MOBIUS_FATAL_ERROR("ERROR: The initial value equation " << EqSpec.Name << " assigned to compute the parameter " << Spec.Name << " depends on either a result of an equation or an input. This is not allowed for computed parameters." << std::endl);
-				}
+					FatalError("ERROR: The initial value equation ", EqSpec.Name, " assigned to compute the parameter ", Spec.Name, " depends on either a result of an equation or an input. This is not allowed for computed parameters.\n");
 			}
 		}
 	}
@@ -489,9 +457,7 @@ EndModelDefinition(mobius_model *Model)
 	}
 	
 	if(!DependenciesWereResolved)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: We were unable to resolve all equation dependencies!" << std::endl);
-	}
+		FatalError("ERROR: We were unable to resolve all equation dependencies!\n");
 	
 	/////////////// Sorting the equations into equation batches ///////////////////////////////
 	
@@ -523,9 +489,7 @@ EndModelDefinition(mobius_model *Model)
 		else
 		{
 			if(Spec.Type == EquationType_ODE)
-			{
-				MOBIUS_FATAL_ERROR("ERROR: The equation " << GetName(Model, equation_h {EquationHandle}) << " is registered as an ODE equation, but it has not been given a solver." << std::endl);
-			}
+				FatalError("ERROR: The equation \"", GetName(Model, equation_h {EquationHandle}), "\" is registered as an ODE equation, but it has not been given a solver.\n");
 			
 			EquationsToSort.push_back(equation_h {EquationHandle});
 		}
@@ -578,14 +542,10 @@ EndModelDefinition(mobius_model *Model)
 			}
 			
 			if(EarliestSuitableBatchIdx == (s32)BatchBuild.size())
-			{
 				BatchBuild.push_back(Batch);
-			}
 			else
-			{
 				//NOTE: This inserts the new batch right after the earliest suitable one.
 				BatchBuild.insert(BatchBuild.begin() + EarliestSuitableBatchIdx + 1, Batch);
-			}
 		}
 		else
 		{
@@ -611,9 +571,7 @@ EndModelDefinition(mobius_model *Model)
 			bool PushNewBatch = false;
 			
 			if(EarliestSuitableBatchIdx == (s32)BatchBuild.size())
-			{
 				PushNewBatch = true;
-			}
 			else if(EarliestSuitableIsSolver)
 			{
 				//This equation does not belong to a solver, so we can not add it to the solver batch. Try to add it immediately after, either by adding it to the next batch if it is suitable or by creating a new batch.
@@ -638,9 +596,7 @@ EndModelDefinition(mobius_model *Model)
 				}
 			}
 			else
-			{
 				BatchBuild[EarliestSuitableBatchIdx].Equations.push_back(Equation);
-			}
 			
 			if(PushNewBatch)
 			{
@@ -650,13 +606,9 @@ EndModelDefinition(mobius_model *Model)
 				Batch.IndexSetDependencies = Spec.IndexSetDependencies;
 				
 				if(Spec.DirectResultDependencies.empty() && Spec.CrossIndexResultDependencies.empty())
-				{
 					BatchBuild.insert(BatchBuild.begin(), Batch); //NOTE: If we had no dependencies at all, just insert us at the beginning rather than at the end. This makes it less likely to screw up later structure, and is for instance good for INCA-N.
-				}
 				else
-				{
 					BatchBuild.push_back(Batch);
-				}
 			}
 		}
 	}
@@ -665,9 +617,7 @@ EndModelDefinition(mobius_model *Model)
 	for(auto& BatchTemplate : BatchBuild)
 	{
 		for(index_set IndexSet : BatchTemplate.IndexSetDependencies)
-		{
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
-		}
 		std::cout << "Type: " << BatchTemplate.Type << " Solver: " << BatchTemplate.Solver.Handle << std::endl;
 		FOR_ALL_BATCH_EQUATIONS(BatchTemplate,
 			std::cout << "\t" << GetName(Model, Equation) << std::endl;
@@ -1100,49 +1050,41 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 	if(!std::isfinite(ResultValue))
 	{
 		//TODO: We should be able to report the timestep here.
-		MOBIUS_PARTIAL_ERROR("ERROR: Got a NaN or Inf value as the result of the equation " << GetName(Model, Equation) << " at timestep " << RunState->Timestep << std::endl);
+		ErrorPrint("ERROR: Got a NaN or Inf value as the result of the equation \"", GetName(Model, Equation), "\" at timestep ", RunState->Timestep, ".\n");
 		const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
-		MOBIUS_PARTIAL_ERROR("Indexes:" << std::endl);
+		ErrorPrint("Indexes:\n");
 		for(index_set_h IndexSet : Spec.IndexSetDependencies)
 		{
 			const char *IndexName = RunState->DataSet->IndexNames[IndexSet.Handle][RunState->CurrentIndexes[IndexSet.Handle]];
-			MOBIUS_PARTIAL_ERROR(GetName(Model, IndexSet) << ": " << IndexName << std::endl);
+			ErrorPrint("\"", GetName(Model, IndexSet), "\": \"", IndexName, "\"\n");
 		}
 		for(entity_handle Par : Spec.ParameterDependencies )
 		{
 			//Ugh, it is cumbersome to print parameter values when we don't know the type a priori....
 			const parameter_spec &ParSpec = Model->Parameters.Specs[Par];
 			if(ParSpec.Type == ParameterType_Double)
-			{
-				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << RunState->CurParameters[Par].ValDouble << std::endl);
-			}
+				ErrorPrint("Value of \"", GetParameterName(Model, Par), "\" is " , RunState->CurParameters[Par].ValDouble, '\n');
+			
 			else if(ParSpec.Type == ParameterType_UInt)
-			{
-				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << RunState->CurParameters[Par].ValUInt << std::endl);
-			}
+				ErrorPrint("Value of \"", GetParameterName(Model, Par), "\" is ", RunState->CurParameters[Par].ValUInt, '\n');
+			
 			else if(ParSpec.Type == ParameterType_Bool)
-			{
-				MOBIUS_PARTIAL_ERROR("Value of " << GetParameterName(Model, Par) << " was " << RunState->CurParameters[Par].ValBool << std::endl);
-			}
+				ErrorPrint("Value of \"", GetParameterName(Model, Par), "\" is ", RunState->CurParameters[Par].ValBool, '\n');
 		}
 		for(input_h In : Spec.InputDependencies)
 		{
-			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, In) << " was " << RunState->CurInputs[In.Handle]);
+			ErrorPrint("Current value of \"", GetName(Model, In), "\" is ", RunState->CurInputs[In.Handle]);
 			if(!RunState->CurInputWasProvided[In.Handle])
-			{
-				MOBIUS_PARTIAL_ERROR(" (Not provided in dataset)");
-			}
-			MOBIUS_PARTIAL_ERROR(std::endl);
+				ErrorPrint(" (Not provided in dataset)");
+			ErrorPrint('\n');
 		}
 		for(equation_h Res : Spec.DirectResultDependencies )
-		{
-			MOBIUS_PARTIAL_ERROR("Current value of " << GetName(Model, Res) << " was " << RunState->CurResults[Res.Handle] << std::endl);
-		}
+			ErrorPrint("Current value of \"", GetName(Model, Res), "\" is ", RunState->CurResults[Res.Handle], '\n');
+		
 		for(equation_h Res : Spec.DirectLastResultDependencies )
-		{
-			MOBIUS_PARTIAL_ERROR("Last value of " << GetName(Model, Res) << " was " << RunState->LastResults[Res.Handle] << std::endl);
-		}
-		MOBIUS_FATAL_ERROR("");
+			ErrorPrint("Last value of \"", GetName(Model, Res), "\" was ", RunState->LastResults[Res.Handle], '\n');
+		
+		FatalError("");
 	}
 }
 
@@ -1551,16 +1493,14 @@ RunModel(mobius_data_set *DataSet)
 	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
 	{
 		if(DataSet->IndexCounts[IndexSetHandle] == 0)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: The index set " << GetName(Model, index_set_h {IndexSetHandle}) << " does not contain any indexes." << std::endl);
-		}
+			FatalError("ERROR: The index set \"", GetName(Model, index_set_h {IndexSetHandle}), "\" does not contain any indexes.\n");
 	}
 	
 	//NOTE: Allocate parameter storage in case it was not allocated during setup.
 	if(!DataSet->ParameterData)
 	{
 		AllocateParameterStorage(DataSet);
-		std::cout << "WARNING: No parameter values were specified, using default parameter values only." << std::endl;
+		WarningPrint("WARNING: No parameter values were specified, using default parameter values only.\n");
 	}
 	
 	
@@ -1614,33 +1554,22 @@ RunModel(mobius_data_set *DataSet)
 		ModelStartTime.YearMonthDay(&MYear, &MMonth, &MDay);
 		
 		if(IDay != 1 || InputStartDate.SecondsSinceEpoch % 86400 != 0)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: For models with timestep resolution measured in months or years, input data start dates have to be on the form yyyy-mm-01 or yyyy-mm-01 00:00:00 . In the current setup, the input start date was set to " << InputStartDate.ToString() << " ." << std::endl);
-		}
+			FatalError("ERROR: For models with timestep resolution measured in months or years, input data start dates have to be on the form yyyy-mm-01 or yyyy-mm-01 00:00:00 . In the current setup, the input start date was set to ", InputStartDate.ToString(), " .\n");
 		
 		if(MDay != 1 || ModelStartTime.SecondsSinceEpoch % 86400 != 0)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: For models with timestep resolution measured in months or years, the \"Start date\" has to be on the form yyyy-mm-01 or yyyy-mm-01 00:00:00 . In the current setup, the start date was set to " << ModelStartTime.ToString() << " ." << std::endl);
-		}
+			FatalError("ERROR: For models with timestep resolution measured in months or years, the \"Start date\" has to be on the form yyyy-mm-01 or yyyy-mm-01 00:00:00 . In the current setup, the start date was set to ", ModelStartTime.ToString(), " .\n");
 		
 		TimeOffset = (MYear-IYear)*12 + MMonth-IMonth;
 	}
 	
 	if(TimeOffset % Model->TimestepSize.Magnitude != 0)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: The model run \"Start date\" was not set to be a whole number of timesteps after the input start date." << std::endl);
-	}
-	
+		FatalError("ERROR: The model run \"Start date\" was not set to be a whole number of timesteps after the input start date.\n");
 	
 	if(ModelStartTime.SecondsSinceEpoch < InputStartDate.SecondsSinceEpoch)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: The input data starts at a later date than the model run." << std::endl);
-	}
+		FatalError("ERROR: The input data starts at a later date than the model run.\n");
 	
 	if(((s64)DataSet->InputDataTimesteps - InputDataStartOffsetTimesteps) < (s64)Timesteps)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: The input data provided has fewer timesteps (after the model run start date) than the number of timesteps the model is running for." << std::endl);
-	}
+		FatalError("ERROR: The input data provided has fewer timesteps (after the model run start date) than the number of timesteps the model is running for.\n");
 	
 	//std::cout << "Input data start offset timesteps was " << InputDataStartOffsetTimesteps << std::endl;
 	
@@ -1661,16 +1590,11 @@ RunModel(mobius_data_set *DataSet)
 	
 	
 	for(const mobius_preprocessing_step &PreprocessingStep : Model->PreprocessingSteps)
-	{
 		PreprocessingStep(DataSet);
-	}
-	
 	
 	// If some solvers have parametrized step size, read in the actual value of the parameter from the parameter data, then store it for use when running the model.
 	if(!DataSet->hSolver)
-	{
 		DataSet->hSolver = DataSet->BucketMemory.Allocate<double>(Model->Solvers.Count());
-	}
 	
 	for(entity_handle SolverHandle = 1; SolverHandle < Model->Solvers.Count(); ++SolverHandle)
 	{
@@ -1681,21 +1605,16 @@ RunModel(mobius_data_set *DataSet)
 		if(IsValid(Spec.hParam))
 		{
 			if(Model->Parameters.Specs[Spec.hParam.Handle].IndexSetDependencies.size() > 0)
-			{
-				std::cout << "WARNING: The parameter " << GetName(Model, Spec.hParam) << " is used to control the step size of the solver " << Spec.Name << ". The parameter has one or more index set dependencies, but only the first value will be used." << std::endl;
-			}
+				WarningPrint("WARNING: The parameter \"", GetName(Model, Spec.hParam), "\" is used to control the step size of the solver \"", Spec.Name, "\". The parameter has one or more index set dependencies, but only the first value will be used.\n");
+			
 			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Spec.hParam.Handle);
 			hValue = DataSet->ParameterData[Offset].ValDouble;
 		}
 		else
-		{
 			hValue = Spec.h;
-		}
 		
 		if(hValue <= 0.0 || hValue > 1.0)
-		{
-			MOBIUS_FATAL_ERROR("The solver " << Spec.Name << " was given a step size that is smaller than 0 or larger than 1.");
-		}
+			FatalError("The solver \"", Spec.Name, "\" was given a step size that is smaller than 0 or larger than 1.\n");
 		
 		DataSet->hSolver[SolverHandle] = hValue;
 	}
@@ -1731,9 +1650,7 @@ RunModel(mobius_data_set *DataSet)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			if(Batch.Type == BatchType_Solver)
-			{
 				MaxODECount = Max(MaxODECount, Batch.EquationsODE.Count);
-			}
 		}
 	}
 	size_t SolverTempWorkSpace = 4*MaxODECount; //TODO: 4*MaxODECount is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
@@ -1877,7 +1794,7 @@ PrintEquationDependencies(mobius_model *Model)
 {
 	if(!Model->Finalized)
 	{
-		MOBIUS_WARNING("WARNING: Tried to print equation dependencies before the model was finalized" << std::endl);
+		WarningPrint("WARNING: Tried to print equation dependencies before the model was finalized.\n");
 		return;
 	}
 	
@@ -1900,7 +1817,7 @@ PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 {
 	if(!Model->Finalized)
 	{
-		std::cout << "WARNING: Tried to print result structure before the model was finalized" << std::endl;
+		WarningPrint("WARNING: Tried to print result structure before the model was finalized.\n");
 		return;
 	}
 	
@@ -1941,7 +1858,7 @@ PrintParameterStorageStructure(mobius_data_set *DataSet)
 {
 	if(!DataSet->ParameterData)
 	{
-		std::cout << "WARNING: Tried to print parameter storage structure before the parameter storage was allocated" << std::endl;
+		WarningPrint("WARNING: Tried to print parameter storage structure before the parameter storage was allocated.\n");
 		return;
 	}
 	
@@ -1974,7 +1891,7 @@ PrintInputStorageStructure(mobius_data_set *DataSet)
 {
 	if(!DataSet->InputData)
 	{
-		std::cout << "WARNING: Tried to print input storage structure before the input storage was allocated" << std::endl;
+		WarningPrint("WARNING: Tried to print input storage structure before the input storage was allocated.\n");
 		return;
 	}
 	
@@ -1986,17 +1903,12 @@ PrintInputStorageStructure(mobius_data_set *DataSet)
 	{
 		array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageIdx].IndexSets;
 		if(IndexSets.Count == 0)
-		{
 			std::cout << "[]";
-		}
 		for(index_set_h IndexSet : IndexSets)
-		{
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
-		}
 		for(entity_handle Handle : DataSet->InputStorageStructure.Units[StorageIdx].Handles)
-		{
 			std::cout << "\n\t" << GetName(Model, input_h {Handle});
-		}
+
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;

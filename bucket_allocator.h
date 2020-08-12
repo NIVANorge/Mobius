@@ -34,7 +34,7 @@ struct bucket_allocator
 	{
 		if(this->BucketSize != 0)
 		{
-			MOBIUS_FATAL_ERROR("ERROR (internal): Tried to initialize a bucket allocator twice.\n");
+			FatalError("ERROR (internal): Tried to initialize a bucket allocator twice.\n");
 		}
 		
 		//TODO: Round up to multiple of 8?
@@ -49,7 +49,7 @@ struct bucket_allocator
 		
 		if(BucketSize == 0)
 		{
-			MOBIUS_FATAL_ERROR("ERROR (internal): Tried to allocate from an uninitialized bucket allocator.\n");
+			FatalError("ERROR (internal): Tried to allocate from an uninitialized bucket allocator.\n");
 		}
 		
 		size_t RequestedSize = sizeof(T) * Count;

@@ -33,14 +33,10 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 	// ShapeType                    -     0=pellet, 1=fragment, 2=fiber
 	
 	if(rho_p < rho_f)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Currently, only plastic that is heavier than water is supported\n");
-	}
+		FatalError("ERROR: Currently, only plastic that is heavier than water is supported.\n");
 	
 	if(ShapeType < 0 || ShapeType > 2)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Unsupported shape type: " << ShapeType << "\n");
-	}
+		FatalError("ERROR: Unsupported shape type: ", ShapeType, ".\n");
 	
 	// Earth surface gravity (m/s2)
 	double g = 9.807;
@@ -87,9 +83,7 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 	}
 	
 	if(!Converged)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Terminal settling velocity computation failed to converge.\n");
-	}
+		FatalError("ERROR: Terminal settling velocity computation failed to converge.\n");
 	
 	return W;
 }

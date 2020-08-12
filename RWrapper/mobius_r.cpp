@@ -7,14 +7,39 @@
 // [[Rcpp::plugins(cpp11)]]
 
 
-#define MOBIUS_PARTIAL_ERROR(Msg) \
-Rcpp::Rcout << Msg;
+// Override error and warning calls to direct them to the R output channel.
 
-	
-#define MOBIUS_FATAL_ERROR(Msg) \
-{MOBIUS_PARTIAL_ERROR(Msg) \
-Rcpp::stop("returning to R scope");}
+void
+ErrorPrint() {}
 
+template<typename t, typename... v>
+void
+ErrorPrint(t Value, v... Tail)
+{
+	Rcpp::Rcout << Value;
+	ErrorPrint(Tail...);
+}
+
+template<typename... v>
+FatalError(v... Tail)
+{
+	ErrorPrint(Tail...);
+	Rcpp::stop("returning to R scope");
+}	
+
+void
+WarningPrint() {}
+
+template<typename t, typename... v>
+void
+WarningPrint(t Value, v... Tail)
+{
+	Rcpp::Rcout << Value;
+	WarningPrint(Tail...);
+}
+
+
+#define MOBIUS_ERROR_OVERRIDE
 
 #include "../mobius.h"
 

@@ -5,7 +5,7 @@ GenerateDataSet(mobius_model *Model)
 {
 	if(!Model->Finalized)
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Attempted to generate a data set before the model was finalized using an EndModelDefinition call." << std::endl);
+		FatalError("ERROR: Attempted to generate a data set before the model was finalized using an EndModelDefinition call.\n");
 	}
 	mobius_data_set *DataSet = new mobius_data_set {};  //NOTE: The {} ensures that all member pointers are initialized to 0. This is important.
 	
@@ -206,6 +206,28 @@ OffsetForHandle(storage_structure &Structure, entity_handle Handle)
 	return OffsetForUnit + LocationOfHandleInUnit;
 }
 
+
+#if !defined(MOBIUS_INDEX_BOUNDS_TESTS)
+#define MOBIUS_INDEX_BOUNDS_TESTS 0
+#endif
+
+inline void
+CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index, size_t Count, entity_type Type, entity_handle Handle)
+{
+	bool CountError = (Index >= Count);
+	bool HandleError = (Index.IndexSetHandle != IndexSet.Handle);
+	if(CountError || HandleError)
+	{
+		const char *EntityName = GetName(Model, Type, Handle);
+		const char *TypeName   = GetEntityTypeName(Type);
+		if(CountError)
+			ErrorPrint("ERROR: Index out of bounds for index set \"", GetName(Model, IndexSet), "\", got index ", Index, ", count was ", Count, '\n');
+		if(HandleError)
+			ErrorPrint("ERROR: Used an index addressed to the index set \"", GetName(Model, index_set_h {Index.IndexSetHandle}), "\" for indexing the index set \"", GetName(Model, IndexSet), "\".\n");
+		FatalError("This happened while looking up the value of the ", TypeName, " \"", EntityName, "\".\n");
+	}
+}
+
 // NOTE: Returns the storage index of a value corresponding to this Handle with the given index set indexes.
 // CurrentIndexes must be set up so that for any index set with handle IndexSetHandle, CurrentIndexes[IndexSetHandle] is the current index of that index set. (Typically ValueSet->CurrentIndexes)
 // IndexCounts    must be set up so that for any index set with handle IndexSetHandle, IndexCounts[IndexSetHandle] is the index count of that index set. (Typically DataSet->IndexCounts)
@@ -225,20 +247,7 @@ OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, con
 		index_t Index = CurrentIndexes[IndexSet.Handle];
 		
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		if(Index >= Count)
-		{
-			const char *EntityName = GetName(Structure.Model, Structure.Type, Handle);
-			const char *TypeName   = GetEntityTypeName(Structure.Type);
-			MOBIUS_PARTIAL_ERROR("ERROR: Index out of bounds for index set \"" << GetName(Structure.Model, IndexSet) << "\", got index " << Index << ", count was " << Count << std::endl);
-			MOBIUS_FATAL_ERROR("This happened while looking up the value of the " << TypeName << " \"" << EntityName << "\"." << std::endl);
-		}
-		if(Index.IndexSetHandle != IndexSet.Handle)
-		{
-			const char *EntityName = GetName(Structure.Model, Structure.Type, Handle);
-			const char *TypeName   = GetEntityTypeName(Structure.Type);
-			MOBIUS_PARTIAL_ERROR("ERROR: Used an index addressed to the index set \"" << GetName(Structure.Model, index_set_h {Index.IndexSetHandle}) << "\" for indexing the index set \"" << GetName(Structure.Model, IndexSet) << "\"." << std::endl);
-			MOBIUS_FATAL_ERROR("This happened while looking up the value of the " << TypeName << " \"" << EntityName << "\"." << std::endl);
-		}
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -246,30 +255,7 @@ OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, con
 	return OffsetForUnit + InstanceOffset * NumHandlesInUnitInstance + LocationOfHandleInUnit;
 }
 
-#if !defined(MOBIUS_INDEX_BOUNDS_TESTS)
-#define MOBIUS_INDEX_BOUNDS_TESTS 0
-#endif
 
-inline void
-CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index, size_t Count, entity_type Type, entity_handle Handle)
-{
-	bool CountError = (Index >= Count);
-	bool HandleError = (Index.IndexSetHandle != IndexSet.Handle);
-	if(CountError || HandleError)
-	{
-		const char *EntityName = GetName(Model, Type, Handle);
-		const char *TypeName   = GetEntityTypeName(Type);
-		if(CountError)
-		{
-			MOBIUS_PARTIAL_ERROR("ERROR: Index out of bounds for index set \"" << GetName(Model, IndexSet) << "\", got index " << Index << ", count was " << Count << std::endl);
-		}
-		if(HandleError)
-		{
-			MOBIUS_PARTIAL_ERROR("ERROR: Used an index addressed to the index set \"" << GetName(Model, index_set_h {Index.IndexSetHandle}) << "\" for indexing the index set \"" << GetName(Model, IndexSet) << "\"." << std::endl);
-		}
-		MOBIUS_FATAL_ERROR("This happened while looking up the value of the " << TypeName << " \"" << EntityName << "\"." << std::endl);
-	}
-}
 
 // NOTE: Returns the storage index of a value corresponding to this Handle with the given index set indexes.
 // Indexes must be set up so that Indexes[I] is the index of the I'th index set that the entity one wishes to look up depends on.
@@ -465,9 +451,7 @@ GetTimesteps(mobius_data_set *DataSet)
 		s64 Step = FindTimestep(StartDate, EndDate, DataSet->Model->TimestepSize);
 		Step += 1;    //NOTE: Because the end date is inclusive. 
 		if(Step <= 0)
-		{
-			MOBIUS_FATAL_ERROR("The model run start date was set to be later than the model run end date.\n");
-		}
+			FatalError("The model run start date was set to be later than the model run end date.\n");
 		
 		return (u64)Step;
 	}
@@ -494,19 +478,13 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 	const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
 	
 	if(Spec.Type != IndexSetType_Basic)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Can not use the method SetIndexes for the index set " << Spec.Name << ", use a method that is specific to the type of that index set instead." << std::endl);
-	}
+		FatalError("ERROR: Can not use the method SetIndexes for the index set ", Spec.Name, ", use a method that is specific to the type of that index set instead.\n");
 	
 	if(DataSet->IndexNames[IndexSetHandle] != 0)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the indexes for the index set " << Spec.Name << " more than once." << std::endl);
-	}
+		FatalError("ERROR: Tried to set the indexes for the index set ", Spec.Name, " more than once.\n");
 	
 	if(IndexNames.empty())
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set indexes for the index set " << Spec.Name << ", but no indexes were provided" << std::endl);
-	}
+		FatalError("ERROR: Tried to set indexes for the index set ", Spec.Name, ", but no indexes were provided.\n");
 	
 	if(!Spec.RequiredIndexes.empty())
 	{
@@ -526,17 +504,15 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 
 		if(!Correct)
 		{
-			MOBIUS_PARTIAL_ERROR("ERROR: The model requires the following indexes to be the first indexes for the index set " << Spec.Name << ":" << std::endl);
+			ErrorPrint("ERROR: The model requires the following indexes to be the first indexes for the index set ", Spec.Name, ":\n");
 			for(const char *IndexName :  Spec.RequiredIndexes)
-			{
-				MOBIUS_PARTIAL_ERROR("\"" << IndexName << "\" ");
-			}
-			MOBIUS_PARTIAL_ERROR(std::endl << "in that order. We got the indexes: " << std::endl);
+				ErrorPrint("\"", IndexName, "\" ");
+			
+			ErrorPrint("\nin that order. We got the indexes:\n");
 			for(token_string IndexName : IndexNames)
-			{
-				MOBIUS_PARTIAL_ERROR("\"" << IndexName << "\" ");
-			}
-			MOBIUS_FATAL_ERROR(std::endl);
+				ErrorPrint("\"", IndexName, "\" ");
+			
+			FatalError('\n');
 		}
 	}
 	
@@ -546,9 +522,8 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 	for(size_t IndexIndex = 0; IndexIndex < IndexNames.size(); ++IndexIndex)
 	{
 		if(IndexNames[IndexIndex].Length == 0)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: Indexes can't be empty strings.\n");
-		}
+			FatalError("ERROR: Indexes can't be empty strings.\n");
+		
 		const char *IndexName = IndexNames[IndexIndex].Copy(&DataSet->BucketMemory).Data;
 		DataSet->IndexNames[IndexSetHandle][IndexIndex] = IndexName;
 		DataSet->IndexNamesToHandle[IndexSetHandle][IndexName] = IndexIndex;
@@ -556,7 +531,7 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 	
 	if(DataSet->IndexNamesToHandle[IndexSetHandle].size() != IndexNames.size())
 	{
-		MOBIUS_FATAL_ERROR("ERROR: Got duplicate indexes for index set " << Spec.Name << std::endl);
+		FatalError("ERROR: Got duplicate indexes for index set ", Spec.Name, '\n');
 	}
 	
 	bool AllSet = true;
@@ -580,19 +555,13 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 	const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
 	
 	if(Spec.Type != IndexSetType_Branched)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Can not use the method SetBranchIndexes for the index set " << IndexSetName << ", use a method that is specific to the type of that index set instead." << std::endl);
-	}
+		FatalError("ERROR: Can not use the method SetBranchIndexes for the index set \"", IndexSetName, "\", use a method that is specific to the type of that index set instead.\n");
 	
 	if(DataSet->IndexNames[IndexSetHandle] != 0)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the indexes for the index set " << Spec.Name << " more than once." << std::endl);
-	}
+		FatalError("ERROR: Tried to set the indexes for the index set \"", Spec.Name, "\" more than once.\n");
 	
 	if(Inputs.empty())
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set indexes for the index set " << Spec.Name << ", but no indexes were provided" << std::endl);
-	}
+		FatalError("ERROR: Tried to set indexes for the index set \"", Spec.Name, "\", but no indexes were provided.\n");
 	
 	DataSet->IndexCounts[IndexSetHandle] = {IndexSetHandle, (u32)Inputs.size()};
 	DataSet->IndexNames[IndexSetHandle] = DataSet->BucketMemory.Allocate<const char *>(Inputs.size());
@@ -602,16 +571,14 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 	for(const auto &InputData : Inputs)
 	{
 		if(InputData.first.Length == 0)
-		{
-			MOBIUS_FATAL_ERROR("ERROR: Indexes can't be empty strings.\n");
-		}
+			FatalError("ERROR: Indexes can't be empty strings.\n");
 		
 		const char *IndexName = InputData.first.Copy(&DataSet->BucketMemory).Data;
 
 		const std::vector<token_string> &InputNames = InputData.second;
 		if(DataSet->IndexNamesToHandle[IndexSetHandle].find(IndexName) != DataSet->IndexNamesToHandle[IndexSetHandle].end())
 		{
-			MOBIUS_FATAL_ERROR("ERROR: Got duplicate indexes for index set " << IndexSetName << std::endl);
+			FatalError("ERROR: Got duplicate indexes for index set \"", IndexSetName, "\".\n");
 		}
 		
 		DataSet->IndexNamesToHandle[IndexSetHandle][IndexName] = IndexIndex;
@@ -625,7 +592,7 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 			auto Find = DataSet->IndexNamesToHandle[IndexSetHandle].find(InputName);
 			if(Find == DataSet->IndexNamesToHandle[IndexSetHandle].end())
 			{
-				MOBIUS_FATAL_ERROR("ERROR: The index \"" << InputName << "\" appears as an input to the index \"" << IndexName << "\", in the index set " << IndexSetName << ", before it itself is declared." << std::endl);
+				FatalError("ERROR: The index \"", InputName, "\" appears as an input to the index \"", IndexName, "\" in the index set \"", IndexSetName, "\" before it itself is declared.\n");
 			}
 			index_t InputIndex = {IndexSetHandle, Find->second};
 			DataSet->BranchInputs[IndexSetHandle][IndexIndex][InputIdxIdx] = InputIndex;
@@ -653,14 +620,10 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to allocate parameter storage before all index sets were filled." << std::endl);
-	}
+		FatalError("ERROR: Tried to allocate parameter storage before all index sets were filled.\n");
 	
 	if(DataSet->ParameterData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to allocate parameter storage twice." << std::endl);
-	}
+		FatalError("ERROR: Tried to allocate parameter storage twice.\n");
 	
 	std::map<std::vector<index_set_h>, std::vector<entity_handle>> TransposedParameterDependencies;
 	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
@@ -715,14 +678,10 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to allocate input storage before all index sets were filled." << std::endl);
-	}
+		FatalError("ERROR: Tried to allocate input storage before all index sets were filled.\n");
 	
 	if(DataSet->InputData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to allocate input storage twice." << std::endl);
-	}
+		FatalError("ERROR: Tried to allocate input storage twice.\n");
 
 	std::map<std::vector<index_set_h>, std::vector<entity_handle>> TransposedInputDependencies;
 	
@@ -758,14 +717,10 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to allocate result storage before all index sets were filled." << std::endl);
-	}
+		FatalError("ERROR: Tried to allocate result storage before all index sets were filled.\n");
 	
 	if(DataSet->ResultData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to allocate result storage twice." << std::endl);
-	}
+		FatalError("ERROR: Tried to allocate result storage twice.\n");
 	
 	//NOTE: We set up a storage structure for results that mirrors the equation batch group structure. This simplifies things a lot in other code.
 	
@@ -812,13 +767,9 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName)
 	auto &IndexMap = DataSet->IndexNamesToHandle[IndexSet.Handle];
 	auto Find = IndexMap.find(IndexName);
 	if(Find != IndexMap.end())
-	{
 		return {IndexSet, Find->second};
-	}
 	else
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried the index name " << IndexName << " with the index set " << GetName(DataSet->Model, IndexSet) << ", but that index set does not contain that index." << std::endl);
-	}
+		FatalError("ERROR: Tried the index name \"", IndexName, "\" with the index set \"", GetName(DataSet->Model, IndexSet), "\", but that index set does not contain that index.\n");
 	return {IndexSet, 0};
 }
 
@@ -833,9 +784,8 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName,
 		return {IndexSet, Find->second};
 	}
 	else
-	{
 		Success = false;
-	}
+
 	return {IndexSet, 0};
 }
 
@@ -843,21 +793,16 @@ static void
 SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_value Value, parameter_type Type)
 {
 	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set a parameter value before all index sets have been filled with indexes" << std::endl);
-	}
+		FatalError("ERROR: Tried to set a parameter value before all index sets have been filled with indexes.\n");
+
 	if(DataSet->ParameterData == 0)
-	{
 		AllocateParameterStorage(DataSet);
-	}
 	
 	const mobius_model *Model = DataSet->Model;
 	entity_handle ParameterHandle = GetParameterHandle(Model, Name);
 	
 	if(Model->Parameters.Specs[ParameterHandle].Type != Type)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to set the value of the parameter " << Name << " with a value that was of the wrong type." << std::endl);
-	}
+		FatalError("ERROR: Tried to set the value of the parameter \"", Name, "\" with a value that was of the wrong type.\n");
 	
 	//TODO: Check that the value is in the Min-Max range. (issue warning only)
 	
@@ -865,16 +810,12 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	array<index_set_h> &IndexSetDependencies = DataSet->ParameterStorageStructure.Units[StorageUnitIndex].IndexSets;
 	
 	if(IndexCount != IndexSetDependencies.Count)
-	{
-		MOBIUS_FATAL_ERROR("ERROR; Tried to set the value of the parameter " << Name << ", but an incorrect number of indexes were provided. Got " << IndexCount << ", expected " << IndexSetDependencies.Count << std::endl);
-	}
+		FatalError("ERROR; Tried to set the value of the parameter \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", IndexSetDependencies.Count, ".\n");
 
 	//TODO: This crashes if somebody have more than 256 index sets for a parameter, but that is highly unlikely. Still, this is not clean code...
 	index_t IndexValues[256];
 	for(size_t Level = 0; Level < IndexCount; ++Level)
-	{
 		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
-	}
 	
 	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, ParameterHandle);
 	DataSet->ParameterData[Offset] = Value;
@@ -912,9 +853,7 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<
 	Val.ValTime = datetime(TimeValue, &ParseSuccess);
 	
 	if(!ParseSuccess)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Unrecognized date format when setting the value of the parameter " << Name << std::endl);
-	}
+		FatalError("ERROR: Unrecognized date format when setting the value of the parameter \"", Name, "\".\n");
 	
 	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Val, ParameterType_Time);
 }
@@ -923,32 +862,24 @@ static parameter_value
 GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_type Type)
 {
 	if(DataSet->ParameterData == 0)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to get a parameter value before parameter storage was allocated." << std::endl);
-	}
+		FatalError("ERROR: Tried to get a parameter value before parameter storage was allocated.\n");
 	
 	const mobius_model *Model = DataSet->Model;
 	entity_handle ParameterHandle = GetParameterHandle(Model, Name);
 	
 	if(Model->Parameters.Specs[ParameterHandle].Type != Type)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to get the value of the parameter " << Name << " specifying the wrong value type." << std::endl);
-	}
+		FatalError("ERROR: Tried to get the value of the parameter \"", Name, "\" specifying the wrong value type.\n");
 	
 	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
 	array<index_set_h> &IndexSetDependencies = DataSet->ParameterStorageStructure.Units[StorageUnitIndex].IndexSets;
 	
 	if(IndexCount != IndexSetDependencies.Count)
-	{
-		MOBIUS_FATAL_ERROR("ERROR; Tried to get the value of the parameter " << Name << ", but an incorrect number of indexes were provided. Got " << IndexCount << ", expected " << IndexSetDependencies.Count << std::endl);
-	}
+		FatalError("ERROR; Tried to get the value of the parameter \"", Name, "\", but an incorrect number of indexes were provided. Got ",  IndexCount, ", expected ", IndexSetDependencies.Count, ".\n");
 
 	//TODO: This crashes if somebody have more than 256 index sets for a parameter, but that is highly unlikely. Still, this is not clean code...
 	index_t IndexValues[256];
 	for(size_t Level = 0; Level < IndexCount; ++Level)
-	{
 		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
-	}
 	
 	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, ParameterHandle);
 	return DataSet->ParameterData[Offset];
@@ -1031,9 +962,7 @@ static void
 SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount, const double *InputSeries, size_t InputSeriesSize, bool AlignWithResults = false)
 {
 	if(!DataSet->InputData)
-	{
 		AllocateInputStorage(DataSet, InputSeriesSize);
-	}
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -1043,14 +972,11 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
 	
 	if(IndexCount != IndexSets.Count)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Got the wrong amount of indexes when setting the input series for " << GetName(Model, Input) << ". Got " << IndexCount << ", expected " << IndexSets.Count << std::endl);
-	}
+		FatalError("ERROR: Got the wrong amount of indexes when setting the input series for \"", GetName(Model, Input), "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+	
 	index_t Indexes[256];
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-	{
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-	}
 	
 	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
 	double *At = DataSet->InputData + Offset;
@@ -1065,20 +991,14 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	}
 	
 	if(InputSeriesSize + TimestepOffset > DataSet->InputDataTimesteps)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: When setting input series for " << Name << ", the lenght of the timeseries was longer than what was allocated space for in the dataset." << std::endl);
-	}
+		FatalError("ERROR: When setting input series for \"", Name, "\", the lenght of the time series was longer than what was allocated space for in the dataset.\n");
 	
 	for(size_t Idx = 0; Idx < DataSet->InputDataTimesteps; ++Idx)
 	{
 		if(Idx >= TimestepOffset && Idx <= InputSeriesSize + TimestepOffset)
-		{
 			*At = InputSeries[Idx - TimestepOffset];
-		}
 		else
-		{
 			*At = std::numeric_limits<double>::quiet_NaN();
-		}
 		At += DataSet->InputStorageStructure.TotalCount;
 	}
 	
@@ -1100,9 +1020,7 @@ static void
 GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* IndexNames, size_t IndexCount, double *WriteTo, size_t WriteSize)
 {	
 	if(!DataSet->HasBeenRun || !DataSet->ResultData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to extract result series before the model was run at least once.")
-	}
+		FatalError("ERROR: Tried to extract result series before the model was run at least once.\n");
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -1113,22 +1031,18 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 	
 	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	if(Spec.Type == EquationType_InitialValue)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Can not get the result series of the equation " << Name << ", because it is an initial value equation." << std::endl);
-	}
+		FatalError("ERROR: Can not get the result series of the equation \"", Name, "\", because it is an initial value equation.\n");
+	
 	
 	size_t StorageUnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
 	array<index_set_h> &IndexSets = DataSet->ResultStorageStructure.Units[StorageUnitIndex].IndexSets;
 
 	if(IndexCount != IndexSets.Count)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Got the wrong amount of indexes when getting the result series for " << Name << ". Got " << IndexCount << ", expected " << IndexSets.Count << std::endl);
-	}
+		FatalError("ERROR: Got the wrong amount of indexes when getting the result series for \"", Name, "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+	
 	index_t Indexes[256];
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-	{
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-	}
 
 	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Equation.Handle);
 	double *Lookup = DataSet->ResultData + Offset;
@@ -1150,9 +1064,7 @@ static void
 GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount, double *WriteTo, size_t WriteSize, bool AlignWithResults = false)
 {	
 	if(!DataSet->InputData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to extract input series before input data was allocated." << std::endl);
-	}
+		FatalError("ERROR: Tried to extract input series before input data was allocated.\n");
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -1162,14 +1074,11 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
 
 	if(IndexCount != IndexSets.Count)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Got the wrong amount of indexes when getting the input series for " << GetName(Model, Input) << ". Got " << IndexCount << ", expected " << IndexSets.Count << std::endl);
-	}
+		FatalError("ERROR: Got the wrong amount of indexes when getting the input series for \"", Name, "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+
 	index_t Indexes[256];
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-	{
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-	}
 
 	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
 	double *Lookup = DataSet->InputData + Offset;
@@ -1205,9 +1114,7 @@ static bool
 InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount)
 {
 	if(!DataSet->InputData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to see if an input series was provided before input data was even allocated." << std::endl);
-	}
+		FatalError("ERROR: Tried to see if an input series was provided before input data was even allocated.\n");
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -1217,14 +1124,12 @@ InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const char * 
 	array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
 
 	if(IndexCount != IndexSets.Count)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Got the wrong amount of indexes when checking the input series for " << GetName(Model, Input) << ". Got " << IndexCount << ", expected " << IndexSets.Count << std::endl);
-	}
+		FatalError("ERROR: Got the wrong amount of indexes when checking the input series for \"", Name, "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+	
 	index_t Indexes[256];
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-	{
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-	}
+	
 	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
 	
 	return DataSet->InputTimeseriesWasProvided[Offset];

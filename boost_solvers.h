@@ -72,7 +72,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 	catch(...)
 	{
 		//TODO: Better handling to get a proper description of the error?
-		MOBIUS_FATAL_ERROR("ERROR: An error occurred in the Rosenbrock4 solver.\n");
+		FatalError("ERROR: An error occurred in the Rosenbrock4 solver.\n");
 	}
 	//std::cout << "N steps : " << NSteps << std::endl;
 	

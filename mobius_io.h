@@ -12,24 +12,22 @@ DlmWriteResultSeriesToFile(mobius_data_set *DataSet, const char *Filename, std::
 		GetResultSeries(DataSet, ResultNames[Idx], Indexes[Idx], ResultSeries[Idx], WriteSize);
 	}
 	
-	FILE *file = fopen(Filename, "w");
-	if(!file)
-	{	
-		MOBIUS_FATAL_ERROR("Tried to open file " << Filename << ", but were not able to." << std::endl);
-	}
+	FILE *File = fopen(Filename, "w");
+	if(!File)
+		FatalError("Tried to open file \"", Filename, "\", but was not able to.\n");
 	else
 	{
 		for(size_t Timestep = 0; Timestep < WriteSize; ++Timestep)
 		{
 			for(size_t Idx = 0; Idx < NumSeries; ++Idx)
 			{
-				fprintf(file, "%f", ResultSeries[Idx][Timestep]);
-				if(Idx < NumSeries-1) fprintf(file, "%c", Delimiter);
+				fprintf(File, "%f", ResultSeries[Idx][Timestep]);
+				if(Idx < NumSeries-1) fprintf(File, "%c", Delimiter);
 			}
 			
-			fprintf(file, "\n");
+			fprintf(File, "\n");
 		}
-		fclose(file);
+		fclose(File);
 	}
 	
 	for(size_t Idx = 0; Idx < NumSeries; ++Idx) free(ResultSeries[Idx]);
@@ -99,9 +97,7 @@ static void
 WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 {
 	if(!DataSet->ParameterData)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to write parameters to a file before parameter data was allocated." << std::endl);
-	}
+		FatalError("ERROR: Tried to write parameters to a file before parameter data was allocated.\n");
 	
 	FILE *File;
 #ifdef _WIN32
@@ -112,10 +108,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 #endif
 
 	if(!File)
-	{	
-		MOBIUS_PARTIAL_ERROR("Tried to open file " << Filename << ", but were not able to." << std::endl);
-		return;
-	}
+		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\"");
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -332,7 +325,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 		else
 		{
 			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Parameter file parser does not recognize section type: " << Section << std::endl);
+			FatalError("Parameter file parser does not recognize section type: ", Section, ".\n");
 		}
 		
 		if(Mode == 0)
@@ -348,7 +341,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				if(!Found)
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("The index set \"" << IndexSetName << "\" was not registered with the model.\n")
+					FatalError("The index set \"", IndexSetName, "\" was not registered with the model.\n");
 				}
 				Stream.ExpectToken(TokenType_Colon);
 				if(Model->IndexSets.Specs[IndexSet.Handle].Type == IndexSetType_Basic)
@@ -370,18 +363,14 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 							if(Indexes.empty())
 							{
 								Stream.PrintErrorHeader();
-								MOBIUS_FATAL_ERROR("Expected one or more indexes for index set " << IndexSetName << std::endl);
+								FatalError("Expected one or more indexes for index set ", IndexSetName, ".\n");
 							}
 							else
-							{
 								SetBranchIndexes(DataSet, IndexSetName, Indexes);
-							}
 							break;
 						}				
 						else if(Token.Type == TokenType_QuotedString)
-						{
 							Indexes.push_back({Token.StringValue, {}});
-						}
 						else if(Token.Type == TokenType_OpenBrace)
 						{
 							token_string IndexName;
@@ -394,7 +383,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 									if(!IndexName.Data || Inputs.empty())
 									{
 										Stream.PrintErrorHeader();
-										MOBIUS_FATAL_ERROR("No inputs in the braced list for one of the indexes of index set " << IndexSetName << std::endl);
+										FatalError("No inputs in the braced list for one of the indexes of index set \"", IndexSetName, "\".\n");
 									}
 									break;
 								}
@@ -406,7 +395,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 								else
 								{
 									Stream.PrintErrorHeader();
-									MOBIUS_FATAL_ERROR("Expected either the quoted name of an index or a }" << std::endl);
+									FatalError("Expected either the quoted name of an index or a }.\n");
 								}
 							}
 							Indexes.push_back({IndexName, Inputs});
@@ -414,7 +403,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 						else
 						{
 							Stream.PrintErrorHeader();
-							MOBIUS_FATAL_ERROR("Expected either the quoted name of an index or a }" << std::endl);
+							FatalError("Expected either the quoted name of an index or a }.\n");
 						}
 					}
 				}
@@ -423,9 +412,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 		else if(Mode == 1)
 		{
 			if(!DataSet->ParameterData) //TODO: This is probably not necessary anymore..
-			{
 				AllocateParameterStorage(DataSet);
-			}
 			
 			while(true)
 			{
@@ -442,7 +429,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				if(!Found)
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("The parameter \"" << ParameterName << "\" was not registered with the model.\n");
+					FatalError("The parameter \"", ParameterName, "\" was not registered with the model.\n");
 				}
 				
 				const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
@@ -450,16 +437,14 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				if(Spec.ShouldNotBeExposed)
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("The parameter \"" << ParameterName << "\" is computed by the model, and should not be provided in a parameter file." << std::endl);
+					FatalError("The parameter \"", ParameterName, "\" is computed by the model, and should not be provided in a parameter file.\n");
 				}
 				
 				parameter_type Type = Spec.Type;
 				size_t ExpectedCount = 1;
 				size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
 				for(index_set_h IndexSet : DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets)
-				{
 					ExpectedCount *= DataSet->IndexCounts[IndexSet.Handle];
-				}
 
 				std::vector<parameter_value> Values;
 				Values.reserve(ExpectedCount);
@@ -467,7 +452,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				if(Values.size() != ExpectedCount)                                                                   
 				{                                                                                                    
 					Stream.PrintErrorHeader();                                                                       
-					MOBIUS_FATAL_ERROR("Did not get the expected number of values for parameter \"" << ParameterName << "\". Got " << Values.size() << ", expected " << ExpectedCount << std::endl); 
+					FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
 				}                                                                                                    
 				SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
 			}
@@ -567,13 +552,13 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			else
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("Unexpected command word " << Token.StringValue);
+				FatalError("Unexpected command word ", Token.StringValue, ".\n");
 			}
 		}
 		else if(Token.Type != TokenType_QuotedString)
 		{
 			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Expected the quoted name of an input or an include_file directive" << std::endl);
+			FatalError("Expected the quoted name of an input or an include_file directive.\n");
 		}
 		
 		token_string InputName = Token.StringValue;
@@ -583,7 +568,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		if(!Found)
 		{
 			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("The input \"" << InputName << "\" was not registered with the model.\n");
+			FatalError("The input \"", InputName, "\" was not registered with the model.\n");
 		}
 		
 		std::vector<size_t> Offsets;
@@ -603,7 +588,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				if(IndexNames.size() != IndexSets.size())
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input \"" << InputName << "\". Got " << IndexNames.size() << ", expected " << IndexSets.size() << ".\n");
+					FatalError("Did not get the right amount of indexes for input \"", InputName, "\". Got ", IndexNames.size(), ", expected ", IndexSets.size(), ".\n");
 				}
 				index_t Indexes[256]; //This could cause a buffer overflow, but will not do so in practice.
 				for(size_t IdxIdx = 0; IdxIdx < IndexNames.size(); ++IdxIdx)
@@ -613,7 +598,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					if(!Found)
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("The index \"" << IndexNames[IdxIdx] << "\" was not registered with the index set \"" << GetName(Model, IndexSets[IdxIdx]) << "\"\n");
+						FatalError("The index \"", IndexNames[IdxIdx], "\" was not registered with the index set \"", GetName(Model, IndexSets[IdxIdx]), "\".\n");
 					}
 				}
 				
@@ -622,9 +607,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				Offsets.push_back(Offset);
 			}
 			else
-			{
 				break;
-			}
 		}
 		
 		if(Offsets.empty())
@@ -632,7 +615,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			if(IndexSets.size() > 0)
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("Did not get the right amount of indexes for input \"" << InputName << "\". Got 0, expected " << IndexSets.size() << ".\n");
+				FatalError("Did not get the right amount of indexes for input \"", InputName, "\". Got 0, expected ", IndexSets.size(), ".\n");
 			}
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input.Handle);
 			Offsets.push_back(Offset);
@@ -656,7 +639,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			else
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("unexpected command word " << Token.StringValue << std::endl);
+				FatalError("unexpected command word ", Token.StringValue, ".\n");
 			}
 			Token = Stream.PeekToken();
 		}
@@ -664,9 +647,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		Stream.ExpectToken(TokenType_Colon);
 		
 		for(size_t Offset : Offsets)
-		{
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
-		}
 		
 		
 		//NOTE: This reads the actual data after the header.
@@ -678,17 +659,13 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		u64 Timesteps = DataSet->InputDataTimesteps;
 		
 		if(Token.Type == TokenType_Numeric)
-		{
 			FormatType = 0;
-		}
 		else if(Token.Type == TokenType_Date)
-		{
 			FormatType = 1;
-		}
 		else
 		{
 			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Inputs are to be provided either as a series of numbers or a series of dates together with numbers" << std::endl);
+			FatalError("Inputs are to be provided either as a series of numbers or a series of dates (or date ranges) together with numbers.\n");
 		}
 		
 		if(Model->Inputs.Specs[Input.Handle].IsAdditional)
@@ -713,14 +690,13 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					if(Token.Type != TokenType_Numeric)
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Only got " << Timestep << " values for series. Expected " << Timesteps << std::endl);
+						FatalError("Only got ", Timestep, " values for series. Expected ", Timesteps, ".\n");
 					}
 					double Value = Token.DoubleValue;
 					
 					for(size_t Offset : Offsets)
 					{
 						double *WriteTo = DataSet->InputData + Offset + Timestep*DataSet->InputStorageStructure.TotalCount;
-						
 						*WriteTo = Value;
 					}
 				}
@@ -741,13 +717,11 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						CurTimestep = FindTimestep(StartDate, Date, Model->TimestepSize);
 					}
 					else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
-					{
 						break;
-					}
 					else
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Expected either a date or the beginning of a new input series." << std::endl);
+						FatalError("Expected either a date or the beginning of a new input series.\n");
 					}
 					
 					Token = Stream.PeekToken();
@@ -757,7 +731,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						if(!Token.StringValue.Equals("to"))
 						{
 							Stream.PrintErrorHeader();
-							MOBIUS_FATAL_ERROR("Expected a token saying 'to'.");
+							FatalError("Expected either a 'to' or a number.");
 						}
 						datetime EndDateRange = Stream.ExpectDateTime();
 						s64 EndTimestepRange = FindTimestep(StartDate, EndDateRange, Model->TimestepSize);
@@ -766,7 +740,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						if(EndTimestepRange < CurTimestep)
 						{
 							Stream.PrintErrorHeader();
-							MOBIUS_FATAL_ERROR("The end of the date range is earlier than the beginning.");
+							FatalError("The end of the date range is earlier than the beginning.\n");
 						}
 						
 						double Value = Stream.ExpectDouble();
@@ -792,7 +766,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					else
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Expected either a 'to' or a number.");
+						FatalError("Expected either a 'to' or a number.");
 					}
 				}
 			}
@@ -802,7 +776,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			if(FormatType != 1)
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("when linear interpolation is specified, the input format has to be: date (time) value\n");
+				FatalError("when linear interpolation is specified, the input format has to be: date (time) value.\n");
 			}
 			
 			datetime PrevDate = DataSet->InputDataStartDate;
@@ -815,9 +789,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				
 				token Token = Stream.PeekToken();
 				if(Token.Type == TokenType_Date)
-				{
 					CurDate = Stream.ExpectDateTime();
-				}
 				else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
 				{
 					//NOTE: Fill the rest of the time series with the last value read
@@ -833,7 +805,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				else
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("Expected either a date or the beginning of a new input series.\n");
+					FatalError("Expected either a date or the beginning of a new input series.\n");
 				}
 				
 				double Value = Stream.ExpectDouble();
@@ -853,7 +825,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				if(CurDate < PrevDate)
 				{
 					Stream.PrintErrorHeader();
-					MOBIUS_FATAL_ERROR("in linear interpolation mode, the dates have to be sequential.\n");
+					FatalError("in linear interpolation mode, the dates have to be sequential.\n");
 				}
 
 				for(size_t Offset : Offsets)
@@ -879,7 +851,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			if(ModelStep.Unit == Timestep_Month && (ModelStep.Magnitude >= 12  || 12 % ModelStep.Magnitude != 0))
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
+				FatalError("yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
 			}
 			
 			datetime BeginDate = DataSet->InputDataStartDate;
@@ -940,7 +912,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 		if(Token.Type == TokenType_EOF)
 		{
 			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Expected one of the code words timesteps, start_date, inputs, additional_timeseries or index_set_dependencies" << std::endl);
+			FatalError("Expected one of the code words timesteps, start_date, inputs, additional_timeseries or index_set_dependencies.\n");
 		}
 		
 		token_string Section = Stream.ExpectUnquotedString();
@@ -962,7 +934,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 			if(!DataSet->InputDataHasSeparateStartDate)
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("The start date has to be provided before the end date");
+				FatalError("The start date has to be provided before the end date.\n");
 			}
 			Stream.ExpectToken(TokenType_Colon);
 			datetime EndDate = Stream.ExpectDateTime();
@@ -971,7 +943,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 			if(Step <= 0)
 			{
 				Stream.PrintErrorHeader();
-				MOBIUS_FATAL_ERROR("The input data end date was set to be earlier than the input data start date.\n");
+				FatalError("The input data end date was set to be earlier than the input data start date.\n");
 			}
 			Timesteps = (u64)Step;
 		}
@@ -993,20 +965,17 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 		else
 		{
 			Stream.PrintErrorHeader();
-			MOBIUS_FATAL_ERROR("Input file parser does not recognize section type: " << Section << "." << std::endl);
+			FatalError("Input file parser does not recognize section type: ", Section, ".\n");
 		}
 	}
 	
 	if(Timesteps == 0)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Timesteps in the input file " << Filename << " is either not provided or set to 0." << std::endl);
-	}
+		FatalError("ERROR: Timesteps in the input file ", Filename, " is either not provided or set to 0.\n");
+	
 	AllocateInputStorage(DataSet, Timesteps);
 	
 	if(!DataSet->InputDataHasSeparateStartDate)
-	{
 		DataSet->InputDataStartDate = GetStartDate(DataSet); //NOTE: This reads the "Start date" parameter.
-	}
 	
 	ReadInputSeries(DataSet, Stream);
 }
@@ -1040,14 +1009,14 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 					if(!Found)
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("The input \"" << InputName << "\" was not registered with the model.\n");
+						FatalError("The input \"", InputName, "\" was not registered with the model.\n");
 					}
 					
 					std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
 					if(!IndexSets.empty()) //TODO: OR we could just clear it and give a warning..
 					{
 						Stream.PrintErrorHeader();
-						MOBIUS_FATAL_ERROR("Tried to set index set dependencies for the input " << InputName << " for a second time." << std::endl);
+						FatalError("Tried to set index set dependencies for the input ", InputName, " for a second time.\n");
 					}
 					Stream.ExpectToken(TokenType_Colon);
 					
@@ -1061,7 +1030,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 						if(!Found)
 						{
 							Stream.PrintErrorHeader();
-							MOBIUS_FATAL_ERROR("The index set \"" << IndexSetName << "\" was not registered with the model.\n");
+							FatalError("The index set \"", IndexSetName, "\" was not registered with the model.\n");
 						}
 						IndexSets.push_back(IndexSetHandle);
 					}

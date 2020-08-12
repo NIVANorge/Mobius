@@ -58,20 +58,38 @@ typedef int8_t  s8;
 
 
 //NOTE: We allow the error handling to be replaced by the application. This is for instance useful for the python wrapper.
-#if !defined(MOBIUS_PARTIAL_ERROR)
-	#define MOBIUS_PARTIAL_ERROR(Msg) \
-		std::cerr << Msg;
+#if !defined(MOBIUS_ERROR_OVERRIDE)
+void
+ErrorPrint() {}
+
+template<typename t, typename... v>
+void
+ErrorPrint(t Value, v... Tail)
+{
+	std::cerr << Value;
+	ErrorPrint(Tail...);
+}
+
+template<typename... v>
+FatalError(v... Tail)
+{
+	ErrorPrint(Tail...);
+	exit(1);
+}	
+
+void
+WarningPrint() {}
+
+template<typename t, typename... v>
+void
+WarningPrint(t Value, v... Tail)
+{
+	std::cout << Value;
+	WarningPrint(Tail...);
+}
 #endif
 
-#if !defined(MOBIUS_FATAL_ERROR)	
-	#define MOBIUS_FATAL_ERROR(Msg) \
-	{MOBIUS_PARTIAL_ERROR(Msg) \
-	exit(1);}
-#endif
 
-#if !defined(MOBIUS_WARNING)
-	#define MOBIUS_WARNING(Msg) std::cout << Msg;
-#endif
 
 #include "mobius_math.h"
 #include "mobius_util.h"

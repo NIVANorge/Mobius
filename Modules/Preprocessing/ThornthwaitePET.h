@@ -77,9 +77,8 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 	
 	Date.YearMonthDay(&Year, &Month, &Day);
 	if(Month != 1 && Day != 1)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: To use the Thornthwaite PET module, the input data has to start at Jan. 1st." << std::endl);
-	}
+		FatalError("ERROR: To use the Thornthwaite PET module, the input data has to start at Jan. 1st.\n");
+	
 	s32 StartYear = Year;
 	
 	datetime Date2 = Date;
@@ -87,9 +86,8 @@ ComputeThornthwaitePET(mobius_data_set *DataSet)
 	Date2.YearMonthDay(&Year, &Month, &Day);
 	
 	if(Month != 12 || Day != 31)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: To use the Thornthwaite PET module, the input data has to end at Dec. 31st. It ends on " << Year << "-" << Month << "-" << Day << std::endl);
-	}
+		FatalError("ERROR: To use the Thornthwaite PET module, the input data has to end at Dec. 31st. It ends on ", Year, "-", Month, "-", Day, ".\n");
+	
 	s32 EndYear = Year;
 	
 	ForeachInputInstance(DataSet, "Potential evapotranspiration",

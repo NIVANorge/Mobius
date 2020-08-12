@@ -262,13 +262,9 @@ ParseTimestepSize(const char *Format)
 	char Type;
 	int Found = sscanf(Format, "%d%c", &Result.Magnitude, &Type);
 	if(Found != 2 || Result.Magnitude <= 0)
-	{
-		MOBIUS_FATAL_ERROR("The size of the timestep must be declared on the format \"nx\", where n is a positive whole number, and x is one of 's', 'm', 'h', 'D', 'M', or 'Y'.\n");
-	}
+		FatalError("The size of the timestep must be declared on the format \"nx\", where n is a positive whole number, and x is one of 's', 'm', 'h', 'D', 'M', or 'Y'.\n");
 	if(Type == 's')
-	{
 		Result.Unit = Timestep_Second;
-	}
 	else if(Type == 'm')
 	{
 		Result.Unit = Timestep_Second;
@@ -285,18 +281,14 @@ ParseTimestepSize(const char *Format)
 		Result.Magnitude *= 86400;
 	}
 	else if(Type == 'M')
-	{
 		Result.Unit = Timestep_Month;
-	}
 	else if(Type == 'Y')
 	{
 		Result.Unit = Timestep_Month;
 		Result.Magnitude *= 12;
 	}
 	else
-	{
-		MOBIUS_FATAL_ERROR("The size of the timestep must be declared on the format \"nx\", where n is a positive whole number, and x is one of 's', 'm', 'h', 'D', 'M', or 'Y'.\n");
-	}
+		FatalError("The size of the timestep must be declared on the format \"nx\", where n is a positive whole number, and x is one of 's', 'm', 'h', 'D', 'M', or 'Y'.\n");
 	
 	return Result;
 }

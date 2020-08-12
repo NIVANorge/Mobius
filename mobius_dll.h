@@ -7,17 +7,38 @@ std::stringstream Dll_GlobalErrstream;
 static int Dll_GlobalWarningCode = 0;
 std::stringstream Dll_GlobalWarningStream;
 
-#define MOBIUS_PARTIAL_ERROR(Msg) \
-	{Dll_GlobalErrstream << Msg; \
-	Dll_GlobalErrorCode = 1;}
-	
-#define MOBIUS_FATAL_ERROR(Msg) \
-	{MOBIUS_PARTIAL_ERROR(Msg) \
-	throw 1;}
+void
+ErrorPrint() {}
 
-#define MOBIUS_WARNING(Msg) \
-	{Dll_GlobalWarningStream << Msg; \
-	Dll_GlobalWarningCode = 1;}
+template<typename t, typename... v>
+void
+ErrorPrint(t Value, v... Tail)
+{
+	Dll_GlobalErrorCode = 1;
+	Dll_GlobalErrstream << Value;
+	ErrorPrint(Tail...);
+}
+
+template<typename... v>
+FatalError(v... Tail)
+{
+	ErrorPrint(Tail...);
+	throw 1;
+}	
+
+void
+WarningPrint() {}
+
+template<typename t, typename... v>
+void
+WarningPrint(t Value, v... Tail)
+{
+	Dll_GlobalWarningCode = 1;
+	Dll_GlobalWarningStream << Value;
+	WarningPrint(Tail...);
+}
+
+#define MOBIUS_ERROR_OVERRIDE	
 
 #include "mobius.h"
 
@@ -383,9 +404,8 @@ DllSetParameterTime(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	bool ParseSuccess;
 	Value.ValTime = datetime(Val, &ParseSuccess);
 	if(!ParseSuccess)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Unrecognized date/time format \"" << Val << "\" provided for the value of the parameter " << Name << std::endl)
-	}
+		FatalError("ERROR: Unrecognized date/time format \"", Val, "\" provided for the value of the parameter ", Name, '\n');
+
 	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_Time);
 	
 	CHECK_ERROR_END
@@ -450,9 +470,8 @@ DllGetParameterDoubleMinMax(void *DataSetPtr, char *Name, double *MinOut, double
 	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
 	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
 	if(Spec.Type != ParameterType_Double)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Requested the min and max values of " << Name << " using DllGetParameterDoubleMinMax, but it is not of type double." << std::endl);
-	}
+		FatalError("ERROR: Requested the min and max values of ", Name, " using DllGetParameterDoubleMinMax, but it is not of type double.\n");
+	
 	*MinOut = Spec.Min.ValDouble;
 	*MaxOut = Spec.Max.ValDouble;
 	
@@ -468,9 +487,8 @@ DllGetParameterUIntMinMax(void *DataSetPtr, char *Name, u64 *MinOut, u64 *MaxOut
 	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
 	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
 	if(Spec.Type != ParameterType_UInt)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Requested the min and max values of " << Name << " using DllGetParameterUIntMinMax, but it is not of type uint." << std::endl);
-	}
+		FatalError("ERROR: Requested the min and max values of ", Name, " using DllGetParameterUIntMinMax, but it is not of type uint.\n");
+
 	*MinOut = Spec.Min.ValUInt;
 	*MaxOut = Spec.Max.ValUInt;
 	
@@ -1069,9 +1087,7 @@ DllGetBranchInputsCount(void *DataSetPtr, const char *IndexSetName, const char *
 	const index_set_spec &Spec = DataSet->Model->IndexSets.Specs[IndexSet.Handle];
 	
 	if(Spec.Type != IndexSetType_Branched)
-	{
-		MOBIUS_FATAL_ERROR("ERROR: Tried to read branch inputs from the index set " << IndexSetName << ", but that is not a branched index set." << std::endl);
-	}
+		FatalError("ERROR: Tried to read branch inputs from the index set ", IndexSetName, ", but that is not a branched index set.\n");
 	
 	index_t Index = GetIndex(DataSet, IndexSet, IndexName);
 	
