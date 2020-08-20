@@ -88,18 +88,13 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilWaterDOCMass             = RegisterEquationODE(Model, "Soil water DOC mass", KgPerKm2, LandSolver);
 	SetInitialValue(Model, SoilWaterDOCMass, InitialSoilWaterDOCMass);
 
-	auto SoilWaterDOCConcentration = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL);
-	SetSolver(Model, SoilWaterDOCConcentration, LandSolver);
+	auto SoilWaterDOCConcentration = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL, LandSolver);
+	auto QuickFlowCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerKm2PerDay, LandSolver);
 	
-	auto QuickFlowCarbonFluxToReach = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerKm2PerDay);
-	SetSolver(Model, QuickFlowCarbonFluxToReach, LandSolver);
+	auto SoilWaterCarbonFlux = RegisterEquation(Model, "Soil water carbon flux", KgPerKm2PerDay, LandSolver);
 	
-	auto SoilWaterCarbonFlux = RegisterEquation(Model, "Soil water carbon flux", KgPerKm2PerDay);
-	SetSolver(Model, SoilWaterCarbonFlux, LandSolver);
-	
-	auto DailyMeanSoilwaterCarbonFluxToReach = RegisterEquationODE(Model, "Soil water carbon flux to reach, daily mean", KgPerKm2PerDay);
+	auto DailyMeanSoilwaterCarbonFluxToReach = RegisterEquationODE(Model, "Soil water carbon flux to reach, daily mean", KgPerKm2PerDay, LandSolver);
 	SetInitialValue(Model, DailyMeanSoilwaterCarbonFluxToReach, 0.0);	
-	SetSolver(Model, DailyMeanSoilwaterCarbonFluxToReach, LandSolver);
 	ResetEveryTimestep(Model, DailyMeanSoilwaterCarbonFluxToReach);
 	
 	
@@ -158,16 +153,15 @@ AddSimplyCModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, SoilWaterCarbonFlux,
-		return
-			RESULT(SoilWaterDOCConcentration)
-#ifdef SIMPLYQ_GROUNDWATER
-			* (1.0-PARAMETER(BaseflowIndex))
-#endif
-			* RESULT(SoilWaterFlow);
+		return RESULT(SoilWaterDOCConcentration) * RESULT(SoilWaterFlow);
 	)
 	
 	EQUATION(Model, DailyMeanSoilwaterCarbonFluxToReach,
-		return RESULT(SoilWaterCarbonFlux);
+		return RESULT(SoilWaterCarbonFlux)
+#ifdef SIMPLYQ_GROUNDWATER
+			* (1.0-PARAMETER(BaseflowIndex))
+#endif
+		;
 	)
 	
 	// Instream equations
@@ -177,28 +171,24 @@ AddSimplyCModel(mobius_model *Model)
 	auto TotalQuickFlowCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", QuickFlowCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 
 #ifdef SIMPLYQ_GROUNDWATER	
-	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerDay);
-	SetSolver(Model, GroundwaterFluxToReach, ReachSolver);
+	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerKm2PerDay, ReachSolver);
 #endif
 	
 	//To do: work initial condition out from baseline DOC parameter
-	auto StreamDOCMass = RegisterEquationODE(Model, "Reach DOC mass", Kg);
+	auto StreamDOCMass = RegisterEquationODE(Model, "Reach DOC mass", Kg, ReachSolver);
 	SetInitialValue(Model, StreamDOCMass, 0.02); 
-	SetSolver(Model, StreamDOCMass, ReachSolver);
 
-	auto StreamDOCFluxOut = RegisterEquation(Model, "DOC flux from reach, end-of-day", KgPerDay);
-	SetSolver(Model, StreamDOCFluxOut, ReachSolver);
+	auto StreamDOCFluxOut = RegisterEquation(Model, "DOC flux from reach, end-of-day", KgPerDay, ReachSolver);
 
-	auto DailyMeanStreamDOCFlux = RegisterEquationODE(Model, "DOC flux from reach, daily mean", KgPerDay);
+	auto DailyMeanStreamDOCFlux = RegisterEquationODE(Model, "DOC flux from reach, daily mean", KgPerDay, ReachSolver);
 	SetInitialValue(Model, DailyMeanStreamDOCFlux, 0.0);
-	SetSolver(Model, DailyMeanStreamDOCFlux, ReachSolver);
 	ResetEveryTimestep(Model, DailyMeanStreamDOCFlux);
 
 	auto ReachDOCConcentration = RegisterEquation(Model, "Reach DOC concentration (volume weighted daily mean)", MgPerL);
 
 #ifdef SIMPLYQ_GROUNDWATER
  	EQUATION(Model, GroundwaterFluxToReach,
-		return RESULT(GroundwaterFlow)*ConvertMgPerLToKgPerMm(PARAMETER(DeepSoilDOCConcentration), PARAMETER(CatchmentArea));
+		return RESULT(GroundwaterFlow)*PARAMETER(DeepSoilDOCConcentration);
 	)
 #endif
 	
@@ -211,7 +201,7 @@ AddSimplyCModel(mobius_model *Model)
 			(RESULT(TotalQuickFlowCarbonFlux)
 			+ RESULT(TotalSoilwaterCarbonFluxToReach)) * PARAMETER(CatchmentArea)
 #ifdef SIMPLYQ_GROUNDWATER
-			+ RESULT(GroundwaterFluxToReach)
+			+ RESULT(GroundwaterFluxToReach) * PARAMETER(CatchmentArea)
 #endif
 			+ upstreamflux
 			- RESULT(StreamDOCFluxOut);		
@@ -226,7 +216,7 @@ AddSimplyCModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, ReachDOCConcentration,
-		return 1000.0 * SafeDivide(RESULT(StreamDOCMass), RESULT(ReachVolume));
+		return 1e3 * SafeDivide(RESULT(DailyMeanStreamDOCFlux), 86400.0 * RESULT(DailyMeanReachFlow));
 	)
 	
 	EndModule(Model);
