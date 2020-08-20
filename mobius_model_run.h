@@ -1529,7 +1529,7 @@ RunModel(mobius_data_set *DataSet)
 	if(!DataSet->InputData)
 	{
 		AllocateInputStorage(DataSet, Timesteps);
-		std::cout << "WARNING: No input values were specified, using input values of 0 only." << std::endl;
+		WarningPrint("WARNING: No input values were specified, using input values of 0 only.\n");
 	}
 	
 	datetime InputStartDate = GetInputStartDate(DataSet);
