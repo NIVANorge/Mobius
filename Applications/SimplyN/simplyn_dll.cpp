@@ -18,7 +18,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyN");
+	mobius_model *Model = BeginModelDefinition("SimplyN", true);
 	
 	//AddMaxSolarRadiationModule(Model);
 	//AddPriestleyTaylorPETModule2(Model);
