@@ -146,7 +146,7 @@ def get_double_parameters_as_dataframe(dataset, use_model_short_names=True, inde
                 if len(par_index) > 0 :
                     short_name += '_' + '_'.join([(index_short_name[idx] if idx in index_short_name else idx) for idx in par_index])
             else:
-                short_name = 'placeholder'
+                short_name = ''
             
             # Add to results
             par_dict['name'].append(par)
@@ -231,7 +231,7 @@ def get_date_index(dataset) :
     """ Get a vector of datetimes that matches the time steps in the dataset.
 	"""
     start_date = dataset.get_parameter_time('Start date', [])
-    timesteps  = dataset.get_parameter_uint('Timesteps', [])
+    timesteps  = dataset.get_next_timesteps()
 	
     (type, magnitude) = dataset.get_timestep_size()
 	
@@ -565,7 +565,7 @@ def get_input_dataframe(dataset, list, alignwithresults=False) :
 
     if alignwithresults:
         start_date = dataset.get_parameter_time('Start date', [])
-        timesteps  = dataset.get_parameter_uint('Timesteps', [])
+        timesteps  = dataset.get_next_timesteps()
     else :
         start_date = dataset.get_input_start_date()
         timesteps  = dataset.get_input_timesteps()

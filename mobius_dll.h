@@ -263,6 +263,7 @@ DllDeleteModelAndDataSet(void *DataSetPtr)
 DLLEXPORT u64
 DllGetTimesteps(void *DataSetPtr)
 {
+	//This returns the amount of timesteps the last time the model was run.
 	CHECK_ERROR_BEGIN
 	
 	return ((mobius_data_set *)DataSetPtr)->TimestepsLastRun;
@@ -271,6 +272,21 @@ DllGetTimesteps(void *DataSetPtr)
 	
 	return 0;
 }
+
+
+DLLEXPORT u64
+DllGetNextTimesteps(void *DataSetPtr)
+{
+	//This returns the amount of timesteps set for the next run
+	CHECK_ERROR_BEGIN
+	
+	return GetTimesteps((mobius_data_set *)DataSetPtr);
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
 
 DLLEXPORT void
 DllGetStartDate(void *DataSetPtr, char *WriteTo)

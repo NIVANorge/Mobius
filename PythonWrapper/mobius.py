@@ -46,6 +46,9 @@ def initialize(dllname) :
 	mobiusdll.DllGetTimesteps.argtypes = [ctypes.c_void_p]
 	mobiusdll.DllGetTimesteps.restype = ctypes.c_uint64
 	
+	mobiusdll.DllGetNextTimesteps.argtypes = [ctypes.c_void_p]
+	mobiusdll.DllGetNextTimesteps.restype = ctypes.c_uint64
+	
 	mobiusdll.DllGetTimestepSize.argtypes = [ctypes.c_void_p]
 	mobiusdll.DllGetTimestepSize.restype  = TimestepSize
 
@@ -300,8 +303,7 @@ class DataSet :
 			A numpy.array containing the specified timeseries.
 		'''
 		if alignwithresults :
-			#timesteps = mobiusdll.DllGetTimesteps(self.datasetptr)
-			timesteps = self.get_parameter_uint('Timesteps', [])    #NOTE: DllGetTimesteps returns TimestepsLastRun, so can not be used unless model has been run!!
+			timesteps = mobiusdll.DllGetNextTimesteps(self.datasetptr)
 		else :
 			timesteps = mobiusdll.DllGetInputTimesteps(self.datasetptr)
 		check_dll_error()
@@ -510,6 +512,22 @@ class DataSet :
 		unit = mobiusdll.DllGetResultUnit(self.datasetptr, _CStr(name))
 		check_dll_error()
 		return unit.decode('utf-8')
+		
+	def get_next_timesteps(self):
+		'''
+		Get the number of timesteps the model is set to run for the next time
+		'''
+		timesteps = mobiusdll.DllGetNextTimesteps(self.datasetptr)
+		check_dll_error()
+		return timesteps
+		
+	def get_last_timesteps(self):
+		'''
+		Get the number of timesteps the model was run for the last time (returns 0 if the model was not run yet).
+		'''
+		timesteps = mobiusdll.DllGetTimesteps(self.datasetptr)
+		check_dll_error()
+		return timesteps
 		
 	def get_input_timesteps(self):
 		'''
