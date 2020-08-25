@@ -5,28 +5,38 @@
 // This implementation is slightly simpler than specified in the paper, removing processes describing infiltration and inundation from the river to land.
 
 
+// New to version 1.4 : Computation of reach flow based on the Mannning flow equations.
+
 
 #if !defined(PERSIST_MODEL_H)
 
 static void
 AddPersistModel(mobius_model *Model)
 {
-	BeginModule(Model, "PERSiST", "1.3");
+	BeginModule(Model, "PERSiST", "1.4");
 	
-	auto Mm                = RegisterUnit(Model, "mm");
-	auto MmPerDay          = RegisterUnit(Model, "mm/day");
-	auto DegreesCelsius    = RegisterUnit(Model, "°C");
-	auto MmPerDegreePerDay = RegisterUnit(Model, "mm/°C/day");
-	auto MmSWE             = RegisterUnit(Model, "mm SWE");
-	auto Dimensionless     = RegisterUnit(Model);
-	auto Days              = RegisterUnit(Model, "days");
-	
+	auto Mm                   = RegisterUnit(Model, "mm");
+	auto MmPerDay             = RegisterUnit(Model, "mm/day");
+	auto DegreesCelsius       = RegisterUnit(Model, "°C");
+	auto MmPerDegreePerDay    = RegisterUnit(Model, "mm/°C/day");
+	auto MmSWE                = RegisterUnit(Model, "mm SWE");
+	auto Dimensionless        = RegisterUnit(Model);
+	auto Days                 = RegisterUnit(Model, "days");
+	auto Meters               = RegisterUnit(Model, "m");
+	auto MetersSquared        = RegisterUnit(Model, "m2");
+	auto InverseMetersSquared = RegisterUnit(Model, "1/m2");
 	auto MetresCubedPerSecond = RegisterUnit(Model, "m3/s");
 	auto MetersCubed          = RegisterUnit(Model, "m3");
 	auto MetresPerSecond      = RegisterUnit(Model, "m/s");
-	
-	auto System = GetParameterGroupHandle(Model, "System");
-	
+	auto SecondsPerCubeRootM  = RegisterUnit(Model, "s/(m^1/3)");
+	auto SquareKm             = RegisterUnit(Model, "km2");
+	auto CubicMetersPerSecond = RegisterUnit(Model, "m3/s");
+	auto MilligramsPerLiter   = RegisterUnit(Model, "mg/l");
+
+
+	auto SolverPrecGroup = RegisterParameterGroup(Model, "Solver resolution");
+	auto SolverPrec      = RegisterParameterDouble(Model, SolverPrecGroup, "Solver resolution", Dimensionless, 0.1, 0.001, 0.5, "Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km");
+
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	auto Land = RegisterParameterGroup(Model, "Hydrology by land class", LandscapeUnits);
 	
@@ -60,25 +70,19 @@ AddPersistModel(mobius_model *Model)
 
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
 	auto Reaches = RegisterParameterGroup(Model, "Reach and subcatchment characteristics", Reach);
-	
-	auto SquareKm = RegisterUnit(Model, "km2");
-	auto CubicMetersPerSecond = RegisterUnit(Model, "m3/s");
-	auto Meters = RegisterUnit(Model, "m");
-	auto InverseMetersSquared = RegisterUnit(Model, "1/m2");
-	auto MilligramsPerLiter = RegisterUnit(Model, "mg/l");
+
 
 	auto TerrestrialCatchmentArea = RegisterParameterDouble(Model, Reaches, "Terrestrial catchment area", SquareKm, 500.0, 0.01, 999999.0, "The terrestrial area of a subcatchment, excluding open water");
 	auto ReachLength              = RegisterParameterDouble(Model, Reaches, "Reach length", Meters, 1000.0, 1.0, 999999.0, "The length of the main stem of the stream / reach in a subcatchment");
-	auto ReachWidth               = RegisterParameterDouble(Model, Reaches, "Reach width", Meters, 10.0, 0.1, 9999.0, "The average width of the main stem of the stream / reach in a subcatchment");
-	auto A                        = RegisterParameterDouble(Model, Reaches, "a", InverseMetersSquared, 0.4, 0.001, 1.0, "The flow velocity 'a' parameter V=aQ^b");
-	auto B                        = RegisterParameterDouble(Model, Reaches, "b", Dimensionless, 0.43, 0.3, 0.5, "The flow velocity 'b' parameter V=aQ^b");
+	auto ReachBottomWidth         = RegisterParameterDouble(Model, Reaches, "Reach bottom width", Meters, 10.0, 0.1, 9999.0, "The bottom width of the main stem of the stream / reach in a subcatchment");
+	auto ReachBankSlope           = RegisterParameterDouble(Model, Reaches, "Reach bank slope", Dimensionless, 0.3, 0.01, 10.0, "The slope of the river bank");
+	auto ReachSlope               = RegisterParameterDouble(Model, Reaches, "Reach slope", Dimensionless, 0.01, 0.000001, 0.2, "Roughly the difference in elevation between the ends divided by the length");
+	auto ManningsRoughness        = RegisterParameterDouble(Model, Reaches, "Manning's roughness coefficent", SecondsPerCubeRootM, 0.04, 0.01, 0.1, "The roughness coefficent n in Manning's flow velocity equation");
 	auto SnowThresholdTemperature = RegisterParameterDouble(Model, Reaches, "Snow threshold temperature", DegreesCelsius, 0.0, -4.0, 4.0, "The temperature at or below which precipitation will fall as snow in a subcatchment");
 	auto ReachSnowMultiplier = RegisterParameterDouble(Model, Reaches, "Reach snow multiplier", Dimensionless, 1.0, 0.5, 2.0, "The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment");
 	auto ReachRainMultiplier = RegisterParameterDouble(Model, Reaches, "Reach rain multiplier", Dimensionless, 1.0, 0.5, 2.0, "The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment");
 	auto AbstractionFlow = RegisterParameterDouble(Model, Reaches, "Abstraction flow", CubicMetersPerSecond, 0.0, 0.0, 9999.0, "The rate at which water is removed from a reach by human activities");
 	auto EffluentFlow = RegisterParameterDouble(Model, Reaches, "Effluent flow", CubicMetersPerSecond, 0.0, 0.0, 9999.0, "The rate of liquid inputs to a reach from e.g. sewage treatment works");
-	auto ReachHasAbstraction = RegisterParameterBool(Model, Reaches, "Reach has abstraction", false);
-	auto ReachHasEffluentInput = RegisterParameterBool(Model, Reaches, "Reach has effluent input", false);
 
 	auto InitialStreamFlow = RegisterParameterDouble(Model, Reaches, "Initial stream flow", CubicMetersPerSecond, 0.1, 0.0001, 9999.0, "The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.");
 	
@@ -305,35 +309,31 @@ AddPersistModel(mobius_model *Model)
 	auto AbstractionTimeseries = RegisterInput(Model, "Abstraction flow", MetresCubedPerSecond);
 	auto EffluentTimeseries    = RegisterInput(Model, "Effluent flow", MetresCubedPerSecond);
 
-	auto IncaSolver = RegisterSolver(Model, "Reach solver", 0.1, IncaDascru);
+	auto ReachSolver = RegisterSolver(Model, "Reach solver", SolverPrec, IncaDascru);
 	
 	auto DiffuseFlowOutput = RegisterEquation(Model, "Diffuse flow output", MetresCubedPerSecond);
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MetresCubedPerSecond);
-	auto ReachAbstraction  = RegisterEquation(Model, "Reach abstraction", MetresCubedPerSecond);
-	SetSolver(Model, ReachAbstraction, IncaSolver);
+	auto ReachAbstraction  = RegisterEquation(Model, "Reach abstraction", MetresCubedPerSecond, ReachSolver);
 	
 	auto TotalDiffuseFlowOutput = RegisterEquationCumulative(Model, "Total diffuse flow output", DiffuseFlowOutput, LandscapeUnits);
 	
-	//auto InitialReachTimeConstant = RegisterEquationInitialValue(Model, "Initial reach time constant", Days);
-	//auto ReachTimeConstant        = RegisterEquation(Model, "Reach time constant", Days);
-	//SetSolver(Model, ReachTimeConstant, IncaSolver);
-	//SetInitialValue(Model, ReachTimeConstant, InitialReachTimeConstant);
+	auto ReachCrossSectionArea    = RegisterEquation(Model, "Reach cross section area", MetersSquared, ReachSolver);
+	auto ReachDepth               = RegisterEquation(Model, "Reach depth", Meters, ReachSolver);
+	auto ReachTopWidth            = RegisterEquation(Model, "Reach top width", Meters, ReachSolver);
+	auto ReachWettedPerimeter     = RegisterEquation(Model, "Reach wetted perimeter", Meters, ReachSolver);
+	auto ReachHydraulicRadius     = RegisterEquation(Model, "Reach hydraulic radius", Meters, ReachSolver);
+	auto ReachVelocity            = RegisterEquation(Model, "Reach velocity", MetresPerSecond, ReachSolver);
 	
 	auto InitialReachFlow         = RegisterEquationInitialValue(Model, "Initial reach flow", MetresCubedPerSecond);
-	//auto ReachFlow                = RegisterEquationODE(Model, "Reach flow", MetresCubedPerSecond);
-	auto ReachFlow                = RegisterEquation(Model, "Reach flow", MetresCubedPerSecond);
-	SetSolver(Model, ReachFlow, IncaSolver);
+	auto ReachFlow                = RegisterEquation(Model, "Reach flow", MetresCubedPerSecond, ReachSolver);
 	SetInitialValue(Model, ReachFlow, InitialReachFlow);
 	
 	auto InitialReachVolume       = RegisterEquationInitialValue(Model, "Initial reach volume", MetersCubed);
-	auto ReachVolume              = RegisterEquationODE(Model, "Reach volume", MetersCubed);
-	SetSolver(Model, ReachVolume, IncaSolver);
+	auto ReachVolume              = RegisterEquationODE(Model, "Reach volume", MetersCubed, ReachSolver);
 	SetInitialValue(Model, ReachVolume, InitialReachVolume);
 	
-	auto ReachVelocity = RegisterEquation(Model, "Reach velocity", MetresPerSecond);
-	auto ReachDepth    = RegisterEquation(Model, "Reach depth", Meters);
-	
-	
+	auto DailyMeanReachFlow       = RegisterEquationODE(Model, "Reach flow (daily mean)", MetresCubedPerSecond, ReachSolver);
+	ResetEveryTimestep(Model, DailyMeanReachFlow);
 	
 	
 	// Stream flow (m3/s) = Catchment Area (km2)
@@ -345,39 +345,14 @@ AddPersistModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, ReachFlowInput,
-		double reachInput = RESULT(TotalDiffuseFlowOutput);
-		double effluent   = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
+		double reachInput = RESULT(TotalDiffuseFlowOutput) + IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		
 		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachFlow, *Input);
+			reachInput += RESULT(DailyMeanReachFlow, *Input);
 		)
-		if(PARAMETER(ReachHasEffluentInput)) reachInput += effluent;
+
 		return reachInput;
 	)
-	
-	EQUATION(Model, ReachAbstraction,
-		double abstraction = IF_INPUT_ELSE_PARAMETER(AbstractionTimeseries, AbstractionFlow);
-		
-		//TODO: This is not really a good comparison as we could allow abstraction if there is enough effluent + other inputs
-		abstraction = Min(abstraction, RESULT(ReachVolume)/86400.0);
-		if(PARAMETER(ReachHasAbstraction))
-		{
-			return abstraction;
-		}
-		return 0.0;
-	)
-	
-	/*
-	EQUATION(Model, InitialReachTimeConstant,
-		return PARAMETER(ReachLenght) / (PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B)) * 86400.0);
-	)
-	
-	EQUATION(Model, ReachTimeConstant,
-		double tc = RESULT(ReachVolume) / (RESULT(ReachFlow) * 86400.0);
-		if(RESULT(ReachFlow) > 0.0 && RESULT(ReachVolume) > 0.0) return tc;
-		return 0.0;
-	)
-	*/
     
 	EQUATION(Model, InitialReachFlow,
 		double upstreamFlow = 0.0;
@@ -388,35 +363,62 @@ AddPersistModel(mobius_model *Model)
 		
 		return (INPUT_COUNT(Reach) == 0) ? initialFlow : upstreamFlow;
 	)
-
-	/*
-	EQUATION(Model, ReachFlow,
-		double flow = ( RESULT(ReachFlowInput) - RESULT(ReachAbstraction) - RESULT(ReachFlow) ) / ( RESULT(ReachTimeConstant) * (1.0 - PARAMETER(B)));
-		if(RESULT(ReachTimeConstant) > 0.0) return flow;
-		return 0.0;
+	
+	EQUATION(Model, ReachCrossSectionArea,
+		return RESULT(ReachVolume) / PARAMETER(ReachLength);
 	)
-	*/
+	
+	EQUATION(Model, ReachDepth,
+		double b  = PARAMETER(ReachBankSlope);
+		double WB = PARAMETER(ReachBottomWidth);
+		double A  = RESULT(ReachCrossSectionArea);
+		double WBb = WB*b;
+		return 0.5 * (sqrt(WBb*WBb + 4.0*A*b) - WBb);
+	)
+	
+	EQUATION(Model, ReachTopWidth,
+		return PARAMETER(ReachBottomWidth) + 2.0 * RESULT(ReachDepth) / PARAMETER(ReachBankSlope);
+	)
+	
+	EQUATION(Model, ReachWettedPerimeter,
+		double b = PARAMETER(ReachBankSlope);
+		return PARAMETER(ReachBottomWidth) + 2.0*RESULT(ReachDepth)*sqrt(1.0 + 1.0/(b*b));
+	)
+	
+	EQUATION(Model, ReachHydraulicRadius,
+		return RESULT(ReachCrossSectionArea) / RESULT(ReachWettedPerimeter);
+	)
+	
+	EQUATION(Model, ReachVelocity,
+		double R = RESULT(ReachHydraulicRadius);
+		double S = PARAMETER(ReachSlope);
+		double n = PARAMETER(ManningsRoughness);
+		return pow(R, 2.0/3.0)*sqrt(S)/n;
+	)
 	
 	EQUATION(Model, ReachFlow,
-		return pow(PARAMETER(A)*RESULT(ReachVolume)/(PARAMETER(ReachLength)), 1.0 / (1.0 - PARAMETER(B)));
+		return RESULT(ReachCrossSectionArea) * RESULT(ReachVelocity);
 	)
-
+	
+	EQUATION(Model, ReachAbstraction,
+		double abstraction = IF_INPUT_ELSE_PARAMETER(AbstractionTimeseries, AbstractionFlow);
+		
+		//TODO: This is not really a good comparison as we could allow abstraction if there is enough effluent + other inputs
+		return Min(abstraction, RESULT(ReachVolume)/86400.0);
+	)
+	
 	EQUATION(Model, InitialReachVolume,
-		//return RESULT(ReachFlow) * RESULT(ReachTimeConstant) * 86400.0;
-		return pow(RESULT(ReachFlow), 1.0 - PARAMETER(B)) * PARAMETER(ReachLength) / PARAMETER(A);
+		//NOTE: This is not entirely correct, and so will not cause the right initial reach flow.. :( Assumes rectangular instead of trapezoid cross-section. But will not be very far off, and it will correct itself within a couple of days.
+		
+		return PARAMETER(ReachLength)*pow(RESULT(ReachFlow)*PARAMETER(ManningsRoughness)*pow(PARAMETER(ReachBottomWidth), 2.0/3.0)/sqrt(PARAMETER(ReachSlope)), 3.0/5.0);
 	)
-    
+	
 	EQUATION(Model, ReachVolume,
 		return (RESULT(ReachFlowInput) - RESULT(ReachAbstraction) - RESULT(ReachFlow)) * 86400.0;
 	)
-
-	EQUATION(Model, ReachVelocity,
-		return PARAMETER(A) * pow(RESULT(ReachFlow), PARAMETER(B));
-	)
-    
-	EQUATION(Model, ReachDepth,
-		//return RESULT(ReachFlow) / (RESULT(ReachVelocity) * PARAMETER(ReachWidth));
-		return RESULT(ReachVolume) / (PARAMETER(ReachWidth) * PARAMETER(ReachLength));
+	
+	EQUATION(Model, DailyMeanReachFlow,
+		return RESULT(ReachFlow);
 	)
 	
 	EndModule(Model);
