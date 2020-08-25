@@ -210,8 +210,8 @@ AddSimplyNModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, ReachDINConcentration,
-		return 1e3 * SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
-		//return 1e3 * SafeDivide(RESULT(DailyMeanReachDINFlux), 86400.0 * RESULT(DailyMeanReachFlow));
+		//return 1e3 * SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
+		return 1e3 * SafeDivide(RESULT(DailyMeanReachDINFlux), 86400.0 * RESULT(DailyMeanReachFlow));
 	)
 	
 	EQUATION(Model, DailyMeanReachDINFlux,

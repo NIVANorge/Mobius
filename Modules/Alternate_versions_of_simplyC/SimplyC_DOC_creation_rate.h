@@ -209,7 +209,6 @@ AddSimplyCModel(mobius_model *Model)
 #ifdef SIMPLYQ_GROUNDWATER
 			+ RESULT(GroundwaterFluxToReach) * PARAMETER(CatchmentArea)
 #endif
-			+ upstreamflux
 			- RESULT(StreamDOCFluxOut);		
 	)
 		
