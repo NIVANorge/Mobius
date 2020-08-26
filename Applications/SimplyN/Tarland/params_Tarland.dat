@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyN V_dev) at 2020-08-21 14:27:28
+# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyN V_dev) at 2020-08-25 10:17:01
 
 index_sets:
 "Landscape units" : {"Seminatural" "Agricultural"}
@@ -49,10 +49,10 @@ parameters:
 0.02
 
 "Soil field capacity" :     #(mm) [0, 1000]
-270
+280
 
 "Baseflow index" :     #(dimensionless) [0, 1]
-0.5
+0.7
 
 "Groundwater time constant" :     #(days) [0.5, 400]
 65
@@ -119,10 +119,16 @@ parameters:
 0.08
 
 "Soil water DIN immobilisation response to 10°C change in temperature (Q10)" :     #(dimensionless) [1, 2] 
-1.6
+1.48
 
 "Groundwater DIN concentration" :     #(mg/l) [0, 5] 
 3.5
+
+"Constant groundwater DIN concentration" :     # Keep the concentration of DIN in the groundwater constant instead of simulating it.
+true
+
+"Groundwater retention volume" :     #(mm) [0, 2000] Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.
+0
 
 
 ###################### Nitrogen land {"Landscape units"} ######################
@@ -131,14 +137,14 @@ parameters:
 0 0
 
 "Net annual DIN input to soil" :     #(kg/Ha/year) [0, 1000] Inputs from deposition and fertilizer
-230 230
+260 260
 
 "Net annual DIN uptake" :     #(kg/Ha/year) [0, 1000] Annual uptake of DIN by plants when there is sufficient availability.
-10 10
+40 40
 
 "Day of year when DIN uptake is maximal" :     #(day) [1, 355] 
-240 240
+210 210
 
 "Length of period where 95% of uptake happens" :     #(day) [1, 200] day_of_max_uptake +- length_of_period/2 should be within the same calendar year, otherwise the math is bad.
-200 200
+150 150
 

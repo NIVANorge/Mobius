@@ -1,0 +1,141 @@
+index_sets:
+"Landscape units": {"All"}
+"Soils" : {"Quick" "Soilwater" "Groundwater"}
+"Reaches" : {"Coull"}
+
+parameters:
+###################### (no index sets) ######################
+"Timesteps" :
+1826
+
+"Start date" :
+2002-8-1
+
+#"Baseline SMD" :
+#65
+
+###################### "Landscape units" ######################
+"Snow multiplier" :
+1
+
+"Snow melt temperature" :
+0
+
+"Degree day melt factor" :
+3.0
+
+"Rain multiplier" :
+1.0
+
+"Initial snow depth" :
+0.0
+
+"Degree day evapotranspiration" :
+0.2
+
+"Growing degree threshold" :
+-1.0
+
+"Canopy interception" :
+0.0
+
+###################### "Soils" "Soils" ######################
+"Percolation matrix" :
+0 1 0
+1 0.35 0.65
+1 0 1
+
+###################### "Soils" ######################
+"This is a quick box" :
+true false false
+
+###################### "Soils" "Landscape units" ######################
+"Initial water depth" :
+0
+300
+15
+
+"Relative area index" :
+1.0
+1.0
+1.0
+
+"Infiltration" :
+1000
+100
+20
+
+"Retained water depth" :
+0
+300
+0
+
+"Drought runoff fraction" :
+0
+0.1
+0
+
+"Time constant" :
+1
+3
+40
+
+"Evapotranspiration adjustment" :
+0
+3.5
+0
+
+"Relative evapotranspiration index" :
+0.0
+1.0
+0.0
+
+"Maximum capacity" :
+1000 
+430
+300
+
+###################### "Reaches" ######################
+"Terrestrial catchment area" :
+50.6
+
+"Reach length" :
+9300
+
+"Reach width" :
+2.0
+
+"a" :
+0.1
+
+"b" :
+0.3
+
+"Snow threshold temperature" :
+0
+
+"Reach snow multiplier" :
+1.0
+
+"Reach rain multiplier" :
+1.0
+
+"Abstraction flow" :
+0.0
+
+"Effluent flow" :
+0.0
+
+"Reach has abstraction" :
+false
+
+"Reach has effluent input" :
+false
+
+"Initial stream flow" :
+0.87
+
+###################### "Reaches" "Landscape units" ######################
+"%" :
+100.0
+

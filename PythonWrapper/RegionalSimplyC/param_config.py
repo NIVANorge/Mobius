@@ -9,14 +9,17 @@ cu = imp.load_source('mobius_calib_uncert_lmfit', calib_fpath)
 def configure_params(params, do_doc):
 	params['fquick'].max = 0.1
 	
-	params['fc'].min = 40
-	
 	params['Ts_F'].max = 12
-	
-	for lu in ['F', 'S', 'P']:
-		params['alphaPET_%s' % lu].max = 3.0
 
 	if do_doc :
+		for lu in ['F', 'S', 'P']:
+			params['alphaPET_%s' % lu].max = 3.0
+			params['fc_%s' % lu].min = 40
+		
+		params['fc_F'].max = 300
+		params['fc_S'].max = 100
+		params['fc_P'].max = 400
+	
 		params['kT'].min = 0.0
 		params['kT'].max = 0.2
 
@@ -41,10 +44,10 @@ def setup_calibration_params(dataset, do_doc) :
 	
 	wantparams = [
 			'alphaPET', 'DDFmelt', 
-			'fquick', 'Ts', 'fc',
+			'fquick', 'Ts',
 	]
 	wantparams2 = [
-			'depthST', 'STC',
+			'fc', 'depthST', 'STC',
 			'kT', 'kSO4', 'cDOC', 'baseDOC',
 		]
 	
