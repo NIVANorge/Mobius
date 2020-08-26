@@ -1,22 +1,16 @@
 
 
 import numpy as np
-import imp
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-from param_config import setup_calibration_params
+from importlib.machinery import SourceFileLoader
 
 # Initialise wrapper
-wrapper_fpath = (r"..\mobius.py")
-wr = imp.load_source('mobius', wrapper_fpath)
+wr = SourceFileLoader("mobius", r"../mobius.py").load_module()
+cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
+
 wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
-
-# Calibration functions
-calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
-cu = imp.load_source('mobius_calib_uncert_lmfit', calib_fpath)
-
 
 
 param_file_prefix = 'optim_params'
@@ -45,10 +39,10 @@ def main() :
 		
 		dataset.run_model()
 		
-		sim_df = get_result_dataframe(dataset, [simmed])
-        obs_df = get_input_dataframe(dataset, [observed], alignwithresults=True)
+		sim_df = cu.get_result_dataframe(dataset, [simmed])
+		obs_df = cu.get_input_dataframe(dataset, [observed], alignwithresults=True)
 		
-        df = pd.concat([obs_df, sim_df], axis=1)
+		df = pd.concat([obs_df, sim_df], axis=1)
 		
 		df = df.resample('MS').mean()
 		
@@ -60,17 +54,22 @@ def main() :
 		
 		for index, row in df.iterrows() :
 			sim[index.month-1] += row[simname]
-			if!np.isnan(row[obsname]):
+			if not np.isnan(row[obsname]):
 				obs[index.month-1] += row[obsname]
 
 		fig, ax = plt.subplots(1, 1)
 		add_normalized_plot(ax, obs, 'obs')
 		add_normalized_plot(ax, sim, 'sim')
 		
-		ax.set_title('Q by season, %s' % catch_name)
+		ax.set_title('Q by month (1985-2017), %s' % catch_name)          #NOTE: Title is incorrect if we change run period
 		ax.legend()
 		
-		plt.savefig('Figures/%s_%d_flow_month.png' % (catch_no, catch_name))
+		plt.axhline(0, color='grey')
+		plt.xticks(range(1, 13))
+		
+		plt.savefig('Figures/%d_%s_flow_month.png' % (catch_no, catch_name))
+		
+		plt.close()
 		
 
 if __name__ == "__main__":

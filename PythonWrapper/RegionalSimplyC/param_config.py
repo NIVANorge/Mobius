@@ -1,15 +1,15 @@
 
-import imp
+from importlib.machinery import SourceFileLoader
 
-# Calibration functions
-calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
-cu = imp.load_source('mobius_calib_uncert_lmfit', calib_fpath)
+# Initialise wrapper
+cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
 
 def configure_params(params, do_doc):
 	params['fquick'].max = 0.1
 	
 	params['Ts_F'].max = 12
+	params['Ts_S'].max = 2
 
 	if do_doc :
 		for lu in ['F', 'S', 'P']:

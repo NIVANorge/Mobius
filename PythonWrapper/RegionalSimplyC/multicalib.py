@@ -1,18 +1,16 @@
 
 import numpy as np
-import imp
 import pandas as pd
 
 from param_config import setup_calibration_params
 
-# Initialise wrapper
-wrapper_fpath = (r"..\mobius.py")
-wr = imp.load_source('mobius', wrapper_fpath)
-wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
+from importlib.machinery import SourceFileLoader
 
-# Calibration functions
-calib_fpath = (r"..\mobius_calib_uncert_lmfit.py")
-cu = imp.load_source('mobius_calib_uncert_lmfit', calib_fpath)
+# Initialise wrapper
+wr = SourceFileLoader("mobius", r"../mobius.py").load_module()
+cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
+
+wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
 
 
 def resid(params, datasets, comparisons, norm=False, skip_timesteps=0) :
