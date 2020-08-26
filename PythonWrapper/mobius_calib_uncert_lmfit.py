@@ -552,6 +552,9 @@ def triangle_plot(result, nburn, thin, file_name=None, truths=None):
         plt.savefig(file_name, dpi=200)
 
 
+def combine_name(name, indexes) :
+	return '%s [%s]' % (name, ', '.join(indexes))
+
 def get_input_dataframe(dataset, list, alignwithresults=False) :
     """ Get a dataframe with a date column together with model input columnts
 	
@@ -578,7 +581,7 @@ def get_input_dataframe(dataset, list, alignwithresults=False) :
 	
     for name, indexes in list :
         series = dataset.get_input_series(name, indexes, alignwithresults)
-        full_name = '%s [%s]' % (name, ', '.join(indexes))
+        full_name = combine_name(name, indexes)
         df[full_name] = series
 		
     df.set_index('Date', inplace=True)
@@ -601,7 +604,7 @@ def get_result_dataframe(dataset, list) :
 	
     for name, indexes in list :
         series = dataset.get_result_series(name, indexes)
-        full_name = '%s [%s]' % (name, ', '.join(indexes))
+        full_name = combine_name(name, indexes)
         df[full_name] = series
 
     df.set_index('Date', inplace=True)
