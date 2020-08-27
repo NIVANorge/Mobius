@@ -182,7 +182,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 			const parameter_group_spec &Group = Model->ParameterGroups.Specs[ParameterGroupHandle];
 			if(Group.Module.Handle == ModuleHandle)
 			{
-				fprintf(File, "\n###################### %s {", Group.Name);
+				fprintf(File, "\n# %s (", Group.Name);
 				if(Group.IndexSets.size() == 0) fprintf(File, "no index sets");
 				int Count = 0;
 				for(index_set_h IndexSet : Group.IndexSets)
@@ -191,7 +191,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 					fprintf(File, "\"%s\"", GetName(Model, IndexSet));
 					++Count;
 				}
-				fprintf(File, "} ######################\n\n");
+				fprintf(File, ") #\n\n");
 				
 				for(entity_handle ParameterHandle : Group.Parameters)
 				{
