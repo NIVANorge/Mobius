@@ -176,7 +176,7 @@ def parameter_df_to_lmfit(df):
         # For gradient-based optimisers to work, the initial values should not be 
         # exactly equal to either min or max (the algorithm needs to be able to 
         # "explore" around the current value to estimate the gradient).
-        # Warn user is (value == min) or (value == max)
+        # Warn user if (value == min) or (value == max)
         if ((row['initial_value'] == row['min_value']) or 
             (row['initial_value'] == row['max_value'])):
             print("WARNING: Parameter '%s' was initialised at the limit of its range. "

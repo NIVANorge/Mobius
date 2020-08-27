@@ -29,20 +29,21 @@ AddSimplyNModel(mobius_model *Model)
 	
 	auto NitrogenGlobal = RegisterParameterGroup(Model, "Nitrogen global");
 	
-	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN immobilisation rate at 20°C", PerDay, 0.0, 0.0, 1.0, "", "imms");
-	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN immobilisation response to 10°C change in temperature (Q10)", Dimensionless, 1.0, 1.0, 2.0, "", "Q10imms");
+	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerDay, 0.0, 0.0, 1.0, "", "imms");
+	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 2.0, "", "Q10imms");
 	auto GroundwaterDINConcentration      = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater DIN concentration", MgPerL, 0.0, 0.0, 5.0, "", "DINgw");
 	auto GroundwaterDINConstant           = RegisterParameterBool(Model, NitrogenGlobal, "Constant groundwater DIN concentration", true, "Keep the concentration of DIN in the groundwater constant instead of simulating it.");
 	auto GroundwaterBufferVolume          = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater retention volume", Mm, 0.0, 0.0, 2000.0, "Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.");
 	
-	auto NitrogenLand   = RegisterParameterGroup(Model, "Nitrogen land", LandscapeUnits);
+	auto NitrogenLand   = RegisterParameterGroup(Model, "Nitrogen by land use", LandscapeUnits);
 	
 	auto InitialSoilWaterDINConcentration = RegisterParameterDouble(Model, NitrogenLand, "Initial soil water DIN concentration", MgPerL, 0.0, 0.0, 10.0);
 	auto NetAnnualNInputToSoil            = RegisterParameterDouble(Model, NitrogenLand, "Net annual DIN input to soil", KgPerHaPerYear, 0.0, 0.0, 1000.0, "Inputs from deposition and fertilizer", "DINin");
+
 	
-	auto NetAnnualNUptake                 = RegisterParameterDouble(Model, NitrogenLand, "Net annual DIN uptake", KgPerHaPerYear, 0.0, 0.0, 1000.0, "Annual uptake of DIN by plants when there is sufficient availability.", "DINup");
-	auto UptakeMaxDay                     = RegisterParameterDouble(Model, NitrogenLand, "Day of year when DIN uptake is maximal", Days, 180.0, 1.0, 355.0, "", "upmaxday");
-	auto UptakeSeasonLength               = RegisterParameterDouble(Model, NitrogenLand, "Length of period where 95% of uptake happens", Days, 200.0, 1.0, 200.0, "day_of_max_uptake +- length_of_period/2 should be within the same calendar year, otherwise the math is bad.", "uplen");
+	auto NitrogenReach  = RegisterParameterGroup(Model, "Nitrogen by reach", Reach);
+	
+	auto EffluentDIN    = RegisterParameterDouble(Model, NitrogenReach, "Effluent DIN inputs", KgPerDay, 0.0, 0.0, 100.0);
 	
 	//From SimplyQ:
 	auto LandSolver  = GetSolverHandle(Model, "SimplyQ land solver");
@@ -65,10 +66,7 @@ AddSimplyNModel(mobius_model *Model)
 	auto SoilTemperature    = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");  // [°C]
 	
 	
-	
-	auto IdealDINUptake            = RegisterEquation(Model, "Ideal DIN uptake", KgPerHaPerDay);
-	auto DINUptake                 = RegisterEquation(Model, "DIN uptake limited by availability", KgPerHaPerDay, LandSolver);
-	auto SoilWaterDINImmobilisation= RegisterEquation(Model, "Soil water DIN immobilisation", KgPerKm2PerDay, LandSolver);
+	auto SoilWaterDINImmobilisation= RegisterEquation(Model, "Soil water DIN uptake+immobilisation", KgPerKm2PerDay, LandSolver);
 	
 	auto QuickFlowDINFlux          = RegisterEquationODE(Model, "Quick flow DIN flux", KgPerKm2PerDay, LandSolver);
 	ResetEveryTimestep(Model, QuickFlowDINFlux);
@@ -106,28 +104,10 @@ AddSimplyNModel(mobius_model *Model)
 	auto ReachDINConcentration      = RegisterEquation(Model, "Reach DIN concentration (volume weighted daily mean)", MgPerL);
 	
 	
-	EQUATION(Model, IdealDINUptake,
-		double sigma = 0.25 * PARAMETER(UptakeSeasonLength);
-		double mu    = (double)PARAMETER(UptakeMaxDay);
-		double alpha = PARAMETER(NetAnnualNUptake);
-		double x     = (double)CURRENT_TIME().DayOfYear;
-		double xpon  = (x-mu)/sigma;
-		
-		// Normalized normal distribution multiplied by alpha, which then has integral equal to alpha. Note that since the x axis is not -inf to inf, but 1 to 365, the actual integral will not be exactly alpha, but the error should be small. There is also a small error in that we are only doing daily updates to the value, but that should also insignificant.
-		return alpha * (0.3989422804 / sigma) * std::exp(-0.5*xpon*xpon);
-	)
-	
-	EQUATION(Model, DINUptake,
-		double threshold = 0.01; //TODO: make parameter?
-		double conc = RESULT(SoilWaterDINConcentration);
-		double ideal = RESULT(IdealDINUptake);
-		return SCurveResponse(conc, 0.0, threshold, 0.0, ideal);
-	)
 	
 	EQUATION(Model, SoilWaterDINImmobilisation,
-		return RESULT(SoilWaterDINMass) * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
+		return RESULT(SoilWaterDINConcentration)*1e3 * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
 	)
-	
 	
 	EQUATION(Model, InitialSoilWaterDINMass,
 		return PARAMETER(InitialSoilWaterDINConcentration)*RESULT(SoilWaterVolume);   // (mg/l)*mm == kg/km2
@@ -138,7 +118,6 @@ AddSimplyNModel(mobius_model *Model)
 		return
 			  PARAMETER(NetAnnualNInputToSoil) * 100.0/356.0   // 1/Ha/year -> 1/km2/day
 			- RESULT(SoilWaterDINImmobilisation)
-			- RESULT(DINUptake) * 100.0                        // 1/Ha      -> 1/km2
 			- RESULT(SoilWaterDINFlux);
 	)
 	
@@ -204,7 +183,8 @@ AddSimplyNModel(mobius_model *Model)
 	
 	EQUATION(Model, ReachDINMass,
 		return
-		  RESULT(ReachDINInputFromUpstream)
+		  PARAMETER(EffluentDIN)
+		+ RESULT(ReachDINInputFromUpstream)
 		+ (RESULT(TotalQuickFlowDINFluxToReach) + RESULT(TotalSoilWaterDINFluxToReach) + RESULT(GroundwaterDINFluxToReach))*PARAMETER(CatchmentArea)
 		- RESULT(ReachDINFlux);
 	)

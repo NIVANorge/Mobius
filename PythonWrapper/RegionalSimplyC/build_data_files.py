@@ -110,18 +110,6 @@ def get_flow_df(catch_no, catch_name, catch_area) :
 	except BaseException as ex:
 		print(ex)
 
-	
-	#NOTE: For some reason the flow was wrongly scaled for these catchments. The factor is a mystery...
-	#if catch_name == 'Aneboda' :
-	#	flow_df['Observed flow'] *= 4.762
-	#elif catch_name == 'Lommabacken' :
-	#	flow_df['Observed flow'] *= 0.0953
-	#elif catch_name == 'Lilltjarnsbacken' :
-	#	flow_df['Observed flow'] *= 0.1962
-	#elif catch_name == 'Pipbacken' :
-	#	flow_df['Observed flow'] *= 0.000543
-	#elif catch_name == 'Svartberget' :
-	#	flow_df['Observed flow'] *= 0.5972
 
 	
 	flow_df.dropna(inplace=True)
