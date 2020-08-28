@@ -22,11 +22,11 @@ simmeddoc = ('DOC flux from reach, daily mean', ['R0'])
 observeddoc = ('Observed DOC', [])
 
 
-def add_normalized_plot(ax, values, label):
-	mn = np.mean(values)
-	sd = np.std(values)
+def add_normalized_plot(ax, xvals, values, label):
+	mn = np.nanmean(values)
+	sd = np.nanstd(values)
 	
-	ax.plot(range(1, 13), (values - mn)/sd, label=label)
+	ax.plot(xvals, (values - mn)/sd, label=label)
 
 
 def main() :
@@ -35,6 +35,8 @@ def main() :
 	for index, row in catch_setup.iterrows():
 		catch_no = row['met_index']
 		catch_name = row['name']
+		
+		#if catch_name != 'Dalelva' : continue
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 		parfile = 'MobiusFiles/%s_%d_%s.dat' % (param_file_prefix, catch_no, catch_name)
@@ -63,7 +65,7 @@ def main() :
 		
 		df[obsfluxname] = doc_df[obsdocname].values * df[obsname].values * 86400.0  # flux = concentration * flow
 		
-		df = df.resample('MS').mean()
+		df_month = df.resample('MS').mean()
 		
 		obs = np.zeros(12)
 		sim = np.zeros(12)
@@ -71,7 +73,7 @@ def main() :
 		fluxsim = np.zeros(12)
 		
 		
-		for index, row in df.iterrows() :
+		for index, row in df_month.iterrows() :
 			sim[index.month-1] += row[simname]
 			if not np.isnan(row[obsname]):
 				obs[index.month-1] += row[obsname]
@@ -82,28 +84,57 @@ def main() :
 
 		fig, ax = plt.subplots(1, 2)
 		fig.set_size_inches(10, 4.5)
-		add_normalized_plot(ax[0], obs, 'obs')
-		add_normalized_plot(ax[0], sim, 'sim')
 		
-		add_normalized_plot(ax[1], fluxobs, 'obs')
-		add_normalized_plot(ax[1], fluxsim, 'sim')
+		month_x = range(1, 13)
+		
+		add_normalized_plot(ax[0], month_x, obs, 'obs')
+		add_normalized_plot(ax[0], month_x, sim, 'sim')
+		
+		add_normalized_plot(ax[1], month_x, fluxobs, 'obs')
+		add_normalized_plot(ax[1], month_x, fluxsim, 'sim')
 		
 		ax[0].set_title('Q')
 		ax[0].legend()
-		ax[0].set_xticks(range(1,13))
+		ax[0].set_xticks(month_x)
 		ax[0].axhline(0, color='grey')
 		
 		ax[1].set_title('DOC flux')
 		ax[1].legend()
-		ax[1].set_xticks(range(1,13))
+		ax[1].set_xticks(month_x)
 		ax[1].axhline(0, color='grey')
 		
 		fig.suptitle('%s by month (1985-2017)' % catch_name, fontsize=16)    #NOTE: Title is incorrect if we change run period
-		
-		plt.savefig('Figures/%d_%s_flow_month.png' % (catch_no, catch_name))
-		
+		plt.savefig('Figures/month_%d_%s.png' % (catch_no, catch_name))
 		plt.close()
 		
+		df_year = df.resample('Y').mean()
+		
+		#print(df_year)
+		
+		fig, ax = plt.subplots(1, 2)
+		fig.set_size_inches(10, 4.5)
+		
+		year_x = range(1985, 2018)
+		
+		add_normalized_plot(ax[0], year_x, df_year[obsname].values, 'obs')
+		add_normalized_plot(ax[0], year_x, df_year[simname].values, 'sim')
+		
+		add_normalized_plot(ax[1], year_x, df_year[obsfluxname].values, 'obs')
+		add_normalized_plot(ax[1], year_x, df_year[simdocname].values, 'sim')
+		
+		ax[0].set_title('Q')
+		ax[0].legend()
+		#ax[0].set_xticks(year_x)
+		ax[0].axhline(0, color='grey')
+		
+		ax[1].set_title('DOC flux')
+		ax[1].legend()
+		#ax[1].set_xticks(year_x)
+		ax[1].axhline(0, color='grey')
+		
+		fig.suptitle('%s by year (1985-2017)' % catch_name, fontsize=16)    #NOTE: Title is incorrect if we change run period
+		plt.savefig('Figures/year_%d_%s.png' % (catch_no, catch_name))
+		plt.close()
 
 if __name__ == "__main__":
 	main()

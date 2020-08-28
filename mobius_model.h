@@ -208,6 +208,7 @@ struct module_spec
 {
 	const char *Name;
 	const char *Version;
+	const char *Description;
 };
 
 struct model_run_state;
@@ -905,6 +906,12 @@ inline void
 EndModule(mobius_model *Model)
 {
 	Model->CurrentModule = {};
+}
+
+inline void
+SetModuleDescription(mobius_model *Model, const char *Description)
+{
+	Model->Modules.Specs[Model->CurrentModule.Handle].Description = Description;
 }
 
 inline index_set_h

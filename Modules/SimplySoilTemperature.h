@@ -7,8 +7,12 @@
 static void
 AddSoilTemperatureModel(mobius_model *Model)
 {
-	//NOTE: This is a simplified version of the Rankinen soil temperature model.
-	BeginModule(Model, "Simple soil temperature", "0.1");
+	BeginModule(Model, "Simply soil temperature", "0.1");
+	SetModuleDescription(Model, R"DESC(
+This is a simplification of the soil temperature model developed for the INCA models in	
+Rankinen K. T. Karvonen and D. Butterfield (2004), A simple model for predicting soil temperature in snow covered and seasonally frozen soil; Model description and testing, Hydrol. Earth Syst. Sci., 8, 706-716
+)DESC");
+	
 	
 	auto WattsPerMetrePerDegreeCelsius				= RegisterUnit(Model, "W/m/°C");
 	auto MegaJoulesPerCubicMetrePerDegreeCelsius	= RegisterUnit(Model, "MJ/m3/°C");

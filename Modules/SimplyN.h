@@ -18,7 +18,7 @@ AddSimplyNModel(mobius_model *Model)
 	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km2/day");
 	auto KgPerHaPerYear = RegisterUnit(Model, "kg/Ha/year");
 	auto KgPerHaPerDay  = RegisterUnit(Model, "kg/Ha/day");
-	auto MPerDay        = RegisterUnit(Model, "m/day");
+	auto MPerYear       = RegisterUnit(Model, "m/year");
 	auto Days           = RegisterUnit(Model, "day");
 	auto PerDay         = RegisterUnit(Model, "1/day");
 	
@@ -29,8 +29,11 @@ AddSimplyNModel(mobius_model *Model)
 	
 	auto NitrogenGlobal = RegisterParameterGroup(Model, "Nitrogen global");
 	
-	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerDay, 0.0, 0.0, 1.0, "", "imms");
+	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerYear, 0.0, 0.0, 1.0, "", "imms");
 	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 2.0, "", "Q10imms");
+	auto DayOfHighestGrowth               = RegisterParameterDouble(Model, NitrogenGlobal, "Day of highest uptake+immobilisation", Days, 200.0, 1.0, 365.0);
+	auto Growth95Percentile               = RegisterParameterDouble(Model, NitrogenGlobal, "Lenght of interval where 95% of growth takes place", Days, 200.0, 0.0, 365.0);
+	
 	auto GroundwaterDINConcentration      = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater DIN concentration", MgPerL, 0.0, 0.0, 5.0, "", "DINgw");
 	auto GroundwaterDINConstant           = RegisterParameterBool(Model, NitrogenGlobal, "Constant groundwater DIN concentration", true, "Keep the concentration of DIN in the groundwater constant instead of simulating it.");
 	auto GroundwaterBufferVolume          = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater retention volume", Mm, 0.0, 0.0, 2000.0, "Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.");
@@ -65,7 +68,7 @@ AddSimplyNModel(mobius_model *Model)
 	//From SimplySoilTemperature
 	auto SoilTemperature    = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");  // [°C]
 	
-	
+	auto GrowthCurve               = RegisterEquation(Model, "Growth curve", Dimensionless);
 	auto SoilWaterDINImmobilisation= RegisterEquation(Model, "Soil water DIN uptake+immobilisation", KgPerKm2PerDay, LandSolver);
 	
 	auto QuickFlowDINFlux          = RegisterEquationODE(Model, "Quick flow DIN flux", KgPerKm2PerDay, LandSolver);
@@ -103,10 +106,18 @@ AddSimplyNModel(mobius_model *Model)
 	
 	auto ReachDINConcentration      = RegisterEquation(Model, "Reach DIN concentration (volume weighted daily mean)", MgPerL);
 	
-	
+	EQUATION(Model, GrowthCurve,
+		double sigma = 0.25 * PARAMETER(Growth95Percentile);
+		double mu    = (double)PARAMETER(DayOfHighestGrowth);
+		double x     = (double)CURRENT_TIME().DayOfYear;
+		double xpon  = (x-mu)/sigma;
+
+		// Normalized normal distribution which then has integral equal to 1. Note that since the x axis is not -inf to inf, but 1 to 365, the actual integral will not be exactly 1, but the error should be small. There is also a small error in that we are only doing daily updates to the value, but that should also insignificant.
+		return (0.3989422804 / sigma) * std::exp(-0.5*xpon*xpon);
+	)
 	
 	EQUATION(Model, SoilWaterDINImmobilisation,
-		return RESULT(SoilWaterDINConcentration)*1e3 * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
+		return RESULT(GrowthCurve)*RESULT(SoilWaterDINConcentration)*1e3 * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
 	)
 	
 	EQUATION(Model, InitialSoilWaterDINMass,

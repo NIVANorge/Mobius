@@ -816,6 +816,18 @@ DllGetAllModules(void *DataSetPtr, const char **NamesOut, const char **VersionsO
 	CHECK_ERROR_END
 }
 
+DLLEXPORT const char *
+DllGetModuleDescription(void *DataSetPtr, const char *ModuleName)
+{
+	CHECK_ERROR_BEGIN
+	
+	const mobius_model *Model = ((mobius_data_set *)DataSetPtr)->Model;
+	return Model->Modules.Specs[GetModuleHandle(Model, ModuleName).Handle].Description;
+	
+	CHECK_ERROR_END
+	
+	return nullptr;
+}
 
 DLLEXPORT bool
 DllIsParameterGroupName(void *DataSetPtr, char *Name)

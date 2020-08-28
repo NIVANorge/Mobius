@@ -59,7 +59,7 @@ def main() :
 		catch_no = row['met_index']
 		catch_name = row['name']
 		
-		if catch_name != 'Birkenes' : continue
+		#if catch_name != 'Birkenes' : continue
 		
 		print('********** Processing location %s ***********' % catch_name)
 		
