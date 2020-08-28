@@ -18,9 +18,11 @@ The following model implementations are probably correct and have been tested on
 - INCA-MP
 - INCA-Sed
 - INCA-Tox
+- INCA-Rad
 
 The following models are in development and are not finished
 - SimplyC
+- SimplyN
 - MAGIC
 - EasyLake
 
