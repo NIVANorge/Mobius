@@ -73,7 +73,7 @@ stepnumber=1,
 
 MobiView is a graphical user interface that can load any model built using the Mobius dll interface. It is created using the Ultimate++ framework and the ScatterCtrl package (\url{ultimatepp.org}).
 
-This document is a work in progress.
+Note: at any time there may have been updates to MobiView that are not yet covered in this document, but we try to be as diligent as possible.
 
 \begin{center}
 \includegraphics[width=\linewidth]{img/mobiview}
@@ -82,25 +82,39 @@ This document is a work in progress.
 
 \section{The toolbar}
 
-The toolbar has 9 buttons.
+The toolbar has the following buttons.
+
+\begin{center}
+\includegraphics[width=0.5\linewidth]{img/toolbar}
+%\captionof{figure}{The toolbar}
+\end{center}
 
 \begin{enumerate}
 \item Load (ctrl-O). This asks you to select a model dll, an input file, and a parameter file. (On Linux, you load a shared object .so file instead of a dll). The input and parameter files have to be of the .dat format described in the Mobius file format documentation. You can click load even if you have a model and dataset loaded already. This will delete all data from the earlier dataset from memory, so be sure to save any changes you want to keep first.
 \item Save parameters (ctrl-S). This saves any edits you have made to the parameters to the current working parameter file (usually the one you loaded).
 \item Save parameters as (alt-S). Saves the parameters to a new file. The new file is now the current working file.
 \item Search parameters (ctrl-F). Opens a new window that allows you to search for parameters by name. Any matching parameters are displayed in a list, and clicking an item in the list takes you to the right parameter group in the main view. The search is a case-insensitive substring search.
-\item Edit indexes (ctrl-E). Opens a new window. You can edit what indexes are in each index set. For non-branched index sets, each index is a line in the text field. If you add a nex index or rename one, the parameters indexed by that index will be given default values. You can also edit the branch connections of branched index sets. The input ids have to be a comma-separated list of numbers of the id's of the input branches to the given branch. In the visualization of the branch connections of the branched index set, no information about actual length or position is used in the visualization, only connectivity.
-\item Run model (F7). Runs the model using the parameters that are loaded in the MobiView interface, taking into account any edits. (It does not matter if the edits have been saved to file or not). Results from the latest model run are available for plotting.
+\item Edit indexes. Opens a new window. This is described in Section \ref{sec:editindexes}.
+\item Run model (F7). Runs the model using the parameters that are loaded in the MobiView interface, taking into account any edits. (It does not matter if the edits have been saved to file or not). Results from the latest model run are available for plotting. See section \ref{sec:plotting}
 \item View model equation batch structure. This displays the equation batch structure, as described in the Mobius model builder documentation. This is mostly interesting if you are a model developer, as it can provide some debug information for your work-in-progress model.
-\item Save baseline (ctrl-B). Saves a background copy of the current dataset. This is only used in the "Compare baseline" plot mode.
+\item Save baseline (ctrl-B). Saves a background copy of the current dataset. This is only used in the "Compare baseline" plot mode. See Section \ref{sec:comparebaseline}
 \item Export to csv (ctrl-E). Allows you to save all selected time series in a .csv format. The separator is ;
+\item Open an additional plot view to display multiple plots at the same time. This is further explained in section \ref{sec:additionalplotview}.
+\item Edit statistics settings. Here you can turn on or off what statistics you want displayed in the timeseries info box, and also choose percentiles for the Q-Q plot mode.
 \end{enumerate}
 
 \section{Parameter viewing and editing}
 
+\begin{center}
+\includegraphics[width=\linewidth]{img/paramedit}
+\captionof{figure}{Parameter display and editing}
+\end{center}
+
 \subsection{Setting up a new project}
 
-One efficient way of setting up a new project is to take the parameter file of an existing project and delete everything below the "parameters:" section. You can then fill in the indexes you want in the index sets (see the file format documentation in a separate document). This file can be loaded in MobiView. MobiView does not mind that not all parameters are given values in the parameter file, and will assume default values for the ones that are missing. If you save the file again after having loaded it, all default values will be filled in in the file.
+One efficient way of setting up a new project is taking an existing project and using the index set editor described in Section \ref{sec:editindexes}.
+
+Another way is to take the parameter file of an existing project and delete everything below the "parameters:" section. You can then fill in the indexes you want in the index sets (see the file format documentation in a separate document). This file can be loaded in MobiView. MobiView does not mind that not all parameters are given values in the parameter file, and will assume default values for the ones that are missing. If you save the file again after having loaded it, all the new values will be filled in in the file.
 
 \subsection{The parameter group view and parameter index selection}
 
@@ -108,15 +122,28 @@ In the parameter group view you can select what parameter group to view the para
 
 If you check the 'Lock' box under one or more of the index sets, any edit to a parameter value will be performed to all value instances over those index sets, not just to the value corresponding to the current index tuple.
 
+If you check the 'Expand' button under one index set, the parameter view will gain one additional column for that index set, and will display all parameter values over that index set.
+
 \subsection{The parameter view}
 
-The parameter view displays the full name, the value, the recommended min and max values, the unit and the description of each parameter in the selected group. Min and max values and a description are not always provided by the model creator.
+The parameter view displays the full name, the value, the recommended min and max values, the unit and the description of each parameter in the selected group. Min and max values and a description are only optionally provided by the model creator.
 
 The value field is editable. What type of field it is depends on the type of the parameter value. For instance, a parameter of type double (double precision floating point number) is edited using a text field, while a parameter of type bool is edited using a check box since it is essentially just an on-off switch.
 
 If a model has a parameter group where the two last index set dependencies are the same index set, the parameter view works a little differently. The parameter index selection for that index set will only apply to the first instance of the dependency. The second instance of the dependency is the row in the parameter view (so you can edit all values of that row in the same view). This does for instance apply to the percolation matrix in the PERSiST model, where you choose what row you are on using the Soil index set selection menu, and then all columns for that row are displayed in the parameter view. Note that this is so far a little limited. It does only work for parameters of type double, and it only works if it is the last two index set dependencies that are the same. If you have a different configuration in a Mobius model, it may not be that easy to use the MobiView interface with it, but this is a very small edge case that could be fixed later.
 
-\section{The plot}
+\subsection{Index set editing}\label{sec:editindexes}
+
+\begin{center}
+\includegraphics[width=0.7\linewidth]{img/editindexes}
+\captionof{figure}{The index set editing window}
+\end{center}
+
+This is done by opening a separate window from the toolbar. You can edit what indexes are in each index set. For non-branched index sets, each index is a line in the associated text field at the bottom of the window. You can add, delete or rename indexes by editing the text. Note that if you add a new index or rename one, the parameters indexed by that index will be given default values.
+
+You can also edit the branch connections of branched index sets. This is done in the the list in the top right. The branch connections are rendered in the top left. The input ids of one index (typically a reach) have to be a comma-separated list of id's of other indexes (the id is just the value displayed in the "Id" column). No information about actual length or position is used in the visualization of the connections, only the connectivity.
+
+\section{The plot} \label{sec:plotting}
 
 You can use the plot to visualize inputs and results of the model. Time series can be selected in the Equation and Input lists to the right of the plot (results can only be selected if the model has been run at least once). You can select multiple time series at one time by ctrl-clicking (or shift-clicking) them. You can also remove a selected time series by ctrl-clicking it. If a time series varies over one or more index sets, you can select indexes from the lists below the plot. You can do multiselection here too.
 
@@ -136,11 +163,11 @@ You can
 You can choose between several different plot options. First, you can choose a few different plot modes. These are described in the next subsection. Depending on the plot mode, you may also have other options available
 
 \begin{enumerate}[i]
-\item Aggregation. You can choose to aggregate the displayed time series on monthly or yearly steps. You can also choose between "mean" or "sum" as the aggregation mode. Note that the sum aggregation only works well if all timesteps have a value (which may not be the case for some input series). Note: For models with other than daily timesteps, monthly or yearly aggregation may not always make sense. Other forms of aggregation like min or max could also be added. This is a work in progress.
+\item Aggregation. You can choose to aggregate the displayed time series on monthly or yearly steps. You can also choose between "mean", "sum", "min", or "max" as the aggregation mode. Note that the sum aggregation only works well if all timesteps have a value (which may not be the case for some input series). For models with other than daily timesteps, monthly or yearly aggregation may not always make sense. This is a work in progress.
 \item Y axis transformation. You can choose between three Y axis transformations
 \begin{enumerate}
-\item You can have no transformation (regular Y axis).
-\item You can normalize it. In this case, every displayed time series is normalized separately so that it takes values between 0 and 1. This is useful if you want to compare the shape of time series with very different scales.
+\item No transformation (regular Y axis).
+\item Normalize it. In this case, every displayed time series is normalized separately so that it takes values between 0 and 1. This is useful if you want to compare the shape of time series with very different scales.
 \item Logarithmic Y axis. This changes the scale of the axis to be a base 10 logarithm.
 \end{enumerate}
 \item Scatter inputs. Determines if input time series should be displayed as scatter plots or line plots. Scatter plots work better if there are a lot of holes in the input data.
@@ -173,7 +200,7 @@ One use case for this is e.g. to select the yearly sum of the value "Reach nitra
 \captionof{figure}{When using the Profile plot mode you can select the date using a slider or a date text field.}
 \end{center}
 
-\subsubsection{Compare baseline}
+\subsubsection{Compare baseline}\label{sec:comparebaseline}
 
 This is only available if you have clicked the "Save baseline" button in the toolbar. You must have only one result time series (and optionally one input time series) selected. The plot will display both the current value of the selected time series and the value of the time series at the point you clicked "Save baseline". All plot options are available.
 
@@ -197,7 +224,7 @@ You must have exactly one result time series and one input time series selected.
 
 You must have exactly one result time series and one input time series selected. This shows a quantile-quantile plot of the two time series, and can be used to see if your modeled time series is roughly similarly distributed to the observed one.
 
-The displayed percentiles are 5, 15, 25, 50, 75, 85, 95. The X axis is the result series, while the Y axis is the input series. The two have the same quantiles if the blue dots are on the red diagonal line.
+The displayed percentiles can be edited in the statistics settings window, which can be opened from the toolbar. The X axis is the result series, while the Y axis is the input series. The two have the same quantiles if the blue dots are on the red diagonal line.
 
 \subsection{Context menu options (edit or save plot)}
 
@@ -221,7 +248,11 @@ If you have selected one of the Residual, Residual histogram or the Q-Q plot mod
 
 \subsection{Goodness-of-fit statistics}\label{sec:gof}
 
-The goodness-of-fit statistics are displayed in the time series info box if you have exactly one result series and one input series selected, and have selected one of the Residuals, Residual histogram or Q-Q plot modes. 
+The goodness-of-fit statistics are displayed in the time series info box if you have exactly one result series and one input series selected, and have selected one of the Residuals, Residual histogram or Q-Q plot modes.
+
+It can be useful sometimes to not have all statistics displayed. In that case, you can turn them off in the statistics settings window, opened from the toolbar.
+
+During model calibration you can also see the changes in each statistic between runs. This is displayed inside a paranthesis after the value of the given statistic.
 
 Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various statistics are discussed in that paper.
 
@@ -295,6 +326,24 @@ Spearman's rank correlation coefficient \cite{spearman04} is computed as follows
 \]
 The coefficient takes values in $[-1, 1]$. If the value is 1, the modeled series is a (positively) monotone function of the observed series.
 
+\subsection{The additional plot view}\label{sec:additionalplotview}
+
+\begin{center}
+\includegraphics[width=\linewidth]{img/additionalplotview}
+\captionof{figure}{The additional plot view}
+\end{center}
+
+From the toolbar you can open an additional window to display multiple plots at the same time.
+
+In the top you can select how many plots are to be shown ("Rows"), and if the x axes of the plots are to be linked.
+
+For each row you can either push the "$<<$" button to copy the plot setup from the main window to the local one or push the " $>>$" button to copy the local plot setup back to the main window. Like the main plot, these also update whenever you run the model.
+
+This window has a toolbar with two buttons on its own
+\begin{enumerate}
+\item Save. You can store the current plot setup to a file.
+\item Load. You can load the current plot setup from a saved file. Note that the actual time series data will be from the current model run, not the one that was active when the setup was stored. Only the actual plot setup (i.e. name of time series, indexes, plot mode etc.) is stored and loaded.
+\end{enumerate}
 
 \bibliographystyle{plain}
 \bibliography{citations}
