@@ -96,11 +96,12 @@ The toolbar has the following buttons.
 \item Search parameters (ctrl-F). Opens a new window that allows you to search for parameters by name. Any matching parameters are displayed in a list, and clicking an item in the list takes you to the right parameter group in the main view. The search is a case-insensitive substring search.
 \item Edit indexes. Opens a new window. This is described in Section \ref{sec:editindexes}.
 \item Run model (F7). Runs the model using the parameters that are loaded in the MobiView interface, taking into account any edits. (It does not matter if the edits have been saved to file or not). Results from the latest model run are available for plotting. See section \ref{sec:plotting}
-\item View model equation batch structure. This displays the equation batch structure, as described in the Mobius model builder documentation. This is mostly interesting if you are a model developer, as it can provide some debug information for your work-in-progress model.
 \item Save baseline (ctrl-B). Saves a background copy of the current dataset. This is only used in the "Compare baseline" plot mode. See Section \ref{sec:comparebaseline}
 \item Export to csv (ctrl-E). Allows you to save all selected time series in a .csv format. The separator is ;
 \item Open an additional plot view to display multiple plots at the same time. This is further explained in section \ref{sec:additionalplotview}.
 \item Edit statistics settings. Here you can turn on or off what statistics you want displayed in the timeseries info box, and also choose percentiles for the Q-Q plot mode.
+\item View model equation batch structure. This displays the equation batch structure, as described in the Mobius model builder documentation. This is mostly interesting if you are a model developer, as it can provide some debug information for your work-in-progress model.
+\item View model info. This opens up a window with some information about each module in the current model, with links to further references.
 \end{enumerate}
 
 \section{Parameter viewing and editing}
@@ -252,7 +253,7 @@ The goodness-of-fit statistics are displayed in the time series info box if you 
 
 It can be useful sometimes to not have all statistics displayed. In that case, you can turn them off in the statistics settings window, opened from the toolbar.
 
-During model calibration you can also see the changes in each statistic between runs. This is displayed inside a paranthesis after the value of the given statistic.
+During model calibration you can also see the changes in each statistic between runs. This is displayed to the right of the value, and is color coded to show if the change was good or bad.
 
 Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various statistics are discussed in that paper.
 
