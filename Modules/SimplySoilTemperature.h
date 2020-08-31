@@ -8,10 +8,11 @@ static void
 AddSoilTemperatureModel(mobius_model *Model)
 {
 	BeginModule(Model, "Simply soil temperature", "0.1");
-	SetModuleDescription(Model, R"DESC(
-This is a simplification of the soil temperature model developed for the INCA models in	
-Rankinen K. T. Karvonen and D. Butterfield (2004), A simple model for predicting soil temperature in snow covered and seasonally frozen soil; Model description and testing, Hydrol. Earth Syst. Sci., 8, 706-716
-)DESC");
+	SetModuleDescription(Model, R""""(
+This is a simplification of the soil temperature model developed for the INCA models
+
+[^https://doi.org/10.5194/hess-8-706-2004^ Rankinen K. T. Karvonen and D. Butterfield (2004), A simple model for predicting soil temperature in snow covered and seasonally frozen soil; Model description and testing, Hydrol. Earth Syst. Sci., 8, 706-716]
+)"""");
 	
 	
 	auto WattsPerMetrePerDegreeCelsius				= RegisterUnit(Model, "W/m/°C");
@@ -84,9 +85,13 @@ Rankinen K. T. Karvonen and D. Butterfield (2004), A simple model for predicting
 static void
 AddSoilTemperatureModel2(mobius_model *Model)
 {
-	//NOTE: Lindström model (Lindström et. al. 2002)
 	BeginModule(Model, "Lindström soil temperature", "1.0");
 	
+	SetModuleDescription(Model, R""""(
+This is an implementation of the soil temperature model from
+
+[^https://doi.org/10.1002/hyp.1106^ Lindström, G. et. al. 2002, Soil frost and runoff at Svartberget, northern Sweden - Measurements and model analysis, Hydrological Processes 16(17):3379 - 3392]
+)"""");
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");

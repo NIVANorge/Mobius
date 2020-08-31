@@ -11,6 +11,16 @@ AddIncaToxModule(mobius_model *Model)
 {
 	BeginModule(Model, "INCA-Tox", "0.2");
 	
+	SetModuleDescription(Model, R""""(
+Inca-Tox, also called INCA-Contaminants or INCA-POP is described in
+
+[^https://doi.org/10.1016/j.scitotenv.2015.11.087^ Nizzetto, L., Butterfield, D., Futter, M., Lin, Y., Allan, I., Larssen, T., 2016. Assessment of contaminant fate in catchments using a novel integrated hydrobiogeochemical-multimedia fate model. Science of the Total Environment 544, 553-563.]
+
+[^https://www.niva.no/en/publications/inca-contaminants^ Model home page]
+
+New to the Mobius version is some simplification in process implementations.
+)"""");
+	
 	auto Dimensionless    = RegisterUnit(Model);
 	auto Ng               = RegisterUnit(Model, "ng");
 	auto M                = RegisterUnit(Model, "m");

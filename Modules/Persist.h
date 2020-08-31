@@ -1,13 +1,4 @@
 
-
-// This is an implementation of
-// M. N. Futter et. al. 2014, PERSiST: a flexible rainfall-runoff modelling toolkit for use with the INCA family of models, Hydrol. Earth Syst. Sci., 18, 855-873
-// This implementation is slightly simpler than specified in the paper, removing processes describing infiltration and inundation from the river to land.
-
-
-// New to version 1.4 : Computation of reach flow based on the Mannning flow equations.
-
-
 #if !defined(PERSIST_MODEL_H)
 
 static void
@@ -15,14 +6,16 @@ AddPersistModel(mobius_model *Model)
 {
 	BeginModule(Model, "PERSiST", "1.4");
 	
-	SetModuleDescription(Model, R"DESC(
+	SetModuleDescription(Model, R""""(
 This is an implementation of
-M. N. Futter et. al. 2014, PERSiST: a flexible rainfall-runoff modelling toolkit for use with the INCA family of models, Hydrol. Earth Syst. Sci., 18, 855-873
+
+[^https://doi.org/10.5194/hess-18-855-2014^ M. N. Futter et. al. 2014, PERSiST: a flexible rainfall-runoff modelling toolkit for use with the INCA family of models, Hydrol. Earth Syst. Sci., 18, 855-873]
+
 This implementation is slightly simpler than specified in the paper, removing processes describing infiltration and inundation from the river to land.
 
 New to version 1.4:
-Computation of reach flow based on the Mannning flow equations.	
-)DESC");
+Computation of reach flow based on the Manning flow equations.	
+)"""");
 	
 	auto Mm                   = RegisterUnit(Model, "mm");
 	auto MmPerDay             = RegisterUnit(Model, "mm/day");

@@ -25,6 +25,24 @@ AddSimplyPModel(mobius_model *Model)
 {
 	BeginModule(Model, "SimplyP", "0.4");
 	
+	SetModuleDescription(Model, R""""(
+SimplyP is a parsimonious phosphorus model. It was originally implemented in Python and published as
+
+[^https://doi.org/10.1002/2016WR020132^ Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132]
+
+For news, updates and references, see [^https://github.com/NIVANorge/Mobius/tree/master/Applications/SimplyP^ the model's github home page]
+
+New to version 0.4:
+Landscape units are dynamic and user-specified instead of hardcoded.
+
+New to version 0.3:
+More realistic hydrology.
+
+[^https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP/SimplyP_development_log.txt^ Detailed development log]
+
+For reference, here is the original Python implementation of [^https://github.com/LeahJB/SimplyP^ SimplyP].
+)"""");
+	
 	// UNITS
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Kg             = RegisterUnit(Model, "kg");

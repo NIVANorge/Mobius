@@ -1,6 +1,5 @@
 
-
-//This particular implementation follows L.A.Jackson-Blake &al 2016
+//NOTE: Is designed to work with PERSiST 1.4 or later
 
 #include "../boost_solvers.h"
 
@@ -9,7 +8,13 @@ AddINCASedModel(mobius_model *Model)
 {
 	BeginModule(Model, "INCA-Sed", "0.9");
 	
-	//NOTE: Is designed to work with PERSiST 1.4 or later
+	SetModuleDescription(Model, R""""(
+The most up-to date description can be found in
+Lazar, A. N. et. al. 2010, An assessment of the fine sediment dynamics in an upland river system: INCA-Sed modifications and implications for fisheries. Sci. Tot. En. 408, 2555-2566
+
+A notable difference with this implementation is that it is rigged to be run in combination with the PERSiST hydrology model.
+)"""");
+	
 	
 	auto Dimensionless = RegisterUnit(Model);
 	auto SPerM         = RegisterUnit(Model, "s/m");

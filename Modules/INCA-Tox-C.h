@@ -1,20 +1,14 @@
 
 
-
-
-//NOTE: This is a simple DOC module (simpler than INCA-C) built to be used with INCA-Tox.
-// This is built on top of PERSiST and INCA-Sed
-
-// This module does not try to keep track of the carbon balance or soil processes, it just provides a way to set up a simple empirical model of DOC transport in order for contaminants bound in the carbon to be transported correctly.
-
-
-//NOTE: THIS MODULE IS IN DEVELOPMENT!
-
+//NOTE: Has to be used with PERSiST and INCA-Sed
 
 static void
 AddIncaToxDOCModule(mobius_model *Model)
 {
 	BeginModule(Model, "INCA-Tox Carbon", "0.1");
+SetModuleDescription(Model, R""""(
+This is a simple DOC model intended only for use with INCA-Tox. It is not suitable for studying complicated carbon transport dynamics in itself. It does for instance not try to keep track of the carbon balance or soil processes, it just provides a way to set up a simple empirical model of DOC transport in order for contaminants bound in the carbon to be transported correctly.
+)"""");
 	
 	auto MgPerL   = RegisterUnit(Model, "mg/l");
 	auto Kg       = RegisterUnit(Model, "kg");

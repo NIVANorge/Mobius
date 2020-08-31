@@ -11,6 +11,14 @@ AddINCACModel(mobius_model *Model)
 {
 	//NOTE: Uses PERSiST, SoilTemperature, SolarRadiation
 	BeginModule(Model, "INCA-C", "1.0");
+	SetModuleDescription(Model, R""""(
+This is an implementation of the INCA-C model. This implementation is designed to have the PERSiST hydrology integrated into it instead of having the separate hydrology model originally specified for INCA-C.
+
+INCA-C was originally specified in
+M. N. Futter et. al. 2007, Modeling the mechanisms that control in-stream dissolved organic carbon dynamics in upland and forested catchments, Water Resources Research, 43.
+
+This implementation also has some additional processes that were not specified in the original paper, but were introduced in INCA-C software by Dan Butterfield at a later time based on a few other papers.
+)"""");
 	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Mm             = RegisterUnit(Model, "mm");

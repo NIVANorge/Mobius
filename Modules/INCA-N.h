@@ -1,9 +1,4 @@
 
-// An early version of INCA-N is for instance described in
-// A.J.Wade et. al. 2002, A nitrogen model for European catchments: INCA, new model structure and equations, Hydrol. Earth Syst. Sci., 6(3), 559-582,
-// however, this version has had a lot of additions on top of that. Moreover, this version is integrated with the PERSiST hydrology model instead of the earlier hydrology model that was specified for INCA-N.
-
-
 
 #if !defined INCAN_MODEL_H
 
@@ -13,6 +8,13 @@ AddIncaNModel(mobius_model *Model)
 	//NOTE: Uses Persist, SoilTemperature, WaterTemperature
 	BeginModule(Model, "INCA-N", "1.2");
 	
+	SetModuleDescription(Model, R""""(
+An early version of INCA-N is described in
+
+[^https://hess.copernicus.org/articles/6/559/2002/hess-6-559-2002.pdf^ A.J.Wade et. al. 2002, A nitrogen model for European catchments: INCA, new model structure and equations, Hydrol. Earth Syst. Sci., 6(3), 559-582]
+
+This version is based on the INCA-N software developed by Dan Butterfield, which saw many revisions after the initial papers. New to this version is that it is integrated with the PERSiST hydrology model instead of the earlier hydrology model that was specific to INCA-N.
+)"""");
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Reach          = GetIndexSetHandle(Model, "Reaches");

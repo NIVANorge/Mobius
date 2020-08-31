@@ -5,6 +5,10 @@ AddSimplySedimentModule(mobius_model *Model)
 {
 	BeginModule(Model, "SimplySed", "0.4");
 	
+	SetModuleDescription(Model, R""""(
+This is a simple sediment transport module created as a part of SimplyP.
+)"""");
+	
 	auto Dimensionless = RegisterUnit(Model);
 	auto Kg            = RegisterUnit(Model, "kg");
 	auto KgPerDay      = RegisterUnit(Model, "kg/day");
