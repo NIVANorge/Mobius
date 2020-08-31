@@ -1,22 +1,5 @@
 
 
-/*
-	INCA-Microplastics is a modified version of INCA-Sediments:
-	
-	An assessment of the fine sediment dynamics in an upland river system: INCA-Sed modifications and implications for fisheries, A. N. Lazar et. al., 2010, Science of the Total Environment 408, 2555-2566
-	
-	Changes include:
-		- Each grain class can have a separate density
-		- Each grain class has separate on-land mobilisation and store
-		- There can be mass transfer between classes (simulating breakdown of larger particles into smaller)
-		
-	Moreover, in-stream physics are now computed based on newer experiments with microplastics:
-	
-	Erosion Behavior of Different Microplastic Particles in Comparison to Natural Sediments, K. Waldschläger and H. Schüttrumph, Environ. Sci. Technol. 2019, 53, 13219-13227
-	
-	Effects of Particle Properties on the Settling and Rise Velocities of Microplastics in Freshwater under Laboratory Conditions, K. Waldschläger and H. Schüttrumph, Environ. Sci. Technol. 2019, 53, 1958-1966
-*/
-
 #include "../boost_solvers.h"
 
 
@@ -96,6 +79,21 @@ AddINCAMicroplasticsModel(mobius_model *Model)
 	BeginModule(Model, "INCA-Microplastics", "0.10.0");
 	//NOTE: Is designed to work with PERSiST
 	
+	SetModuleDescription(Model, R""""(
+INCA-Microplastics is a modified version of INCA-Sediments:
+	
+[^https://doi.org/10.1016/j.scitotenv.2010.02.030^ Lazar, A. N. et. al. 2010, An assessment of the fine sediment dynamics in an upland river system: INCA-Sed modifications and implications for fisheries. Sci. Tot. En. 408, 2555-2566]
+
+Changes include:
+[i100 [O1 Each grain class can have a separate density&][O1 Each grain class has separate on-land mobilisation and store&][O1 There can be mass transfer between classes (simulating breakdown of larger particles into smaller)&]]
+	
+Moreover, in-stream physics are now computed based on newer experiments with microplastics:
+
+[^https://doi.org/10.1021/acs.est.9b05394^ Erosion Behavior of Different Microplastic Particles in Comparison to Natural Sediments, K. Waldschläger and H. Schüttrumph, Environ. Sci. Technol. 2019, 53, 13219-13227]
+
+[^https://doi.org/10.1021/acs.est.8b06794^ Effects of Particle Properties on the Settling and Rise Velocities of Microplastics in Freshwater under Laboratory Conditions, K. Waldschläger and H. Schüttrumph, Environ. Sci. Technol. 2019, 53, 1958-1966]
+)"""");
+
 	auto Dimensionless = RegisterUnit(Model);
 	auto SPerM         = RegisterUnit(Model, "s/m");
 	auto MPerS         = RegisterUnit(Model, "m/s");

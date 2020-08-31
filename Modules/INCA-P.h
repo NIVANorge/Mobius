@@ -1,6 +1,4 @@
 
-//This particular implementation follows L.A.Jackson-Blake &al 2016
-
 inline double
 EPC0Computation(double SorptionCoefficient, double SolidPhosphorousMass, double SoilMass, double FreundlichIsothermConstant, double TDPConcentration)
 {
@@ -26,6 +24,18 @@ AddINCAPModel(mobius_model *Model)
 {
 	BeginModule(Model, "INCA-P", "0.1");
 	
+	SetModuleDescription(Model, R""""(
+INCA-P is a Mobius continuation of the INtegrated CAtchment model for Phosphorous dynamics, previously coded by Dan Butterfield.
+
+INCA-P simulates transport and reaction of phosphorous through soil and groundwater and into (a possibly branched) river system.
+
+INCA-P was originally developed by Andrew Wade and Paul Whitehead in 2002 (Wade et. al. 2002), using the semi-distributed conceptual framework of INCA-N. Many others later contributed to the model structure, such as the incorporation of the INCA-Sed sediment module to transport particulate P to the stream. The final version of the original implementation of INCA-P was fully described in Jackson-Blake et. al. 2016.
+
+[^https://doi.org/10.1016/j.envsoft.2016.05.022 L. A. Jackson-Blake, A. J. Wade, M. N. Futter, D. Butterfield, R.-M. Couture, B. A. Cox, J. Crossman, P. Ekholm, S. J. Halliday, L. Jin, D. S. L. Lawrence, A. Lepistö, Y. Lin, K. Rankinen and P. G. Whitehead, 2016, The INtegrated CAtchment model of phosphorous dynamics (INCA-P): Description and demonstration of new model structure and equations, Environmental Modelling & Software, 83, 356-386.]
+
+One difference between the Mobius version and the older version is that the model is now integrated with the PERSiST hydrology model.
+)"""");
+
 	auto Dimensionless = RegisterUnit(Model);
 	auto GCPerM2       = RegisterUnit(Model, "gC/m^2");
 	auto GCPerM2PerDay = RegisterUnit(Model, "gC/m^2/day");

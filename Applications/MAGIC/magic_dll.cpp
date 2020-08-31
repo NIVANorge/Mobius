@@ -22,8 +22,8 @@ DllBuildModel()
 	AddMagicModel(Model);
 	
 	//Carbon and nitrogen
-	//AddSimpleMagicCarbonNitrogenModel(Model);
-	AddMicrobialMagicCarbonNitrogenModel(Model);
+	AddSimpleMagicCarbonNitrogenModel(Model);
+	//AddMicrobialMagicCarbonNitrogenModel(Model);
 
 	return Model;
 }

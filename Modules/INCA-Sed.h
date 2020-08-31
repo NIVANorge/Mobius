@@ -10,7 +10,8 @@ AddINCASedModel(mobius_model *Model)
 	
 	SetModuleDescription(Model, R""""(
 The most up-to date description can be found in
-Lazar, A. N. et. al. 2010, An assessment of the fine sediment dynamics in an upland river system: INCA-Sed modifications and implications for fisheries. Sci. Tot. En. 408, 2555-2566
+
+[^https://doi.org/10.1016/j.scitotenv.2010.02.030^ Lazar, A. N. et. al. 2010, An assessment of the fine sediment dynamics in an upland river system: INCA-Sed modifications and implications for fisheries. Sci. Tot. En. 408, 2555-2566]
 
 A notable difference with this implementation is that it is rigged to be run in combination with the PERSiST hydrology model.
 )"""");

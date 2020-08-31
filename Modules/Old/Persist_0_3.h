@@ -1,17 +1,18 @@
 
-
-// This is an implementation of
-// M. N. Futter et. al. 2014, PERSiST: a flexible rainfall-runoff modelling toolkit for use with the INCA family of models, Hydrol. Earth Syst. Sci., 18, 855-873
-// This implementation is slightly simpler than specified in the paper, removing processes describing infiltration and inundation from the river to land.
-
-
-
 #if !defined(PERSIST_MODEL_H)
 
 static void
 AddPersistModel(mobius_model *Model)
 {
 	BeginModule(Model, "PERSiST", "1.3");
+	
+	SetModuleDescription(Model, R""""(
+This is an implementation of
+
+[^https://doi.org/10.5194/hess-18-855-2014^ M. N. Futter et. al. 2014, PERSiST: a flexible rainfall-runoff modelling toolkit for use with the INCA family of models, Hydrol. Earth Syst. Sci., 18, 855-873]
+
+This implementation is slightly simpler than specified in the paper, removing processes describing infiltration and inundation from the river to land.	
+)"""");
 	
 	auto Mm                = RegisterUnit(Model, "mm");
 	auto MmPerDay          = RegisterUnit(Model, "mm/day");

@@ -5,6 +5,10 @@ AddWaterTemperatureModel(mobius_model *Model)
 {
 	BeginModule(Model, "INCA water temperature", "1.0");
 	
+	SetModuleDescription(Model, R""""(
+This is a very simple river water temperature model based on a time-lag behind air temperature.
+)"""");
+	
 	auto Dimensionless 				= RegisterUnit(Model);
 	auto DegreesCelsius 			= RegisterUnit(Model, "°C");
 	

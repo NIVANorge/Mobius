@@ -24,6 +24,9 @@ AddMaxSolarRadiationModule(mobius_model *Model)
 {
 	BeginModule(Model, "Solar radiation", "0.1");
 	
+	SetModuleDescription(Model, R""""(
+This provides a simple computation of extraterrestrial solar radiation on a clear sky day.
+)"""");
 	
 	auto Metres         = RegisterUnit(Model, "m");
 	auto Degrees        = RegisterUnit(Model, "°");
