@@ -45,7 +45,6 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 	auto MmPerDegreePerDay = RegisterUnit(Model, "mm/°C/day");
 	auto Days              = RegisterUnit(Model, "days");
 	auto MmPerDay          = RegisterUnit(Model, "mm/day");
-	auto PerM3             = RegisterUnit(Model, "m^{-3}");
 	auto M3                = RegisterUnit(Model, "m^3");
 	auto M3PerSecond       = RegisterUnit(Model, "m^3/s");
 	auto Km2               = RegisterUnit(Model, "km^2");
@@ -63,8 +62,6 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 	
 	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
 	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0);
-	auto SnowMeltOffsetTemperature = RegisterParameterDouble(Model, Snow, "Snow melt offset temperature", DegreesCelsius, 0.0, -4.0, 4.0, "Snow begins melting above this temperature");
-	auto SnowMultiplier          = RegisterParameterDouble(Model, Snow, "Snow fall multiplier", Dimensionless, 1.0, 0.5, 1.5, "Adjustment factor to take into account possible inaccuracies in snow fall measurements");
 	
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
@@ -116,7 +113,7 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 	auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
 	EQUATION(Model, PrecipitationFallingAsSnow,
-		double precip = INPUT(Precipitation) * PARAMETER(SnowMultiplier);
+		double precip = INPUT(Precipitation);
 		return (INPUT(AirTemperature) < 0) ? precip : 0.0;
 	)
 	
@@ -126,7 +123,7 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 	)
 	
 	EQUATION(Model, PotentialDailySnowmelt,
-		return Max(0.0, PARAMETER(DegreeDayFactorSnowmelt) * (INPUT(AirTemperature) - PARAMETER(SnowMeltOffsetTemperature)));
+		return Max(0.0, PARAMETER(DegreeDayFactorSnowmelt) * INPUT(AirTemperature));
 	)
 	
 	EQUATION(Model, SnowMelt,

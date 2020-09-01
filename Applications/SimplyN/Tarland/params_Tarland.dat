@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simple soil temperature V0.1, SimplyN V_dev) at 2020-08-27 17:07:18
+# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplyN V_dev) at 2020-09-01 13:37:18
 
 index_sets:
 "Landscape units" : {"Seminatural" "Agricultural"}
@@ -9,10 +9,10 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-2004-01-01
+2000-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2005-12-31
+2010-12-31
 
 
 ###################### Degree-day PET V0.1 ######################
@@ -35,12 +35,6 @@ parameters:
 
 "Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5]
 2.74
-
-"Snow melt offset temperature" :     #(°C) [-4, 4] Snow begins melting above this temperature
-0
-
-"Snow fall multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor to take into account possible inaccuracies in snow fall measurements
-1
 
 
 # Hydrology (no index sets) #
@@ -94,7 +88,7 @@ parameters:
 0.5 0.5
 
 
-###################### Simple soil temperature V0.1 ######################
+###################### Simply soil temperature V0.1 ######################
 
 # Global soil temperature parameters (no index sets) #
 
@@ -115,11 +109,20 @@ parameters:
 
 # Nitrogen global (no index sets) #
 
-"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/day) [0, 1] 
-0.0134
+"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/year) [0, 1] 
+0.01
 
 "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature" :     #(dimensionless) [1, 2] 
 2.91
+
+"Use growth curve" :
+false
+
+"Day of highest uptake+immobilisation" :     #(day) [1, 365]
+200
+
+"Lenght of interval where 95% of growth takes place" :     #(day) [0, 365]
+200
 
 "Groundwater DIN concentration" :     #(mg/l) [0, 5] 
 3.4

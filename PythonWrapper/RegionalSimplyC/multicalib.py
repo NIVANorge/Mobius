@@ -72,7 +72,7 @@ def main() :
 		datasets.append(dataset)
 		
 	#Use one of the datasets to set up calibration settings
-	params = setup_calibration_params(datasets[0], do_doc=False)
+	params = setup_calibration_params(datasets[0], do_doc=True)
 	
 	mi, res = cu.minimize_residuals(params, datasets, comparisons, residual_method=resid, method='leastsq', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
 	

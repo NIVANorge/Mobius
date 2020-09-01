@@ -9,6 +9,10 @@ AddSimplyNModel(mobius_model *Model)
 {
 	BeginModule(Model, "SimplyN", "_dev");
 	
+	SetModuleDescription(Model, R""""(
+This module is in early development.
+)"""");
+	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Kg             = RegisterUnit(Model, "kg");
 	auto Mm             = RegisterUnit(Model, "mm");
@@ -31,6 +35,7 @@ AddSimplyNModel(mobius_model *Model)
 	
 	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerYear, 0.0, 0.0, 1.0, "", "imms");
 	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 2.0, "", "Q10imms");
+	auto UseGrowthCurve                   = RegisterParameterBool(Model, NitrogenGlobal, "Use growth curve", true);
 	auto DayOfHighestGrowth               = RegisterParameterDouble(Model, NitrogenGlobal, "Day of highest uptake+immobilisation", Days, 200.0, 1.0, 365.0);
 	auto Growth95Percentile               = RegisterParameterDouble(Model, NitrogenGlobal, "Lenght of interval where 95% of growth takes place", Days, 200.0, 0.0, 365.0);
 	
@@ -117,7 +122,9 @@ AddSimplyNModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, SoilWaterDINImmobilisation,
-		return RESULT(GrowthCurve)*RESULT(SoilWaterDINConcentration)*1e3 * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
+		double growthfactor = RESULT(GrowthCurve);
+		if(!PARAMETER(UseGrowthCurve)) growthfactor = 1.0;
+		return growthfactor*RESULT(SoilWaterDINConcentration)*1e3 * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
 	)
 	
 	EQUATION(Model, InitialSoilWaterDINMass,

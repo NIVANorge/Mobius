@@ -39,7 +39,7 @@ def main() :
 		#if catch_name != 'Dalelva' : continue
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/%s_%d_%s.dat' % (param_file_prefix, catch_no, catch_name)
+		parfile = 'MobiusFiles/%s_%d_%s_2.dat' % (param_file_prefix, catch_no, catch_name)
 		
 		try:
 			dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
@@ -104,7 +104,7 @@ def main() :
 		ax[1].axhline(0, color='grey')
 		
 		fig.suptitle('%s by month (1985-2017)' % catch_name, fontsize=16)    #NOTE: Title is incorrect if we change run period
-		plt.savefig('Figures/month_%d_%s.png' % (catch_no, catch_name))
+		plt.savefig('Figures/month_%d_%s_2.png' % (catch_no, catch_name))
 		plt.close()
 		
 		df_year = df.resample('Y').mean()
@@ -133,7 +133,7 @@ def main() :
 		ax[1].axhline(0, color='grey')
 		
 		fig.suptitle('%s by year (1985-2017)' % catch_name, fontsize=16)    #NOTE: Title is incorrect if we change run period
-		plt.savefig('Figures/year_%d_%s.png' % (catch_no, catch_name))
+		plt.savefig('Figures/year_%d_%s_2.png' % (catch_no, catch_name))
 		plt.close()
 
 if __name__ == "__main__":
