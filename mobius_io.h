@@ -104,7 +104,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
 	File = _wfopen((wchar_t *)Filename16.data(), L"w");
 #else
-	fopen_s(&File, Filename, "w");
+	File = fopen(Filename, "w");
 #endif
 
 	if(!File)

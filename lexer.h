@@ -56,7 +56,7 @@ struct token_stream
 		std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
 		File = _wfopen((wchar_t *)Filename16.data(), L"rb");
 #else
-		fopen_s(&File, Filename, "rb");
+		File = fopen(Filename, "rb");
 #endif
 		if(!File)
 			FatalError("ERROR: Tried to open file ", Filename, ", but was not able to.\n");
