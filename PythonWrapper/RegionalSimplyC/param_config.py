@@ -34,7 +34,7 @@ def configure_params(params, do_doc):
 			params['baseDOC_%s' % lu].max = 30.0
 			
 			params['cDOC_%s' % lu].max = 3.0
-		params['baseDOC_P'].min = 8.0
+		params['baseDOC_P'].min = 4.0
 		params['baseDOC_S'].max = 6.0
 
 		params['cDOC_S'].set(expr='cDOC_F')

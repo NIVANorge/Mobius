@@ -1,18 +1,6 @@
-//SimplyP version 0.4
-
-
 
 //  THIS VERSION IS IN DEVELOPMENT AND HAS BUGS!!!!
 // If you want to use the model, use SimplyP.h instead for now
-
-
-
-
-
-//NOTE: This is an adaption of
-// https://github.com/LeahJB/SimplyP
-
-//NOTE: This version is ahead of the Python version
 
 
 //NOTE: Only include these if you are going to use them (they cause long compile times):
@@ -50,10 +38,13 @@ For reference, here is the original Python implementation of [^https://github.co
 	auto MmPerKg        = RegisterUnit(Model, "mm/kg");
 	auto KgPerM2        = RegisterUnit(Model, "kg/m^2");
 	auto MgPerL         = RegisterUnit(Model, "mg/l");
+	auto LPerMg         = RegisterUnit(Model, "l/mg");
 	auto MgPerKg        = RegisterUnit(Model, "mg/kg");
 	auto KgPerHaPerYear = RegisterUnit(Model, "kg/ha/year");
 	auto KgPerDay       = RegisterUnit(Model, "kg/day");
 	auto KgPerMm        = RegisterUnit(Model, "kg/mm");
+	auto KgPerKm2       = RegisterUnit(Model, "kg/km^2");
+	auto KgPerKm2PerDay = RegisterUnit(Model, "kg/km^2/day");
 	
 	// INDEX SETS
 	auto Reach          = GetIndexSetHandle(Model, "Reaches");
@@ -67,8 +58,11 @@ For reference, here is the original Python implementation of [^https://github.co
 	// Phosphorus params that don't vary by sub-catchment/reach or land class
 	auto Phosphorous = RegisterParameterGroup(Model, "Phosphorous");
 	
+	auto DynamicEPC0                    = RegisterParameterBool(Model, Phosphorous, "Dynamic soil water EPC0, TDP and soil labile P", true, "Calculate a dynamic soil water EPC0 (the equilibrium P concentration of zero sorption), and therefore soilwater TDP concentration, so that it varies with labile P content? The labile P will also therefore vary");
+	auto CalibrationMode                = RegisterParameterBool(Model, Phosphorous, "Run in calibration mode", true, "Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file");
+	
 	auto MSoilPerM2                     = RegisterParameterDouble(Model, Phosphorous, "Soil mass per m2", KgPerM2, 95.0, 0.0, 200.0);
-	auto PhosphorousSorptionCoefficient = RegisterParameterDouble(Model, Phosphorous, "Phosphorous sorption coefficient", MmPerKg, 1.13e-4, 0.0, 0.1, "Gradient of linear relationship between labile P and TDP concentration. Value only read in from file if calibration run mode is set to false, otherwise it is estimated by the model");
+	auto PhosphorousSorptionCoefficient = RegisterParameterDouble(Model, Phosphorous, "Phosphorous sorption coefficient", LPerMg, 1.13e-4, 0.0, 0.1, "Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model");
 	
 	auto GroundwaterTDPConcentration    = RegisterParameterDouble(Model, Phosphorous, "Groundwater TDP concentration", MgPerL, 0.02, 0.0, 10.0);
 	auto PPEnrichmentFactor             = RegisterParameterDouble(Model, Phosphorous, "Particulate P enrichment factor", Dimensionless, 1.6, 1.0, 5.0, "P content of eroded material compared to P content of bulk soils");
@@ -85,10 +79,6 @@ For reference, here is the original Python implementation of [^https://github.co
 	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0);
 	auto SoilInactivePConcentration     = RegisterParameterDouble(Model, Phosphorous, "Inactive soil P content", MgPerKg, 873, 0.0, 10000.0, "Is recommended to be about the same as the Initial total soil P content of seminatural land, but a little lower.");
 
-	// Add to global system parameter group
-	auto System = GetParameterGroupHandle(Model, "System");
-	auto DynamicEPC0                    = RegisterParameterBool(Model, System, "Dynamic soil water EPC0, TDP and soil labile P", true, "Calculate a dynamic soil water EPC0 (the equilibrium P concentration of zero sorption), and therefore soilwater TDP concentration, so that it varies with labile P content? The labile P will also therefore vary");
-	auto CalibrationMode                = RegisterParameterBool(Model, System, "Run in calibration mode", true, "Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file");
 	
 	// Optional timeseries that the user can use instead of the corresponding parameters.
 	auto NetAnnualPInputTimeseries = RegisterInput(Model, "Net annual P input to soil", KgPerHaPerYear);
@@ -116,62 +106,41 @@ For reference, here is the original Python implementation of [^https://github.co
 	auto ErosionFactor                  = GetEquationHandle(Model, "Erosion factor");
 	
 	
-/* 	// P sorption coefficient calculation
-	//Method 1: This method calculates the parameter or reads it from file, depending on calibration mode. The result is saved to the model dataset, so its value can be extracted e.g. via the python wrapper, but not output in MobiView
+ 	// P sorption coefficient calculation
 	
-	auto ComputedPhosphorousSorptionCoefficient = RegisterEquationInitialValue(Model, "Computed phosphorous sorption coefficient", MmPerKg);
-	ParameterIsComputedBy(Model, PhosphorousSorptionCoefficient, ComputedPhosphorousSorptionCoefficient, false);  //NOTE: The 'false' is there to say that this parameter SHOULD still be exposed in parameter files.
-	
-	EQUATION(Model, ComputedPhosphorousSorptionCoefficient,
-		double providedvalue = PARAMETER(PhosphorousSorptionCoefficient);
-		double computedvalue = 
-				1e-6 * (PARAMETER(InitialSoilPConcentration, Arable) -
-				  PARAMETER(InitialSoilPConcentration, Seminatural))
-				  /ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0, Arable), PARAMETER(CatchmentArea));
-		
-		//NOTE: If a value of 0 is possible, that has to be accommodated for in the equations below or otherwise it will crash.
-		
-		if(PARAMETER(CalibrationMode)) return computedvalue;
-		return providedvalue;
-	) */
-	
-	// P equations
-	
-	// Method 2: regular equation to define the sorption coefficient. Returns a constant value, which can be seen in e.g. MobiView.
-	auto SoilPSorptionCoefficient = RegisterEquation(Model, "Soil phosphorous sorption coefficient", MmPerKg);
-	auto InitialSoilWaterEPC0 = RegisterEquationInitialValue(Model, "Initial soil water EPC0", KgPerMm);
-	auto SoilWaterEPC0   = RegisterEquation(Model, "Soil water EPC0", KgPerMm);
-	SetInitialValue(Model, SoilWaterEPC0, InitialSoilWaterEPC0);
+	auto SoilPSorptionCoefficient = RegisterEquationInitialValue(Model, "Soil phosphorous sorption coefficient", LPerMg);
+	ParameterIsComputedBy(Model, PhosphorousSorptionCoefficient, SoilPSorptionCoefficient, false); //NOTE: The 'false' means that the parameter is nevertheless exposed in MobiView and the parameter file.
 	
 	EQUATION(Model, SoilPSorptionCoefficient,
-		/* Units: (kg/mg)(mg/kgSoil)(mm/kg)*/
-		double initialEPC0 = ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0), PARAMETER(CatchmentArea));
-
-		double Kf = 1e-6 * SafeDivide((PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)), initialEPC0);
+	
+		double Kf = 1e-6 * SafeDivide((PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)), PARAMETER(InitialEPC0));
 				  
 		double KfPar = PARAMETER(PhosphorousSorptionCoefficient);
 				  
 		if(PARAMETER(CalibrationMode)) return Kf;
 		
-		return KfPar;
-	)			
+		return KfPar; // If not in calibration mode, just set back the parameter provided by the user.
+	)
 
-	auto InitialSoilTDPMass     = RegisterEquationInitialValue(Model, "Initial soil TDP mass", Kg);
-	auto SoilTDPMass            = RegisterEquation(Model, "Soil TDP mass", Kg);
+	auto SoilWaterEPC0            = RegisterEquation(Model, "Soil water EPC0", MgPerL);
+	SetInitialValue(Model, SoilWaterEPC0, InitialEPC0);
+
+	auto InitialSoilTDPMass     = RegisterEquationInitialValue(Model, "Initial soil TDP mass", KgPerKm2);
+	auto SoilTDPMass            = RegisterEquation(Model, "Soil TDP mass", KgPerKm2);
 	SetInitialValue(Model, SoilTDPMass, InitialSoilTDPMass);
 	
-	auto InitialSoilLabilePMass = RegisterEquationInitialValue(Model, "Initial soil labile P mass", Kg);
-	auto SoilLabilePMass = RegisterEquation(Model, "Soil labile P mass", Kg);
+	auto InitialSoilLabilePMass = RegisterEquationInitialValue(Model, "Initial soil labile P mass", KgPerKm2);
+	auto SoilLabilePMass = RegisterEquation(Model, "Soil labile P mass", KgPerKm2);
 	SetInitialValue(Model, SoilLabilePMass, InitialSoilLabilePMass);
 	
 	EQUATION(Model, InitialSoilTDPMass,
-		return RESULT(SoilWaterEPC0) * RESULT(SoilWaterVolume);
+		return RESULT(SoilWaterEPC0) * RESULT(SoilWaterVolume);   //NOTE: mg/l * mm = kg/km2
 	)
 	
 	EQUATION(Model, SoilTDPMass,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double b = (RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow)) / LAST_RESULT(SoilWaterVolume);
-		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
+		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
+		double b = (PARAMETER(PhosphorousSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow)) / LAST_RESULT(SoilWaterVolume);
+		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 / 365.0 + PARAMETER(PhosphorousSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
 		double value = a / b + (LAST_RESULT(SoilTDPMass) - a / b) * exp(-b);
 		
 		if(!PARAMETER(DynamicEPC0)) return LAST_RESULT(SoilTDPMass);
@@ -180,18 +149,18 @@ For reference, here is the original Python implementation of [^https://github.co
 	)
 	
 	EQUATION(Model, InitialSoilLabilePMass,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
+		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
 		return 1e-6 * (PARAMETER(InitialSoilPConcentration)-PARAMETER(SoilInactivePConcentration)) * Msoil;
 	)
 	
 	EQUATION(Model, SoilLabilePMass,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double b0 = RESULT(SoilPSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow);
+		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
+		double b0 = PARAMETER(PhosphorousSorptionCoefficient)* Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow);
 		double b = b0 / LAST_RESULT(SoilWaterVolume);
-		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 * PARAMETER(CatchmentArea) / 365.0 + RESULT(SoilPSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
+		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 / 365.0 + PARAMETER(PhosphorousSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
 		//TODO: factor out calculations of b0, a? Would probably not matter that much to speed though.
 	
-		double sorp = RESULT(SoilPSorptionCoefficient) * Msoil * (a / b0 - RESULT(SoilWaterEPC0) + (LAST_RESULT(SoilTDPMass)/LAST_RESULT(SoilWaterVolume) - a/b0)*(1.0 - exp(-b))/b);
+		double sorp = PARAMETER(PhosphorousSorptionCoefficient) * Msoil * (a / b0 - RESULT(SoilWaterEPC0) + (LAST_RESULT(SoilTDPMass)/LAST_RESULT(SoilWaterVolume) - a/b0)*(1.0 - exp(-b))/b);
 		if(!std::isfinite(sorp)) sorp = 0.0; //NOTE: Otherwise calculation can break down in some rare cases.
 		
 		if(!PARAMETER(DynamicEPC0)) sorp = 0.0;
@@ -199,13 +168,9 @@ For reference, here is the original Python implementation of [^https://github.co
 		return LAST_RESULT(SoilLabilePMass) + sorp;
 	)
 	
-	EQUATION(Model, InitialSoilWaterEPC0,
-		 return ConvertMgPerLToKgPerMm(PARAMETER(InitialEPC0), PARAMETER(CatchmentArea));
-	)
-	
 	EQUATION(Model, SoilWaterEPC0,
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double Kf = RESULT(SoilPSorptionCoefficient);
+		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
+		double Kf = PARAMETER(PhosphorousSorptionCoefficient);
 		double Plab_A = LAST_RESULT(SoilLabilePMass);
 		
 		if(PARAMETER(DynamicEPC0)) return SafeDivide(Plab_A, (Kf * Msoil));
@@ -213,49 +178,42 @@ For reference, here is the original Python implementation of [^https://github.co
 		return LAST_RESULT(SoilWaterEPC0);
 	)
 	
-	
 	// Post-processing soil P equations (convert units)
 	auto SoilWaterTDPConcentration = RegisterEquation(Model, "Soil water TDP concentration", MgPerL);
-	auto EPC0MgL                   = RegisterEquation(Model, "Soil water EPC0 in mg/l", MgPerL);
 	auto SoilLabilePConcentration  = RegisterEquation(Model, "Soil labile P concentration", MgPerKg);
 	
 	EQUATION(Model, SoilWaterTDPConcentration,
-		double dynamicTDPConc = ConvertKgPerMmToMgPerL(SafeDivide(RESULT(SoilTDPMass),RESULT(SoilWaterVolume)), PARAMETER(CatchmentArea));
+		double dynamicTDPConc = SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume));  // (kg/km2)/mm = mg/l
 		double constantTDPConc = PARAMETER(InitialEPC0);
 		
 		if(!PARAMETER(DynamicEPC0)) return constantTDPConc;
 		return dynamicTDPConc;		
 	)
 	
-	EQUATION(Model, EPC0MgL,
-		double dynamic_EPC0 = ConvertKgPerMmToMgPerL(RESULT(SoilWaterEPC0), PARAMETER(CatchmentArea));
-		double constantEPC0 = PARAMETER(InitialEPC0);
-		
-		if(!PARAMETER(DynamicEPC0)) return constantEPC0; //This is not necessary since the SoilWaterEPC0 equation does this check anyway..
-		return dynamic_EPC0;
-	)
-	
 	EQUATION(Model, SoilLabilePConcentration,
 		double labilePMassMg = 1e6 * RESULT(SoilLabilePMass);
-		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
+		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
 		double constantLabilePConc = PARAMETER(InitialSoilPConcentration);
 		
 		if(!PARAMETER(DynamicEPC0)) return constantLabilePConc;
 		return labilePMassMg/Msoil;
 	)
 	
-	auto SoilTDPOutput = RegisterEquation(Model, "Soil TDP output", KgPerDay);
-	auto TotalSoilTDPOutput = RegisterEquationCumulative(Model, "Total soil TDP output", SoilTDPOutput, LandscapeUnits);
+	auto SoilTDPOutput = RegisterEquation(Model, "Soil TDP output", KgPerKm2PerDay);
+	auto TotalSoilTDPOutput = RegisterEquationCumulative(Model, "Total soil TDP output", SoilTDPOutput, LandscapeUnits, LandUseProportions);
 	
 	EQUATION(Model, SoilTDPOutput,
 		//TODO: Should consider using "integrated" values here similar to in the equation for the TDP mass value..
 		double flow = (1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow) + RESULT(QuickFlow);
-		return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * flow * PARAMETER(LandUseProportions); 
+		return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * flow; 
 	)
 	
 	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
 	
 	// Reach equations	
+	
+	auto ReachPPInputCoefficient = RegisterEquation(Model, "Reach PP input coefficent", KgPerDay);
+	auto TotalReachPPInputCoefficient = RegisterEquationCumulative(Model, "Reach PP input coefficent summed over landscape units", ReachPPInputCoefficient, LandscapeUnits, LandUseProportions);
 	
 	auto StreamTDPFlux = RegisterEquation(Model, "Reach TDP flux", KgPerDay, ReachSolver);
 	auto StreamPPFlux  = RegisterEquation(Model, "Reach PP flux", KgPerDay, ReachSolver);
@@ -302,23 +260,23 @@ For reference, here is the original Python implementation of [^https://github.co
 	
 	EQUATION(Model, StreamTDPMass,
 		return
-			  RESULT(TotalSoilTDPOutput)
+			  RESULT(TotalSoilTDPOutput) * PARAMETER(CatchmentArea)
 			+ RESULT(GroundwaterFlow) * ConvertMgPerLToKgPerMm(PARAMETER(GroundwaterTDPConcentration), PARAMETER(CatchmentArea))
 			+ IF_INPUT_ELSE_PARAMETER(EffluentTDPTimeseries, EffluentTDP)
 			+ RESULT(ReachTDPInputFromUpstream)
 			- RESULT(StreamTDPFlux);
 	)
 	
+	EQUATION(Model, ReachPPInputCoefficient,
+		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
+		double P_inactive = 1e-6*PARAMETER(SoilInactivePConcentration)*Msoil;
+		return (RESULT(SoilLabilePMass) + P_inactive) * PARAMETER(CatchmentArea) * RESULT(ReachSedimentInputCoefficient);
+	)
+	
 	EQUATION(Model, ReachPPInputFromErosion,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double PP = 0.0;
-		double P_inactive = 1e-6*PARAMETER(SoilInactivePConcentration)*Msoil;
-		for(index_t Land = FIRST_INDEX(LandscapeUnits); Land < INDEX_COUNT(LandscapeUnits); ++Land)
-		{
-			//NOTE: This could be factored out as its own equation and summed up using an EquationCumulative:
-			PP += (RESULT(SoilLabilePMass, Land) + P_inactive) * RESULT(ReachSedimentInputCoefficient, Land);
-		}
-		return RESULT(ErosionFactor) * PARAMETER(PPEnrichmentFactor) * PP / Msoil;
+		
+		return RESULT(ErosionFactor) * PARAMETER(PPEnrichmentFactor) * RESULT(TotalReachPPInputCoefficient) / Msoil;
 	)
 	
 	EQUATION(Model, ReachPPInputFromUpstream,
