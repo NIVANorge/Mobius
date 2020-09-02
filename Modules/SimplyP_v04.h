@@ -108,6 +108,8 @@ For reference, here is the original Python implementation of [^https://github.co
 	
  	// P sorption coefficient calculation
 	
+	
+	//TODO: It makes more sense to the units if Kf, the sorption coefficient, is in l/(mg*day) since  Kf*Msoil*(TDP/V-EPC0) is supposed to be a flux..
 	auto SoilPSorptionCoefficient = RegisterEquationInitialValue(Model, "Soil phosphorous sorption coefficient", LPerMg);
 	ParameterIsComputedBy(Model, PhosphorousSorptionCoefficient, SoilPSorptionCoefficient, false); //NOTE: The 'false' means that the parameter is nevertheless exposed in MobiView and the parameter file.
 	
