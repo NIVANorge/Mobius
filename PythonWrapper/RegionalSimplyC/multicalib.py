@@ -1,6 +1,7 @@
 
 import numpy as np
 import pandas as pd
+import lmfit
 
 from param_config import setup_calibration_params
 
@@ -13,12 +14,27 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
 
 
+def set_params(dataset, index, params):
+	par = params.copy()
+	doc_mult = par['aux_%d' % index].value
+	par['baseDOC_F'].value *= doc_mult
+	par['baseDOC_S'].value *= doc_mult
+	par['baseDOC_P'].value *= doc_mult
+	
+	cu.set_parameter_values(par, dataset)
+
 def resid(params, datasets, comparisons, norm=False, skip_timesteps=0) :
 	residuals = []
 	
-	for dataset in datasets :
+	doc_F = params['baseDOC_F'].value
+	doc_S = params['baseDOC_S'].value
+	doc_P = params['baseDOC_P'].value
+	
+	for idx, dataset in enumerate(datasets) :
 		dataset_copy = dataset.copy()
-		cu.set_parameter_values(params, dataset_copy)
+		
+		set_params(dataset_copy, idx, params)
+		
 		dataset_copy.run_model()
 
 		for i, comparison in enumerate(comparisons):
@@ -49,7 +65,7 @@ def main() :
 	
 	comparisons = [
 			('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', []),
-			#('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', []),
+			('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', []),
 		   ]
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -74,6 +90,9 @@ def main() :
 	#Use one of the datasets to set up calibration settings
 	params = setup_calibration_params(datasets[0], do_doc=True)
 	
+	for idx, row in catch_setup.iterrows() :
+		params.add(lmfit.Parameter('aux_%d' % idx, value=1.0, min=0.5, max=1.5, user_data={'parameter_type' : 'model_parameter'}))
+	
 	mi, res = cu.minimize_residuals(params, datasets, comparisons, residual_method=resid, method='leastsq', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
 	
 	print('Final results:')
@@ -84,7 +103,7 @@ def main() :
 		catch_name = row['name']
 		
 		dataset = datasets[index]
-		cu.set_parameter_values(res.params, dataset)
+		set_params(dataset_copy, index, res.params)
 		dataset.run_model()
 		
 		print('********** location %s ***********' % catch_name)

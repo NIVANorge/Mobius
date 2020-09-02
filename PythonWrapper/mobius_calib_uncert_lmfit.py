@@ -199,7 +199,7 @@ def parameter_df_to_lmfit(df):
     
 def set_parameter_values(params, dataset, use_stat=None):
     """ Set the current parameter values in 'dataset' to those specified by 'params'.
-        NOTE: Ignores error parameters with names beginning 'err_'
+        NOTE: Ignores error parameters with names beginning 'err_' or 'aux_'
     
     Args:
         params:      Obj. LMFit 'Parameters' object
@@ -215,7 +215,7 @@ def set_parameter_values(params, dataset, use_stat=None):
     assert use_stat in (None, 'median', 'map'), "'use_stat' must be None, 'median' or 'map'."
     
     for key in params.keys():
-        if key.split('_')[0] != 'err':
+        if key.split('_')[0] != 'err' and key.split('_')[0] != 'aux':
             name = params[key].user_data['name']
             index =  params[key].user_data['index']
             
