@@ -5,7 +5,7 @@ timesteps : 17167
 
 additional_timeseries :
 "Observed Q"            unit "m3/s"   # 6am daily mean flow, Høgfoss scaled to Kure
-"Observed TON"          unit "mg/l"
+"Observed TOTN"          unit "mg/l"
 "Observed nitrate"      unit "mg/l"
 
 inputs :
@@ -46127,7 +46127,7 @@ inputs :
 ####################################################################
 
 
-"Observed TON" :
+"Observed TOTN" :
 1980-04-28	1.68
 1980-05-20	0.86
 1980-06-17	1.44

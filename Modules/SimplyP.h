@@ -880,7 +880,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	EQUATION(Model, AgriculturalSoilwaterTDPConcentration,
 		double dynamicTDPConc = ConvertKgPerMmToMgPerL(RESULT(AgriculturalSoilTDPMass)/RESULT(AgriculturalSoilWaterVolume), PARAMETER(CatchmentArea));
-		double constantTDPConc = PARAMETER(InitialEPC0);
+		double constantTDPConc = PARAMETER(InitialEPC0, Arable);
 		
 		if(!PARAMETER(DynamicEPC0)) return constantTDPConc;
 		return dynamicTDPConc;		
@@ -888,7 +888,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	
 	EQUATION(Model, AgriculturalEPC0MgL,
 		double dynamic_EPC0 = ConvertKgPerMmToMgPerL(RESULT(AgriculturalSoilWaterEPC0), PARAMETER(CatchmentArea));
-		double constantEPC0 = PARAMETER(InitialEPC0);
+		double constantEPC0 = PARAMETER(InitialEPC0, Arable);
 		
 		if(!PARAMETER(DynamicEPC0)) return constantEPC0;
 		return dynamic_EPC0;
@@ -897,7 +897,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	EQUATION(Model, AgriculturalSoilLabilePConcentration,
 		double labilePMassMg = 1e6 * RESULT(AgriculturalSoilLabilePMass);
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6 * PARAMETER(CatchmentArea);
-		double constantLabilePConc = PARAMETER(InitialSoilPConcentration);
+		double constantLabilePConc = PARAMETER(InitialSoilPConcentration, Arable);
 		
 		if(!PARAMETER(DynamicEPC0)) return constantLabilePConc;
 		return labilePMassMg/Msoil;

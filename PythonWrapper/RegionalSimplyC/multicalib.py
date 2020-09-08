@@ -103,7 +103,7 @@ def main() :
 		catch_name = row['name']
 		
 		dataset = datasets[index]
-		set_params(dataset_copy, index, res.params)
+		set_params(dataset, index, res.params)
 		dataset.run_model()
 		
 		print('********** location %s ***********' % catch_name)

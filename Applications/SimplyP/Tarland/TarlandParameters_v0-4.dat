@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, SimplySed V0.4, SimplyP V0.4) at 2020-09-02 15:55:22
+# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, SimplySed V0.4, SimplyP V0.4) at 2020-09-04 11:08:32
 
 index_sets:
 "Reaches" : {"Coull"}
@@ -40,7 +40,7 @@ parameters:
 # Hydrology (no index sets) #
 
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
-0.0507
+0.02
 
 "Soil field capacity" :     #(mm) [0, 1000]
 290
@@ -79,7 +79,7 @@ parameters:
 # Hydrology land ("Landscape units") #
 
 "Soil water time constant" :     #(days) [0.01, 40]
-3.56 3.56 4.22
+2 3.56 10
 
 
 # Land cover ("Reaches" "Landscape units") #

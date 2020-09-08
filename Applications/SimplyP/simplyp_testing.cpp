@@ -3,6 +3,7 @@
 #define MOBIUS_TEST_FOR_NAN 0
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 1
+#define MOBIUS_TIMESTEP_VERBOSITY 0
 
 #include "../../mobius.h"
 
@@ -36,7 +37,7 @@ int main()
 
 	ReadInputsFromFile(DataSet, "Tarland/TarlandInputs.dat");
 	
-	//PrintResultStructure(Model);
+	PrintResultStructure(Model);
 	//PrintParameterStorageStructure(DataSet);
 	//PrintInputStorageStructure(DataSet);
 	
