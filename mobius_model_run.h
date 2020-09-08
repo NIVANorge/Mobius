@@ -34,55 +34,108 @@ mobius_model::~mobius_model()
 }
 
 
-static void
-PrintPartialDependencyTrace(mobius_model *Model, equation_h Equation, bool First = false)
+struct pre_batch;
+
+struct dependency_entry
 {
-	if(!First)
-		ErrorPrint("<- ");
-	else
-		ErrorPrint("   ");
+	size_t       BatchIndex;
+	equation_h   WhichEquation;
+	equation_h   DependsOnEquation;
+	bool         ImplicitlyIndexed;
+};
+
+bool
+operator==(const dependency_entry &A, const dependency_entry &B)
+{
+	//NOTE: This is used later when we remove duplicates. After the initial stage we are not interested in which equations caused the dependencies.
+	return A.BatchIndex == B.BatchIndex && A.ImplicitlyIndexed == B.ImplicitlyIndexed;
+}
+
+struct pre_batch
+{
+	solver_h Solver = {0};
+	std::vector<dependency_entry> Dependencies;
+	std::vector<equation_h>       Equations;
+	std::set<index_set_h>         IndexSetDependencies;
+	
+	//NOTE: These are used for a graph sort algorithm:
+	bool Visited        = false;
+	bool TempVisited    = false;
+};
+
+struct pre_batch_group
+{
+	std::vector<size_t> PreBatchIndexes;
+	std::set<index_set_h> IndexSetDependencies;
+};
+
+
+static void
+ErrorPrintEquation(mobius_model *Model, equation_h Equation)
+{
 	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	if(IsValid(Spec.Solver))
 		ErrorPrint("\"", GetName(Model, Spec.Solver), "\" (");
 	ErrorPrint("\"", GetName(Model, Equation), "\"");
 	if(IsValid(Spec.Solver))
 		ErrorPrint(")");
+}
+
+static void
+PrintPartialDependencyTrace(mobius_model *Model, equation_h Equation, bool First = false)
+{
+	if(First) ErrorPrint("       ");
+	else ErrorPrint("<----- ");
+	ErrorPrintEquation(Model, Equation);
 	ErrorPrint('\n');
 }
 
-static bool
-TopologicalSortEquationsVisit(mobius_model *Model, equation_h Equation, std::vector<equation_h>& PushTo)
+static void
+PrintPartialDependencyTrace(mobius_model *Model, equation_h WhichEquation, equation_h DependsOnEquation)
 {
-	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
-	solver_spec &SolverSpec = Model->Solvers.Specs[Spec.Solver.Handle];
-	
-	//NOTE: We have to short-circuit out all equations that belong to a particular solver since they always have to be grouped together in a batch, and ODE equations within a batch are allowed to have circular references since they work differently. They have to be sorted as a block later.
-	bool &Visited = IsValid(Spec.Solver) ? SolverSpec.Visited : Spec.Visited;
-	bool &TempVisited = IsValid(Spec.Solver) ? SolverSpec.TempVisited : Spec.TempVisited;
-	
-	if(Visited) return true;
-	if(TempVisited)
+	ErrorPrintEquation(Model, DependsOnEquation);
+	ErrorPrint(" <----- ");
+	ErrorPrintEquation(Model, WhichEquation);
+	ErrorPrint("\n");
+}
+
+
+static bool
+TopologicalSortBatchesVisit(mobius_model *Model, size_t BatchIdx, std::vector<pre_batch> &Batches, std::vector<size_t> &BatchIndexesOut)
+{
+	pre_batch &Batch = Batches[BatchIdx];
+	if(Batch.Visited) return true;
+	if(Batch.TempVisited)
 	{
-		ErrorPrint("ERROR: There is a circular dependency between the equations :\n");
-		PrintPartialDependencyTrace(Model, Equation, true);
+		ErrorPrint("ERROR: There is a circular dependency between the equations:\n");
 		return false;
 	}
-	TempVisited = true;
-	std::set<equation_h> &DirectResultDependencies = IsValid(Spec.Solver) ? SolverSpec.DirectResultDependencies : Spec.DirectResultDependencies;
-	for(equation_h Dependency : DirectResultDependencies)
+	Batch.TempVisited = true;
+	
+	for(dependency_entry &Dep : Batch.Dependencies)
 	{
-		equation_spec &DepSpec = Model->Equations.Specs[Dependency.Handle];
-		if(IsValid(Spec.Solver) && IsValid(DepSpec.Solver) && Spec.Solver == DepSpec.Solver) continue; //NOTE: We ignore dependencies of the solver on itself for now.
-		bool Success = TopologicalSortEquationsVisit(Model, Dependency, PushTo);
+		if(!Dep.ImplicitlyIndexed) continue;
+		bool Success = TopologicalSortBatchesVisit(Model, Dep.BatchIndex, Batches, BatchIndexesOut);
 		if(!Success)
 		{
-			PrintPartialDependencyTrace(Model, Equation);
+			PrintPartialDependencyTrace(Model, Dep.WhichEquation, Dep.DependsOnEquation);
 			return false;
 		}
 	}
-	Visited = true;
-	PushTo.push_back(Equation);
+	
+	Batch.Visited = true;
+	BatchIndexesOut.push_back(BatchIdx);
 	return true;
+}
+
+static void
+TopologicalSortBatches(mobius_model *Model, std::vector<pre_batch> &Batches, std::vector<size_t> &BatchIndexesOut)
+{
+	for(size_t BatchIdx = 0; BatchIdx < Batches.size(); ++BatchIdx)
+	{
+		bool Success = TopologicalSortBatchesVisit(Model, BatchIdx, Batches, BatchIndexesOut);
+		if(!Success) FatalError("");
+	}
 }
 
 static bool
@@ -101,7 +154,7 @@ TopologicalSortEquationsInSolverVisit(mobius_model *Model, equation_h Equation, 
 	for(equation_h Dependency : Spec.DirectResultDependencies)
 	{
 		equation_spec &DepSpec = Model->Equations.Specs[Dependency.Handle];
-		if(DepSpec.Type == EquationType_ODE || DepSpec.Solver != Spec.Solver) continue; //NOTE: We are only interested sorting non-ode equations belonging to this solver.
+		if(DepSpec.Type == EquationType_ODE || DepSpec.Solver != Spec.Solver) continue; //NOTE: Here we are only interested sorting non-ode equations belonging to this solver.
 		bool Success = TopologicalSortEquationsInSolverVisit(Model, Dependency, PushTo);
 		if(!Success)
 		{
@@ -121,9 +174,7 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 	equation_spec &OriginalSpec = Model->Equations.Specs[Equation.Handle];
 	equation_h InitialValueEq = OriginalSpec.InitialValueEquation;
 	if(IsValid(InitialValueEq))
-	{
 		EquationToLookUp = InitialValueEq;
-	}
 	
 	equation_spec &Spec = Model->Equations.Specs[EquationToLookUp.Handle];
 	
@@ -135,8 +186,6 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 		return false;
 	}
 	Spec.TempVisited = true;
-	
-	//std::cout << "Initial value sort for " << GetName(Model, EquationToLookUp) << std::endl;
 	
 	if(!IsValid(OriginalSpec.InitialValue) && !OriginalSpec.HasExplicitInitialValue) //NOTE: If the equation has one type of explicit initial value or other, we don't evaluate it during the initial value run, and so we don't care what its dependencies are for this sort.
 	{
@@ -158,8 +207,9 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 
 typedef bool topological_sort_equations_visit(mobius_model *Model, equation_h Equation, std::vector<equation_h>& PushTo);
 
+template<typename container>
 static void
-TopologicalSortEquations(mobius_model *Model, std::vector<equation_h> &Equations, topological_sort_equations_visit *Visit)
+TopologicalSortEquations(mobius_model *Model, container &Equations, topological_sort_equations_visit *Visit)
 {
 	std::vector<equation_h> Temporary;
 	Temporary.reserve(Equations.size());
@@ -171,20 +221,8 @@ TopologicalSortEquations(mobius_model *Model, std::vector<equation_h> &Equations
 	}
 	
 	for(size_t Idx = 0; Idx < Equations.size(); ++Idx)
-	{
 		Equations[Idx] = Temporary[Idx];
-	}
 }
-
-struct equation_batch_template
-{
-	equation_batch_type Type;
-	std::vector<equation_h> Equations;
-	std::vector<equation_h> EquationsODE;
-	
-	std::set<index_set_h> IndexSetDependencies;
-	solver_h Solver;
-};
 
 static bool
 IsTopIndexSetForThisDependency(std::vector<index_set_h> &IndexSetDependencies, array<index_set_h> &BatchGroupIndexSets, size_t IndexSetLevel)
@@ -197,50 +235,10 @@ IsTopIndexSetForThisDependency(std::vector<index_set_h> &IndexSetDependencies, a
 	{
 		index_set_h IndexSetAtLevelAbove = BatchGroupIndexSets[LevelAbove];
 		if(std::find(IndexSetDependencies.begin(), IndexSetDependencies.end(), IndexSetAtLevelAbove) != IndexSetDependencies.end())
-		{
 			return false;
-		}
 	}
-	
 	return true;
 }
-
-static bool
-WeDependOnBatch(std::set<equation_h> &Dependencies, std::set<equation_h> &CrossDependencies, equation_batch_template &Batch)
-{
-	bool DependOnBatch = false;
-	for(equation_h EquationInBatch : Batch.Equations)
-	{
-		if(!Dependencies.empty() && std::find(Dependencies.begin(), Dependencies.end(), EquationInBatch) != Dependencies.end())
-		{
-			DependOnBatch = true;
-			break;
-		}
-		if(!CrossDependencies.empty() && std::find(CrossDependencies.begin(), CrossDependencies.end(), EquationInBatch) != CrossDependencies.end())
-		{
-			DependOnBatch = true;
-			break;
-		}
-	}
-	if(Batch.Type == BatchType_Solver && !DependOnBatch)
-	{
-		for(equation_h EquationInBatch : Batch.EquationsODE)
-		{
-			if(!Dependencies.empty() && std::find(Dependencies.begin(), Dependencies.end(), EquationInBatch) != Dependencies.end())
-			{
-				DependOnBatch = true;
-				break;
-			}
-			if(!CrossDependencies.empty() && std::find(CrossDependencies.begin(), CrossDependencies.end(), EquationInBatch) != CrossDependencies.end())
-			{
-				DependOnBatch = true;
-				break;
-			}
-		}
-	}
-	return DependOnBatch;
-}
-
 
 #if !defined(MOBIUS_PRINT_TIMING_INFO)
 #define MOBIUS_PRINT_TIMING_INFO 0
@@ -451,7 +449,9 @@ EndModelDefinition(mobius_model *Model)
 		if(!Changed)
 		{
 			DependenciesWereResolved = true;
-			//std::cout << "Dependencies resolved at " << It + 1 << " iterations." << std::endl;
+#if MOBIUS_PRINT_TIMING_INFO
+			std::cout << "Dependencies resolved at " << It + 1 << " iterations.\n";
+#endif
 			break;
 		}
 	}
@@ -461,9 +461,13 @@ EndModelDefinition(mobius_model *Model)
 	
 	/////////////// Sorting the equations into equation batches ///////////////////////////////
 	
-	std::vector<equation_h> EquationsToSort;
+	//NOTE: The pre_batches may initially just contain one single equation (unless they come from solvers). They are grouped into larger batches later.
+	std::vector<pre_batch> PreBatches;
 	
-	bool *SolverHasBeenHitOnce = TemporaryBucket.Allocate<bool>(Model->Solvers.Count());
+	array<int> BatchOfSolver(&TemporaryBucket, Model->Solvers.Count());
+	for(size_t Idx = 0; Idx < BatchOfSolver.Count; ++Idx) BatchOfSolver[Idx] = -1;
+	
+	array<size_t> BatchOfEquation(&TemporaryBucket, Model->Equations.Count());
 	
 	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
 	{
@@ -472,360 +476,443 @@ EndModelDefinition(mobius_model *Model)
 		
 		if(Spec.Type == EquationType_InitialValue) continue; //NOTE: initial value equations should not be a part of the result structure.
 		
+		pre_batch *Batch;
+		bool MakeNew = true;
+		
 		if(IsValid(Solver))
-		{			
-			solver_spec &SolverSpec = Model->Solvers.Specs[Solver.Handle];
-			SolverSpec.IndexSetDependencies.insert(Spec.IndexSetDependencies.begin(), Spec.IndexSetDependencies.end());
-			SolverSpec.DirectResultDependencies.insert(Spec.DirectResultDependencies.begin(), Spec.DirectResultDependencies.end());
-			SolverSpec.CrossIndexResultDependencies.insert(Spec.CrossIndexResultDependencies.begin(), Spec.CrossIndexResultDependencies.end());
-			SolverSpec.EquationsToSolve.push_back(equation_h {EquationHandle});
-			
-			if(!SolverHasBeenHitOnce[Solver.Handle])
-			{
-				EquationsToSort.push_back(equation_h {EquationHandle}); //NOTE: We only put one equation into the sorting vector as a stand-in for the solver. This is because all equations belonging to a solver have to be solved together.
-			}
-			SolverHasBeenHitOnce[Solver.Handle] = true;
-		}
-		else
 		{
-			if(Spec.Type == EquationType_ODE)
-				FatalError("ERROR: The equation \"", GetName(Model, equation_h {EquationHandle}), "\" is registered as an ODE equation, but it has not been given a solver.\n");
+			int BatchIdx = BatchOfSolver[Solver.Handle];
+			if(BatchIdx != -1)
+			{
+				MakeNew = false;
+				Batch = &PreBatches[BatchIdx];
+				BatchOfEquation[EquationHandle] = BatchIdx;
+			}
+		}
+		else if(Spec.Type == EquationType_ODE)
+			FatalError("ERROR: The equation \"", GetName(Model, equation_h {EquationHandle}), "\" is registered as an ODE equation, but it has not been given a solver.\n");
+		
+		if(MakeNew)
+		{
+			PreBatches.push_back({});
+			int BatchIdx = PreBatches.size()-1;
+			Batch = &PreBatches[BatchIdx];
+			BatchOfEquation[EquationHandle] = BatchIdx;
+			if(IsValid(Solver))
+				BatchOfSolver[Solver.Handle] = BatchIdx;
+		}
+		
+		if(IsValid(Solver)) Batch->Solver = Solver;
+		Batch->Equations.push_back(equation_h {EquationHandle});
+		Batch->IndexSetDependencies.insert(Spec.IndexSetDependencies.begin(), Spec.IndexSetDependencies.end());
+		
+		for(equation_h Dependency : Spec.DirectResultDependencies)
+		{
+			equation_spec &DepSpec = Model->Equations.Specs[Dependency.Handle];
+			if(IsValid(Solver) && DepSpec.Solver == Solver) continue;
 			
-			EquationsToSort.push_back(equation_h {EquationHandle});
+			dependency_entry Dep;
+			Dep.WhichEquation = {EquationHandle};
+			Dep.DependsOnEquation = Dependency;
+			Dep.ImplicitlyIndexed = true;
+			Batch->Dependencies.push_back(Dep);
+		}
+		for(equation_h Dependency : Spec.CrossIndexResultDependencies)
+		{
+			equation_spec &DepSpec = Model->Equations.Specs[Dependency.Handle];
+			if(IsValid(Solver) && DepSpec.Solver == Solver) continue;
+			
+			dependency_entry Dep;
+			Dep.WhichEquation = {EquationHandle};
+			Dep.DependsOnEquation = Dependency;
+			Dep.ImplicitlyIndexed = false;
+			Batch->Dependencies.push_back(Dep);
 		}
 	}
 	
-	TopologicalSortEquations(Model, EquationsToSort, TopologicalSortEquationsVisit);
+	// Resolve references between dependencies
+	for(pre_batch &Batch : PreBatches)
+		for(dependency_entry &Dep : Batch.Dependencies)
+			Dep.BatchIndex = BatchOfEquation[Dep.DependsOnEquation.Handle];
 	
-	std::vector<equation_batch_template> BatchBuild;
+	std::vector<size_t> SortedBatchIndexes;
+	SortedBatchIndexes.reserve(PreBatches.size());
+	TopologicalSortBatches(Model, PreBatches, SortedBatchIndexes);
 	
-	for(equation_h Equation : EquationsToSort)
-	{
-		equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+	//NOTE: We no longer care about what equations caused the dependencies, so we consider two dependencies between the same pre_batch a duplicate even if it was caused by different equations.
+	for(pre_batch &Batch : PreBatches)
+		Batch.Dependencies.erase(std::unique(Batch.Dependencies.begin(), Batch.Dependencies.end()), Batch.Dependencies.end()); // Erase duplicates
+	
+	std::vector<pre_batch_group> GroupBuild;
+	
+	for(size_t BatchIndex : SortedBatchIndexes)
+	{	
+		pre_batch &Batch = PreBatches[BatchIndex];
 		
-		if(IsValid(Spec.Solver))
+		s32 EarliestSuitableGroupIdx = GroupBuild.size();
+		s32 EarliestSuitablePosition = GroupBuild.size();
+		
+		for(s32 GroupIdx = GroupBuild.size() - 1; GroupIdx >= 0; --GroupIdx)
 		{
-			//TODO: Instead of always pushing this at the end, could we try to insert it earlier if it is possible to place it next to another batch with the same index set dependencies?
+			pre_batch_group &Group = GroupBuild[GroupIdx];
 			
-			solver_spec &SolverSpec = Model->Solvers.Specs[Spec.Solver.Handle];
-			//NOTE: There is only one stand-in equation for the whole solver in the EquationsToSort vector. We create a new batch containing all of the equations and put it at the end of the batch build list.
-			equation_batch_template Batch = {};
-			Batch.Type = BatchType_Solver;
-			Batch.Solver = Spec.Solver;
-			Batch.IndexSetDependencies = SolverSpec.IndexSetDependencies; //Important: Should be the dependencies of the solver, not of the one equation.
-			//NOTE: Add all equations and sort the non-ode equations among themselves.
-			//NOTE: We don't sort the ODE equations since they ARE allowed to have circular dependencies on each other.
-			for(equation_h SolverEquation : SolverSpec.EquationsToSolve)
+			if(Batch.IndexSetDependencies == Group.IndexSetDependencies)
+				EarliestSuitableGroupIdx = GroupIdx;
+			
+			bool DependOnGroup = false;
+			for(dependency_entry Dep : Batch.Dependencies)
 			{
-				equation_spec &SolverResultSpec = Model->Equations.Specs[SolverEquation.Handle];
-				if(SolverResultSpec.Type == EquationType_Basic) Batch.Equations.push_back(SolverEquation);
-				else if(SolverResultSpec.Type == EquationType_ODE) Batch.EquationsODE.push_back(SolverEquation);
-				else assert(0);
-			}
-			TopologicalSortEquations(Model, Batch.Equations, TopologicalSortEquationsInSolverVisit);
-			
-			
-			s32 EarliestSuitableBatchIdx = BatchBuild.size();
-			//size_t FirstBatchWeDependOn     = BatchBuild.size();
-			for(s32 BatchIdx = BatchBuild.size() - 1; BatchIdx >= 0; --BatchIdx)
-			{
-				equation_batch_template &NeighborBatch = BatchBuild[BatchIdx];
-				if(NeighborBatch.IndexSetDependencies == Batch.IndexSetDependencies)
+				if(std::find(Group.PreBatchIndexes.begin(), Group.PreBatchIndexes.end(), Dep.BatchIndex) != Group.PreBatchIndexes.end())
 				{
-					EarliestSuitableBatchIdx = BatchIdx;
+					DependOnGroup = true;
+					break;
 				}
-				
-				//FirstBatchWeDependOn = BatchIdx;
-				bool DependOnBatch = WeDependOnBatch(SolverSpec.DirectResultDependencies, SolverSpec.CrossIndexResultDependencies, NeighborBatch);
-				//if(DependOnBatch) std::cout << SolverSpec.Name << " depend on " << BatchIdx << std::endl;
-				if(DependOnBatch) break; //We have to enter after this batch.
 			}
 			
-			if(EarliestSuitableBatchIdx == (s32)BatchBuild.size())
-				BatchBuild.push_back(Batch);
+			if(DependOnGroup) break; // We can not enter a position that is earlier than this group since we depend on a pre_batch in this group.
+			
+			EarliestSuitablePosition = GroupIdx;
+		}
+		
+		if(EarliestSuitableGroupIdx == (s32)GroupBuild.size())
+		{
+			//We did not find a suitable group to enter, make a new one.
+			pre_batch_group NewGroup;
+			NewGroup.PreBatchIndexes.push_back(BatchIndex);
+			NewGroup.IndexSetDependencies = Batch.IndexSetDependencies;
+			if(EarliestSuitablePosition == (s32)GroupBuild.size())
+				GroupBuild.push_back(NewGroup);
 			else
-				//NOTE: This inserts the new batch right after the earliest suitable one.
-				BatchBuild.insert(BatchBuild.begin() + EarliestSuitableBatchIdx + 1, Batch);
+				GroupBuild.insert(GroupBuild.begin()+EarliestSuitablePosition, NewGroup);
 		}
 		else
 		{
-			//NOTE: put non-solver equations in the first batch that suits it. A batch is suitable if it has the same index set dependencies as the equation and if no batch after it have equations that this equation depends on.
-			
-			s32 EarliestSuitableBatchIdx = BatchBuild.size();
-			bool EarliestSuitableIsSolver = false;
-			for(s32 BatchIdx = (s32)BatchBuild.size() - 1; BatchIdx >= 0; --BatchIdx)
-			{
-				equation_batch_template &Batch = BatchBuild[BatchIdx];
-				if(Batch.IndexSetDependencies == Spec.IndexSetDependencies)
-				{
-					EarliestSuitableBatchIdx = BatchIdx;
-					EarliestSuitableIsSolver = (Batch.Type == BatchType_Solver);
-				}
-				
-				bool DependOnBatch = WeDependOnBatch(Spec.DirectResultDependencies, Spec.CrossIndexResultDependencies, Batch);
-				if(DependOnBatch) break; // We can not enter a batch that is earlier than this
-				
-				//NOTE: We don't have to check equations in the batch depends on us, because all equations that depend on us have been sorted so that they are processed after us, and so have not been put in the batches yet.
-			}
-			
-			bool PushNewBatch = false;
-			
-			if(EarliestSuitableBatchIdx == (s32)BatchBuild.size())
-				PushNewBatch = true;
-			else if(EarliestSuitableIsSolver)
-			{
-				//This equation does not belong to a solver, so we can not add it to the solver batch. Try to add it immediately after, either by adding it to the next batch if it is suitable or by creating a new batch.
-				bool CouldInsertInNext = false;
-				if(EarliestSuitableBatchIdx + 1 != (s32)BatchBuild.size())
-				{
-					equation_batch_template &NextBatch = BatchBuild[EarliestSuitableBatchIdx + 1];
-					if(NextBatch.IndexSetDependencies == Spec.IndexSetDependencies)
-					{
-						NextBatch.Equations.push_back(Equation);
-						CouldInsertInNext = true;
-					}
-				}
-				
-				if(!CouldInsertInNext)
-				{
-					equation_batch_template Batch = {};
-					Batch.Type = BatchType_Regular;
-					Batch.Equations.push_back(Equation);
-					Batch.IndexSetDependencies = Spec.IndexSetDependencies;
-					BatchBuild.insert(BatchBuild.begin() + EarliestSuitableBatchIdx + 1, Batch);
-				}
-			}
-			else
-				BatchBuild[EarliestSuitableBatchIdx].Equations.push_back(Equation);
-			
-			if(PushNewBatch)
-			{
-				equation_batch_template Batch = {};
-				Batch.Type = BatchType_Regular;
-				Batch.Equations.push_back(Equation);
-				Batch.IndexSetDependencies = Spec.IndexSetDependencies;
-				
-				if(Spec.DirectResultDependencies.empty() && Spec.CrossIndexResultDependencies.empty())
-					BatchBuild.insert(BatchBuild.begin(), Batch); //NOTE: If we had no dependencies at all, just insert us at the beginning rather than at the end. This makes it less likely to screw up later structure, and is for instance good for INCA-N.
-				else
-					BatchBuild.push_back(Batch);
-			}
+			GroupBuild[EarliestSuitableGroupIdx].PreBatchIndexes.push_back(BatchIndex);
 		}
 	}
 	
 #if 0
-	for(auto& BatchTemplate : BatchBuild)
+	std::cout << "First pass\n";
+	for(pre_batch_group &Group : GroupBuild)
 	{
-		for(index_set IndexSet : BatchTemplate.IndexSetDependencies)
+		if(Group.IndexSetDependencies.empty()) std::cout << "[]"; 
+		for(index_set_h IndexSet : Group.IndexSetDependencies)
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
-		std::cout << "Type: " << BatchTemplate.Type << " Solver: " << BatchTemplate.Solver.Handle << std::endl;
-		FOR_ALL_BATCH_EQUATIONS(BatchTemplate,
-			std::cout << "\t" << GetName(Model, Equation) << std::endl;
-		)
+		std::cout << "\n";
+		for(size_t BatchIdx : Group.PreBatchIndexes)
+		{
+			pre_batch &Batch = PreBatches[BatchIdx];
+			if(IsValid(Batch.Solver))
+				std::cout << "\tSOLVER (" << GetName(Model, Batch.Solver) << ")\n";
+			for(equation_h Eq : Batch.Equations)
+			{
+				if(!IsValid(Eq)) std::cout << "INVALID!";
+				else std::cout << "\t\t" << GetName(Model, Eq) << "\n";
+			}
+			if(IsValid(Batch.Solver))
+				std::cout << "\tEND SOLVER\n";
+		}
 	}
 #endif
 	
 	//NOTE: We do a second pass to see if some equations can be shifted to a later batch. This may ultimately reduce the amount of batch groups and speed up execution. It will also make sure that cross indexing between results is more likely to be correct.
 	// (TODO: this needs a better explanation, but for instance SimplyP gets a more fragmented run structure without this second pass).
 	//TODO: Maaybe this could be done in the same pass as above, but I haven't figured out how. The problem is that while we are building the batches above, we don't know about any of the batches that will appear after the current batch we are building.
-
-#if 1
-	for(size_t It = 0; It < 2; ++It)    //NOTE: In the latest version of INCA-N we have to do this twice to get a good structure.
+	
+	//NOTE: In some models we have to do this pass twice to get a good structure.. We just have to be wary and see if more passes are needed later!
+	for(size_t It = 0; It < 2; ++It)
 	{
-		{	
-			size_t BatchIdx = 0;
-			for(equation_batch_template &Batch : BatchBuild)
+		for(size_t GroupIdx = 0; GroupIdx < GroupBuild.size(); ++GroupIdx)
+		{
+			pre_batch_group &Group = GroupBuild[GroupIdx];
+			
+			s64 BatchIdxIdx = Group.PreBatchIndexes.size() - 1;
+			while(BatchIdxIdx >= 0)
 			{
-				if(Batch.Type != BatchType_Solver)
+				size_t ThisBatchIdx = Group.PreBatchIndexes[BatchIdxIdx];
+				pre_batch &ThisBatch = PreBatches[ThisBatchIdx];
+				
+				bool Continue = false;
+				for(size_t BatchBehind = BatchIdxIdx+1; BatchBehind < Group.PreBatchIndexes.size(); ++BatchBehind)
 				{
-					s64 EquationIdx = Batch.Equations.size() - 1;
-					while(EquationIdx >= 0)
+					size_t BehindIdx = Group.PreBatchIndexes[BatchBehind];
+					pre_batch &Behind = PreBatches[BehindIdx];
+					for(dependency_entry &Dep : Behind.Dependencies)
 					{
-						equation_h ThisEquation = Batch.Equations[EquationIdx];
-						equation_spec &Spec = Model->Equations.Specs[ThisEquation.Handle];
-						
-						bool Continue = false;
-						for(size_t EquationBehind = EquationIdx + 1; EquationBehind < Batch.Equations.size(); ++EquationBehind)
+						if(Dep.BatchIndex == ThisBatchIdx)
 						{
-							equation_h ResultBehind = Batch.Equations[EquationBehind];
-							equation_spec &SpecBehind = Model->Equations.Specs[ResultBehind.Handle];
-							//If somebody behind us in this batch depend on us, we are not allowed to move.
-							if(std::find(SpecBehind.DirectResultDependencies.begin(), SpecBehind.DirectResultDependencies.end(), ThisEquation) != SpecBehind.DirectResultDependencies.end())
-							{
-								Continue = true;
-								break;
-							}
+							// If another pre_batch behind us in this group depend on us, we are not allowed to move.
+							Continue = true;
+							break;
 						}
-						if(Continue)
-						{
-							EquationIdx--;
-							continue;
-						}
-						
-						size_t LastSuitableBatch = BatchIdx;
-						for(size_t BatchBehind = BatchIdx + 1; BatchBehind < BatchBuild.size(); ++BatchBehind)
-						{
-							equation_batch_template &NextBatch = BatchBuild[BatchBehind];
-							if(NextBatch.Type != BatchType_Solver && Spec.IndexSetDependencies == NextBatch.IndexSetDependencies) //This batch suits us
-							{
-								LastSuitableBatch = BatchBehind;
-							}
-							
-							bool BatchDependsOnUs = false;
-							ForAllBatchEquations(NextBatch,
-							[Model, ThisEquation, &BatchDependsOnUs](equation_h Equation)
-							{
-								equation_spec &CheckSpec = Model->Equations.Specs[Equation.Handle];
-								if(std::find(CheckSpec.DirectResultDependencies.begin(), CheckSpec.DirectResultDependencies.end(), ThisEquation) != CheckSpec.DirectResultDependencies.end())
-								{
-									BatchDependsOnUs = true;
-									return true;
-								}
-								return false;
-							});
-
-							if(BatchBehind == BatchBuild.size() - 1 || BatchDependsOnUs)
-							{
-								if(LastSuitableBatch != BatchIdx)
-								{
-									//Move to the front of that batch.
-									equation_batch_template &InsertToBatch = BatchBuild[LastSuitableBatch];
-									InsertToBatch.Equations.insert(InsertToBatch.Equations.begin(), ThisEquation);
-									Batch.Equations.erase(Batch.Equations.begin() + EquationIdx);
-								}
-								break;
-							}
-						}
-						
-						EquationIdx--;
 					}
+					if(Continue) break;
+				}
+				if(Continue)
+				{
+					BatchIdxIdx--;
+					continue;
 				}
 				
-				++BatchIdx;
+				size_t LastSuitableGroup = GroupIdx;
+				for(size_t GroupBehind = GroupIdx+1; GroupBehind < GroupBuild.size(); ++GroupBehind)
+				{
+					pre_batch_group &NextGroup = GroupBuild[GroupBehind];
+					if(NextGroup.IndexSetDependencies == ThisBatch.IndexSetDependencies)
+						LastSuitableGroup = GroupBehind;
+					
+					bool GroupDependsOnUs = false;
+					for(size_t OtherBatchIdx : NextGroup.PreBatchIndexes)
+					{
+						pre_batch &Other = PreBatches[OtherBatchIdx];
+						for(dependency_entry &Dep : Other.Dependencies)
+						{
+							if(Dep.BatchIndex == ThisBatchIdx)
+							{
+								GroupDependsOnUs = true;
+								break;
+							}
+						}
+						if(GroupDependsOnUs) break;
+					}
+					
+					if(GroupDependsOnUs || GroupBehind == GroupBuild.size()-1)
+					{
+						if(LastSuitableGroup != GroupIdx)
+						{
+							//Move to the front of that group
+							pre_batch_group &InsertTo = GroupBuild[LastSuitableGroup];
+							InsertTo.PreBatchIndexes.insert(InsertTo.PreBatchIndexes.begin(), ThisBatchIdx);
+							Group.PreBatchIndexes.erase(Group.PreBatchIndexes.begin()+BatchIdxIdx);
+						}
+						break;
+					}
+				}
+				BatchIdxIdx--;
 			}
 		}
-		
-		//NOTE: Erase Batch templates that got all their equations removed
+	}
+	
+	{
+		//NOTE: Erase batch groups that were emptied as a result of the step above
+		s64 GroupIdx = GroupBuild.size()-1;
+		while(GroupIdx >= 0)
 		{
-			s64 BatchIdx = BatchBuild.size()-1;
-			while(BatchIdx >= 0)
+			pre_batch_group &Group = GroupBuild[GroupIdx];
+			if(Group.PreBatchIndexes.empty())
 			{
-				equation_batch_template &Batch = BatchBuild[BatchIdx];
-				if(Batch.Type != BatchType_Solver && Batch.Equations.empty())
+				GroupBuild.erase(GroupBuild.begin() + GroupIdx);
+			}
+			--GroupIdx;
+		}
+	}
+
+#if 0
+	std::cout << "Second pass\n\n\n";
+	for(pre_batch_group &Group : GroupBuild)
+	{
+		if(Group.IndexSetDependencies.empty()) std::cout << "[]"; 
+		for(index_set_h IndexSet : Group.IndexSetDependencies)
+			std::cout << "[" << GetName(Model, IndexSet) << "]";
+		std::cout << "\n";
+		for(size_t BatchIdx : Group.PreBatchIndexes)
+		{
+			pre_batch &Batch = PreBatches[BatchIdx];
+			if(IsValid(Batch.Solver))
+				std::cout << "\tSOLVER (" << GetName(Model, Batch.Solver) << ")\n";
+			for(equation_h Eq : Batch.Equations)
+			{
+				if(!IsValid(Eq)) std::cout << "INVALID!";
+				else std::cout << "\t\t" << GetName(Model, Eq) << "\n";
+			}
+			if(IsValid(Batch.Solver))
+				std::cout << "\tEND SOLVER\n";
+		}
+	}
+#endif
+	/////////////// Process the batches into a finished result structure ////////////////////////
+	
+	{
+		//Do we need to clear sorting flags anymore?
+		
+		array<size_t> Counts(&TemporaryBucket, Model->IndexSets.Count());
+		for(auto& Group : GroupBuild)
+			for(index_set_h IndexSet : Group.IndexSetDependencies)
+				Counts[IndexSet.Handle]++;
+		
+		size_t BatchCount = 0; //Count of combined batches
+		for(pre_batch_group &Group : GroupBuild)
+		{
+			size_t EqCount = 0;
+			for(size_t BatchIdx : Group.PreBatchIndexes)
+			{
+				if(IsValid(PreBatches[BatchIdx].Solver))
 				{
-					BatchBuild.erase(BatchBuild.begin() + BatchIdx);
+					if(EqCount != 0) ++BatchCount;
+					EqCount = 0;
+					++BatchCount;
 				}
-				--BatchIdx;
+				else
+					++EqCount;
+			}
+			if(EqCount != 0) ++BatchCount;
+		}
+		
+		Model->BatchGroups.Allocate(&Model->BucketMemory, GroupBuild.size());
+		Model->EquationBatches.Allocate(&Model->BucketMemory, BatchCount);
+		
+		size_t BatchIdx   = 0;
+		size_t BatchGroupIdx = 0;
+		for(pre_batch_group &PreGroup : GroupBuild)
+		{
+			equation_batch_group &BatchGroup = Model->BatchGroups[BatchGroupIdx];
+			BatchGroup.IndexSets.CopyFrom(&Model->BucketMemory, PreGroup.IndexSetDependencies);
+			
+			std::sort(BatchGroup.IndexSets.begin(), BatchGroup.IndexSets.end(),
+				[Counts] (index_set_h A, index_set_h B) { return ((Counts[A.Handle] == Counts[B.Handle]) ? (A.Handle > B.Handle) : (Counts[A.Handle] > Counts[B.Handle])); }
+			);    //Sort index sets so that the ones with more batch groups depending on them are higher up. This empirically gives a better batch structure.
+			
+			BatchGroup.FirstBatch = BatchIdx;
+			
+			std::vector<equation_h> Equations;
+			for(size_t PreBatchIdx : PreGroup.PreBatchIndexes)
+			{
+				pre_batch &PreBatch = PreBatches[PreBatchIdx];
+				if(!IsValid(PreBatch.Solver))
+				{
+					// Temporarily store all single non-solver pre-batches together and mold them into one batch later.
+					Equations.push_back(PreBatch.Equations[0]);
+				}
+				else
+				{
+					if(!Equations.empty())
+					{
+						// We hit a solver, so we have to make a batch out of the single equations we hit so far.
+						equation_batch &Batch = Model->EquationBatches[BatchIdx];
+						Batch.Type = BatchType_Regular;
+						Batch.Equations.CopyFrom(&Model->BucketMemory, Equations);
+						Equations.clear();
+						++BatchIdx;
+					}
+					equation_batch &Batch = Model->EquationBatches[BatchIdx];
+					
+					Batch.Type = BatchType_Solver;
+					Batch.Solver = PreBatch.Solver;
+					
+					size_t ODECount = 0;
+					for(equation_h Eq: PreBatch.Equations)
+						if(Model->Equations.Specs[Eq.Handle].Type == EquationType_ODE)
+							++ODECount;
+					
+					Batch.Equations.Allocate(&Model->BucketMemory, PreBatch.Equations.size()-ODECount);
+					Batch.EquationsODE.Allocate(&Model->BucketMemory, ODECount);
+					
+					size_t EIdx = 0, ODEIdx = 0;
+					for(equation_h Eq: PreBatch.Equations)
+						if(Model->Equations.Specs[Eq.Handle].Type == EquationType_ODE)
+							Batch.EquationsODE[ODEIdx++] = Eq;
+						else
+							Batch.Equations[EIdx++] = Eq;
+					
+					TopologicalSortEquations(Model, Batch.Equations, TopologicalSortEquationsInSolverVisit);
+					
+					++BatchIdx;
+				}
+			}
+			
+			if(!Equations.empty())
+			{
+				// Gather up any remaining single equations.
+				equation_batch &Batch = Model->EquationBatches[BatchIdx];
+				Batch.Type = BatchType_Regular;
+				Batch.Equations.CopyFrom(&Model->BucketMemory, Equations);
+				++BatchIdx;
+			}
+			
+			BatchGroup.LastBatch = BatchIdx-1;
+			
+			++BatchGroupIdx;
+		}
+	}
+	
+#if 0
+	std::cout << "\nSorted structure:\n";
+	for(equation_batch_group &Group : Model->BatchGroups)
+	{
+		if(Group.IndexSets.Count==0) std::cout << "[]"; 
+		for(index_set_h IndexSet : Group.IndexSets)
+			std::cout << "[" << GetName(Model, IndexSet) << "]";
+		std::cout << "\n";
+		for(size_t BatchIdx = Group.FirstBatch; BatchIdx <= Group.LastBatch; ++BatchIdx)
+		{
+			equation_batch &Batch = Model->EquationBatches[BatchIdx];
+			if(IsValid(Batch.Solver))
+				std::cout << "\tSOLVER (" << GetName(Model, Batch.Solver) << ")\n";
+			for(equation_h Eq : Batch.Equations)
+			{
+				if(!IsValid(Eq)) std::cout << "INVALID!";
+				else std::cout << "\t\t" << Eq.Handle << " " << GetName(Model, Eq) << "\n";
+			}
+			if(IsValid(Batch.Solver))
+			{
+				for(equation_h Eq : Batch.EquationsODE)
+				{
+					if(!IsValid(Eq)) std::cout << "INVALID!";
+					else std::cout << "\t\t(ODE) " << Eq.Handle << " " << GetName(Model, Eq) << "\n";
+				}
+				std::cout << "\tEND SOLVER\n";
 			}
 		}
 	}
 #endif
 	
-	/////////////// Process the batches into a finished result structure ////////////////////////
-	
-	size_t *EquationBelongsToBatchGroup = TemporaryBucket.Allocate<size_t>(Model->Equations.Count());
-	
+	//NOTE: Clear flags since they may be reused later in the Initial value setup.
+	for(entity_handle Eq = 1; Eq < Model->Equations.Count(); ++Eq)
 	{
-		//NOTE: We have to clear sorting flags from previous sortings since we have to do a new sorting for the initial value equations.
-		for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
-		{
-			Model->Equations.Specs[EquationHandle].TempVisited = false;
-			Model->Equations.Specs[EquationHandle].Visited = false;
-		}
-		
-		size_t *Counts = TemporaryBucket.Allocate<size_t>(Model->IndexSets.Count());
-		for(auto& BatchTemplate : BatchBuild)
-		{
-			for(index_set_h IndexSet : BatchTemplate.IndexSetDependencies)
-			{
-				Counts[IndexSet.Handle]++;
-			}
-		}
-		
-		//Model->EquationBatches.resize(BatchBuild.size(), {});
-		Model->EquationBatches.Allocate(&Model->BucketMemory, BatchBuild.size());
-		//NOTE: Determine the number of batch groups
-		size_t BatchGroupCount = 0;
-		size_t BatchIdx = 0;
-		while(BatchIdx != BatchBuild.size())
-		{
-			BatchGroupCount++;
-			std::set<index_set_h> IndexSets = BatchBuild[BatchIdx].IndexSetDependencies; //NOTE: set copy.
-			while(BatchIdx != BatchBuild.size() && BatchBuild[BatchIdx].IndexSetDependencies == IndexSets) ++BatchIdx;
-		}
-		
-		Model->BatchGroups.Allocate(&Model->BucketMemory, BatchGroupCount);
-		
-		BatchIdx = 0;
-		size_t BatchGroupIdx = 0;
-		while(BatchIdx != BatchBuild.size())
-		{
-			//Model->BatchGroups.push_back({});
-			equation_batch_group &BatchGroup = Model->BatchGroups[BatchGroupIdx];
-			
-			std::set<index_set_h> IndexSets = BatchBuild[BatchIdx].IndexSetDependencies; //NOTE: set copy.
+		Model->Equations.Specs[Eq].Visited = false;
+		Model->Equations.Specs[Eq].TempVisited = false;
+	}
+	
+	array<size_t> EquationBelongsToBatchGroup(&TemporaryBucket, Model->Equations.Count());
+	
+	//NOTE: Sort the order of initial value equations in the batch group.
+	//Also store references about batch group belonging for later.
 
-			BatchGroup.IndexSets.Allocate(&Model->BucketMemory, IndexSets.size());
-			size_t Idx = 0;
-			for(index_set_h IndexSet: IndexSets)
+	size_t BatchGroupIdx = 0;
+	for(equation_batch_group &Group : Model->BatchGroups)
+	{
+		std::vector<equation_h> InitialValueOrder;
+		for(size_t BatchIdx = Group.FirstBatch; BatchIdx <= Group.LastBatch; ++BatchIdx)
+		{
+			equation_batch &Batch = Model->EquationBatches[BatchIdx];
+			
+			ForAllBatchEquations(Batch,
+			[Model, &Batch, &InitialValueOrder](equation_h Equation)
 			{
-				BatchGroup.IndexSets[Idx] = IndexSet;
-				++Idx;
-			}
-			
-			std::sort(BatchGroup.IndexSets.begin(), BatchGroup.IndexSets.end(),
-				[Counts] (index_set_h A, index_set_h B) { return ((Counts[A.Handle] == Counts[B.Handle]) ? (A.Handle > B.Handle) : (Counts[A.Handle] > Counts[B.Handle])); }
-			);    //Sort index sets so that the ones with more equations depending on them are higher up. This empirically gives a better batch structure.
-			
-			BatchGroup.FirstBatch = BatchIdx;
-			
-			std::vector<equation_h> InitialValueOrder;
-			
-			while(BatchIdx != BatchBuild.size() && BatchBuild[BatchIdx].IndexSetDependencies == IndexSets)
-			{
-				equation_batch_template &BatchTemplate = BatchBuild[BatchIdx];
-				equation_batch &Batch = Model->EquationBatches[BatchIdx];
-				
-				Batch.Type = BatchTemplate.Type;
-				Batch.Equations = CopyDataToArray(&Model->BucketMemory, BatchTemplate.Equations.data(), BatchTemplate.Equations.size());
-				if(Batch.Type == BatchType_Solver)
+				equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+				if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the topological sort below)
 				{
-					Batch.EquationsODE = CopyDataToArray(&Model->BucketMemory, BatchTemplate.EquationsODE.data(), BatchTemplate.EquationsODE.size());
-					Batch.Solver = BatchTemplate.Solver;
+					InitialValueOrder.push_back(Equation);
 				}
-				
-				ForAllBatchEquations(Batch,
-				[&EquationBelongsToBatchGroup, BatchGroupIdx](equation_h Equation)
-				{
-					EquationBelongsToBatchGroup[Equation.Handle] = BatchGroupIdx;
-					return false;
-				});
-				
-				ForAllBatchEquations(Batch,
-				[Model, &Batch, &InitialValueOrder](equation_h Equation)
-				{
-					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
-					if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the topological sort below)
-					{
-						InitialValueOrder.push_back(Equation);
-					}
-					return false;
-				});
-				
-				++BatchIdx;
-			}
-			BatchGroup.LastBatch = BatchIdx - 1;
+				return false;
+			});
 			
-			//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A is before batch group B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
-			//TODO: We should report an error if that happens!
-			//NOTE: Currently we only allow for initial value equations to be sorted differently than their parent equations within the same batch (this was needed in some of the example models).
-			
-			TopologicalSortEquations(Model, InitialValueOrder, TopologicalSortEquationsInitialValueVisit);
-			
-			BatchGroup.InitialValueOrder = CopyDataToArray(&Model->BucketMemory, InitialValueOrder.data(), InitialValueOrder.size());
-			
-			++BatchGroupIdx;
+			ForAllBatchEquations(Batch,
+			[&EquationBelongsToBatchGroup, BatchGroupIdx](equation_h Equation)
+			{
+				EquationBelongsToBatchGroup[Equation.Handle] = BatchGroupIdx;
+				return false;
+			});
 		}
+		
+		//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A is before batch group B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
+		//TODO: We should report an error if that happens!
+		
+		TopologicalSortEquations(Model, InitialValueOrder, TopologicalSortEquationsInitialValueVisit);
+		
+		Group.InitialValueOrder.CopyFrom(&Model->BucketMemory, InitialValueOrder);
+		
+		++BatchGroupIdx;
 	}
 	
 	///////////////// Find out which parameters, results and last_results that need to be hotloaded into the CurParameters, CurInputs etc. buffers in the model_run_state at each iteration stage during model run. /////////////////
@@ -848,12 +935,13 @@ EndModelDefinition(mobius_model *Model)
 				{
 					equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 					if(Spec.Type != EquationType_Cumulative) //NOTE: We don't have to load in dependencies for cumulative equations since these get their data directly from the DataSet.
-					{
+					{						
 						AllParameterDependenciesForBatchGroup.insert(Spec.ParameterDependencies.begin(), Spec.ParameterDependencies.end());
 						AllInputDependenciesForBatchGroup.insert(Spec.InputDependencies.begin(), Spec.InputDependencies.end());
 						AllResultDependenciesForBatchGroup.insert(Spec.DirectResultDependencies.begin(), Spec.DirectResultDependencies.end());
 						AllLastResultDependenciesForBatchGroup.insert(Spec.DirectLastResultDependencies.begin(), Spec.DirectLastResultDependencies.end());
 						//TODO: The following is a quick fix so that initial value equations get their parameters and inputs set correctly. However it causes unneeded parameters to be loaded at each step for the main execution. We should make a separate system for initial value equations.
+						
 						if(IsValid(Spec.InitialValueEquation))
 						{
 							equation_spec &InitSpec = Model->Equations.Specs[Spec.InitialValueEquation.Handle];
@@ -868,7 +956,7 @@ EndModelDefinition(mobius_model *Model)
 			BatchGroup.IterationData.Allocate(&Model->BucketMemory, BatchGroup.IndexSets.Count);
 			
 			for(size_t IndexSetLevel = 0; IndexSetLevel < BatchGroup.IndexSets.Count; ++IndexSetLevel)
-			{
+			{	
 				std::vector<entity_handle> ParametersToRead;
 				std::vector<input_h>       InputsToRead;
 				std::vector<equation_h>    ResultsToRead;
@@ -884,7 +972,7 @@ EndModelDefinition(mobius_model *Model)
 					}
 				}
 				
-				BatchGroup.IterationData[IndexSetLevel].ParametersToRead = CopyDataToArray(&Model->BucketMemory, ParametersToRead.data(), ParametersToRead.size());
+				BatchGroup.IterationData[IndexSetLevel].ParametersToRead.CopyFrom(&Model->BucketMemory, ParametersToRead);
 				
 				for(input_h Input : AllInputDependenciesForBatchGroup)
 				{
@@ -895,7 +983,7 @@ EndModelDefinition(mobius_model *Model)
 					}
 				}
 				
-				BatchGroup.IterationData[IndexSetLevel].InputsToRead = CopyDataToArray(&Model->BucketMemory, InputsToRead.data(), InputsToRead.size());
+				BatchGroup.IterationData[IndexSetLevel].InputsToRead.CopyFrom(&Model->BucketMemory, InputsToRead);
 				
 				for(equation_h Equation : AllResultDependenciesForBatchGroup)
 				{
@@ -917,7 +1005,7 @@ EndModelDefinition(mobius_model *Model)
 					}
 				}
 				
-				BatchGroup.IterationData[IndexSetLevel].ResultsToRead = CopyDataToArray(&Model->BucketMemory, ResultsToRead.data(), ResultsToRead.size());
+				BatchGroup.IterationData[IndexSetLevel].ResultsToRead.CopyFrom(&Model->BucketMemory, ResultsToRead);
 				
 				for(equation_h Equation : AllLastResultDependenciesForBatchGroup)
 				{
@@ -939,7 +1027,7 @@ EndModelDefinition(mobius_model *Model)
 					}
 				}
 				
-				BatchGroup.IterationData[IndexSetLevel].LastResultsToRead = CopyDataToArray(&Model->BucketMemory, LastResultsToRead.data(), LastResultsToRead.size());
+				BatchGroup.IterationData[IndexSetLevel].LastResultsToRead.CopyFrom(&Model->BucketMemory, LastResultsToRead);
 			}
 			
 			std::vector<equation_h> LastResultsToReadAtBase;
@@ -962,12 +1050,11 @@ EndModelDefinition(mobius_model *Model)
 				}
 			}
 			
-			BatchGroup.LastResultsToReadAtBase = CopyDataToArray(&Model->BucketMemory, LastResultsToReadAtBase.data(), LastResultsToReadAtBase.size());
+			BatchGroup.LastResultsToReadAtBase.CopyFrom(&Model->BucketMemory, LastResultsToReadAtBase);
 			
 			++BatchGroupIdx;
 		}
 	}
-	
 	
 	//////////////////////// Gather info about (in-) direct equation dependencies to be used by the Jacobian estimation used by some implicit solvers //////////////////////////////////
 	BuildJacobianInfo(Model);
@@ -1179,7 +1266,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 					RunState->CurResults[Equation.Handle] = ResultValue;
 				
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-					for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
 #endif
 				}
@@ -1261,7 +1348,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 					*RunState->AtResult = ResultValue;
 					++RunState->AtResult;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-					for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
 #endif
 				}
@@ -1277,7 +1364,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 					++RunState->AtResult;
 					++EquationIdx;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-					for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
 #endif
 				}
@@ -1345,7 +1432,6 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 inline double
 SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_h Equation)
 {
-	
 	const mobius_model *Model = DataSet->Model;
 	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
 	
@@ -1408,7 +1494,7 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 	if(CurrentLevel >= 0)
 	{
 		index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-		for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+		for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 		index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
 		std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
 	}
@@ -1421,7 +1507,7 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 		{
 			double Initial = SetupInitialValue(DataSet, RunState, Equation);
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-			for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+			for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 			std::cout << "\t" << GetName(Model, Equation) << " = " << Initial << std::endl;
 #endif
 		}

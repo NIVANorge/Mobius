@@ -134,12 +134,17 @@ struct array
 	size_t Count;
 	
 	array() : Data(nullptr), Count(0) {};
-	
+
 	void
 	Allocate(bucket_allocator *Allocator, size_t Count)
 	{
 		Data = Allocator->Allocate<T>(Count);
 		this->Count = Count;
+	}
+	
+	array(bucket_allocator *Allocator, size_t Count)
+	{
+		Allocate(Allocator, Count);
 	}
 	
 	array<T>
@@ -151,7 +156,23 @@ struct array
 		return Result;
 	}
 	
-	inline T& operator[](size_t Index) { return Data[Index]; }
+	template<class container>
+	void
+	CopyFrom(bucket_allocator *Allocator, container &Source)
+	{
+		Allocate(Allocator, Source.size());
+		size_t Idx = 0;
+		for(const T& Value : Source)
+			Data[Idx++] = Value;
+	}
+	
+	inline T& operator[](size_t Index)
+	{
+#ifdef MOBIUS_TEST_INDEX_OVERFLOW
+		if(Index >= Count) FatalError("Index overflow when indexing an array.\n");
+#endif
+		return Data[Index];
+	}
 	inline const T& operator[](size_t Index) const { return Data[Index]; }
 	
 	//NOTE: For C++11 - style iteration
@@ -159,8 +180,10 @@ struct array
 	inline T* end()   { return Data + Count; }
 	inline const T* begin() const { return Data; }
 	inline const T* end()   const { return Data + Count; }
+	
+	inline size_t size() { return Count; }
 };
-
+/*
 template<typename T>
 array<T> CopyDataToArray(bucket_allocator *Allocator, const T *Data, size_t Count)
 {
@@ -169,5 +192,5 @@ array<T> CopyDataToArray(bucket_allocator *Allocator, const T *Data, size_t Coun
 	Result.Data  = Allocator->Copy(Data, Count);
 	return Result;
 }
-
+*/
 

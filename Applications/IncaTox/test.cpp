@@ -5,6 +5,8 @@
 #define MOBIUS_PRINT_TIMING_INFO 1
 #define MOBIUS_INDEX_BOUNDS_TESTS 1
 
+#define MOBIUS_TEST_INDEX_OVERFLOW
+
 #include "../../mobius.h"
 
 #include "../../Modules/Persist.h"

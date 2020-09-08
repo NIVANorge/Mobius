@@ -55,7 +55,7 @@ BuildJacobianInfo(mobius_model *Model)
 			
 			for(size_t Idx = 0; Idx < N; ++Idx)
 			{
-				Batch.ODEIsDependencyOfODE[Idx] = CopyDataToArray(&Model->BucketMemory, ODEIsDependencyOfODE[Idx].data(), ODEIsDependencyOfODE[Idx].size());
+				Batch.ODEIsDependencyOfODE[Idx].CopyFrom(&Model->BucketMemory, ODEIsDependencyOfODE[Idx]);
 			}
 			
 			std::vector<std::vector<equation_h>> ODEIsDependencyOfNonODE(N);
@@ -74,7 +74,7 @@ BuildJacobianInfo(mobius_model *Model)
 			
 			for(size_t Idx = 0; Idx < N; ++Idx)
 			{
-				Batch.ODEIsDependencyOfNonODE[Idx] = CopyDataToArray(&Model->BucketMemory, ODEIsDependencyOfNonODE[Idx].data(), ODEIsDependencyOfNonODE[Idx].size());
+				Batch.ODEIsDependencyOfNonODE[Idx].CopyFrom(&Model->BucketMemory, ODEIsDependencyOfNonODE[Idx]);
 			}
 		}
 	}

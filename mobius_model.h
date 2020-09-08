@@ -330,18 +330,6 @@ struct solver_spec
 	
 	bool UsesErrorControl;
 	bool UsesJacobian;
-	
-	//NOTE: It would be nice to remove the following from the solver_spec and instead just store it in a temporary structure in EndModelDefinition, however it is reused in debug printouts etc. in the model run, so we have to store it in the model object somewhere anyway.
-	
-	//NOTE: These are built during EndModelDefinition:
-	std::set<index_set_h> IndexSetDependencies;
-	std::vector<equation_h> EquationsToSolve;
-	std::set<equation_h> DirectResultDependencies;
-	std::set<equation_h> CrossIndexResultDependencies;
-	
-	//TODO: The following should probably just be stored separately in a temporary structure in the EndModelDefinition procedure, as it is not reused outside of that procedure.
-	bool TempVisited; //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition. 
-	bool Visited;     //NOTE: For use in a graph traversal algorithm while resolving dependencies in EndModelDefinition.
 };
 
 struct input_spec

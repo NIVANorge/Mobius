@@ -639,8 +639,8 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 	size_t UnitIndex = 0;
 	for(auto& Structure : TransposedParameterDependencies)
 	{
-		Units[UnitIndex].IndexSets = CopyDataToArray(&DataSet->BucketMemory, Structure.first.data(), Structure.first.size());
-		Units[UnitIndex].Handles   = CopyDataToArray(&DataSet->BucketMemory, Structure.second.data(), Structure.second.size());
+		Units[UnitIndex].IndexSets.CopyFrom(&DataSet->BucketMemory, Structure.first);
+		Units[UnitIndex].Handles.CopyFrom(&DataSet->BucketMemory, Structure.second);
 
 		++UnitIndex;
 	}
@@ -698,8 +698,8 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 	size_t UnitIndex = 0;
 	for(auto& Structure : TransposedInputDependencies)
 	{
-		Units[UnitIndex].IndexSets = CopyDataToArray(&DataSet->BucketMemory, Structure.first.data(), Structure.first.size());
-		Units[UnitIndex].Handles   = CopyDataToArray(&DataSet->BucketMemory, Structure.second.data(), Structure.second.size());
+		Units[UnitIndex].IndexSets.CopyFrom(&DataSet->BucketMemory, Structure.first);
+		Units[UnitIndex].Handles.CopyFrom(&DataSet->BucketMemory, Structure.second);
 		
 		++UnitIndex;
 	}
@@ -734,7 +734,6 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 		{
 			const equation_batch_group &BatchGroup = Model->BatchGroups[UnitIndex];
 			storage_unit_specifier &Unit = Units[UnitIndex];
-			//Unit.IndexSets = CopyDataToArray(&DataSet->BucketMemory, BatchGroup.IndexSets.data(), BatchGroup.IndexSets.size());
 			Unit.IndexSets = BatchGroup.IndexSets.Copy(&DataSet->BucketMemory);
 			
 			std::vector<entity_handle> Handles;
@@ -750,7 +749,7 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 				});
 			}
 			
-			Unit.Handles = CopyDataToArray(&DataSet->BucketMemory, Handles.data(), Handles.size());
+			Unit.Handles.CopyFrom(&DataSet->BucketMemory, Handles);
 		}
 		
 		SetupStorageStructureSpecifer(&DataSet->ResultStorageStructure, DataSet->IndexCounts, Model->Equations.Count(), &DataSet->BucketMemory);
