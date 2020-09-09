@@ -30,7 +30,7 @@ BuildJacobianInfo(mobius_model *Model)
 {
 	for(equation_batch &Batch : Model->EquationBatches)
 	{
-		if(Batch.Type == BatchType_Solver && Model->Solvers.Specs[Batch.Solver.Handle].UsesJacobian)
+		if(IsValid(Batch.Solver) && Model->Solvers.Specs[Batch.Solver.Handle].UsesJacobian)
 		{	
 			size_t N = Batch.EquationsODE.Count;
 			

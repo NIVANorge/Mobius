@@ -1105,6 +1105,20 @@ DllInputWasProvided(void *DataSetPtr, const char *Name, char **IndexNames, u64 I
 	return false;
 }
 
+
+DLLEXPORT bool
+DllResultWasComputed(void *DataSetPtr, const char *Name, char **IndexNames, u64 IndexCount)
+{
+	//TODO!!!!!!!!!!!!!!
+	
+	CHECK_ERROR_BEGIN
+	
+	CHECK_ERROR_END
+	
+	return true;
+}
+
+
 DLLEXPORT u64
 DllGetBranchInputsCount(void *DataSetPtr, const char *IndexSetName, const char *IndexName)
 {

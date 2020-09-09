@@ -28,6 +28,7 @@ MODEL_ENTITY_HANDLE(parameter_bool_h)
 MODEL_ENTITY_HANDLE(parameter_time_h)
 
 MODEL_ENTITY_HANDLE(solver_h)
+MODEL_ENTITY_HANDLE(conditional_h)
 
 MODEL_ENTITY_HANDLE(index_set_h)
 
@@ -159,6 +160,9 @@ union parameter_value
 	parameter_value() : ValTime() {}; //NOTE: 0-initializes it.
 };
 
+//NOTE: These comparisons should obviously only be used when the type is known!
+bool operator==(const parameter_value &A, const parameter_value &B) { return A.ValUInt == B.ValUInt; }
+bool operator!=(const parameter_value &A, const parameter_value &B) { return A.ValUInt != B.ValUInt; }
 
 enum parameter_type
 {
@@ -210,6 +214,8 @@ struct module_spec
 	const char *Version;
 	const char *Description;
 };
+
+
 
 struct model_run_state;
 
@@ -297,6 +303,7 @@ struct equation_spec
 	parameter_double_h CumulationWeight; //NOTE: Only used for Type == EquationType_Cumulative.
 	
 	solver_h Solver;
+	conditional_h Conditional;
 		
 		
 	//NOTE: It would be nice to remove the following from the equation_spec and instead just store it in a temporary structure in EndModelDefinition, however it is reused in debug printouts etc. in the model run, so we have to store it in the model object somewhere anyway.
@@ -330,6 +337,17 @@ struct solver_spec
 	
 	bool UsesErrorControl;
 	bool UsesJacobian;
+	
+	conditional_h Conditional;
+};
+
+struct conditional_spec
+{
+	const char *Name;
+
+	parameter_type SwitchType;
+	entity_handle Switch;
+	parameter_value Value;
 };
 
 struct input_spec
@@ -353,18 +371,12 @@ struct iteration_data
 	array<equation_h>    LastResultsToRead;
 };
 
-enum equation_batch_type
-{
-	BatchType_Regular,
-	BatchType_Solver,
-};
-
 struct equation_batch
 {
-	equation_batch_type Type;
-	solver_h Solver;                //NOTE: Only for Type==BatchType_Solver.
+	solver_h          Solver = {};
+	
 	array<equation_h> Equations;
-	array<equation_h> EquationsODE; //NOTE: Only for Type==BatchType_Solver.
+	array<equation_h> EquationsODE;   //NOTE: Should be empty unless IsValid(Solver)
 	
 	//NOTE: These are used for optimizing estimation of the Jacobian in case that is needed by a solver.
 	array<array<size_t>>     ODEIsDependencyOfODE;
@@ -380,6 +392,8 @@ struct equation_batch_group
 	
 	array<equation_h>     LastResultsToReadAtBase;  //Unfortunately we need this for LAST_RESULTs of equations with 0 index set dependencies.
 	array<iteration_data> IterationData;
+	
+	conditional_h         Conditional = {};
 	
 	array<equation_h> InitialValueOrder; //NOTE: The initial value setup of equations happens in a different order than the execution order during model run because the intial value equations may have different dependencies than the equations they are initial values for.
 };
@@ -474,6 +488,8 @@ struct mobius_model
 	
 	entity_registry<solver_spec> Solvers;
 	
+	entity_registry<conditional_spec> Conditionals;
+	
 	entity_registry<unit_spec> Units;
 	
 	array<equation_batch> EquationBatches;
@@ -501,7 +517,7 @@ ForAllBatchEquations(const batch_like &Batch, std::function<bool(equation_h)> Do
 		ShouldBreak = Do(Equation);
 		if(ShouldBreak) break;
 	}
-	if(!ShouldBreak && Batch.Type == BatchType_Solver)
+	if(!ShouldBreak && IsValid(Batch.Solver))
 	{
 		for(equation_h Equation : Batch.EquationsODE)
 		{
@@ -512,16 +528,6 @@ ForAllBatchEquations(const batch_like &Batch, std::function<bool(equation_h)> Do
 }
 
 
-//TODO: The name "inputs" here is confusing, since there is already a different concept called input.
-//TODO: Couldn't this just be a std::vector?
-/*
-struct branch_inputs
-{
-	size_t Count;
-	index_t *Inputs;
-};
-*/
-
 struct mobius_data_set
 {
 	const mobius_model *Model;
@@ -531,7 +537,7 @@ struct mobius_data_set
 	parameter_value *ParameterData;
 	storage_structure ParameterStorageStructure;
 	
-	double *hSolver; //TODO: Should just be in the RunState?
+	array<double> hSolver; //TODO: Should just be in the RunState?
 	
 	double *InputData;
 	bool   *InputTimeseriesWasProvided;
@@ -730,6 +736,7 @@ GET_ENTITY_NAME(parameter_time_h, Parameters)
 GET_ENTITY_NAME(index_set_h, IndexSets)
 GET_ENTITY_NAME(parameter_group_h, ParameterGroups)
 GET_ENTITY_NAME(solver_h, Solvers)
+GET_ENTITY_NAME(conditional_h, Conditionals)
 GET_ENTITY_NAME(unit_h, Units)
 GET_ENTITY_NAME(module_h, Modules)
 
@@ -808,6 +815,7 @@ GET_ENTITY_HANDLE(parameter_time_h, Parameters, ParameterTime)
 GET_ENTITY_HANDLE(index_set_h, IndexSets, IndexSet)
 GET_ENTITY_HANDLE(parameter_group_h, ParameterGroups, ParameterGroup)
 GET_ENTITY_HANDLE(solver_h, Solvers, Solver)
+GET_ENTITY_HANDLE(conditional_h, Conditionals, Conditional)
 GET_ENTITY_HANDLE(module_h, Modules, Module)
 
 #undef GET_ENTITY_HANDLE
@@ -1160,8 +1168,30 @@ SetSolver(mobius_model *Model, equation_h Equation, solver_h Solver)
 	Model->Equations.Specs[Equation.Handle].Solver = Solver;
 }
 
+static void
+SetConditional(mobius_model *Model, equation_h Equation, conditional_h Conditional)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	equation_type Type = Model->Equations.Specs[Equation.Handle].Type;
+	if(Type != EquationType_Basic && Type != EquationType_Cumulative)
+	{
+		PrintRegistrationErrorHeader(Model);
+		FatalError("ERROR: Tried to set a conditional execution for the equation \"", GetName(Model, Equation), "\", but it is not a basic or cumulative equation, and so can not be given a conditional directly.\n");
+	}
+	Model->Equations.Specs[Equation.Handle].Conditional = Conditional;
+}
+
+static void
+SetConditional(mobius_model *Model, solver_h Solver, conditional_h Conditional)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	Model->Solvers.Specs[Solver.Handle].Conditional = Conditional;
+}
+
 static equation_h
-RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver = {}, equation_type Type = EquationType_Basic)
+RegisterEquation_(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver = {}, conditional_h Conditional = {}, equation_type Type = EquationType_Basic)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -1170,9 +1200,12 @@ RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h So
 	if(Model->EquationBodies.size() <= Equation)
 		Model->EquationBodies.resize(Equation + 1, {});
 	
-	Model->Equations.Specs[Equation].Type = Type;
-	Model->Equations.Specs[Equation].Unit = Unit;
-	Model->Equations.Specs[Equation].Module = Model->CurrentModule;
+	equation_spec &Spec = Model->Equations.Specs[Equation];
+	
+	Spec.Type = Type;
+	Spec.Unit = Unit;
+	Spec.Module = Model->CurrentModule;
+	Spec.Conditional = Conditional;
 	
 	if(IsValid(Solver))
 		SetSolver(Model, equation_h {Equation}, Solver);
@@ -1180,12 +1213,36 @@ RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h So
 	return {Equation};
 }
 
+static equation_h
+RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	return RegisterEquation_(Model, Name, Unit, {}, {}, EquationType_Basic);
+}
+
+static equation_h
+RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	return RegisterEquation_(Model, Name, Unit, Solver, {}, EquationType_Basic);
+}
+
+static equation_h
+RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, conditional_h Conditional)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	return RegisterEquation_(Model, Name, Unit, {}, Conditional, EquationType_Basic);
+}
+
 inline equation_h
 RegisterEquationODE(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver = {})
 {
 	REGISTRATION_BLOCK(Model)
 	
-	return RegisterEquation(Model, Name, Unit, Solver, EquationType_ODE);
+	return RegisterEquation_(Model, Name, Unit, Solver, {}, EquationType_ODE);
 }
 
 inline equation_h
@@ -1193,7 +1250,7 @@ RegisterEquationInitialValue(mobius_model *Model, const char *Name, unit_h Unit)
 {
 	REGISTRATION_BLOCK(Model)
 	
-	return RegisterEquation(Model, Name, Unit, {}, EquationType_InitialValue);
+	return RegisterEquation_(Model, Name, Unit, {}, {}, EquationType_InitialValue);
 }
 
 //NOTE: CumulateResult is implemented in mobius_data_set.cpp
@@ -1213,7 +1270,7 @@ RegisterEquationCumulative(mobius_model *Model, const char *Name, equation_h Cum
 	}
 	
 	unit_h Unit = Model->Equations.Specs[Cumulates.Handle].Unit;
-	equation_h Equation = RegisterEquation(Model, Name, Unit, {}, EquationType_Cumulative);
+	equation_h Equation = RegisterEquation_(Model, Name, Unit, {}, {}, EquationType_Cumulative);
 	Model->Equations.Specs[Equation.Handle].CumulatesOverIndexSet = CumulatesOverIndexSet;
 	Model->Equations.Specs[Equation.Handle].Cumulates = Cumulates;
 	Model->Equations.Specs[Equation.Handle].CumulationWeight = Weight;
@@ -1353,6 +1410,49 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	Spec.AbsErr = AbsErr;
 	
 	return Solver;
+}
+
+static conditional_h
+RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_bool_h Switch, bool Value)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	entity_handle Conditional = Model->Conditionals.Register(Name);
+	
+	conditional_spec &Spec = Model->Conditionals.Specs[Conditional];
+	Spec.SwitchType = ParameterType_Bool;
+	Spec.Switch = Switch.Handle;
+	Spec.Value.ValBool = Value;
+	
+	return {Conditional};
+}
+
+static conditional_h
+RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_uint_h Switch, u64 Value)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	entity_handle Conditional = Model->Conditionals.Register(Name);
+	
+	conditional_spec &Spec = Model->Conditionals.Specs[Conditional];
+	Spec.SwitchType = ParameterType_UInt;
+	Spec.Switch = Switch.Handle;
+	Spec.Value.ValUInt = Value;
+	
+	return {Conditional};
+}
+
+static conditional_h
+GetConditional(const mobius_model *Model, equation_h Equation)
+{
+	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+	conditional_h Conditional = Spec.Conditional;
+	if(IsValid(Spec.Solver))
+	{
+		const solver_spec &SolverSpec = Model->Solvers.Specs[Spec.Solver.Handle];
+		Conditional = SolverSpec.Conditional;
+	}
+	return Conditional;
 }
 
 inline void
