@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplyN V_dev) at 2020-09-02 12:13:36
+# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplyN V_dev) at 2020-09-08 11:15:44
 
 index_sets:
 "Landscape units" : {"Seminatural" "Agricultural"}
@@ -109,10 +109,10 @@ parameters:
 
 # Nitrogen global (no index sets) #
 
-"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/year) [0, 1] 
-0.0079
+"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/day) [0, 1] 
+7900
 
-"(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature" :     #(dimensionless) [1, 2] 
+"(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
 2.73
 
 "Use growth curve" :
@@ -121,7 +121,7 @@ false
 "Day of highest uptake+immobilisation" :     #(day) [1, 365]
 200
 
-"Lenght of interval where 95% of growth takes place" :     #(day) [0, 365]
+"Length of interval where 95% of growth takes place" :     #(day) [0, 365]
 200
 
 "Groundwater DIN concentration" :     #(mg/l) [0, 5] 
@@ -132,6 +132,12 @@ true
 
 "Groundwater retention volume" :     #(mm) [0, 2000] Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.
 1000
+
+"Reach denitrification rate at 20°C" :     #(m/day) [0, 1] 
+0
+
+"(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
+1
 
 
 # Nitrogen by land use ("Landscape units") #

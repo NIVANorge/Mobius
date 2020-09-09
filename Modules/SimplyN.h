@@ -23,6 +23,7 @@ This module is in early development.
 	auto KgPerHaPerYear = RegisterUnit(Model, "kg/Ha/year");
 	auto KgPerHaPerDay  = RegisterUnit(Model, "kg/Ha/day");
 	auto MPerYear       = RegisterUnit(Model, "m/year");
+	auto MPerDay        = RegisterUnit(Model, "m/day");
 	auto Days           = RegisterUnit(Model, "day");
 	auto PerDay         = RegisterUnit(Model, "1/day");
 	
@@ -33,15 +34,19 @@ This module is in early development.
 	
 	auto NitrogenGlobal = RegisterParameterGroup(Model, "Nitrogen global");
 	
-	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerYear, 0.0, 0.0, 1.0, "", "imms");
-	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 2.0, "", "Q10imms");
-	auto UseGrowthCurve                   = RegisterParameterBool(Model, NitrogenGlobal, "Use growth curve", true);
+	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerDay, 0.0, 0.0, 1.0, "", "imms");
+	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 5.0, "", "Q10imms");
+	auto UseGrowthCurve                   = RegisterParameterBool(Model, NitrogenGlobal, "Use growth curve", false);
 	auto DayOfHighestGrowth               = RegisterParameterDouble(Model, NitrogenGlobal, "Day of highest uptake+immobilisation", Days, 200.0, 1.0, 365.0);
-	auto Growth95Percentile               = RegisterParameterDouble(Model, NitrogenGlobal, "Lenght of interval where 95% of growth takes place", Days, 200.0, 0.0, 365.0);
+	auto Growth95Percentile               = RegisterParameterDouble(Model, NitrogenGlobal, "Length of interval where 95% of growth takes place", Days, 200.0, 0.0, 365.0);
 	
 	auto GroundwaterDINConcentration      = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater DIN concentration", MgPerL, 0.0, 0.0, 5.0, "", "DINgw");
 	auto GroundwaterDINConstant           = RegisterParameterBool(Model, NitrogenGlobal, "Constant groundwater DIN concentration", true, "Keep the concentration of DIN in the groundwater constant instead of simulating it.");
 	auto GroundwaterBufferVolume          = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater retention volume", Mm, 0.0, 0.0, 2000.0, "Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.");
+	
+	auto ReachDenitrificationRate         = RegisterParameterDouble(Model, NitrogenGlobal, "Reach denitrification rate at 20°C", MPerDay, 0.0, 0.0, 1.0, "", "den");
+	auto ReachDenitrificationQ10          = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Reach denitrification rate response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 5.0, "", "Q10den");
+	
 	
 	auto NitrogenLand   = RegisterParameterGroup(Model, "Nitrogen by land use", LandscapeUnits);
 	
@@ -56,6 +61,8 @@ This module is in early development.
 	//From SimplyQ:
 	auto LandSolver  = GetSolverHandle(Model, "SimplyQ land solver");
 	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
+	
+	auto AirTemperature     = GetInputHandle(Model, "Air temperature");
 
 	auto QuickFlow          = GetEquationHandle(Model, "Quick flow");         // [mm/day]
 	auto SoilWaterVolume    = GetEquationHandle(Model, "Soil water volume");  // [mm]
@@ -108,6 +115,7 @@ This module is in early development.
 	auto ReachDINFlux               = RegisterEquation(Model, "Reach DIN flux", KgPerDay, ReachSolver);
 	auto DailyMeanReachDINFlux      = RegisterEquationODE(Model, "Daily mean reach DIN flux", KgPerDay, ReachSolver);
 	ResetEveryTimestep(Model, DailyMeanReachDINFlux);
+	auto ReachDenitrification       = RegisterEquation(Model, "Reach denitrification", KgPerDay, ReachSolver);
 	
 	auto ReachDINConcentration      = RegisterEquation(Model, "Reach DIN concentration (volume weighted daily mean)", MgPerL);
 	
@@ -124,7 +132,8 @@ This module is in early development.
 	EQUATION(Model, SoilWaterDINImmobilisation,
 		double growthfactor = RESULT(GrowthCurve);
 		if(!PARAMETER(UseGrowthCurve)) growthfactor = 1.0;
-		return growthfactor*RESULT(SoilWaterDINConcentration)*1e3 * PARAMETER(SoilWaterDINImmobilisationRate)*std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
+		double tempfactor   = std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
+		return RESULT(SoilWaterDINConcentration) * 1e-3 * PARAMETER(SoilWaterDINImmobilisationRate) * tempfactor * growthfactor;
 	)
 	
 	EQUATION(Model, InitialSoilWaterDINMass,
@@ -132,7 +141,6 @@ This module is in early development.
 	)
 	
 	EQUATION(Model, SoilWaterDINMass,
-		//TODO
 		return
 			  PARAMETER(NetAnnualNInputToSoil) * 100.0/356.0   // 1/Ha/year -> 1/km2/day
 			- RESULT(SoilWaterDINImmobilisation)
@@ -199,16 +207,22 @@ This module is in early development.
 		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
 	)
 	
+	EQUATION(Model, ReachDenitrification,
+		double conc       = SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
+		double tempfactor = std::pow(PARAMETER(ReachDenitrificationQ10), (INPUT(AirTemperature) - 20.0)/10.0); //TODO: Maybe use the water temperature module
+		return conc * PARAMETER(ReachDenitrificationRate) * tempfactor;
+	)
+	
 	EQUATION(Model, ReachDINMass,
 		return
 		  PARAMETER(EffluentDIN)
 		+ RESULT(ReachDINInputFromUpstream)
 		+ (RESULT(TotalQuickFlowDINFluxToReach) + RESULT(TotalSoilWaterDINFluxToReach) + RESULT(GroundwaterDINFluxToReach))*PARAMETER(CatchmentArea)
-		- RESULT(ReachDINFlux);
+		- RESULT(ReachDINFlux)
+		- RESULT(ReachDenitrification);
 	)
 	
 	EQUATION(Model, ReachDINConcentration,
-		//return 1e3 * SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
 		return 1e3 * SafeDivide(RESULT(DailyMeanReachDINFlux), 86400.0 * RESULT(DailyMeanReachFlow));
 	)
 	
