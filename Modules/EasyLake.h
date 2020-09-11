@@ -81,11 +81,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 
 	auto FlowInputFromUpstream = GetEquationHandle(Model, "Flow input from upstream");
 	auto FlowInputFromLand     = GetEquationHandle(Model, "Flow input from land");
-	
 #endif
 
-
-	
 	auto InitialLakeSurfaceArea         = RegisterParameterDouble(Model, PhysParams, "Initial lake surface area", M2, 1e3, 0.0, 371e9);
 	auto LakeLength                     = RegisterParameterDouble(Model, PhysParams, "Lake length", M, 300.0, 0.0, 1.03e6, "This parameter should be adjusted when calibrating lake outflow");
 	auto LakeShoreSlope                 = RegisterParameterDouble(Model, PhysParams, "Lake shore slope", MPerM, 0.2, 0.0, 4.0, "This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width");
@@ -96,8 +93,6 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	auto Precipitation    = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature   = RegisterInput(Model, "Air temperature", DegreesCelsius);
-	
-
 	
 	//NOTE: Some of these may be hard to come by in some instances. We should provide ways to estimate them such as in PET.h
 	auto WindSpeed        = RegisterInput(Model, "Wind speed at 10m", MPerS);
@@ -665,8 +660,10 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double iceEnergy = RESULT(IceEnergy) * area;
 		
 		//Correction from flow temperature and rainfall
-		double inflowT = INPUT(AirTemperature);     //TODO: could plug in WaterTemperature model for rivers
-		double rainT   = INPUT(AirTemperature);
+		//TODO: The Max(0.0, INPUT(AirTemperature) actually causes quite a bit of heating from precip in winter. It is maybe not that realistic.
+		double inflowT = Max(0.0, INPUT(AirTemperature));     //TODO: could plug in WaterTemperature model for rivers
+		double rainT   = Max(0.0, INPUT(AirTemperature));
+		double outflowT = RESULT(EpilimnionTemperature);
 #ifdef EASYLAKE_STANDALONE
 		double inflowQ = 86400.0*INPUT(LakeInflow);
 #endif
@@ -674,7 +671,6 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand));
 #endif
 		double rainQ   = INPUT(Precipitation)*area*1e-3;  //TODO: should not apply when AirT < 0 and when there is ice?
-		double outflowT = RESULT(EpilimnionTemperature);
 		double outflowQ = -RESULT(LakeOutflow)*86400.0;
 		
 		double inflow_dT = (inflowT  - meanT)*inflowQ/volume;

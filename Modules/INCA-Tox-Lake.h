@@ -1,6 +1,6 @@
 
-//NOTE This is an extremely simple lake module that was made for just one specific project. It may not be widely applicable
-
+//NOTE: This is an extremely simple lake module that was made for just one specific project. It may not be widely applicable
+//TODO: Couple this to EasyLake instead of having all this code duplication!!!
 
 
 inline double

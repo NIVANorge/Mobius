@@ -387,15 +387,15 @@ OffsetForHandle(storage_structure &Structure, index_t *CurrentIndexes, index_t *
 }
 
 static void
-SetMultipleValuesForParameter(mobius_data_set *DataSet, entity_handle ParameterHandle, parameter_value *Values, size_t Count)
+SetMultipleValuesForParameter(mobius_data_set *DataSet, parameter_h Parameter, parameter_value *Values, size_t Count)
 {
 	//NOTE: There are almost no safety checks in this function. The caller of the function is responsible for the checks!
 	// It was designed to be used with the default text input for parameters. If you want to use it for anything else, you should make sure you understand how it works.
 	
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];	
+	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];	
 	size_t Stride = DataSet->ParameterStorageStructure.Units[UnitIndex].Handles.Count;
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ParameterHandle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter.Handle);
 	parameter_value *Base = DataSet->ParameterData + Offset;
 	
 	for(size_t Idx = 0; Idx < Count; ++Idx)
@@ -475,13 +475,13 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 {
 	const mobius_model *Model = DataSet->Model;
 	
-	entity_handle IndexSetHandle = GetIndexSetHandle(DataSet->Model, IndexSetName).Handle;
-	const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
+	index_set_h IndexSet = GetIndexSetHandle(DataSet->Model, IndexSetName);
+	const index_set_spec &Spec = Model->IndexSets[IndexSet];
 	
 	if(Spec.Type != IndexSetType_Basic)
 		FatalError("ERROR: Can not use the method SetIndexes for the index set ", Spec.Name, ", use a method that is specific to the type of that index set instead.\n");
 	
-	if(DataSet->IndexNames[IndexSetHandle] != 0)
+	if(DataSet->IndexNames[IndexSet.Handle] != 0)
 		FatalError("ERROR: Tried to set the indexes for the index set ", Spec.Name, " more than once.\n");
 	
 	if(IndexNames.empty())
@@ -517,8 +517,8 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 		}
 	}
 	
-	DataSet->IndexCounts[IndexSetHandle] = {IndexSetHandle, (u32)IndexNames.size()};
-	DataSet->IndexNames[IndexSetHandle] = DataSet->BucketMemory.Allocate<const char *>(IndexNames.size());
+	DataSet->IndexCounts[IndexSet.Handle] = {IndexSet.Handle, (u32)IndexNames.size()};
+	DataSet->IndexNames[IndexSet.Handle] = DataSet->BucketMemory.Allocate<const char *>(IndexNames.size());
 	
 	for(size_t IndexIndex = 0; IndexIndex < IndexNames.size(); ++IndexIndex)
 	{
@@ -526,19 +526,17 @@ SetIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std::vecto
 			FatalError("ERROR: Indexes can't be empty strings.\n");
 		
 		const char *IndexName = IndexNames[IndexIndex].Copy(&DataSet->BucketMemory).Data;
-		DataSet->IndexNames[IndexSetHandle][IndexIndex] = IndexName;
-		DataSet->IndexNamesToHandle[IndexSetHandle][IndexName] = IndexIndex;
+		DataSet->IndexNames[IndexSet.Handle][IndexIndex] = IndexName;
+		DataSet->IndexNamesToHandle[IndexSet.Handle][IndexName] = IndexIndex;
 	}
 	
-	if(DataSet->IndexNamesToHandle[IndexSetHandle].size() != IndexNames.size())
-	{
+	if(DataSet->IndexNamesToHandle[IndexSet.Handle].size() != IndexNames.size())
 		FatalError("ERROR: Got duplicate indexes for index set ", Spec.Name, '\n');
-	}
 	
 	bool AllSet = true;
-	for(size_t IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
+	for(index_set_h IndexSet : Model->IndexSets)
 	{
-		if(DataSet->IndexCounts[IndexSetHandle] == 0)
+		if(DataSet->IndexCounts[IndexSet.Handle] == 0)
 		{
 			AllSet = false;
 			break;
@@ -552,23 +550,23 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 {
 	const mobius_model *Model = DataSet->Model;
 	
-	entity_handle IndexSetHandle = GetIndexSetHandle(Model, IndexSetName).Handle;
-	const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
+	index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName);
+	const index_set_spec &Spec = Model->IndexSets[IndexSet];
 	
 	if(Spec.Type != IndexSetType_Branched)
 		FatalError("ERROR: Can not use the method SetBranchIndexes for the index set \"", IndexSetName, "\", use a method that is specific to the type of that index set instead.\n");
 	
-	if(DataSet->IndexNames[IndexSetHandle] != 0)
+	if(DataSet->IndexNames[IndexSet.Handle] != 0)
 		FatalError("ERROR: Tried to set the indexes for the index set \"", Spec.Name, "\" more than once.\n");
 	
 	if(Inputs.empty())
 		FatalError("ERROR: Tried to set indexes for the index set \"", Spec.Name, "\", but no indexes were provided.\n");
 	
-	DataSet->IndexCounts[IndexSetHandle] = {IndexSetHandle, (u32)Inputs.size()};
-	DataSet->IndexNames[IndexSetHandle] = DataSet->BucketMemory.Allocate<const char *>(Inputs.size());
+	DataSet->IndexCounts[IndexSet.Handle] = {IndexSet.Handle, (u32)Inputs.size()};
+	DataSet->IndexNames[IndexSet.Handle] = DataSet->BucketMemory.Allocate<const char *>(Inputs.size());
 
-	DataSet->BranchInputs[IndexSetHandle] = DataSet->BucketMemory.Allocate<array<index_t>>(Inputs.size());
-	index_t IndexIndex = {IndexSetHandle, 0};
+	DataSet->BranchInputs[IndexSet.Handle] = DataSet->BucketMemory.Allocate<array<index_t>>(Inputs.size());
+	index_t IndexIndex = {IndexSet.Handle, 0};
 	for(const auto &InputData : Inputs)
 	{
 		if(InputData.first.Length == 0)
@@ -577,26 +575,24 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 		const char *IndexName = InputData.first.Copy(&DataSet->BucketMemory).Data;
 
 		const std::vector<token_string> &InputNames = InputData.second;
-		if(DataSet->IndexNamesToHandle[IndexSetHandle].find(IndexName) != DataSet->IndexNamesToHandle[IndexSetHandle].end())
-		{
+		if(DataSet->IndexNamesToHandle[IndexSet.Handle].find(IndexName) != DataSet->IndexNamesToHandle[IndexSet.Handle].end())
 			FatalError("ERROR: Got duplicate indexes for index set \"", IndexSetName, "\".\n");
-		}
 		
-		DataSet->IndexNamesToHandle[IndexSetHandle][IndexName] = IndexIndex;
-		DataSet->IndexNames[IndexSetHandle][IndexIndex] = IndexName;
+		DataSet->IndexNamesToHandle[IndexSet.Handle][IndexName] = IndexIndex;
+		DataSet->IndexNames[IndexSet.Handle][IndexIndex] = IndexName;
 		
-		DataSet->BranchInputs[IndexSetHandle][IndexIndex].Allocate(&DataSet->BucketMemory, InputNames.size());
+		DataSet->BranchInputs[IndexSet.Handle][IndexIndex].Allocate(&DataSet->BucketMemory, InputNames.size());
 		
-		index_t InputIdxIdx = {IndexSetHandle, 0};
+		index_t InputIdxIdx = {IndexSet.Handle, 0};
 		for(token_string InputName : InputNames)
 		{
-			auto Find = DataSet->IndexNamesToHandle[IndexSetHandle].find(InputName);
-			if(Find == DataSet->IndexNamesToHandle[IndexSetHandle].end())
+			auto Find = DataSet->IndexNamesToHandle[IndexSet.Handle].find(InputName);
+			if(Find == DataSet->IndexNamesToHandle[IndexSet.Handle].end())
 			{
 				FatalError("ERROR: The index \"", InputName, "\" appears as an input to the index \"", IndexName, "\" in the index set \"", IndexSetName, "\" before it itself is declared.\n");
 			}
-			index_t InputIndex = {IndexSetHandle, Find->second};
-			DataSet->BranchInputs[IndexSetHandle][IndexIndex][InputIdxIdx] = InputIndex;
+			index_t InputIndex = {IndexSet.Handle, Find->second};
+			DataSet->BranchInputs[IndexSet.Handle][IndexIndex][InputIdxIdx] = InputIndex;
 			++InputIdxIdx;
 		}
 		
@@ -604,9 +600,9 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 	}
 	
 	bool AllSet = true;
-	for(size_t IndexSetHandle = 1; IndexSetHandle < DataSet->Model->IndexSets.Count(); ++IndexSetHandle)
+	for(index_set_h IndexSet : DataSet->Model->IndexSets)
 	{
-		if(DataSet->IndexCounts[IndexSetHandle] == 0)
+		if(DataSet->IndexCounts[IndexSet.Handle] == 0)
 		{
 			AllSet = false;
 			break;
@@ -627,10 +623,10 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 		FatalError("ERROR: Tried to allocate parameter storage twice.\n");
 	
 	std::map<std::vector<index_set_h>, std::vector<entity_handle>> TransposedParameterDependencies;
-	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
+	for(parameter_h Parameter : Model->Parameters)
 	{
-		std::vector<index_set_h> Dependencies = Model->Parameters.Specs[ParameterHandle].IndexSetDependencies;
-		TransposedParameterDependencies[Dependencies].push_back(ParameterHandle);
+		std::vector<index_set_h> Dependencies = Model->Parameters[Parameter].IndexSetDependencies;
+		TransposedParameterDependencies[Dependencies].push_back(Parameter.Handle);
 	}
 	size_t ParameterStorageUnitCount = TransposedParameterDependencies.size();
 	array<storage_unit_specifier> &Units = DataSet->ParameterStorageStructure.Units;
@@ -686,10 +682,10 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 
 	std::map<std::vector<index_set_h>, std::vector<entity_handle>> TransposedInputDependencies;
 	
-	for(entity_handle InputHandle = 1; InputHandle < Model->Inputs.Count(); ++InputHandle)
+	for(input_h Input : Model->Inputs)
 	{
-		const input_spec &Spec = Model->Inputs.Specs[InputHandle];
-		TransposedInputDependencies[Spec.IndexSetDependencies].push_back(InputHandle);
+		const input_spec &Spec = Model->Inputs[Input];
+		TransposedInputDependencies[Spec.IndexSetDependencies].push_back(Input.Handle);
 	}
 	
 	size_t InputStorageUnitCount = TransposedInputDependencies.size();
@@ -799,14 +795,14 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 		AllocateParameterStorage(DataSet);
 	
 	const mobius_model *Model = DataSet->Model;
-	entity_handle ParameterHandle = GetParameterHandle(Model, Name);
+	parameter_h Parameter = GetParameterHandle(Model, Name);
 	
-	if(Model->Parameters.Specs[ParameterHandle].Type != Type)
+	if(Model->Parameters[Parameter].Type != Type)
 		FatalError("ERROR: Tried to set the value of the parameter \"", Name, "\" with a value that was of the wrong type.\n");
 	
 	//TODO: Check that the value is in the Min-Max range. (issue warning only)
 	
-	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 	array<index_set_h> &IndexSetDependencies = DataSet->ParameterStorageStructure.Units[StorageUnitIndex].IndexSets;
 	
 	if(IndexCount != IndexSetDependencies.Count)
@@ -817,7 +813,7 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	for(size_t Level = 0; Level < IndexCount; ++Level)
 		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, ParameterHandle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter.Handle);
 	DataSet->ParameterData[Offset] = Value;
 }
 
@@ -865,12 +861,12 @@ GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 		FatalError("ERROR: Tried to get a parameter value before parameter storage was allocated.\n");
 	
 	const mobius_model *Model = DataSet->Model;
-	entity_handle ParameterHandle = GetParameterHandle(Model, Name);
+	parameter_h Parameter = GetParameterHandle(Model, Name);
 	
-	if(Model->Parameters.Specs[ParameterHandle].Type != Type)
+	if(Model->Parameters[Parameter].Type != Type)
 		FatalError("ERROR: Tried to get the value of the parameter \"", Name, "\" specifying the wrong value type.\n");
 	
-	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 	array<index_set_h> &IndexSetDependencies = DataSet->ParameterStorageStructure.Units[StorageUnitIndex].IndexSets;
 	
 	if(IndexCount != IndexSetDependencies.Count)
@@ -881,7 +877,7 @@ GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	for(size_t Level = 0; Level < IndexCount; ++Level)
 		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, ParameterHandle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter.Handle);
 	return DataSet->ParameterData[Offset];
 }
 
@@ -1029,7 +1025,7 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 	
 	equation_h Equation = GetEquationHandle(Model, Name);
 	
-	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+	const equation_spec &Spec = Model->Equations[Equation];
 	if(Spec.Type == EquationType_InitialValue)
 		FatalError("ERROR: Can not get the result series of the equation \"", Name, "\", because it is an initial value equation.\n");
 	
@@ -1151,17 +1147,13 @@ PrintResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<
 	for(const char *Index : Indexes) std::cout << "[" << Index << "]";
 	
 	equation_h Equation = GetEquationHandle(DataSet->Model, Name);
-	const equation_spec &Spec = DataSet->Model->Equations.Specs[Equation.Handle];
+	const equation_spec &Spec = DataSet->Model->Equations[Equation];
 	if(IsValid(Spec.Unit))
-	{
 		std::cout << " (" << GetName(DataSet->Model, Spec.Unit) << ")";
-	}
 	
 	std::cout << ":" << std::endl;
 	for(size_t Idx = 0; Idx < WriteSize; ++Idx)
-	{
 		std::cout << ResultSeries[Idx] << " ";
-	}
 	std::cout << std::endl << std::endl;
 	
 	free(ResultSeries);
@@ -1177,17 +1169,13 @@ PrintInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<c
 	for(const char *Index : Indexes) std::cout << "[" << Index << "]";
 	
 	input_h Input = GetInputHandle(DataSet->Model, Name);
-	const input_spec &Spec = DataSet->Model->Inputs.Specs[Input.Handle];
+	const input_spec &Spec = DataSet->Model->Inputs[Input];
 	if(IsValid(Spec.Unit))
-	{
 		std::cout << " (" << GetName(DataSet->Model, Spec.Unit) << ")";
-	}
 	
 	std::cout << ":" << std::endl;
 	for(size_t Idx = 0; Idx < WriteSize; ++Idx)
-	{
 		std::cout << InputSeries[Idx] << " ";
-	}
 	std::cout << std::endl << std::endl;
 	
 	free(InputSeries);
@@ -1198,25 +1186,25 @@ PrintIndexes(mobius_data_set *DataSet, const char *IndexSetName)
 {
 	//TODO: checks
 	const mobius_model *Model = DataSet->Model;
-	entity_handle IndexSetHandle = GetIndexSetHandle(Model, IndexSetName).Handle;
+	index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName);
 	std::cout << "Indexes for " << IndexSetName << ": ";
-	const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
+	const index_set_spec &Spec = Model->IndexSets[IndexSet];
 	if(Spec.Type == IndexSetType_Basic)
 	{
-		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSetHandle]; ++IndexIndex)
+		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSet.Handle]; ++IndexIndex)
 		{
-			std::cout << DataSet->IndexNames[IndexSetHandle][IndexIndex] << " ";
+			std::cout << DataSet->IndexNames[IndexSet.Handle][IndexIndex] << " ";
 		}
 	}
 	else if(Spec.Type == IndexSetType_Branched)
 	{
-		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSetHandle]; ++IndexIndex)
+		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSet.Handle]; ++IndexIndex)
 		{
-			std::cout <<  "(" << DataSet->IndexNames[IndexSetHandle][IndexIndex] << ": ";
-			for(size_t InputIndexIndex = 0; InputIndexIndex < DataSet->BranchInputs[IndexSetHandle][IndexIndex].Count; ++InputIndexIndex)
+			std::cout <<  "(" << DataSet->IndexNames[IndexSet.Handle][IndexIndex] << ": ";
+			for(size_t InputIndexIndex = 0; InputIndexIndex < DataSet->BranchInputs[IndexSet.Handle][IndexIndex].Count; ++InputIndexIndex)
 			{
-				size_t InputIndex = DataSet->BranchInputs[IndexSetHandle][IndexIndex][InputIndexIndex];
-				std::cout << DataSet->IndexNames[IndexSetHandle][InputIndex] << " ";
+				size_t InputIndex = DataSet->BranchInputs[IndexSet.Handle][IndexIndex][InputIndexIndex];
+				std::cout << DataSet->IndexNames[IndexSet.Handle][InputIndex] << " ";
 			}
 			std::cout << ") ";
 		}
@@ -1280,9 +1268,9 @@ ForeachParameterInstance(mobius_data_set *DataSet, const char *ParameterName, co
 	
 	char *CurrentIndexNames[256];
 	
-	entity_handle ParameterHandle = GetParameterHandle(Model, ParameterName);
+	parameter_h Parameter = GetParameterHandle(Model, ParameterName);
 	
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 	storage_unit_specifier &Unit = DataSet->ParameterStorageStructure.Units[UnitIndex];
 	
 	ForeachRecursive(DataSet, CurrentIndexNames, Unit.IndexSets, Do, -1);
@@ -1310,13 +1298,13 @@ ForeachRecursive(mobius_data_set *DataSet, index_t *CurrentIndexes, const array<
 }
 
 static void
-ForeachParameterInstance(mobius_data_set *DataSet, entity_handle ParameterHandle, const std::function<void(index_t *Indexes, size_t IndexesCount)> &Do)
+ForeachParameterInstance(mobius_data_set *DataSet, parameter_h Parameter, const std::function<void(index_t *Indexes, size_t IndexesCount)> &Do)
 {
 	const mobius_model *Model = DataSet->Model;
 	
 	index_t CurrentIndexes[256];
 	
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 	storage_unit_specifier &Unit = DataSet->ParameterStorageStructure.Units[UnitIndex];
 	
 	ForeachRecursive(DataSet, CurrentIndexes, Unit.IndexSets, Do, -1);

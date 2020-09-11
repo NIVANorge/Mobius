@@ -6,10 +6,12 @@
 
 typedef u32 entity_handle;
 
-
+//NOTE: The ++ and * operators are for convenience when doing iteration
 #define MODEL_ENTITY_HANDLE(Type) struct Type \
 { \
 	entity_handle Handle; \
+	void operator++() { Handle++; }; \
+	Type operator*() const { return *this; } \
 }; \
 bool operator==(const Type &A, const Type &B) { return A.Handle == B.Handle; } \
 bool operator!=(const Type &A, const Type &B) { return A.Handle != B.Handle; } \
@@ -17,74 +19,33 @@ bool operator<(const Type &A, const Type &B) { return A.Handle < B.Handle; } \
 inline bool IsValid(Type H) { return H.Handle > 0; }
 
 MODEL_ENTITY_HANDLE(module_h)
-
 MODEL_ENTITY_HANDLE(unit_h)
-
 MODEL_ENTITY_HANDLE(input_h)
 MODEL_ENTITY_HANDLE(equation_h)
-MODEL_ENTITY_HANDLE(parameter_double_h)
-MODEL_ENTITY_HANDLE(parameter_uint_h)
-MODEL_ENTITY_HANDLE(parameter_bool_h)
-MODEL_ENTITY_HANDLE(parameter_time_h)
-
+MODEL_ENTITY_HANDLE(parameter_h)
 MODEL_ENTITY_HANDLE(solver_h)
 MODEL_ENTITY_HANDLE(conditional_h)
-
 MODEL_ENTITY_HANDLE(index_set_h)
-
 MODEL_ENTITY_HANDLE(parameter_group_h)
-
 #undef MODEL_ENTITY_HANDLE
 
+//NOTE: Let parameter_x_h cast down to parameter_h
+#define MODEL_PARAMETER_HANDLE(Type) struct Type \
+{ \
+	entity_handle Handle; \
+	operator parameter_h() const { return {Handle}; } \
+}; \
+bool operator==(const Type &A, const Type &B) { return A.Handle == B.Handle; } \
+bool operator!=(const Type &A, const Type &B) { return A.Handle != B.Handle; } \
+bool operator<(const Type &A, const Type &B) { return A.Handle < B.Handle; } \
+inline bool IsValid(Type H) { return H.Handle > 0; }
 
-
-/*
-//NOTE: This alternative code (which complies more to certain standards of C++) produces the same result and is about as fast to compile, but it produces less legible error messages when the user makes a mistake.
-
-enum entity_type
-{
-	EntityType_Parameter,
-	EntityType_Input,
-	EntityType_Equation,
-	EntityType_ParameterDouble,
-	EntityType_ParameterBool,
-	EntityType_ParameterUInt,
-	EntityType_ParameterTime,
-	EntityType_Solver,
-	EntityType_Unit,
-	EntityType_IndexSet,
-	EntityType_ParameterGroup,
-};
-
-template <entity_type Type>
-struct handle_type
-{
-	entity_handle Handle;
-};
-
-template <entity_type Type>
-bool operator==(const handle_type<Type> &A, const handle_type<Type> &B) {return A.Handle == B.Handle;}
-
-template <entity_type Type>
-bool operator!=(const handle_type<Type> &A, const handle_type<Type> &B) {return A.Handle != B.Handle;}
-
-template <entity_type Type>
-bool operator<(const handle_type<Type> &A, const handle_type<Type> &B) {return A.Handle < B.Handle;}
-
-template <entity_type Type>
-IsValid(handle_type<Type> H) { return H.Handle != 0; }
-
-typedef handle_type<EntityType_Input> input_h;
-typedef handle_type<EntityType_Equation> equation_h;
-typedef handle_type<EntityType_ParameterDouble> parameter_double_h;
-typedef handle_type<EntityType_ParameterBool> parameter_bool_h;
-typedef handle_type<EntityType_ParameterUInt> parameter_uint_h;
-typedef handle_type<EntityType_ParameterTime> parameter_time_h;
-typedef handle_type<EntityType_Solver> solver_h;
-typedef handle_type<EntityType_Unit> unit_h;
-typedef handle_type<EntityType_IndexSet> index_set_h;
-typedef handle_type<EntityType_ParameterGroup> parameter_group_h;
-*/
+//NOTE: The following 4 should just be used during model registration. Internally we should just use parameter_h instead
+MODEL_PARAMETER_HANDLE(parameter_double_h)
+MODEL_PARAMETER_HANDLE(parameter_uint_h)
+MODEL_PARAMETER_HANDLE(parameter_bool_h)
+MODEL_PARAMETER_HANDLE(parameter_time_h)
+#undef MODEL_PARAMETER_HANDLE
 
 enum entity_type   //NOTE: Is currently only used so that the storage_structure knows what it is storing and can ask the Model for the name associated to a handle if an error occurs.
 {
@@ -235,7 +196,7 @@ struct parameter_group_spec
 	
 	module_h Module;
 	
-	std::vector<entity_handle> Parameters;
+	std::vector<parameter_h> Parameters;   //TODO: See if we use this anymore. It seems superfluous
 };
 
 enum index_set_type
@@ -267,15 +228,18 @@ GetEquationTypeName(equation_type Type)
 	return Typenames[(size_t)Type];
 }
 
+
+//TODO: Just combine the two below?
+template<typename handle_type>
 struct dependency_registration
 {
-	entity_handle Handle;
+	handle_type Handle;
 	size_t NumExplicitIndexes;
 };
 
 struct result_dependency_registration
 {
-	entity_handle Handle;
+	equation_h Handle;
 	std::vector<index_t> Indexes;
 };
 
@@ -310,7 +274,7 @@ struct equation_spec
 	
 	//NOTE: The below are built during EndModelDefinition:
 	std::set<index_set_h> IndexSetDependencies;          //NOTE: If the equation is run on a solver, the final index set dependencies of the equation will be those of the solver, not the ones stored here. You should generally use the storage structure to determine the final dependencies rather than this vector unless you are doing something specific in EndModelDefinition.
-	std::set<entity_handle>  ParameterDependencies;
+	std::set<parameter_h> ParameterDependencies;
 	std::set<input_h>     InputDependencies;
 	std::set<equation_h>  DirectResultDependencies;
 	std::set<equation_h>  DirectLastResultDependencies;
@@ -345,8 +309,8 @@ struct conditional_spec
 {
 	const char *Name;
 
-	parameter_type SwitchType;
-	entity_handle Switch;
+	parameter_type  SwitchType;
+	parameter_h     Switch;
 	parameter_value Value;
 };
 
@@ -365,10 +329,10 @@ struct input_spec
 //TODO: Find a better name for this struct?
 struct iteration_data
 {
-	array<entity_handle> ParametersToRead;
-	array<input_h>       InputsToRead;
-	array<equation_h>    ResultsToRead;
-	array<equation_h>    LastResultsToRead;
+	array<parameter_h> ParametersToRead;
+	array<input_h>     InputsToRead;
+	array<equation_h>  ResultsToRead;
+	array<equation_h>  LastResultsToRead;
 };
 
 struct equation_batch
@@ -401,7 +365,7 @@ struct equation_batch_group
 struct storage_unit_specifier
 {
 	array<index_set_h> IndexSets;
-	array<entity_handle> Handles;
+	array<entity_handle> Handles;      //TODO: We could template this on the handle type to make it safer.
 };
 
 struct mobius_model;
@@ -429,38 +393,44 @@ struct mobius_data_set;
 typedef std::function<void(mobius_data_set *)> mobius_preprocessing_step;
 
 
-template <typename spec_type>
+template <typename handle_type, typename spec_type>
 struct entity_registry
 {
 	std::vector<spec_type> Specs;
 	string_map NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
 	
-	entity_registry()
-	{
-		Specs.push_back({}); //NOTE: Reserving the 0 index as invalid.
-	}
+	entity_registry() { Specs.push_back({}); } //NOTE: Reserving the 0 index as an invalid index. TODO: Should maybe use U32_MAX instead, but would require some rework, and 0 is safer since we can then just 0-initialize everything.
 	
-	entity_handle Register(const char *Name)
+	handle_type Register(const char *Name)
 	{
 		auto Find = NameToHandle.find(Name);
 		if(Find != NameToHandle.end())
-		{
-			return Find->second;
-		}
+			return {Find->second};
 		else
 		{
 			entity_handle Handle = (entity_handle)Specs.size();
 			Specs.push_back({});
 			Specs[Handle].Name = Name;
 			NameToHandle[Name] = Handle;
-			return Handle;
+			return {Handle};
 		}
 	}
 	
-	size_t Count() const
+	bool Has(const char *Name) const
 	{
-		return Specs.size();
+		auto Find = NameToHandle.find(Name);
+		return Find != NameToHandle.end();
 	}
+	
+	      spec_type& operator[](handle_type Handle)       { return Specs[Handle.Handle]; }
+	const spec_type& operator[](handle_type Handle) const { return Specs[Handle.Handle]; }
+	
+	size_t Count() const { return Specs.size();	}     //TODO; Should probably return size-1 since the first index is discounted, but we have to make sure it doesn't break other code then.
+	
+	handle_type begin() { return {1}; }              //NOTE: Start at 1 since 0 is considered invalid
+	handle_type end()   { return {(entity_handle)Specs.size()} ; }
+	const handle_type begin() const { return {1}; }  //NOTE: Start at 1 since 0 is considered invalid
+	const handle_type end()   const { return {(entity_handle)Specs.size()} ; }
 };
 
 
@@ -472,24 +442,17 @@ struct mobius_model
 	
 	module_h CurrentModule = {};
 	
-	entity_registry<module_spec> Modules;
+	entity_registry<module_h,    module_spec>                   Modules;
+	entity_registry<equation_h,  equation_spec>               Equations;
+	entity_registry<input_h,     input_spec>                     Inputs;
+	entity_registry<parameter_h, parameter_spec>             Parameters;
+	entity_registry<index_set_h, index_set_spec>             IndexSets;
+	entity_registry<parameter_group_h, parameter_group_spec> ParameterGroups;
+	entity_registry<solver_h,    solver_spec>                   Solvers;
+	entity_registry<conditional_h, conditional_spec>         Conditionals;
+	entity_registry<unit_h,      unit_spec>                       Units;
 	
-	entity_registry<equation_spec> Equations;
 	std::vector<mobius_equation> EquationBodies;
-	
-	entity_registry<input_spec> Inputs;
-	
-	entity_registry<parameter_spec> Parameters;
-	
-	entity_registry<index_set_spec> IndexSets;
-	
-	entity_registry<parameter_group_spec> ParameterGroups;
-	
-	entity_registry<solver_spec> Solvers;
-	
-	entity_registry<conditional_spec> Conditionals;
-	
-	entity_registry<unit_spec> Units;
 	
 	array<equation_batch> EquationBatches;
 	array<equation_batch_group> BatchGroups;
@@ -619,8 +582,8 @@ struct model_run_state
 
 	
 	//NOTE: For use during dependency registration:
-	std::vector<dependency_registration> ParameterDependencies;
-	std::vector<dependency_registration> InputDependencies;
+	std::vector<dependency_registration<parameter_h>> ParameterDependencies;
+	std::vector<dependency_registration<input_h>> InputDependencies;
 	std::vector<result_dependency_registration> ResultDependencies;
 	std::vector<result_dependency_registration> LastResultDependencies;
 	std::vector<index_set_h> DirectIndexSetDependencies;
@@ -655,10 +618,8 @@ struct model_run_state
 		CurInputWasProvided = BucketMemory.Allocate<bool>(Model->Inputs.Count());
 		
 		CurrentIndexes = BucketMemory.Allocate<index_t>(Model->IndexSets.Count());
-		for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
-		{
-			CurrentIndexes[IndexSetHandle].IndexSetHandle = IndexSetHandle;
-		}
+		for(index_set_h IndexSet : Model->IndexSets)
+			CurrentIndexes[IndexSet.Handle].IndexSetHandle = IndexSet.Handle;
 		
 		
 		Timestep = 0;
@@ -687,10 +648,8 @@ struct model_run_state
 			memset(LastResults,    0, sizeof(double)*Model->Equations.Count());
 			memset(CurrentIndexes, 0, sizeof(index_t)*Model->IndexSets.Count());
 			
-			for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
-			{
-				CurrentIndexes[IndexSetHandle].IndexSetHandle = IndexSetHandle;
-			}
+			for(index_set_h IndexSet : Model->IndexSets)
+				CurrentIndexes[IndexSet.Handle].IndexSetHandle = IndexSet.Handle;
 		}
 		else
 		{
@@ -723,15 +682,12 @@ CallEquation(const mobius_model *Model, model_run_state *RunState, equation_h Eq
 #define GET_ENTITY_NAME(Type, NType) \
 inline const char * GetName(const mobius_model *Model, Type H) \
 { \
-	return Model->NType.Specs[H.Handle].Name; \
+	return Model->NType[H].Name; \
 }
 
 GET_ENTITY_NAME(equation_h, Equations)
 GET_ENTITY_NAME(input_h, Inputs)
-GET_ENTITY_NAME(parameter_double_h, Parameters)
-GET_ENTITY_NAME(parameter_uint_h, Parameters)
-GET_ENTITY_NAME(parameter_bool_h, Parameters)
-GET_ENTITY_NAME(parameter_time_h, Parameters)
+GET_ENTITY_NAME(parameter_h, Parameters)
 GET_ENTITY_NAME(index_set_h, IndexSets)
 GET_ENTITY_NAME(parameter_group_h, ParameterGroups)
 GET_ENTITY_NAME(solver_h, Solvers)
@@ -741,19 +697,15 @@ GET_ENTITY_NAME(module_h, Modules)
 
 #undef GET_ENTITY_NAME
 
-inline const char *
-GetParameterName(const mobius_model *Model, entity_handle ParameterHandle) //NOTE: In case we don't know the type of the parameter and just want the name.
-{
-	return Model->Parameters.Specs[ParameterHandle].Name;
-}
 
+//TODO: This one is only really used in one place: Move it there instead?
 inline const char *
 GetName(const mobius_model *Model, entity_type Type, entity_handle Handle)
 {
 	switch(Type)
 	{
 		case EntityType_Parameter:
-		return GetParameterName(Model, Handle);
+		return GetName(Model, parameter_h {Handle});
 		break;
 		
 		case EntityType_Input:
@@ -811,6 +763,7 @@ GET_ENTITY_HANDLE(parameter_double_h, Parameters, ParameterDouble)
 GET_ENTITY_HANDLE(parameter_uint_h, Parameters, ParameterUInt)
 GET_ENTITY_HANDLE(parameter_bool_h, Parameters, ParameterBool)
 GET_ENTITY_HANDLE(parameter_time_h, Parameters, ParameterTime)
+GET_ENTITY_HANDLE(parameter_h, Parameters, Parameter)
 GET_ENTITY_HANDLE(index_set_h, IndexSets, IndexSet)
 GET_ENTITY_HANDLE(parameter_group_h, ParameterGroups, ParameterGroup)
 GET_ENTITY_HANDLE(solver_h, Solvers, Solver)
@@ -818,36 +771,6 @@ GET_ENTITY_HANDLE(conditional_h, Conditionals, Conditional)
 GET_ENTITY_HANDLE(module_h, Modules, Module)
 
 #undef GET_ENTITY_HANDLE
-
-inline entity_handle
-GetParameterHandle(const mobius_model *Model, const token_string &Name) //NOTE: In case we don't know the type of the parameter and just want the handle.
-{
-	entity_handle Handle = 0;
-	auto Find = Model->Parameters.NameToHandle.find(Name);
-	if(Find != Model->Parameters.NameToHandle.end())
-		Handle = Find->second;
-	else
-	{
-		if(!Model->Finalized && IsValid(Model->CurrentModule))
-			ErrorPrint("While building module \"", GetName(Model, Model->CurrentModule), "\":\n");
-		FatalError("ERROR: Tried to find the Parameter \"", Name, "\", but it was not registered with the model.\n");
-	}
-	return Handle;
-}
-inline entity_handle
-GetParameterHandle(const mobius_model *Model, const token_string &Name, bool &Success)
-{
-	entity_handle Handle = 0;
-	auto Find = Model->Parameters.NameToHandle.find(Name);
-	if(Find != Model->Parameters.NameToHandle.end())
-	{
-		Success = true;
-		Handle = Find->second;
-	}
-	else
-		Success = false;
-	return Handle;
-}
 
 
 #define REGISTRATION_BLOCK(Model) \
@@ -860,18 +783,15 @@ inline void
 SetTimestepSize(mobius_model *Model, const char *Format)
 {
 	REGISTRATION_BLOCK(Model);
-	
 	Model->TimestepSize = ParseTimestepSize(Format);
-	
 	//TODO: This should change the unit of the "Timesteps" parameter!
-	//TODO: Do we want to put any restrictions on it? Can be weird if somebody set a timestep of e.g. 61 seconds.
+	//TODO: Do we want to put any restrictions on "roundness" of it? Can be weird if somebody sets a timestep of e.g. 61 seconds.
 }
 
 inline void
 AddPreprocessingStep(mobius_model *Model, mobius_preprocessing_step PreprocessingStep)
 {
 	REGISTRATION_BLOCK(Model);
-	
 	Model->PreprocessingSteps.push_back(PreprocessingStep);
 }
 
@@ -879,56 +799,47 @@ inline unit_h
 RegisterUnit(mobius_model *Model, const char *Name = "dimensionless")
 {
 	REGISTRATION_BLOCK(Model)
-	
-	entity_handle Unit = Model->Units.Register(Name);
-	
-	return {Unit};
+	return Model->Units.Register(Name);  //Nothing else here to do unless we put more data on the unit_spec
 }
 
 inline module_h
 BeginModule(mobius_model *Model, const char *Name, const char *Version)
 {
-	entity_handle Module = Model->Modules.Register(Name);
-	
-	Model->Modules.Specs[Module].Version = Version;
-	
-	Model->CurrentModule = {Module};
-	
-	return {Module};
+	REGISTRATION_BLOCK(Model)
+	module_h Module = Model->Modules.Register(Name);
+	Model->Modules[Module].Version = Version;
+	Model->CurrentModule = Module;
+	return Module;
 }
 
 inline void
 EndModule(mobius_model *Model)
 {
+	REGISTRATION_BLOCK(Model)
 	Model->CurrentModule = {};
 }
 
 inline void
 SetModuleDescription(mobius_model *Model, const char *Description)
 {
-	Model->Modules.Specs[Model->CurrentModule.Handle].Description = Description;
+	REGISTRATION_BLOCK(Model)
+	Model->Modules[Model->CurrentModule].Description = Description;
 }
 
 inline index_set_h
 RegisterIndexSet(mobius_model *Model, const char *Name, index_set_type Type = IndexSetType_Basic)
 {
 	REGISTRATION_BLOCK(Model)
-
-	entity_handle IndexSet = Model->IndexSets.Register(Name);
-	
-	Model->IndexSets.Specs[IndexSet].Type = Type;
-	
-	return {IndexSet};
+	index_set_h IndexSet = Model->IndexSets.Register(Name);
+	Model->IndexSets[IndexSet].Type = Type;
+	return IndexSet;
 }
 
 inline index_set_h
 RegisterIndexSetBranched(mobius_model *Model, const char *Name)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	index_set_h IndexSet = RegisterIndexSet(Model, Name, IndexSetType_Branched);
-	
-	return IndexSet;
+	return RegisterIndexSet(Model, Name, IndexSetType_Branched);
 }
 
 inline void
@@ -943,7 +854,7 @@ RequireIndex(mobius_model *Model, index_set_h IndexSet, const char *IndexName)
 {
 	REGISTRATION_BLOCK(Model)
 	
-	index_set_spec &Spec = Model->IndexSets.Specs[IndexSet.Handle];
+	index_set_spec &Spec = Model->IndexSets[IndexSet];
 	if(Spec.Type != IndexSetType_Basic)
 	{
 		PrintRegistrationErrorHeader(Model);
@@ -966,13 +877,10 @@ inline parameter_group_h
 RegisterParameterGroup(mobius_model *Model, const char *Name, T... IndexSets)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	entity_handle ParameterGroup = Model->ParameterGroups.Register(Name);
-	
-	Model->ParameterGroups.Specs[ParameterGroup].IndexSets = {IndexSets...};
-	Model->ParameterGroups.Specs[ParameterGroup].Module = Model->CurrentModule;
-	
-	return {ParameterGroup};
+	parameter_group_h ParameterGroup = Model->ParameterGroups.Register(Name);
+	Model->ParameterGroups[ParameterGroup].IndexSets = {IndexSets...};
+	Model->ParameterGroups[ParameterGroup].Module = Model->CurrentModule;
+	return ParameterGroup;
 }
 
 
@@ -980,14 +888,29 @@ inline input_h
 RegisterInput(mobius_model *Model, const char *Name, unit_h Unit = {0}, bool IsAdditional = false)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	entity_handle Input = Model->Inputs.Register(Name);
-
-	input_spec &Spec = Model->Inputs.Specs[Input];
+	input_h Input = Model->Inputs.Register(Name);
+	input_spec &Spec = Model->Inputs[Input];
 	Spec.IsAdditional = IsAdditional;
 	Spec.Unit = Unit;
+	return Input;
+}
+
+inline parameter_h
+RegisterParameter_(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, parameter_value Default, parameter_value Min, parameter_value Max, const char *Description, const char *ShortName, parameter_type Type)
+{
+	parameter_h Parameter = Model->Parameters.Register(Name);
+	parameter_spec &Spec = Model->Parameters[Parameter];
+	Spec.Type = Type;
+	Spec.Default = Default;
+	Spec.Min = Min;
+	Spec.Max = Max;
+	Spec.Group = Group;
+	Spec.Unit = Unit;
+	Spec.Description = Description;
+	Spec.ShortName = ShortName;
+	Model->ParameterGroups[Group].Parameters.push_back(Parameter);
 	
-	return {Input};
+	return Parameter;
 }
 
 inline parameter_double_h
@@ -995,21 +918,11 @@ RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Parameter = Model->Parameters.Register(Name);
-	
-	parameter_spec &Spec = Model->Parameters.Specs[Parameter];
-	Spec.Type = ParameterType_Double;
-	Spec.Default.ValDouble = Default;
-	Spec.Min.ValDouble = Min;
-	Spec.Max.ValDouble = Max;
-	Spec.Group = Group;
-	Spec.Unit = Unit;
-	Spec.Description = Description;
-	Spec.ShortName = ShortName;
-	
-	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
-
-	return {Parameter};
+	parameter_value Default_; Default_.ValDouble = Default;
+	parameter_value Min_;     Min_.ValDouble = Min;
+	parameter_value Max_;     Max_.ValDouble = Max;
+	parameter_h Parameter = RegisterParameter_(Model, Group, Name, Unit, Default_, Min_, Max_, Description, ShortName, ParameterType_Double);
+	return {Parameter.Handle};
 }
 
 inline parameter_uint_h
@@ -1017,21 +930,11 @@ RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Parameter = Model->Parameters.Register(Name);
-	
-	parameter_spec &Spec = Model->Parameters.Specs[Parameter];
-	Spec.Type = ParameterType_UInt;
-	Spec.Default.ValUInt = Default;
-	Spec.Min.ValUInt = Min;
-	Spec.Max.ValUInt = Max;
-	Spec.Group = Group;
-	Spec.Unit = Unit;
-	Spec.Description = Description;
-	Spec.ShortName = ShortName;
-	
-	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
-	
-	return {Parameter};
+	parameter_value Default_; Default_.ValUInt = Default;
+	parameter_value Min_;     Min_.ValUInt = Min;
+	parameter_value Max_;     Max_.ValUInt = Max;
+	parameter_h Parameter = RegisterParameter_(Model, Group, Name, Unit, Default_, Min_, Max_, Description, ShortName, ParameterType_UInt);
+	return {Parameter.Handle};
 }
 
 inline parameter_bool_h
@@ -1039,20 +942,11 @@ RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Parameter = Model->Parameters.Register(Name);
-	
-	parameter_spec &Spec = Model->Parameters.Specs[Parameter];
-	Spec.Type = ParameterType_Bool;
-	Spec.Default.ValBool = Default;
-	Spec.Min.ValBool = false;
-	Spec.Max.ValBool = true;
-	Spec.Group = Group;
-	Spec.Description = Description;
-	Spec.ShortName = ShortName;
-	
-	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
-	
-	return {Parameter};
+	parameter_value Default_; Default_.ValBool = Default;
+	parameter_value Min_;     Min_.ValBool = false;
+	parameter_value Max_;     Max_.ValBool = true;
+	parameter_h Parameter = RegisterParameter_(Model, Group, Name, {}, Default_, Min_, Max_, Description, ShortName, ParameterType_Bool);
+	return {Parameter.Handle};
 }
 
 inline parameter_time_h
@@ -1060,42 +954,30 @@ RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Parameter = Model->Parameters.Register(Name);
-	
-	parameter_spec &Spec = Model->Parameters.Specs[Parameter];
-	Spec.Type = ParameterType_Time;
-	
-	bool ParseSuccessAll = true;
+	int ParseSuccessCount = 0;
 	bool ParseSuccess;
-	Spec.Default.ValTime = datetime(Default, &ParseSuccess);
-	ParseSuccessAll = ParseSuccessAll && ParseSuccess;
-	Spec.Min.ValTime = datetime(Min, &ParseSuccess);
-	ParseSuccessAll = ParseSuccessAll && ParseSuccess;
-	Spec.Max.ValTime = datetime(Max, &ParseSuccess);
-	ParseSuccessAll = ParseSuccessAll && ParseSuccess;
 	
-	if(!ParseSuccessAll)
+	parameter_value Default_; Default_.ValTime = datetime(Default, &ParseSuccess); ParseSuccessCount += (int)ParseSuccess;
+	parameter_value Min_;     Min_.ValTime     = datetime(Min, &ParseSuccess);     ParseSuccessCount += (int)ParseSuccess;
+	parameter_value Max_;     Max_.ValTime     = datetime(Max, &ParseSuccess);     ParseSuccessCount += (int)ParseSuccess;
+	
+	if(ParseSuccessCount != 3)
 	{
 		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: Unrecognized date format for default, min or max value when registering the parameter \"", Name, "\".\n");
 	}
 	
-	Spec.Group = Group;
-	Spec.Description = Description;
-	Spec.ShortName = ShortName;
-	
-	Model->ParameterGroups.Specs[Group.Handle].Parameters.push_back(Parameter);
-
-	return {Parameter};
+	parameter_h Parameter = RegisterParameter_(Model, Group, Name, {}, Default_, Min_, Max_, Description, ShortName, ParameterType_Time);
+	return {Parameter.Handle};
 }
 
 inline void
-ParameterIsComputedBy(mobius_model *Model, parameter_double_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
+ParameterIsComputedBy(mobius_model *Model, parameter_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
 {
 	REGISTRATION_BLOCK(Model)
 	
-	parameter_spec &Spec  = Model->Parameters.Specs[Parameter.Handle];
-	equation_spec &EqSpec = Model->Equations.Specs[Equation.Handle];
+	parameter_spec &Spec  = Model->Parameters[Parameter];
+	equation_spec &EqSpec = Model->Equations[Equation];
 	if(EqSpec.Type != EquationType_InitialValue)
 	{
 		PrintRegistrationErrorHeader(Model);
@@ -1111,27 +993,6 @@ ParameterIsComputedBy(mobius_model *Model, parameter_double_h Parameter, equatio
 	Spec.ShouldNotBeExposed = ShouldNotBeExposed;
 }
 
-inline void
-ParameterIsComputedBy(mobius_model *Model, parameter_uint_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
-{
-	REGISTRATION_BLOCK(Model)
-	
-	parameter_spec &Spec  = Model->Parameters.Specs[Parameter.Handle];
-	equation_spec &EqSpec = Model->Equations.Specs[Equation.Handle];
-	if(EqSpec.Type != EquationType_InitialValue)
-	{
-		PrintRegistrationErrorHeader(Model);
-		FatalError("ERROR: Tried to set the equation \"", EqSpec.Name, "\" to compute the parameter \"", Spec.Name, "\", but \"", EqSpec.Name, "\" is not an initial value equation.\n");
-	}
-	if(EqSpec.Unit != Spec.Unit)
-	{
-		PrintRegistrationErrorHeader(Model);
-		FatalError("ERROR: The equation \"", EqSpec.Name, "\" has a different unit from the parameter \"", Spec.Name, "\", that it is set to compute.\n");
-	}
-	
-	Spec.IsComputedBy = Equation;
-	Spec.ShouldNotBeExposed = ShouldNotBeExposed;
-}
 
 inline void
 SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBody, bool Override = false)
@@ -1143,14 +1004,14 @@ SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBo
 		FatalError("ERROR: You can not define an EQUATION body for the model after it has been finalized using EndModelDefinition.\n");
 	}
 	
-	if(!Override && Model->Equations.Specs[Equation.Handle].EquationIsSet)
+	if(!Override && Model->Equations[Equation].EquationIsSet)
 	{
 		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: The equation body for \"", GetName(Model, Equation), "\" is already defined. It can not be defined twice unless it is explicitly overridden using EQUATION_OVERRIDE.\n");
 	}
 	
 	Model->EquationBodies[Equation.Handle] = EquationBody;
-	Model->Equations.Specs[Equation.Handle].EquationIsSet = true;
+	Model->Equations[Equation].EquationIsSet = true;
 }
 
 static void
@@ -1158,35 +1019,33 @@ SetSolver(mobius_model *Model, equation_h Equation, solver_h Solver)
 {
 	REGISTRATION_BLOCK(Model)
 	
-	equation_type Type = Model->Equations.Specs[Equation.Handle].Type;
+	equation_type Type = Model->Equations[Equation].Type;
 	if(Type != EquationType_Basic && Type != EquationType_ODE)
 	{
 		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: Tried to set a solver for the equation \"", GetName(Model, Equation), "\", but it is not a basic equation or ODE equation, and so can not be given a solver.\n");
 	}
-	Model->Equations.Specs[Equation.Handle].Solver = Solver;
+	Model->Equations[Equation].Solver = Solver;
 }
 
 static void
 SetConditional(mobius_model *Model, equation_h Equation, conditional_h Conditional)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	equation_type Type = Model->Equations.Specs[Equation.Handle].Type;
+	equation_type Type = Model->Equations[Equation].Type;
 	if(Type != EquationType_Basic && Type != EquationType_Cumulative)
 	{
 		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: Tried to set a conditional execution for the equation \"", GetName(Model, Equation), "\", but it is not a basic or cumulative equation, and so can not be given a conditional directly.\n");
 	}
-	Model->Equations.Specs[Equation.Handle].Conditional = Conditional;
+	Model->Equations[Equation].Conditional = Conditional;
 }
 
 static void
 SetConditional(mobius_model *Model, solver_h Solver, conditional_h Conditional)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	Model->Solvers.Specs[Solver.Handle].Conditional = Conditional;
+	Model->Solvers[Solver].Conditional = Conditional;
 }
 
 static equation_h
@@ -1194,12 +1053,12 @@ RegisterEquation_(mobius_model *Model, const char *Name, unit_h Unit, solver_h S
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Equation = Model->Equations.Register(Name);
+	equation_h Equation = Model->Equations.Register(Name);
 	
-	if(Model->EquationBodies.size() <= Equation)
-		Model->EquationBodies.resize(Equation + 1, {});
+	if(Model->EquationBodies.size() <= Equation.Handle)
+		Model->EquationBodies.resize(Equation.Handle + 1, {});
 	
-	equation_spec &Spec = Model->Equations.Specs[Equation];
+	equation_spec &Spec = Model->Equations[Equation];
 	
 	Spec.Type = Type;
 	Spec.Unit = Unit;
@@ -1207,16 +1066,15 @@ RegisterEquation_(mobius_model *Model, const char *Name, unit_h Unit, solver_h S
 	Spec.Conditional = Conditional;
 	
 	if(IsValid(Solver))
-		SetSolver(Model, equation_h {Equation}, Solver);
+		SetSolver(Model, Equation, Solver);
 	
-	return {Equation};
+	return Equation;
 }
 
 static equation_h
 RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit)
 {
 	REGISTRATION_BLOCK(Model)
-	
 	return RegisterEquation_(Model, Name, Unit, {}, {}, EquationType_Basic);
 }
 
@@ -1224,7 +1082,6 @@ static equation_h
 RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver)
 {
 	REGISTRATION_BLOCK(Model)
-	
 	return RegisterEquation_(Model, Name, Unit, Solver, {}, EquationType_Basic);
 }
 
@@ -1232,7 +1089,6 @@ static equation_h
 RegisterEquation(mobius_model *Model, const char *Name, unit_h Unit, conditional_h Conditional)
 {
 	REGISTRATION_BLOCK(Model)
-	
 	return RegisterEquation_(Model, Name, Unit, {}, Conditional, EquationType_Basic);
 }
 
@@ -1240,7 +1096,6 @@ inline equation_h
 RegisterEquationODE(mobius_model *Model, const char *Name, unit_h Unit, solver_h Solver = {})
 {
 	REGISTRATION_BLOCK(Model)
-	
 	return RegisterEquation_(Model, Name, Unit, Solver, {}, EquationType_ODE);
 }
 
@@ -1248,7 +1103,6 @@ inline equation_h
 RegisterEquationInitialValue(mobius_model *Model, const char *Name, unit_h Unit)
 {
 	REGISTRATION_BLOCK(Model)
-	
 	return RegisterEquation_(Model, Name, Unit, {}, {}, EquationType_InitialValue);
 }
 
@@ -1261,18 +1115,18 @@ RegisterEquationCumulative(mobius_model *Model, const char *Name, equation_h Cum
 {
 	REGISTRATION_BLOCK(Model)
 	
-	equation_spec &CumulateSpec = Model->Equations.Specs[Cumulates.Handle];
+	equation_spec &CumulateSpec = Model->Equations[Cumulates];
 	if(CumulateSpec.Type == EquationType_InitialValue)
 	{
 		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: The cumulation equation \"", Name, "\" was set to cumulate an initial value equation \"", CumulateSpec.Name, "\". This is not supported.\n");
 	}
 	
-	unit_h Unit = Model->Equations.Specs[Cumulates.Handle].Unit;
+	unit_h Unit = Model->Equations[Cumulates].Unit;
 	equation_h Equation = RegisterEquation_(Model, Name, Unit, {}, {}, EquationType_Cumulative);
-	Model->Equations.Specs[Equation.Handle].CumulatesOverIndexSet = CumulatesOverIndexSet;
-	Model->Equations.Specs[Equation.Handle].Cumulates = Cumulates;
-	Model->Equations.Specs[Equation.Handle].CumulationWeight = Weight;
+	Model->Equations[Equation].CumulatesOverIndexSet = CumulatesOverIndexSet;
+	Model->Equations[Equation].Cumulates = Cumulates;
+	Model->Equations[Equation].CumulationWeight = Weight;
 	
 	if(IsValid(Weight))
 	{
@@ -1301,10 +1155,9 @@ inline void
 SetInitialValue(mobius_model *Model, equation_h Equation, parameter_double_h InitialValue)
 {
 	REGISTRATION_BLOCK(Model)
+	Model->Equations[Equation].InitialValue = InitialValue;
 	
-	Model->Equations.Specs[Equation.Handle].InitialValue = InitialValue;
-	
-	if(Model->Equations.Specs[Equation.Handle].Unit != Model->Parameters.Specs[InitialValue.Handle].Unit)
+	if(Model->Equations[Equation].Unit != Model->Parameters[InitialValue].Unit)
 	{
 		WarningPrint("WARNING: The equation \"", GetName(Model, Equation), "\" was registered with a different unit than its initial value parameter \"", GetName(Model, InitialValue), "\".\n");
 	}
@@ -1314,16 +1167,15 @@ inline void
 SetInitialValue(mobius_model *Model, equation_h Equation, double Value)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	Model->Equations.Specs[Equation.Handle].ExplicitInitialValue = Value;
-	Model->Equations.Specs[Equation.Handle].HasExplicitInitialValue = true;
+	Model->Equations[Equation].ExplicitInitialValue = Value;
+	Model->Equations[Equation].HasExplicitInitialValue = true;
 }
 
 inline void
 SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValueEquation)
 {
 	REGISTRATION_BLOCK(Model)
-	equation_type Type = Model->Equations.Specs[InitialValueEquation.Handle].Type;
+	equation_type Type = Model->Equations[InitialValueEquation].Type;
 	if(Type != EquationType_InitialValue && Type != EquationType_Basic)
 	{
 		PrintRegistrationErrorHeader(Model);
@@ -1331,9 +1183,9 @@ SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValu
 		FatalError("ERROR: Tried to set the equation \"", GetName(Model, InitialValueEquation), "\" as an initial value of another equation, but it was not registered as an equation of type EquationInitialValue or Equation.\n");
 	}
 	
-	Model->Equations.Specs[Equation.Handle].InitialValueEquation = InitialValueEquation;
+	Model->Equations[Equation].InitialValueEquation = InitialValueEquation;
 	
-	if(Model->Equations.Specs[Equation.Handle].Unit != Model->Equations.Specs[InitialValueEquation.Handle].Unit)
+	if(Model->Equations[Equation].Unit != Model->Equations[InitialValueEquation].Unit)
 	{
 		PrintRegistrationErrorHeader(Model);
 		WarningPrint("WARNING: The equation \"", GetName(Model, Equation), "\" was registered with a different unit than its initial value equation \"", GetName(Model, InitialValueEquation), "\".\n");
@@ -1344,15 +1196,12 @@ inline void
 ResetEveryTimestep(mobius_model *Model, equation_h Equation)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
-	
+	equation_spec &Spec = Model->Equations[Equation];
 	if(Spec.Type != EquationType_ODE)
 	{
 		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: Called ResetEveryTimestep on the equation \"", Spec.Name, "\", but this functionality is only available for ODE equations.\n");
 	}
-	
 	Spec.ResetEveryTimestep = true;
 }
 
@@ -1364,32 +1213,22 @@ static solver_h
 RegisterSolver(mobius_model *Model, const char *Name, parameter_double_h hParam, mobius_solver_setup_function *SetupFunction)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	entity_handle Solver = Model->Solvers.Register(Name);
-	
-	solver_spec &Spec = Model->Solvers.Specs[Solver];
-	
+	solver_h Solver = Model->Solvers.Register(Name);
+	solver_spec &Spec = Model->Solvers[Solver];
 	SetupFunction(&Spec);
-	
 	Spec.hParam = hParam;
-	
-	return {Solver};
+	return Solver;
 }
 
 static solver_h
 RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_setup_function *SetupFunction)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	entity_handle Solver = Model->Solvers.Register(Name);
-	
-	solver_spec &Spec = Model->Solvers.Specs[Solver];
-	
+	solver_h Solver = Model->Solvers.Register(Name);
+	solver_spec &Spec = Model->Solvers[Solver];
 	SetupFunction(&Spec);
-	
 	Spec.h = h;
-	
-	return {Solver};
+	return Solver;
 }
 
 //TODO: Make version of this that takes parametric h too.
@@ -1399,8 +1238,7 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	REGISTRATION_BLOCK(Model)
 	
 	solver_h Solver = RegisterSolver(Model, Name, h, SetupFunction);
-	
-	solver_spec &Spec = Model->Solvers.Specs[Solver.Handle];
+	solver_spec &Spec = Model->Solvers[Solver];
 	
 	if(!Spec.UsesErrorControl)
 		WarningPrint("WARNING: Registered error tolerances with the solver \"", Name, "\", but the attached solver function does not support error control.\n");
@@ -1416,14 +1254,13 @@ RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_bo
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Conditional = Model->Conditionals.Register(Name);
-	
-	conditional_spec &Spec = Model->Conditionals.Specs[Conditional];
+	conditional_h Conditional = Model->Conditionals.Register(Name);
+	conditional_spec &Spec = Model->Conditionals[Conditional];
 	Spec.SwitchType = ParameterType_Bool;
-	Spec.Switch = Switch.Handle;
+	Spec.Switch = Switch;
 	Spec.Value.ValBool = Value;
 	
-	return {Conditional};
+	return Conditional;
 }
 
 static conditional_h
@@ -1431,24 +1268,23 @@ RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_ui
 {
 	REGISTRATION_BLOCK(Model)
 	
-	entity_handle Conditional = Model->Conditionals.Register(Name);
-	
-	conditional_spec &Spec = Model->Conditionals.Specs[Conditional];
+	conditional_h Conditional = Model->Conditionals.Register(Name);
+	conditional_spec &Spec = Model->Conditionals[Conditional];
 	Spec.SwitchType = ParameterType_UInt;
-	Spec.Switch = Switch.Handle;
+	Spec.Switch = Switch;
 	Spec.Value.ValUInt = Value;
 	
-	return {Conditional};
+	return Conditional;
 }
 
 static conditional_h
 GetConditional(const mobius_model *Model, equation_h Equation)
 {
-	const equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+	const equation_spec &Spec = Model->Equations[Equation];
 	conditional_h Conditional = Spec.Conditional;
 	if(IsValid(Spec.Solver))
 	{
-		const solver_spec &SolverSpec = Model->Solvers.Specs[Spec.Solver.Handle];
+		const solver_spec &SolverSpec = Model->Solvers[Spec.Solver];
 		Conditional = SolverSpec.Conditional;
 	}
 	return Conditional;
@@ -1458,9 +1294,7 @@ inline void
 AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h IndexSet)
 {
 	REGISTRATION_BLOCK(Model)
-	
-	input_spec &Spec = Model->Inputs.Specs[Input.Handle];
-	Spec.IndexSetDependencies.push_back(IndexSet);
+	Model->Inputs[Input].IndexSetDependencies.push_back(IndexSet);
 }
 
 #undef REGISTRATION_BLOCK
@@ -1636,14 +1470,11 @@ GetCurrentInputOrParameter(model_run_state *RunState, input_h Input, parameter_d
 	return GetCurrentParameter(RunState, Parameter);
 }
 
-
-
-
 template<typename... T> double
 RegisterParameterDependency(model_run_state *RunState, parameter_double_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
-	RunState->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
+	RunState->ParameterDependencies.push_back({Parameter, OverrideCount});
 	
 	return 0.0;
 }
@@ -1652,7 +1483,7 @@ template<typename... T> double
 RegisterParameterDependency(model_run_state *RunState, parameter_uint_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
-	RunState->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
+	RunState->ParameterDependencies.push_back({Parameter, OverrideCount});
 	
 	return 0.0;
 }
@@ -1661,7 +1492,7 @@ template<typename... T> double
 RegisterParameterDependency(model_run_state *RunState, parameter_bool_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
-	RunState->ParameterDependencies.push_back({Parameter.Handle, OverrideCount});
+	RunState->ParameterDependencies.push_back({Parameter, OverrideCount});
 	
 	return 0.0;
 }
@@ -1669,7 +1500,7 @@ RegisterParameterDependency(model_run_state *RunState, parameter_bool_h Paramete
 inline double
 RegisterInputDependency(model_run_state *RunState, input_h Input)
 {
-	RunState->InputDependencies.push_back({Input.Handle, 0});
+	RunState->InputDependencies.push_back({Input, 0});
 	return 0.0;
 }
 

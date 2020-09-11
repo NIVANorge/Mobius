@@ -13,20 +13,16 @@ WriteInputsToJson(mobius_data_set *DataSet, const char *Filename)
 	std::vector<std::string> AdditionalTimeseries;
 	std::map<std::string, std::vector<std::string>> IndexSetDependencies;
 	
-	for(entity_handle InputHandle = 1; InputHandle < Model->Inputs.Count(); ++InputHandle)
+	for(input_h Input : Model->Inputs)
 	{
-		const input_spec &Spec = Model->Inputs.Specs[InputHandle];
+		const input_spec &Spec = Model->Inputs[Input];
 		
 		if(Spec.IsAdditional)
-		{
 			AdditionalTimeseries.push_back(Spec.Name);
-		}
 		
 		std::vector<std::string> Dep;
 		for(index_set_h IndexSet : Spec.IndexSetDependencies)
-		{
 			Dep.push_back(GetName(Model, IndexSet));
-		}
 		
 		IndexSetDependencies[Spec.Name] = Dep;	
 	}
@@ -53,10 +49,9 @@ WriteInputsToJson(mobius_data_set *DataSet, const char *Filename)
 			};
 	
 	
-	//index_t CurrentIndexes[256];
-	for(entity_handle InputHandle = 1; InputHandle < Model->Inputs.Count(); ++InputHandle)
+	for(input_h Input : Model->Inputs)
 	{
-		const char *InputName = GetName(Model, input_h {InputHandle});
+		const char *InputName = GetName(Model, Input);
 		
 		ForeachInputInstance(DataSet, InputName,
 			[DataSet, Timesteps, InputName, &Json](const char * const *IndexNames, size_t IndexesCount)
@@ -93,9 +88,9 @@ WriteResultsToJson(mobius_data_set *DataSet, const char *Filename)
 	
 	std::map<std::string, std::vector<std::string>> IndexSetDependencies;
 	
-	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
+	for(equation_h Equation : Model->Equations)
 	{
-		const equation_spec &Spec = Model->Equations.Specs[EquationHandle];
+		const equation_spec &Spec = Model->Equations[Equation];
 		
 		if(Spec.Type == EquationType_InitialValue) continue;
 		
@@ -133,9 +128,9 @@ WriteResultsToJson(mobius_data_set *DataSet, const char *Filename)
 			};
    
 	//index_t CurrentIndexes[256];
-	for(entity_handle EquationHandle = 1; EquationHandle < Model->Equations.Count(); ++EquationHandle)
+	for(equation_h Equation : Model->Equations)
 	{
-		const equation_spec &Spec = Model->Equations.Specs[EquationHandle];
+		const equation_spec &Spec = Model->Equations[Equation];
 		
 		if(Spec.Type == EquationType_InitialValue) continue;
 		
@@ -280,29 +275,29 @@ WriteParametersToJson(mobius_data_set *DataSet, const char *Filename)
 		{"parameters", nullptr},
 	};
 	
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
+	for(index_set_h IndexSet : Model->IndexSets)
 	{
-		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
+		const index_set_spec &Spec = Model->IndexSets[IndexSet];
 		if(Spec.Type == IndexSetType_Basic)
 		{
-			for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
+			for(index_t Index = {IndexSet.Handle, 0}; Index < DataSet->IndexCounts[IndexSet.Handle]; ++Index)
 			{
-				std::string IndexName = DataSet->IndexNames[IndexSetHandle][Index];
+				std::string IndexName = DataSet->IndexNames[IndexSet.Handle][Index];
 				Json["index_sets"][Spec.Name].push_back(IndexName);
 			}
 		}
 		else if(Spec.Type == IndexSetType_Branched)
 		{
 			std::vector<std::vector<std::string>> BranchInputs;
-			for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
+			for(index_t Index = {IndexSet.Handle, 0}; Index < DataSet->IndexCounts[IndexSet.Handle]; ++Index)
 			{
 				std::vector<std::string> Branches;
-				Branches.push_back(DataSet->IndexNames[IndexSetHandle][Index]); //NOTE: The name of the index itself.
-				for(size_t In = 0; In < DataSet->BranchInputs[IndexSetHandle][Index].Count; ++In)
+				Branches.push_back(DataSet->IndexNames[IndexSet.Handle][Index]); //NOTE: The name of the index itself.
+				for(size_t In = 0; In < DataSet->BranchInputs[IndexSet.Handle][Index].Count; ++In)
 				{
-					index_t InIndex = DataSet->BranchInputs[IndexSetHandle][Index].Inputs[In];
+					index_t InIndex = DataSet->BranchInputs[IndexSet.Handle][Index].Inputs[In];
 					
-					std::string InName = DataSet->IndexNames[IndexSetHandle][InIndex];
+					std::string InName = DataSet->IndexNames[IndexSet.Handle][InIndex];
 					Branches.push_back(InName);
 				}
 				
@@ -312,9 +307,9 @@ WriteParametersToJson(mobius_data_set *DataSet, const char *Filename)
 		}
 	}
 	
-	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
+	for(parameter_h Parameter : Model->Parameters)
 	{
-		const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
+		const parameter_spec &Spec = Model->Parameters[Parameter];
 		const char *ParameterName = Spec.Name;
 		
 		if(Spec.ShouldNotBeExposed) continue;
@@ -375,8 +370,7 @@ ReadParametersFromJson(mobius_data_set *DataSet, const char *Filename)
 		{
 			std::string IndexSetName = It.key();
 			
-			index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName.c_str());
-			const index_set_spec &Spec = Model->IndexSets.Specs[IndexSet.Handle];
+			const index_set_spec &Spec = Model->IndexSets[GetIndexSetHandle(Model, IndexSetName.c_str())];
 			
 			if(Spec.Type == IndexSetType_Basic)
 			{

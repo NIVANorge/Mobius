@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-10 14:09:36
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-11 11:50:03
 
 index_sets:
 
@@ -7,10 +7,10 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-2014-06-01
+2014-08-12
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2018-12-31
+2018-09-30
 
 
 ###################### Easy-Lake physical V_dev ######################
@@ -26,6 +26,9 @@ parameters:
 "Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
 0.4
 
+"Initial water level" :     #(m) [0, 1642]
+15
+
 "Water level at which outflow is 0" :     #(m) [0, 1642]
 15
 
@@ -34,9 +37,6 @@ parameters:
 
 "Outflow rating curve magnitude" :     #(dimensionless) [0.01, 100] Outflow is proportional to 10^(magnitude)
 -0.4
-
-"Initial water level" :     #(m) [0, 1642]
-15
 
 "Reference air density" :     #(kg/m3) [1000, 1100]
 1025

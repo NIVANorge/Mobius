@@ -484,8 +484,7 @@ DllGetParameterDoubleMinMax(void *DataSetPtr, char *Name, double *MinOut, double
 	CHECK_ERROR_BEGIN
 	//TODO: We don't check that the requested parameter was of type double!
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
-	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	if(Spec.Type != ParameterType_Double)
 		FatalError("ERROR: Requested the min and max values of ", Name, " using DllGetParameterDoubleMinMax, but it is not of type double.\n");
 	
@@ -501,8 +500,7 @@ DllGetParameterUIntMinMax(void *DataSetPtr, char *Name, u64 *MinOut, u64 *MaxOut
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
-	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	if(Spec.Type != ParameterType_UInt)
 		FatalError("ERROR: Requested the min and max values of ", Name, " using DllGetParameterUIntMinMax, but it is not of type uint.\n");
 
@@ -518,8 +516,7 @@ DllGetParameterDescription(void *DataSetPtr, char *Name)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
-	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	return Spec.Description;
 	
 	CHECK_ERROR_END
@@ -533,8 +530,7 @@ DllGetParameterShortName(void *DataSetPtr, char *Name)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
-	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	return Spec.ShortName;
 	
 	CHECK_ERROR_END
@@ -548,8 +544,7 @@ DllGetParameterUnit(void *DataSetPtr, char *Name)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	entity_handle Handle = GetParameterHandle(DataSet->Model, Name);
-	const parameter_spec &Spec = DataSet->Model->Parameters.Specs[Handle];
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	return GetName(DataSet->Model, Spec.Unit);
 	
 	CHECK_ERROR_END
@@ -563,8 +558,7 @@ DllGetResultUnit(void *DataSetPtr, char *Name)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	equation_h Equation = GetEquationHandle(DataSet->Model, Name);
-	const equation_spec &Spec = DataSet->Model->Equations.Specs[Equation.Handle];
+	const equation_spec &Spec = DataSet->Model->Equations[GetEquationHandle(DataSet->Model, Name)];
 	return GetName(DataSet->Model, Spec.Unit);
 	
 	CHECK_ERROR_END
@@ -578,16 +572,11 @@ DllGetInputUnit(void *DataSetPtr, char *Name)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	input_h Input = GetInputHandle(DataSet->Model, Name);
-	const input_spec &Spec = DataSet->Model->Inputs.Specs[Input.Handle];
+	const input_spec &Spec = DataSet->Model->Inputs[GetInputHandle(DataSet->Model, Name)];
 	if(IsValid(Spec.Unit))
-	{
 		return GetName(DataSet->Model, Spec.Unit);
-	}
 	else
-	{
 		return "";
-	}
 	
 	CHECK_ERROR_END
 	
@@ -631,11 +620,11 @@ DllGetIndexSets(void *DataSetPtr, const char **NamesOut, const char **TypesOut)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	const mobius_model *Model = DataSet->Model;
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
+	for(index_set_h IndexSet : Model->IndexSets)
 	{
-		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
-		NamesOut[IndexSetHandle - 1] = Spec.Name;
-		TypesOut[IndexSetHandle - 1] = Spec.Type == IndexSetType_Basic ? "basic" : "branched";
+		const index_set_spec &Spec = Model->IndexSets[IndexSet];
+		NamesOut[IndexSet.Handle - 1] = Spec.Name;
+		TypesOut[IndexSet.Handle - 1] = Spec.Type == IndexSetType_Basic ? "basic" : "branched";
 	}
 	
 	CHECK_ERROR_END
@@ -679,8 +668,8 @@ DllGetParameterIndexSetsCount(void *DataSetPtr, char *ParameterName)
 	
 	if(!DataSet->ParameterStorageStructure.HasBeenSetUp) return 0;
 	
-	entity_handle ParameterHandle = GetParameterHandle(DataSet->Model, ParameterName);
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+	parameter_h Parameter = GetParameterHandle(DataSet->Model, ParameterName);
+	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 	return DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets.Count;
 	
 	CHECK_ERROR_END
@@ -697,8 +686,8 @@ DllGetParameterIndexSets(void *DataSetPtr, char *ParameterName, const char **Nam
 	
 	if(!DataSet->ParameterStorageStructure.HasBeenSetUp) return;
 	
-	entity_handle ParameterHandle = GetParameterHandle(DataSet->Model, ParameterName);
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+	parameter_h Parameter = GetParameterHandle(DataSet->Model, ParameterName);
+	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 	size_t Idx = 0;
 	for(index_set_h IndexSet : DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets)
 	{
@@ -808,10 +797,10 @@ DllGetAllModules(void *DataSetPtr, const char **NamesOut, const char **VersionsO
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	for(entity_handle ModuleHandle = 1; ModuleHandle < DataSet->Model->Modules.Count(); ++ModuleHandle)
+	for(module_h Module : DataSet->Model->Modules)
 	{
-		NamesOut[ModuleHandle-1] = DataSet->Model->Modules.Specs[ModuleHandle].Name;
-		VersionsOut[ModuleHandle-1] = DataSet->Model->Modules.Specs[ModuleHandle].Version;
+		NamesOut[Module.Handle-1] = DataSet->Model->Modules[Module].Name;
+		VersionsOut[Module.Handle-1] = DataSet->Model->Modules[Module].Version;
 	}
 	
 	CHECK_ERROR_END
@@ -823,7 +812,7 @@ DllGetModuleDescription(void *DataSetPtr, const char *ModuleName)
 	CHECK_ERROR_BEGIN
 	
 	const mobius_model *Model = ((mobius_data_set *)DataSetPtr)->Model;
-	return Model->Modules.Specs[GetModuleHandle(Model, ModuleName).Handle].Description;
+	return Model->Modules[GetModuleHandle(Model, ModuleName)].Description;
 	
 	CHECK_ERROR_END
 	
@@ -853,7 +842,7 @@ DllGetParameterGroupIndexSetsCount(void *DataSetPtr, char *ParameterGroupName)
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	parameter_group_h ParameterGroup = GetParameterGroupHandle(DataSet->Model, ParameterGroupName);
 	
-	return (u64)DataSet->Model->ParameterGroups.Specs[ParameterGroup.Handle].IndexSets.size();
+	return (u64)DataSet->Model->ParameterGroups[ParameterGroup].IndexSets.size();
 	
 	CHECK_ERROR_END
 	
@@ -868,11 +857,9 @@ DllGetParameterGroupIndexSets(void *DataSetPtr, char *ParameterGroupName, const 
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	parameter_group_h ParameterGroup = GetParameterGroupHandle(DataSet->Model, ParameterGroupName);
 	
-	const std::vector<index_set_h> &IndexSets = DataSet->Model->ParameterGroups.Specs[ParameterGroup.Handle].IndexSets;
+	const std::vector<index_set_h> &IndexSets = DataSet->Model->ParameterGroups[ParameterGroup].IndexSets;
 	for(size_t Idx = 0; Idx < IndexSets.size(); ++Idx)
-	{
 		NamesOut[Idx] = GetName(DataSet->Model, IndexSets[Idx]);
-	}
 	
 	CHECK_ERROR_END
 }
@@ -890,15 +877,13 @@ DllGetAllParameterGroupsCount(void *DataSetPtr, const char *ModuleName)
 	module_h Module = {0};
 	
 	if(ModuleName && strlen(ModuleName) > 0 && !All)
-	{
 		Module = GetModuleHandle(Model, ModuleName);
-	}
 	
 	u64 Count = 0;
 	
-	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
+	for(parameter_group_h ParameterGroup : Model->ParameterGroups)
 	{
-		const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
+		const parameter_group_spec &Spec = Model->ParameterGroups[ParameterGroup];
 		if(All || Module == Spec.Module) ++Count;
 	}
 	
@@ -921,14 +906,12 @@ DllGetAllParameterGroups(void *DataSetPtr, const char **NamesOut, const char *Mo
 	
 	module_h Module = {0};
 	if(ModuleName && strlen(ModuleName) > 0 && !All)
-	{
 		Module = GetModuleHandle(Model, ModuleName);
-	}
 	
 	size_t Idx = 0;
-	for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
+	for(parameter_group_h ParameterGroup : Model->ParameterGroups)
 	{
-		const parameter_group_spec &Spec = Model->ParameterGroups.Specs[ParameterGroupHandle];
+		const parameter_group_spec &Spec = Model->ParameterGroups[ParameterGroup];
 		if(All || Module == Spec.Module)
 		{
 			NamesOut[Idx] = Spec.Name;
@@ -950,14 +933,12 @@ DllGetAllParametersCount(void *DataSetPtr, const char *GroupName)
 	
 	parameter_group_h Group = {0};
 	if(GroupName && strlen(GroupName) > 0)
-	{
 		Group = GetParameterGroupHandle(Model, GroupName);
-	}
 	
 	u64 Count = 0;
-	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
+	for(parameter_h Parameter : Model->Parameters)
 	{
-		const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
+		const parameter_spec &Spec = Model->Parameters[Parameter];
 		if(!Spec.ShouldNotBeExposed && (!IsValid(Group) || Group == Spec.Group)) ++Count;
 	}
 	
@@ -978,14 +959,12 @@ DllGetAllParameters(void *DataSetPtr, const char **NamesOut, const char **TypesO
 	
 	parameter_group_h Group = {0};
 	if(GroupName && strlen(GroupName) > 0)
-	{
 		Group = GetParameterGroupHandle(Model, GroupName);
-	}
 	
 	size_t Idx = 0;
-	for(entity_handle ParameterHandle = 1; ParameterHandle < Model->Parameters.Count(); ++ParameterHandle)
+	for(parameter_h Parameter : Model->Parameters)
 	{
-		const parameter_spec &Spec = DataSet->Model->Parameters.Specs[ParameterHandle];
+		const parameter_spec &Spec = Model->Parameters[Parameter];
 		if(!Spec.ShouldNotBeExposed && (!IsValid(Group) || Group == Spec.Group))
 		{
 			NamesOut[Idx] = Spec.Name;
@@ -1009,22 +988,15 @@ DllGetAllResultsCount(void *DataSetPtr, const char *ModuleName)
 	
 	module_h Module = {};
 	if(ModuleName && strlen(ModuleName) > 0 && !All)
-	{
 		Module = GetModuleHandle(DataSet->Model, ModuleName);
-	}
-	
 	
 	if(All)
-	{
 		return (u64)(DataSet->Model->Equations.Count() - 1);
-	}
 	else
 	{
 		u64 Count = 0;
-		for(entity_handle EquationHandle = 1; EquationHandle < DataSet->Model->Equations.Count(); ++EquationHandle)
-		{
-			if(DataSet->Model->Equations.Specs[EquationHandle].Module == Module) ++Count;
-		}
+		for(equation_h Equation : DataSet->Model->Equations)
+			if(DataSet->Model->Equations[Equation].Module == Module) ++Count;
 		return Count;
 	}
 	
@@ -1044,14 +1016,12 @@ DllGetAllResults(void *DataSetPtr, const char **NamesOut, const char **TypesOut,
 	
 	module_h Module = {};
 	if(ModuleName && strlen(ModuleName) > 0 && !All)
-	{
 		Module = GetModuleHandle(DataSet->Model, ModuleName);
-	}
 	
 	size_t Idx = 0;
-	for(entity_handle EquationHandle = 1; EquationHandle < DataSet->Model->Equations.Count(); ++EquationHandle)
+	for(equation_h Equation : DataSet->Model->Equations)
 	{
-		const equation_spec &Spec = DataSet->Model->Equations.Specs[EquationHandle];
+		const equation_spec &Spec = DataSet->Model->Equations[Equation];
 		if(All || Spec.Module == Module)
 		{
 			NamesOut[Idx] = Spec.Name;
@@ -1082,12 +1052,11 @@ DllGetAllInputs(void *DataSetPtr, const char **NamesOut, const char **TypesOut)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	for(size_t Idx = 0; Idx < DataSet->Model->Inputs.Count() - 1; ++Idx)
+	for(input_h Input : DataSet->Model->Inputs)
 	{
-		entity_handle Handle = Idx + 1;
-		const input_spec &Spec = DataSet->Model->Inputs.Specs[Handle];
-		NamesOut[Idx] = Spec.Name;
-		TypesOut[Idx] = Spec.IsAdditional ? "additional" : "required";
+		const input_spec &Spec = DataSet->Model->Inputs[Input];
+		NamesOut[Input.Handle - 1] = Spec.Name;
+		TypesOut[Input.Handle - 1] = Spec.IsAdditional ? "additional" : "required";
 	}
 	
 	CHECK_ERROR_END
@@ -1127,9 +1096,8 @@ DllGetBranchInputsCount(void *DataSetPtr, const char *IndexSetName, const char *
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	index_set_h IndexSet = GetIndexSetHandle(DataSet->Model, IndexSetName);
 	
-	const index_set_spec &Spec = DataSet->Model->IndexSets.Specs[IndexSet.Handle];
-	
-	if(Spec.Type != IndexSetType_Branched)
+	index_set_type Type = DataSet->Model->IndexSets[IndexSet].Type;
+	if(Type != IndexSetType_Branched)
 		FatalError("ERROR: Tried to read branch inputs from the index set ", IndexSetName, ", but that is not a branched index set.\n");
 	
 	index_t Index = GetIndex(DataSet, IndexSet, IndexName);

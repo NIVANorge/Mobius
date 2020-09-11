@@ -5,7 +5,7 @@
 static void
 FindSolverBatchIndirectEquationDependencies(mobius_model *Model, equation_batch &Batch, equation_h Equation, std::set<size_t> &ODEDependenciesOut)
 {
-	equation_spec &Spec = Model->Equations.Specs[Equation.Handle];
+	equation_spec &Spec = Model->Equations[Equation];
 	for(equation_h Dependency : Spec.DirectResultDependencies)
 	{
 		auto It = std::find(Batch.EquationsODE.begin(), Batch.EquationsODE.end(), Dependency);   // NOTE: See if the dependency is an ODE function in the same batch.
@@ -30,7 +30,7 @@ BuildJacobianInfo(mobius_model *Model)
 {
 	for(equation_batch &Batch : Model->EquationBatches)
 	{
-		if(IsValid(Batch.Solver) && Model->Solvers.Specs[Batch.Solver.Handle].UsesJacobian)
+		if(IsValid(Batch.Solver) && Model->Solvers[Batch.Solver].UsesJacobian)
 		{	
 			size_t N = Batch.EquationsODE.Count;
 			

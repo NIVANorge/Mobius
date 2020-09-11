@@ -58,11 +58,11 @@ WriteParameterValue(FILE *File, parameter_value Value, parameter_type Type)
 }
 
 static void
-WriteParameterValues(FILE *File, entity_handle ParameterHandle, parameter_type Type, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
+WriteParameterValues(FILE *File, parameter_h Parameter, parameter_type Type, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
 {
 	if(IndexSetCount == 0)
 	{
-		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ParameterHandle);
+		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter.Handle);
 		parameter_value Value = DataSet->ParameterData[Offset];
 		WriteParameterValue(File, Value, Type);
 		return;
@@ -76,14 +76,14 @@ WriteParameterValues(FILE *File, entity_handle ParameterHandle, parameter_type T
 		Indexes[Level] = Index;
 		if(Level + 1 == IndexSetCount)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexSetCount, DataSet->IndexCounts, ParameterHandle);
+			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexSetCount, DataSet->IndexCounts, Parameter.Handle);
 			parameter_value Value = DataSet->ParameterData[Offset];
 			WriteParameterValue(File, Value, Type);
 			if(Index + 1 != IndexCount) fprintf(File, " ");
 		}
 		else
 		{
-			WriteParameterValues(File, ParameterHandle, Type, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1);
+			WriteParameterValues(File, Parameter, Type, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1);
 			if(Index + 1 != IndexCount)
 			{
 				if(Level + 2 == IndexSetCount) fprintf(File, "\n");
@@ -113,11 +113,11 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	const mobius_model *Model = DataSet->Model;
 	
 	fprintf(File, "# Parameter file generated for model %s, containing modules (", Model->Name);
-	for(entity_handle ModuleHandle = 1; ModuleHandle < Model->Modules.Count(); ++ModuleHandle)
+	for(module_h Module : Model->Modules)
 	{
-		const module_spec &Module = Model->Modules.Specs[ModuleHandle];
-		fprintf(File, "%s V%s", Module.Name, Module.Version);
-		if(ModuleHandle != Model->Modules.Count()-1) fprintf(File, ", ");
+		const module_spec &ModuleSpec = Model->Modules[Module];
+		fprintf(File, "%s V%s", ModuleSpec.Name, ModuleSpec.Version);
+		if(Module.Handle != Model->Modules.Count()-1) fprintf(File, ", ");
 	}
 	fprintf(File, ") ");
 	
@@ -134,27 +134,27 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	fprintf(File, "\n\n");
 	
 	fprintf(File, "index_sets:\n");
-	for(entity_handle IndexSetHandle = 1; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
+	for(index_set_h IndexSet : Model->IndexSets)
 	{
-		const index_set_spec &Spec = Model->IndexSets.Specs[IndexSetHandle];
+		const index_set_spec &Spec = Model->IndexSets[IndexSet];
 		fprintf(File, "\"%s\" : {", Spec.Name);
-		for(index_t IndexIndex = {IndexSetHandle, 0}; IndexIndex < DataSet->IndexCounts[IndexSetHandle]; ++IndexIndex)
+		for(index_t IndexIndex = {IndexSet.Handle, 0}; IndexIndex < DataSet->IndexCounts[IndexSet.Handle]; ++IndexIndex)
 		{
 			if(Spec.Type == IndexSetType_Basic)
 			{
 				if(IndexIndex != 0) fprintf(File, " ");
-				fprintf(File, "\"%s\"", DataSet->IndexNames[IndexSetHandle][IndexIndex]);
+				fprintf(File, "\"%s\"", DataSet->IndexNames[IndexSet.Handle][IndexIndex]);
 			}
 			else if(Spec.Type == IndexSetType_Branched)
 			{
 				if(IndexIndex != 0) fprintf(File, " ");
-				size_t InputCount = DataSet->BranchInputs[IndexSetHandle][IndexIndex].Count;
+				size_t InputCount = DataSet->BranchInputs[IndexSet.Handle][IndexIndex].Count;
 				if(InputCount > 0) fprintf(File, "{");
-				fprintf(File, "\"%s\"", DataSet->IndexNames[IndexSetHandle][IndexIndex]);
+				fprintf(File, "\"%s\"", DataSet->IndexNames[IndexSet.Handle][IndexIndex]);
 				for(size_t InputIdx = 0; InputIdx < InputCount; ++InputIdx)
 				{
-					index_t InputIndexIndex = DataSet->BranchInputs[IndexSetHandle][IndexIndex][InputIdx];
-					fprintf(File, " \"%s\"", DataSet->IndexNames[IndexSetHandle][InputIndexIndex]);
+					index_t InputIndexIndex = DataSet->BranchInputs[IndexSet.Handle][IndexIndex][InputIdx];
+					fprintf(File, " \"%s\"", DataSet->IndexNames[IndexSet.Handle][InputIndexIndex]);
 				}
 				if(InputCount > 0) fprintf(File, "}");
 			}
@@ -177,9 +177,9 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 			fprintf(File, "\n###################### %s V%s ######################\n", Module.Name, Module.Version);
 		}
 		
-		for(entity_handle ParameterGroupHandle = 1; ParameterGroupHandle < Model->ParameterGroups.Count(); ++ParameterGroupHandle)
+		for(parameter_group_h ParameterGroup : Model->ParameterGroups)
 		{
-			const parameter_group_spec &Group = Model->ParameterGroups.Specs[ParameterGroupHandle];
+			const parameter_group_spec &Group = Model->ParameterGroups[ParameterGroup];
 			if(Group.Module.Handle == ModuleHandle)
 			{
 				fprintf(File, "\n# %s (", Group.Name);
@@ -193,9 +193,9 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 				}
 				fprintf(File, ") #\n\n");
 				
-				for(entity_handle ParameterHandle : Group.Parameters)
+				for(parameter_h Parameter : Group.Parameters)
 				{
-					const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
+					const parameter_spec &Spec = Model->Parameters[Parameter];
 					
 					if(Spec.ShouldNotBeExposed) continue;
 					
@@ -226,7 +226,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 					size_t IndexSetCount = Group.IndexSets.size();
 					index_t *CurrentIndexes = AllocClearedArray(index_t, IndexSetCount);
 					
-					WriteParameterValues(File, ParameterHandle, Spec.Type, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
+					WriteParameterValues(File, Parameter, Spec.Type, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
 					
 					fprintf(File, "\n\n");
 					free(CurrentIndexes);
@@ -344,13 +344,13 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 					FatalError("The index set \"", IndexSetName, "\" was not registered with the model.\n");
 				}
 				Stream.ExpectToken(TokenType_Colon);
-				if(Model->IndexSets.Specs[IndexSet.Handle].Type == IndexSetType_Basic)
+				if(Model->IndexSets[IndexSet].Type == IndexSetType_Basic)
 				{
 					std::vector<token_string> Indexes;
 					Stream.ReadQuotedStringList(Indexes);
 					SetIndexes(DataSet, IndexSetName, Indexes);
 				}
-				else if(Model->IndexSets.Specs[IndexSet.Handle].Type == IndexSetType_Branched)
+				else if(Model->IndexSets[IndexSet].Type == IndexSetType_Branched)
 				{
 					//TODO: Make a helper function for this too!
 					std::vector<std::pair<token_string, std::vector<token_string>>> Indexes;
@@ -425,14 +425,14 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				Stream.ExpectToken(TokenType_Colon);
 				
 				bool Found;
-				entity_handle ParameterHandle = GetParameterHandle(Model, ParameterName, Found);
+				parameter_h Parameter = GetParameterHandle(Model, ParameterName, Found);
 				if(!Found)
 				{
 					Stream.PrintErrorHeader();
 					FatalError("The parameter \"", ParameterName, "\" was not registered with the model.\n");
 				}
 				
-				const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
+				const parameter_spec &Spec = Model->Parameters[Parameter];
 				
 				if(Spec.ShouldNotBeExposed)
 				{
@@ -442,7 +442,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				
 				parameter_type Type = Spec.Type;
 				size_t ExpectedCount = 1;
-				size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[ParameterHandle];
+				size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
 				for(index_set_h IndexSet : DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets)
 					ExpectedCount *= DataSet->IndexCounts[IndexSet.Handle];
 
@@ -454,7 +454,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 					Stream.PrintErrorHeader();                                                                       
 					FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
 				}                                                                                                    
-				SetMultipleValuesForParameter(DataSet, ParameterHandle, Values.data(), Values.size());
+				SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
 			}
 		}
 	}
@@ -573,7 +573,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		
 		std::vector<size_t> Offsets;
 		
-		const std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
+		const std::vector<index_set_h> &IndexSets = Model->Inputs[Input].IndexSetDependencies;
 		
 		while(true)
 		{
@@ -668,7 +668,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			FatalError("Inputs are to be provided either as a series of numbers or a series of dates (or date ranges) together with numbers.\n");
 		}
 		
-		if(Model->Inputs.Specs[Input.Handle].IsAdditional)
+		if(Model->Inputs[Input].IsAdditional)
 		{
 			//NOTE: Additional timeseries are by default cleared to NaN instead of 0.
 			//TODO: This makes us only clear the ones that are provided in the file... Whe should really also clear ones that are not provided..
@@ -1012,7 +1012,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 						FatalError("The input \"", InputName, "\" was not registered with the model.\n");
 					}
 					
-					std::vector<index_set_h> &IndexSets = Model->Inputs.Specs[Input.Handle].IndexSetDependencies;
+					std::vector<index_set_h> &IndexSets = Model->Inputs[Input].IndexSetDependencies;
 					if(!IndexSets.empty()) //TODO: OR we could just clear it and give a warning..
 					{
 						Stream.PrintErrorHeader();
