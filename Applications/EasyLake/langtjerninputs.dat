@@ -12,6 +12,7 @@ start_date : 2010-08-26
 timesteps  : 3070
 
 additional_timeseries :
+"Lake inflow"
 "Observed lake outflow"
 
 

@@ -237,8 +237,8 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 	auto GroundwaterFlow          = RegisterEquation(Model, "Groundwater flow", MmPerDay, ReachSolver);
 #endif
 
-	auto ReachFlowInputFromUpstream    = RegisterEquation(Model, "Reach flow input from upstream", M3PerSecond);
-	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Reach flow input from land", M3PerSecond, ReachSolver);
+	auto ReachFlowInputFromUpstream    = RegisterEquation(Model, "Flow input from upstream", M3PerSecond);
+	auto ReachFlowInputFromLand        = RegisterEquation(Model, "Flow input from land", M3PerSecond, ReachSolver);
 	auto ReachVolume        = RegisterEquationODE(Model, "Reach volume", M3, ReachSolver);
 	auto InitialReachVolume = RegisterEquationInitialValue(Model, "Initial reach volume", M3); 
 	SetInitialValue(Model, ReachVolume, InitialReachVolume);

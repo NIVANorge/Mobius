@@ -8,6 +8,7 @@
 
 #include "../../mobius_dll.h"
 
+#define EASYLAKE_STANDALONE
 #include "../../Modules/EasyLake.h"
 
 
@@ -15,7 +16,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("Easy-Lake");
+	mobius_model *Model = BeginModelDefinition("Easy-Lake", true);
 	
 	AddEasyLakePhysicalModule(Model);
 	

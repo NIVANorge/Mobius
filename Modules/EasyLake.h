@@ -1,21 +1,6 @@
 
 
-// This will be a very simple lake model for use along with cathcment models.
-// The goal is to simulate flows, temperature and carbon cycling, possibly along with N and P processes.
-
-
-// The water balance part of the model is conceptually similar to VEMALA
-// A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109
-
-// Air-lake fluxes are based off of
-// Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112
-// Implementation is informed by the one in GOTM ( https://github.com/gotm-model/code/blob/master/src/airsea/kondo.F90 )
-
 //NOTE: This model is IN DEVELOPMENT
-
-
-
-
 
 	
 inline double
@@ -48,6 +33,19 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 {
 	BeginModule(Model, "Easy-Lake physical", "_dev");
 	
+	SetModuleDescription(Model, R""""(
+This is a very simple lake model for use along with cathcment models.
+The physical part of the model simulates water balance and temperature.
+
+The water balance part of the model is conceptually similar to VEMALA
+[^https://doi.org/10.1007/s10666-015-9470-6 A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109]
+
+Air-lake heat fluxes are based off of
+[^https://link.springer.com/article/10.1007/BF00232256 Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112]
+The implementation is informed by the implementation in [^https://github.com/gotm-model GOTM]
+)"""");
+	
+	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto M              = RegisterUnit(Model, "m");
 	auto M2             = RegisterUnit(Model, "m2");
@@ -67,22 +65,39 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto WPerM2         = RegisterUnit(Model, "W/m2");
 	auto NPerM2         = RegisterUnit(Model, "N/m2");
+
+#ifdef EASYLAKE_STANDALONE
+	auto LakeInflow       = RegisterInput(Model, "Lake inflow", M3PerS);
 	
 	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters");
+#endif
+
+#ifdef EASYLAKE_SIMPLYQ
+	auto Reach            = GetIndexSetHandle(Model, "Reaches");
 	
-	auto LakeSurfaceArea                = RegisterParameterDouble(Model, PhysParams, "Lake surface area", M2, 1e3, 0.0, 371e9);
+	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters", Reach);
+	
+	auto IsLake     = RegisterParameterBool(Model, PhysParams, "This section is a lake", false, "If false this is a river section: ignore the parameters below");
+
+	auto FlowInputFromUpstream = GetEquationHandle(Model, "Flow input from upstream");
+	auto FlowInputFromLand     = GetEquationHandle(Model, "Flow input from land");
+	
+#endif
+
+
+	
+	auto InitialLakeSurfaceArea         = RegisterParameterDouble(Model, PhysParams, "Initial lake surface area", M2, 1e3, 0.0, 371e9);
 	auto LakeLength                     = RegisterParameterDouble(Model, PhysParams, "Lake length", M, 300.0, 0.0, 1.03e6, "This parameter should be adjusted when calibrating lake outflow");
 	auto LakeShoreSlope                 = RegisterParameterDouble(Model, PhysParams, "Lake shore slope", MPerM, 0.2, 0.0, 4.0, "This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width");
+	auto InitialWaterLevel              = RegisterParameterDouble(Model, PhysParams, "Initial water level", M, 10.0, 0.0, 1642.0);
 	auto WaterLevelAtWhichOutflowIsZero = RegisterParameterDouble(Model, PhysParams, "Water level at which outflow is 0", M, 10.0, 0.0, 1642.0);
 	auto OutflowRatingCurveShape        = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve shape", Dimensionless, 0.3, 0.0, 1.0, "0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.");
 	auto OutflowRatingCurveMagnitude    = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve magnitude", Dimensionless, 1.0, 0.01, 100.0, "Outflow is proportional to 10^(magnitude)");
-	auto InitialWaterLevel              = RegisterParameterDouble(Model, PhysParams, "Initial water level", M, 10.0, 0.0, 1642.0);
 	
-	//TODO: We should make a flexible way for this to either be taken from (one or more) reach sections in a directly coupled model, OR be an input timeseries
-	auto LakeInflow       = RegisterInput(Model, "Lake inflow", M3PerS);
 	auto Precipitation    = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature   = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	
+
 	
 	//NOTE: Some of these may be hard to come by in some instances. We should provide ways to estimate them such as in PET.h
 	auto WindSpeed        = RegisterInput(Model, "Wind speed at 10m", MPerS);
@@ -93,23 +108,20 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.1, IncaDascru);
 	
-	auto LakeVolume        = RegisterEquationODE(Model, "Lake volume", M3);
+	auto LakeVolume        = RegisterEquationODE(Model, "Lake volume", M3, LakeSolver);
 	auto InitialLakeVolume = RegisterEquationInitialValue(Model, "Initial lake volume", M3);
-	SetSolver(Model, LakeVolume, LakeSolver);
 	SetInitialValue(Model, LakeVolume, InitialLakeVolume);
 	
-	auto WaterLevel = RegisterEquationODE(Model, "Water level", M);
-	SetSolver(Model, WaterLevel, LakeSolver);
+	auto LakeSurfaceArea   = RegisterEquation(Model, "Lake surface area", M2, LakeSolver);
+	SetInitialValue(Model, LakeSurfaceArea, InitialLakeSurfaceArea);
+	
+	auto WaterLevel = RegisterEquationODE(Model, "Water level", M, LakeSolver);
 	SetInitialValue(Model, WaterLevel, InitialWaterLevel);
 	
-	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerDay);
-	SetSolver(Model, DVDT, LakeSolver);
-	auto OutletWaterLevel = RegisterEquation(Model, "Outlet water level", M);
-	SetSolver(Model, OutletWaterLevel, LakeSolver);
-	auto LakeOutflow = RegisterEquation(Model, "Lake outflow", M3PerS);
-	SetSolver(Model, LakeOutflow, LakeSolver);
-	auto Evaporation = RegisterEquation(Model, "Evaporation", MmPerDay);
-	SetSolver(Model, Evaporation, LakeSolver);
+	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerDay, LakeSolver);
+	auto OutletWaterLevel = RegisterEquation(Model, "Outlet water level", M, LakeSolver);
+	auto LakeOutflow = RegisterEquation(Model, "Lake outflow", M3PerS, LakeSolver);
+	auto Evaporation = RegisterEquation(Model, "Evaporation", MmPerDay, LakeSolver);
 	
 	/*
         Conceptual model for water balance:
@@ -149,17 +161,27 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	*/
 	
 	EQUATION(Model, InitialLakeVolume,
-		return 0.5 * PARAMETER(InitialWaterLevel) * PARAMETER(LakeSurfaceArea);
+		return 0.5 * PARAMETER(InitialWaterLevel) * PARAMETER(InitialLakeSurfaceArea);
 	)
 	
 	EQUATION(Model, DVDT,
 		//NOTE: We don't care about ice when it comes to the water balance. We may figure out later if this matters for the computation of outflow.
 		//NOTE: In the conceptualisation, the surface area is actually not constant but varies with the water level. However, that is probably not important for precip & evaporation.
-		return (INPUT(LakeInflow) - RESULT(LakeOutflow)) * 86400.0 + 1e-3 * (INPUT(Precipitation) - RESULT(Evaporation)) * PARAMETER(LakeSurfaceArea);
+#ifdef EASYLAKE_STANDALONE
+		double inflow = INPUT(LakeInflow);
+#endif
+#ifdef EASYLAKE_SIMPLYQ
+		double inflow = RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand);
+#endif
+		return (inflow - RESULT(LakeOutflow)) * 86400.0 + 1e-3 * (INPUT(Precipitation) - RESULT(Evaporation)) * RESULT(LakeSurfaceArea);
 	)
 	
 	EQUATION(Model, LakeVolume,
 		return RESULT(DVDT);
+	)
+	
+	EQUATION(Model, LakeSurfaceArea,
+		return 2.0 * RESULT(LakeVolume) / RESULT(WaterLevel);
 	)
 	
 	EQUATION(Model, WaterLevel,
@@ -181,42 +203,102 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	auto ReferenceDensity = RegisterParameterDouble(Model, PhysParams, "Reference air density", KgPerM3, 1025.0, 1000.0, 1100.0); //TODO: What is this actually? Density of water at a specific temperature??
 	auto Emissivity       = RegisterParameterDouble(Model, PhysParams, "Emissivity", Dimensionless, 0.97, 0.0, 1.0);
 	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
+	auto InitialEpilimnionTemperature = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion temperature", DegreesCelsius, 20.0, 0.0, 50.0);
+	auto InitialBottomTemperature     = RegisterParameterDouble(Model, PhysParams, "Initial bottom temperature", DegreesCelsius, 4.0, 0.0, 50.0);
+	auto InitialEpilimnionThickness   = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion thickness", M, 5.0, 0.0, 20.0);
 	
 	
-	
-	auto SaturationSpecificHumidity           = RegisterEquation(Model, "Saturation specific humidity", KgPerKg);
-	SetSolver(Model, SaturationSpecificHumidity, LakeSolver);
+	auto SaturationSpecificHumidity           = RegisterEquation(Model, "Saturation specific humidity", KgPerKg, LakeSolver);
 	auto ActualVaporPressure                  = RegisterEquation(Model, "Actual vapor pressure", HPa);
 	auto ActualSpecificHumidity               = RegisterEquation(Model, "Actual specific humidity", KgPerKg);
 	auto AirDensity                           = RegisterEquation(Model, "Air density", KgPerM3);
-	auto Stability                            = RegisterEquation(Model, "Stability", Dimensionless);               //TODO: this probably has another unit
-	SetSolver(Model, Stability, LakeSolver);
-	auto TransferCoefficientForLatentHeatFlux = RegisterEquation(Model, "Transfer coefficient for latent heat flux", Dimensionless); //Correct unit?
-	SetSolver(Model, TransferCoefficientForLatentHeatFlux, LakeSolver);
-	auto TransferCoefficientForSensibleHeatFlux = RegisterEquation(Model, "Transfer coefficient for sensible heat flux", Dimensionless); // unit?
-	SetSolver(Model, TransferCoefficientForSensibleHeatFlux, LakeSolver);
-	auto SurfaceStressCoefficient = RegisterEquation(Model, "Surface stress coefficient", Dimensionless);
-	SetSolver(Model, SurfaceStressCoefficient, LakeSolver);
-	auto LatentHeatOfVaporization             = RegisterEquation(Model, "Latent heat of vaporization", Dimensionless); //TODO: Unit!
-	SetSolver(Model, LatentHeatOfVaporization, LakeSolver);
-	//auto RainfallHeatfluxCorrection           = RegisterEquation(Model, "Rainfall heat flux correction", Dimensionless); //TODO: Unit!
-	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2);
-	SetSolver(Model, LatentHeatFlux, LakeSolver);
-	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2);
-	SetSolver(Model, SensibleHeatFlux, LakeSolver);
-	auto SurfaceStress                        = RegisterEquation(Model, "Surface stress", NPerM2);
-	SetSolver(Model, SurfaceStress, LakeSolver);
+	auto Stability                            = RegisterEquation(Model, "Stability", Dimensionless, LakeSolver);               //TODO: this probably has another unit
+	auto TransferCoefficientForLatentHeatFlux = RegisterEquation(Model, "Transfer coefficient for latent heat flux", Dimensionless, LakeSolver); //Correct unit?
+	auto TransferCoefficientForSensibleHeatFlux = RegisterEquation(Model, "Transfer coefficient for sensible heat flux", Dimensionless, LakeSolver); // unit?
+	auto SurfaceStressCoefficient             = RegisterEquation(Model, "Surface stress coefficient", Dimensionless, LakeSolver);
+	auto LatentHeatOfVaporization             = RegisterEquation(Model, "Latent heat of vaporization", Dimensionless, LakeSolver); //TODO: Unit!
+	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2, LakeSolver);
+	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2, LakeSolver);
+	auto SurfaceStress                        = RegisterEquation(Model, "Surface stress", NPerM2, LakeSolver);
 	
-	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2);
-	SetSolver(Model, EmittedLongwaveRadiation, LakeSolver);
+	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2, LakeSolver);
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
-	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2);
-	SetSolver(Model, LongwaveRadiation, LakeSolver);
+	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2, LakeSolver);
 	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2);
 	
-	auto LakeSurfaceTemperature     = RegisterEquation(Model, "Lake surface temperature", DegreesCelsius);
-	SetSolver(Model, LakeSurfaceTemperature, LakeSolver);
 	//SetInitialValue;
+	//TODO: Visibility should eventually depend on DOC concentration
+	//TODO: Absorbance may not be a technically correct name? Though is related..
+	auto ShortwaveAbsorbance = RegisterParameterDouble(Model, PhysParams, "Shortwave absorbance", PerM, 1.5);
+
+	
+	//Stuff below here is loosely based on FLake (Mironov 05)
+	auto ConvectiveHeatFluxScale = RegisterEquation(Model, "Convective heat flux scale", WPerM2, LakeSolver);
+
+	//auto SurfaceShearVelocity = RegisterEquation(Model, "Surface shear velocity", MPerS, LakeSolver);
+	
+	auto InitialMeanLakeTemperature = RegisterEquationInitialValue(Model, "Initial mean lake temperature", DegreesCelsius);
+	auto MeanLakeTemperature = RegisterEquationODE(Model, "Mean lake temperature", DegreesCelsius, LakeSolver);
+	SetInitialValue(Model, MeanLakeTemperature, InitialMeanLakeTemperature); //TODO!
+	
+	auto EpilimnionTemperature = RegisterEquation(Model, "Epilimnion temperature", DegreesCelsius, LakeSolver);
+	SetInitialValue(Model, EpilimnionTemperature, InitialEpilimnionTemperature);
+	
+	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
+	SetInitialValue(Model, EpilimnionThickness, InitialEpilimnionThickness);
+	
+	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
+	SetInitialValue(Model, BottomTemperature, InitialBottomTemperature);
+	
+	auto IsIce               = RegisterEquation(Model, "There is ice", Dimensionless, LakeSolver);
+	auto IceEnergy           = RegisterEquation(Model, "Ice energy", WPerM2, LakeSolver);
+	auto IceThickness        = RegisterEquationODE(Model, "Ice thickness", M, LakeSolver);
+	
+	
+#ifdef EASYLAKE_SIMPLYQ
+	auto DailyMeanReachFlow    = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
+	
+	EQUATION_OVERRIDE(Model, FlowInputFromUpstream,
+		double upstreamflow = 0.0;
+
+		FOREACH_INPUT(Reach,
+			if(PARAMETER(IsLake, *Input))
+				upstreamflow += RESULT(LakeOutflow, *Input); //TODO: make daily mean
+			else
+			{
+				//WarningPrint("Index is ", CURRENT_INDEX(Reach), ", upstream is a river of index ", *Input, ", with flow ", RESULT(DailyMeanReachFlow, *Input), "\n");
+				upstreamflow += RESULT(DailyMeanReachFlow, *Input);
+			}
+		)
+		return upstreamflow;
+	)
+	
+	auto ThisIsALake = RegisterConditionalExecution(Model, "This is a lake", IsLake, true);
+	
+	SetConditional(Model, LakeSolver, ThisIsALake);
+	SetConditional(Model, ActualVaporPressure, ThisIsALake);
+	SetConditional(Model, ActualSpecificHumidity, ThisIsALake);
+	SetConditional(Model, AirDensity, ThisIsALake);
+	SetConditional(Model, DownwellingLongwaveRadation, ThisIsALake);
+	SetConditional(Model, ShortwaveRadiation, ThisIsALake);
+	SetConditional(Model, EpilimnionThickness, ThisIsALake);
+	SetConditional(Model, BottomTemperature, ThisIsALake);
+	
+	//NOTE: If we do the following, we exclude groundwater computations from lake subcatchments, and we have to have a separate computation of flow input from land. Instead we just run the river computations, and ignore their values. It could be confusing for users though, so we have to see if we have to add something for the UI for this.
+	/*
+	auto ThisIsARiver = RegisterConditionalExecution(Model, "This is a river", IsLake, false);
+	
+	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
+	auto ReachFlowMM = GetEquationHandle(Model, "Reach flow (daily mean, mm/day)");
+	auto Control     = GetEquationHandle(Model, "Control");
+	
+	SetConditional(Model, ReachSolver, ThisIsARiver);
+	SetConditional(Model, ReachFlowMM, ThisIsARiver);
+	SetConditional(Model, Control, ThisIsARiver);
+	*/
+#endif
+	
+	
 	
 	/*
 		Specific humidity is mass_vapor / mass_air (kg/kg)         (mass_air = mass_vapor + mass_dry_air)
@@ -249,7 +331,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 		double ratioconvertionfactor = 0.62198; //Converting molar ratio to mass ratio
 		
-		double svap = SaturationVaporPressure(RESULT(LakeSurfaceTemperature));
+		double svap = SaturationVaporPressure(RESULT(EpilimnionTemperature));   //TODO: Change to lake surface temperature if that is ever something else
 		
 		//return ratioconvertionfactor * svap / (INPUT(AirPressure) - 0.377 * svap); //TODO: Find out what 0.377 is for. Shouldn't that just be 1?
 		return ratioconvertionfactor * svap / (INPUT(AirPressure) - svap);
@@ -280,7 +362,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 
 	EQUATION(Model, Stability,
 		double WW = (INPUT(WindSpeed) + 1e-10);
-		double s0 = 0.25 * (RESULT(LakeSurfaceTemperature) - INPUT(AirTemperature)) / (WW * WW);
+		double s0 = 0.25 * (RESULT(EpilimnionTemperature) - INPUT(AirTemperature)) / (WW * WW);   // change epi temp to surface temp if that is ever something else
 		return s0 * std::abs(s0) / (std::abs(s0) + 0.01);
 	)
 	
@@ -372,43 +454,20 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	EQUATION(Model, LatentHeatOfVaporization,
 		//TODO: Should be different for snow..
-		return (2.5 - 0.00234*RESULT(LakeSurfaceTemperature))*1e6;  //TODO: Figure out unit of this!
+		return (2.5 - 0.00234*RESULT(EpilimnionTemperature))*1e6;  //TODO: Figure out unit of this!     //Change epi temp to surface temp if that is something else
 	)
-	/*
-	
-	EQUATION(Model, RainfallHeatfluxCorrection,
-		double airt       = INPUT(AirTemperature);
-		double airtkelvin = airt + 273.15;
-		double cpa        = 1008.0;        //Specific heat capacity of air at a given pressure.
-		double cpw        = 3985.0;        //Specific heat capacity of water. But is that the correct number though?? Shouldn't it be 4186.0?
-		double gasconstair = 287.058;
-		double ratioconvertionfactor = 0.62198;
-		
-		double lheat = RESULT(LatentHeatOfVaporization);
-		
-		double x1 = 2.11e-5 * std::pow(airtkelvin/273.15, 1.94);
-		double x2 = 0.02411 * (1.0 + airt*(3.309e-3 - 1.44e-6*airt)) / (RESULT(AirDensity) * cpa);
-		double x3 = RESULT(ActualSpecificHumidity) * lheat / (gasconstair * airtkelvin * airtkelvin);
-		
-		double cd_rain = 1.0 / (1.0 + ratioconvertionfactor*x3*lheat*x1 / (cpa*x2));
-		cd_rain *= cpw * ((RESULT(LakeSurfaceTemperature) - airt) + (RESULT(SaturationSpecificHumidity) - RESULT(ActualSpecificHumidity))*lheat/cpa); 
-		return cd_rain / 86400.0; // 1/(kg/m2/s) -> 1/(mm/day)
-	)
-	*/
 	
 	EQUATION(Model, LatentHeatFlux,
 		double latentheat = RESULT(TransferCoefficientForLatentHeatFlux) * RESULT(LatentHeatOfVaporization) * RESULT(AirDensity) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
 		
-		//NOTE: In GOTM code they say they correct the sensible heat flux for rainfall, but actually only correct the latent heat flux! (Is this important?)
-	
 		//NOTE: Again, this is probably not correct for snow and ice.
-		return latentheat;// - INPUT(Precipitation) * RESULT(RainfallHeatfluxCorrection);
+		return latentheat;
 	)
 	
 	EQUATION(Model, SensibleHeatFlux,
 		double cpa        = 1008.0;
 		
-		return RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (INPUT(AirTemperature) - RESULT(LakeSurfaceTemperature));
+		return RESULT(TransferCoefficientForSensibleHeatFlux) * cpa * RESULT(AirDensity) * INPUT(WindSpeed) * (INPUT(AirTemperature) - RESULT(EpilimnionTemperature)); //Change epi temp to surface temp if that is something else
 	)
 	
 	EQUATION(Model, Evaporation,
@@ -428,7 +487,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	
 	
 	EQUATION(Model, EmittedLongwaveRadiation,
-		double watertkelv = RESULT(LakeSurfaceTemperature) + 273.15;
+		double watertkelv = RESULT(EpilimnionTemperature) + 273.15;   //Change epi temp to surface temp if that is something else
 		double stefanBoltzmannConst = 5.670367e-8;
 		
 		//TODO: emissivity could be different for snow/ice
@@ -510,30 +569,6 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		return (1.0 - albedo) * INPUT(GlobalRadiation);
 	)
 	
-
-	//TODO: Visibility should eventually depend on DOC concentration
-	//TODO: Absorbance may not be a technically correct name? Though is related..
-	auto ShortwaveAbsorbance = RegisterParameterDouble(Model, PhysParams, "Shortwave absorbance", PerM, 1.5);
-
-	
-	//Stuff below here is loosely based on FLake (Mironov 05)
-	auto ConvectiveHeatFluxScale = RegisterEquation(Model, "Convective heat flux scale", WPerM2);
-	SetSolver(Model, ConvectiveHeatFluxScale, LakeSolver);
-	
-	//auto SurfaceShearVelocity = RegisterEquation(Model, "Surface shear velocity", MPerS);
-	//SetSolver(Model, SurfaceShearVelocity, LakeSolver);
-	
-	auto MeanLakeTemperature = RegisterEquationODE(Model, "Mean lake temperature", DegreesCelsius);
-	SetSolver(Model, MeanLakeTemperature, LakeSolver);
-	SetInitialValue(Model, MeanLakeTemperature, 20.0); //TODO!
-	
-	auto EpilimnionTemperature = RegisterEquation(Model, "Epilimnion temperature", DegreesCelsius);
-	SetSolver(Model, EpilimnionTemperature, LakeSolver);
-	//SetInitialValue(Model, EpilimnionTemperature, 20.0);   //TODO!
-	
-	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
-	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
-	
 	
 	EQUATION(Model, ConvectiveHeatFluxScale,
 		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
@@ -547,6 +582,7 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 		
 		double expah = std::exp(-absorb*thickness);
 		
+		//TODO: Correct this for lake shape
 		return surfaceheatflux + surfaceshortwave * (1.0 + expah + (2.0 / (absorb*thickness))*(1.0 - expah)); 
 	)
 	
@@ -573,125 +609,122 @@ AddEasyLakePhysicalModule(mobius_model *Model)
 	)
 	*/
 	
-	EQUATION(Model, LakeSurfaceTemperature,
-		//NOTE: In winter, this will be the temperature of the top of the ice/snow layer when that gets implemented.
-		return RESULT(EpilimnionTemperature);
+	EQUATION(Model, IceEnergy,
+		//TODO: This should actually use a heat transfer coefficient (to give a heat transfer, not just energy)
+		//double cw = 4.18e+6;   //volumetric heat capacity of water (J K-1 m-3)
+		double Kw = 2000.0; //Heat transfer coefficent ---- TODO: Find a proper value!!!!!!!!
+		double surfaceLayerThickness = 0.5; //TODO: parameter?
+		double iceformationtemp = 0.0;      //TODO: parameter?
+		
+		double energy = (iceformationtemp - RESULT(EpilimnionTemperature)) * Kw * surfaceLayerThickness;
+		if(!RESULT(IsIce) && energy < 0.0)
+			return 0.0;       //No melting when there is no ice.
+		return energy;
 	)
 	
+	//TODO: Frazzil ice?
+	//TODO: If it is snowing and ice thickness>0, add precip to ice thickness?
+	//TODO: When IsIce, heat fluxes should be between ice and air and contribute to melting/freezing directly.
+	EQUATION(Model, IceThickness,
+		double iceDensity = 910.0;              // kg m-3
+		double latentHeatOfFreezing = 333500.0; //(J kg-1)
+		double iceenergy = RESULT(IceEnergy) * 86400.0;
+		double icethickness = RESULT(IceThickness);
+		double airT = INPUT(AirTemperature);
+		double precip = INPUT(Precipitation);
+		
+		double dIcedT = iceenergy / (iceDensity * latentHeatOfFreezing);
+		if(RESULT(IsIce))
+			if(airT <= 0.0) dIcedT += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
+		
+		return dIcedT;
+	)
+	
+	EQUATION(Model, IsIce,
+		return (RESULT(IceThickness) > 1e-6); //NOTE: the 1e-6 is just to help with numerical stability
+	)
+
+	
 	EQUATION(Model, MeanLakeTemperature,
-		double dtemp = (RESULT(MeanLakeTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
+		double meanT = RESULT(MeanLakeTemperature);
+		double dtemp = (meanT + 273.15 - 277.13); // Difference between temperature and reference temperature
+		//NOTE: Simplification: assume uniform lake density for this purpose... Actually we should maybe keep this constant, because we don't contract the volume with changes in temperature.
 		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
 		double specificHeatCapacityOfWater = 4186.0;
 		
-		//return RESULT(EpilimnionTemperature) - c_theta * (1.0 - RESULT(EpilimnionThickness)/RESULT(WaterLevel))*(RESULT(EpilimnionTemperature)-RESULT(BottomTemperature));
-		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
-		double surfaceshortwave = RESULT(ShortwaveRadiation);
+		double volume = RESULT(LakeVolume);
+		double mass   = volume * waterDensity;
 		
-		return (1.0 / (RESULT(WaterLevel)  * waterDensity * specificHeatCapacityOfWater)) * (surfaceheatflux + surfaceshortwave) * 86400.0;
+		double area   = RESULT(LakeSurfaceArea);
+		
+		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
+		double surfaceshortwave = RESULT(ShortwaveRadiation); //Assuming no shortwave energy reaches the bottom
+		
+		double heat = area * (surfaceheatflux + surfaceshortwave); // W/m2 * m2 = W = J/s
+		
+		double iceEnergy = RESULT(IceEnergy) * area;
+		
+		//Correction from flow temperature and rainfall
+		double inflowT = INPUT(AirTemperature);     //TODO: could plug in WaterTemperature model for rivers
+		double rainT   = INPUT(AirTemperature);
+#ifdef EASYLAKE_STANDALONE
+		double inflowQ = 86400.0*INPUT(LakeInflow);
+#endif
+#ifdef EASYLAKE_SIMPLYQ
+		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand));
+#endif
+		double rainQ   = INPUT(Precipitation)*area*1e-3;  //TODO: should not apply when AirT < 0 and when there is ice?
+		double outflowT = RESULT(EpilimnionTemperature);
+		double outflowQ = -RESULT(LakeOutflow)*86400.0;
+		
+		double inflow_dT = (inflowT  - meanT)*inflowQ/volume;
+		double rain_dT   = (rainT    - meanT)*rainQ/volume;
+		double outflow_dT= (outflowT - meanT)*outflowQ/volume;
+		
+		return 86400.0*(heat + iceEnergy) / (specificHeatCapacityOfWater * mass) + inflow_dT + rain_dT + outflow_dT;
+		// s/day * J/s / (J/(K*kg) * kg) = K/day = oC/day
+	)
+	
+	EQUATION(Model, InitialMeanLakeTemperature,
+		double T_e = RESULT(EpilimnionTemperature);
+		double T_b = RESULT(BottomTemperature);
+		double z_e = RESULT(EpilimnionThickness);
+		double z_b = RESULT(WaterLevel);
+		double a   = RESULT(LakeSurfaceArea);
+	
+		// Integrate[(1 - z/b)*((T*(h - z) + Y*(z - b))/(h - b)), {z, h, b}]
+		double V   = RESULT(LakeVolume); // = 0.5*a*z_D;
+		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
+		double V_e = V - V_h;
+		double c_1 = V_h / 3.0;
+		
+		return ( V_e*T_e +  c_1*(T_e+2.0*T_b)) / V;
 	)
 	
 	EQUATION(Model, EpilimnionTemperature,
-		double c_theta = 0.5;  //TODO!
+		double T_m = RESULT(MeanLakeTemperature);
+		double T_b = RESULT(BottomTemperature);
+		double z_e = RESULT(EpilimnionThickness);
+		double z_b = RESULT(WaterLevel);
+		double a   = RESULT(LakeSurfaceArea);
+	
+		double V   = RESULT(LakeVolume); // = 0.5*a*z_D;
+		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
+		double V_e = V - V_h;
+		double c_1 = V_h / 3.0;
 		
-		double a = c_theta*(1.0 - RESULT(EpilimnionThickness)/RESULT(WaterLevel));
-		
-		return (RESULT(MeanLakeTemperature) - a*RESULT(BottomTemperature)) / (1.0 - a);
-		/*
-		double dtemp = (RESULT(EpilimnionTemperature) + 273.15 - 277.13); // Difference between temperature and reference temperature
-		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
-		double specificHeatCapacityOfWater = 4186.0;      //TODO: Check. Note, should also be modified for salinity?
-		
-		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation); //TODO: Check this!
-		double surfaceshortwave = RESULT(ShortwaveRadiation);
-		
-		double shortwave_absorbance = 2.0; //TODO: This should depend on water color when the DOC module is in. Also, should be parametrized
-		
-		double shortwave_passing_through = surfaceshortwave * std::exp(-shortwave_absorbance * RESULT(EpilimnionThickness));
-		
-		double heatfluxtometalimnion = 0.0; //TODO!!!
-		
-		return (1.0 / (RESULT(EpilimnionThickness) * waterDensity * specificHeatCapacityOfWater)) * (surfaceheatflux + surfaceshortwave - heatfluxtometalimnion - shortwave_passing_through) * 86400.0;
-		*/
+		return (T_m*V - c_1*2.0*T_b) / (V_e + c_1);
 	)
 	
 	EQUATION(Model, BottomTemperature,
-		return 4.0;      //TODO!
+		return LAST_RESULT(BottomTemperature);      //TODO!
 	)
 	
 	EQUATION(Model, EpilimnionThickness,
-		return 2.0;   //TODO!
+		return LAST_RESULT(EpilimnionThickness);   //TODO!
 	)
+	
 	
 	EndModule(Model);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
-	
-	
-	auto IceFormationTemperature = RegisterParameterDouble(Model, PhysParams, "Ice formation temperature", DegreesCelsius, 0.0, -2.0, 2.0);
-	auto IceThicknessThreshold   = RegisterParameterDouble(Model, PhysParams, "Ice thickness threshold", M, 0.1, 0.0, 1.0, "Thickness at which frazil ice solidifies");
-	
-	
-	
-	// ice energy = (PARAMETER(IceFormationTemperature) - RESULT(LakeSurfaceTemperature)) * cw * surfaceLayerThickness; // = energy available for ice formation or melting (depending on sign)
-	
-	// melt energy -> 0 if surfacetemp <= formationtemp or Hice = 0, otherwise -ice energy
-	
-	// excess melt energy : if melt energy is more than needed to melt ice.
-	
-	// ice thickness, frazil ice thickness, and temperature of ice (difficult to find good solution order)
-	
-	// -> inputs to d(lake surface temperature)/dt
-	
-	
-	EQUATION(Model, FrazilIceThickness,
-		if(LAST_RESULT(IceThickness) > 0.0)
-		{
-			
-		}
-	)
-	
-	EQUATION(Model, IceThickness,
-		double cw = 4.18e+6;   //volumetric heat capacity of water (J K-1 m-3)
-		double iceDensity = 910;  // kg m-3
-		double latentHeatOfFreezing = 333500; //(J kg-1)
-	
-		double frazil = LAST_RESULT(FrazilIceThickness);
-		double Hice = LAST_RESULT(IceThickness);
-		
-		double precip = INPUT(Precipitation);
-	
-		if(Hice > 0.0)
-		{
-			if(RESULT(LakeSurfaceTemperature) <= PARAMETER(IceFormationTemperature))
-			{
-				double initialIceEnergy = (PARAMETER(IceFormationTemperature) - RESULT(LakeSurfaceTemperature)) * cw * surfaceLayerThickness;
-				frazil += ( initialIceEnergy/ (iceDensity*latentHeatOfFreezing) );
-				Hice += frazil + precip*0.001;
-			}
-			else
-			{
-				//TODO
-			}
-		}
-		else
-		{
-			//TODO
-		}
-		
-		return Hice;
-	)
-	*/
 	

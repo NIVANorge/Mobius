@@ -353,10 +353,31 @@ GroupPreBatches(mobius_model *Model, std::vector<equation_h> &Equations, std::ve
 		}
 	}
 	
-	// Resolve batch indexes in references between dependencies
+	// Resolve batch indexes in references between pre_batches in dependencies
 	for(pre_batch &Batch : PreBatches)
 		for(dependency_entry &Dep : Batch.Dependencies)
 			Dep.BatchIndex = BatchOfEquation[Dep.DependsOnEquation.Handle];
+		
+	// Check if a pre_batch directly depends on another one with a mutually exclusive conditional
+	if(CareAboutConditionals)
+	{
+		for(pre_batch &Batch : PreBatches)
+		{
+			if(IsValid(Batch.Conditional))
+				for(dependency_entry &Dep : Batch.Dependencies)
+				{
+					if(!Dep.ImplicitlyIndexed) continue;
+					pre_batch &OtherBatch = PreBatches[Dep.BatchIndex];
+					if(IsValid(Batch.Conditional))
+					{
+						conditional_spec &FirstSpec = Model->Conditionals.Specs[Batch.Conditional.Handle];
+						conditional_spec &SecondSpec = Model->Conditionals.Specs[OtherBatch.Conditional.Handle];
+						if(FirstSpec.Switch == SecondSpec.Switch && FirstSpec.Value != SecondSpec.Value)
+							FatalError("ERROR: The equation \"", GetName(Model, Dep.WhichEquation), "\" depends directly on the equation \"", GetName(Model, Dep.DependsOnEquation), "\" but they belong to conditional executions that are mutually exclusive.\n");
+					}
+				}
+		}
+	}
 	
 	std::vector<size_t> SortedBatchIndexes;
 	SortedBatchIndexes.reserve(PreBatches.size());
@@ -560,6 +581,26 @@ GroupPreBatches(mobius_model *Model, std::vector<equation_h> &Equations, std::ve
 }
 
 static void
+AddBatchGroup(std::vector<equation_batch_group> &BatchGroups, equation_batch_group &NewGroup)
+{
+	if(BatchGroups.empty())
+	{
+		BatchGroups.push_back(NewGroup);
+		return;
+	}
+	
+	equation_batch_group &LastGroup = BatchGroups[BatchGroups.size()-1];
+	assert(LastGroup.LastBatch+1 == NewGroup.FirstBatch);
+	
+	//Merge the new group into the last group if they have the same index set dependencies
+	//TODO: There could potentially be a problem here with the index sets not being sorted the same way since we haven't applied the canonical sorting order yet? If that is a problem we have to do some kind of set compare instead of array compare.
+	if(LastGroup.IndexSets == NewGroup.IndexSets)
+		LastGroup.LastBatch = NewGroup.LastBatch;
+	else
+		BatchGroups.push_back(NewGroup);
+}
+
+static void
 ProcessBatchGroups(mobius_model *Model, std::vector<pre_batch> &PreBatches, std::vector<pre_batch_group> &GroupBuild, std::vector<equation_batch> &EquationBatches, std::vector<equation_batch_group> &BatchGroups, bool CareAboutConditionals = true)
 {
 	size_t BatchIdx   = 0;
@@ -628,7 +669,7 @@ ProcessBatchGroups(mobius_model *Model, std::vector<pre_batch> &PreBatches, std:
 			
 			NewGroup.LastBatch = BatchIdx-1;
 			
-			BatchGroups.push_back(NewGroup);
+			AddBatchGroup(BatchGroups, NewGroup);
 		}
 		else // if CareAboutConditionals && IsValid(PreGroup.Conditional)
 		{
@@ -650,11 +691,14 @@ ProcessBatchGroups(mobius_model *Model, std::vector<pre_batch> &PreBatches, std:
 			{
 				Group.FirstBatch += BatchIdx;
 				Group.LastBatch += BatchIdx;
-				Group.Conditional = PreGroup.Conditional;
+				
+				AddBatchGroup(BatchGroups, Group);
 			}
 			
+			for(equation_batch &Batch : InnerEquationBatches)
+				Batch.Conditional = PreGroup.Conditional;
+			
 			EquationBatches.insert(EquationBatches.end(), InnerEquationBatches.begin(), InnerEquationBatches.end());
-			BatchGroups.insert(BatchGroups.end(), InnerBatchGroups.begin(), InnerBatchGroups.end());
 			
 			BatchIdx += InnerEquationBatches.size();
 		}
@@ -1337,28 +1381,23 @@ INNER_LOOP_BODY(RunInnerLoop)
 			});
 		}
 		
-		if(IsValid(BatchGroup.Conditional))
-		{
-			//TODO: This could be optimized. Whether or not a group should be executed can be determined just once and stored. That also would allow for easy lookup later to determine if an equaton was run or not.
-			const conditional_spec &Conditional = Model->Conditionals.Specs[BatchGroup.Conditional.Handle];
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Conditional.Switch);
-			parameter_value SwitchValue = DataSet->ParameterData[Offset];
-			if(SwitchValue != Conditional.Value)
-			{
-				//NOTE: This is slightly inefficient, could maybe be optimized i.e by storing the total number of equations in the batch group
-				for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
-				{
-					const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-					RunState->AtResult += Batch.Equations.Count;
-				}
-				return;
-			}
-		}
-		
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-
+			
+			if(IsValid(Batch.Conditional)) //TODO: This is inefficient for now. We should pre-determine what batches are going to be exectuted for what indexes. This can then also be used to e.g. inform the gui about this.
+			{
+				const conditional_spec &Conditional = Model->Conditionals.Specs[Batch.Conditional.Handle];
+				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Conditional.Switch);
+				parameter_value SwitchValue = DataSet->ParameterData[Offset];
+				if(SwitchValue != Conditional.Value)
+				{
+					RunState->AtResult += Batch.Equations.Count;
+					RunState->AtResult += Batch.EquationsODE.Count;
+					continue;
+				}
+			}
+			
 			if(!IsValid(Batch.Solver))
 			{
 				//NOTE: Basic discrete timestep evaluation of equations.
@@ -2021,22 +2060,22 @@ PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 		if(BatchGroup.IndexSets.Count == 0) Out << "[]";
 		for(index_set_h IndexSet : BatchGroup.IndexSets)
 			Out << "[" << GetName(Model, IndexSet) << "]";
-		if(IsValid(BatchGroup.Conditional))
-		{
-			const conditional_spec &Conditional = Model->Conditionals.Specs[BatchGroup.Conditional.Handle];
-			const parameter_spec &SwitchSpec = Model->Parameters.Specs[Conditional.Switch];
-			Out << " Conditional \"" << Conditional.Name << "\" on \"" << GetParameterName(Model, Conditional.Switch) << "\" == ";
-			if(SwitchSpec.Type == ParameterType_UInt)
-				Out << Conditional.Value.ValUInt;
-			else if(SwitchSpec.Type == ParameterType_Bool)
-				Out << (Conditional.Value.ValBool ? "true" : "false");
-		}
 		
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			Out << "\n\t-----";
 			if(IsValid(Batch.Solver)) Out << " Solver \"" << GetName(Model, Batch.Solver) << "\"";
+			if(IsValid(Batch.Conditional))
+			{
+				const conditional_spec &Conditional = Model->Conditionals.Specs[Batch.Conditional.Handle];
+				const parameter_spec &SwitchSpec = Model->Parameters.Specs[Conditional.Switch];
+				Out << " Conditional \"" << Conditional.Name << "\" on \"" << GetParameterName(Model, Conditional.Switch) << "\" == ";
+				if(SwitchSpec.Type == ParameterType_UInt)
+					Out << Conditional.Value.ValUInt;
+				else if(SwitchSpec.Type == ParameterType_Bool)
+					Out << (Conditional.Value.ValBool ? "true" : "false");
+			}
 			
 			ForAllBatchEquations(Batch,
 			[Model, &Out](equation_h Equation)

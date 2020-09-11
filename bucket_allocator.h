@@ -183,6 +183,17 @@ struct array
 	
 	inline size_t size() { return Count; }
 };
+
+template<typename T>
+bool operator==
+(const array<T> &A, const array<T> &B)
+{
+	if(A.Count != B.Count) return false;
+	for(size_t Idx = 0; Idx < A.Count; ++Idx)
+		if(A[Idx] != B[Idx]) return false;
+	return true;
+}
+
 /*
 template<typename T>
 array<T> CopyDataToArray(bucket_allocator *Allocator, const T *Data, size_t Count)

@@ -1,16 +1,23 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2019-11-15 12:15:31
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-10 14:09:36
 
 index_sets:
 
 parameters:
-###################### (no index sets) ######################
-"Timesteps" :     #(days) [0, 18446744073709551615]
-1814
 
-"Start date" :     # [1000-01-01, 3000-12-31]
-2014-02-01
+# System (no index sets) #
 
-"Lake surface area" :     #(m2) [0, 371000000000]
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2014-06-01
+
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2018-12-31
+
+
+###################### Easy-Lake physical V_dev ######################
+
+# Lake physical parameters (no index sets) #
+
+"Initial lake surface area" :     #(m2) [0, 371000000000]
 107183
 
 "Lake length" :     #(m) [0, 1030000] This parameter should be adjusted when calibrating lake outflow
@@ -20,7 +27,7 @@ parameters:
 0.4
 
 "Water level at which outflow is 0" :     #(m) [0, 1642]
-10
+15
 
 "Outflow rating curve shape" :     #(dimensionless) [0, 1] 0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.
 0.8
@@ -29,7 +36,7 @@ parameters:
 -0.4
 
 "Initial water level" :     #(m) [0, 1642]
-10
+15
 
 "Reference air density" :     #(kg/m3) [1000, 1100]
 1025
@@ -39,4 +46,16 @@ parameters:
 
 "Latitude" :     #(°) [-90, 90]
 60
+
+"Initial epilimnion temperature" :     #(°C) [0, 50]
+15
+
+"Initial bottom temperature" :     #(°C) [0, 50]
+4
+
+"Initial epilimnion thickness" :     #(m) [0, 20]
+5
+
+"Shortwave absorbance" :     #(1/m) [-1.79769313486232e+308, 1.79769313486232e+308]
+1.5
 

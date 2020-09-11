@@ -8,7 +8,7 @@ Diffusion(double Z, double Zlow, double Zupp, double Dlow, double Dupp, double C
 	double Zupphalf = 0.5*(Z + Zupp);
 	double Zlowhalf = 0.5*(Z + Zlow);
 	
-	double Flow = Dlow * (C - Clow) / (Z - Zlow);
+	double Flow = Dlow * (Clow - C) / (Zlow - Z);
 	double Fupp = Dupp * (Cupp - C) / (Zupp - Z);
 	
 	return (Fupp - Flow) / (Zupphalf - Zlowhalf);

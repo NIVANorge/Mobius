@@ -374,6 +374,7 @@ struct iteration_data
 struct equation_batch
 {
 	solver_h          Solver = {};
+	conditional_h     Conditional = {};
 	
 	array<equation_h> Equations;
 	array<equation_h> EquationsODE;   //NOTE: Should be empty unless IsValid(Solver)
@@ -392,9 +393,7 @@ struct equation_batch_group
 	
 	array<equation_h>     LastResultsToReadAtBase;  //Unfortunately we need this for LAST_RESULTs of equations with 0 index set dependencies.
 	array<iteration_data> IterationData;
-	
-	conditional_h         Conditional = {};
-	
+
 	array<equation_h> InitialValueOrder; //NOTE: The initial value setup of equations happens in a different order than the execution order during model run because the intial value equations may have different dependencies than the equations they are initial values for.
 };
 
@@ -1147,7 +1146,7 @@ SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBo
 	if(!Override && Model->Equations.Specs[Equation.Handle].EquationIsSet)
 	{
 		PrintRegistrationErrorHeader(Model);
-		FatalError("ERROR: The equation body for \"", GetName(Model, Equation), "\" is already defined. It can not be defined twice unless it is explicitly overridden using OVERRIDE_EQUATION.\n");
+		FatalError("ERROR: The equation body for \"", GetName(Model, Equation), "\" is already defined. It can not be defined twice unless it is explicitly overridden using EQUATION_OVERRIDE.\n");
 	}
 	
 	Model->EquationBodies[Equation.Handle] = EquationBody;
