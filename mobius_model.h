@@ -363,7 +363,7 @@ struct storage_structure
 {
 	array<storage_unit_specifier<handle_type>> Units;
 	
-	array<size_t> TotalCountForUnit;   //TODO: Make array<size_t>!
+	array<size_t> TotalCountForUnit;
 	array<size_t> OffsetForUnit;
 	array<size_t> UnitForHandle;
 	array<size_t> LocationOfHandleInUnit;       // Units[UnitForHandle[H]].Handles[LocationOfHandleInUnit[H]] == H;
@@ -1397,7 +1397,7 @@ GetEarlierResult(model_run_state *RunState, equation_h Result, u64 StepBack, T..
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
 	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result);
 	
-	//TODO: Make proper accessor for this that belongs to mobius_data_set.cpp so that this file does not need to have knowledge of the inner workings of the storage system.
+	//TODO: Make proper accessor for this that belongs to mobius_data_set.h so that this file does not need to have knowledge of the inner workings of the storage system.
 	double *Initial = DataSet->ResultData + Offset;
 	//NOTE: Initial points to the initial value (adding TotalCount once gives us timestep 0)
 	if(StepBack > RunState->Timestep)
@@ -1428,25 +1428,7 @@ GetCurrentInputOrParameter(model_run_state *RunState, input_h Input, parameter_d
 }
 
 template<typename... T> double
-RegisterParameterDependency(model_run_state *RunState, parameter_double_h Parameter, T... Indexes)
-{
-	size_t OverrideCount = sizeof...(Indexes);
-	RunState->ParameterDependencies.push_back({Parameter, OverrideCount});
-	
-	return 0.0;
-}
-
-template<typename... T> double
-RegisterParameterDependency(model_run_state *RunState, parameter_uint_h Parameter, T... Indexes)
-{
-	size_t OverrideCount = sizeof...(Indexes);
-	RunState->ParameterDependencies.push_back({Parameter, OverrideCount});
-	
-	return 0.0;
-}
-
-template<typename... T> double
-RegisterParameterDependency(model_run_state *RunState, parameter_bool_h Parameter, T... Indexes)
+RegisterParameterDependency(model_run_state *RunState, parameter_h Parameter, T... Indexes)
 {
 	size_t OverrideCount = sizeof...(Indexes);
 	RunState->ParameterDependencies.push_back({Parameter, OverrideCount});
@@ -1474,7 +1456,7 @@ template<typename... T> double
 RegisterResultDependency(model_run_state *RunState, equation_h Result, T... Indexes)
 {
 	std::vector<index_t> IndexVec = {Indexes...};
-	RunState->ResultDependencies.push_back({Result.Handle, IndexVec});
+	RunState->ResultDependencies.push_back({Result, IndexVec});
 	
 	return 0.0;
 }
@@ -1483,7 +1465,7 @@ template<typename... T> double
 RegisterLastResultDependency(model_run_state *RunState, equation_h Result, T... Indexes)
 {
 	std::vector<index_t> IndexVec = {Indexes...};
-	RunState->LastResultDependencies.push_back({Result.Handle, IndexVec});
+	RunState->LastResultDependencies.push_back({Result, IndexVec});
 	
 	return 0.0;
 }

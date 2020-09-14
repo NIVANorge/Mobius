@@ -142,15 +142,13 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 
 template<typename handle_type>
 static void
-SetupStorageStructureSpecifer(storage_structure<handle_type> *Structure, index_t *IndexCounts, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
+SetupStorageStructureSpecifer(storage_structure<handle_type> *Structure, index_t *IndexCounts, size_t TotalHandleCount, bucket_allocator *BucketMemory)
 {
-	//TODO Call FirstUnusedHandle   TotalHandleCount or something like that instead?
-	
 	size_t UnitCount = Structure->Units.Count;
 	Structure->TotalCountForUnit.Allocate(BucketMemory, UnitCount);
 	Structure->OffsetForUnit.Allocate(BucketMemory, UnitCount);
-	Structure->UnitForHandle.Allocate(BucketMemory, FirstUnusedHandle);
-	Structure->LocationOfHandleInUnit.Allocate(BucketMemory, FirstUnusedHandle);
+	Structure->UnitForHandle.Allocate(BucketMemory, TotalHandleCount);
+	Structure->LocationOfHandleInUnit.Allocate(BucketMemory, TotalHandleCount);
 	Structure->TotalCount = 0;
 	
 	size_t UnitIndex = 0;
@@ -758,8 +756,8 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName)
 	auto Find = IndexMap.find(IndexName);
 	if(Find != IndexMap.end())
 		return {IndexSet, Find->second};
-	else
-		FatalError("ERROR: Tried the index name \"", IndexName, "\" with the index set \"", GetName(DataSet->Model, IndexSet), "\", but that index set does not contain that index.\n");
+	
+	FatalError("ERROR: Tried the index name \"", IndexName, "\" with the index set \"", GetName(DataSet->Model, IndexSet), "\", but that index set does not contain that index.\n");
 	return {IndexSet, 0};
 }
 
@@ -773,9 +771,7 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName,
 		Success = true;
 		return {IndexSet, Find->second};
 	}
-	else
-		Success = false;
-
+	Success = false;
 	return {IndexSet, 0};
 }
 
@@ -1186,9 +1182,7 @@ PrintIndexes(mobius_data_set *DataSet, const char *IndexSetName)
 	if(Spec.Type == IndexSetType_Basic)
 	{
 		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSet.Handle]; ++IndexIndex)
-		{
 			std::cout << DataSet->IndexNames[IndexSet.Handle][IndexIndex] << " ";
-		}
 	}
 	else if(Spec.Type == IndexSetType_Branched)
 	{
@@ -1210,9 +1204,7 @@ static void
 ForeachRecursive(mobius_data_set *DataSet, char **CurrentIndexNames, const array<index_set_h> &IndexSets, const std::function<void(const char *const *IndexNames, size_t IndexesCount)> &Do, s32 Level)
 {
 	if(Level + 1 == IndexSets.Count)
-	{
 		Do(CurrentIndexNames, IndexSets.Count);
-	}
 	else
 	{
 		index_set_h IterateOver = IndexSets[Level + 1];
