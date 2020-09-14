@@ -44,13 +44,13 @@ Computation of reach flow based on the Manning flow equations.
 	
 	auto SoilBoxes = RegisterIndexSet(Model, "Soils");
 	
-	auto SnowMultiplier              = RegisterParameterDouble(Model, Land, "Snow multiplier",             Dimensionless,     1.0,  0.5,    1.5, "Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling");
-	auto SnowMeltTemperature         = RegisterParameterDouble(Model, Land, "Snow melt temperature",       DegreesCelsius,    0.0, -4.0,    4.0, "The temperature at or above which snow can melt");
-	auto DegreeDayMeltFactor         = RegisterParameterDouble(Model, Land, "Degree day melt factor",      MmPerDegreePerDay, 3.0,  1.0,    4.0, "Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature");
-	auto RainMultiplier              = RegisterParameterDouble(Model, Land, "Rain multiplier",             Dimensionless,     1.0,  0.5,    1.5, "Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling");
+	auto SnowMultiplier              = RegisterParameterDouble(Model, Land, "Snow multiplier",             Dimensionless,     1.0,  0.5,    1.5, "Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling", "Msnow");
+	auto SnowMeltTemperature         = RegisterParameterDouble(Model, Land, "Snow melt temperature",       DegreesCelsius,    0.0, -4.0,    4.0, "The temperature at or above which snow can melt", "Tsnow");
+	auto DegreeDayMeltFactor         = RegisterParameterDouble(Model, Land, "Degree day melt factor",      MmPerDegreePerDay, 3.0,  1.0,    4.0, "Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature", "DDFmelt");
+	auto RainMultiplier              = RegisterParameterDouble(Model, Land, "Rain multiplier",             Dimensionless,     1.0,  0.5,    1.5, "Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling", "Mrain");
 	auto InitialSnowDepth            = RegisterParameterDouble(Model, Land, "Initial snow depth",          MmSWE,             0.0,  0.0, 9999.0, "The depth of snow, expressed as water equivalents, at the start of the simulation");
-	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, Land, "Degree day evapotranspiration", MmPerDegreePerDay, 0.12, 0.05,   0.2, "Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited");
-	auto GrowingDegreeThreshold      = RegisterParameterDouble(Model, Land, "Growing degree threshold",    DegreesCelsius,    0.0, -4.0,    4.0, "The temperature at or above which plant growth and hence evapotranspiration are assumed to occur");
+	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, Land, "Degree day evapotranspiration", MmPerDegreePerDay, 0.12, 0.05,   0.2, "Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited", "DDET");
+	auto GrowingDegreeThreshold      = RegisterParameterDouble(Model, Land, "Growing degree threshold",    DegreesCelsius,    0.0, -4.0,    4.0, "The temperature at or above which plant growth and hence evapotranspiration are assumed to occur", "Tgrow");
     auto CanopyInterception          = RegisterParameterDouble(Model, Land, "Canopy interception",         MmPerDay,          0.0,  0.0,    0.3, "The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation");
 
 	
@@ -61,7 +61,7 @@ Computation of reach flow based on the Manning flow equations.
 	auto Infiltration      = RegisterParameterDouble(Model, SoilsLand, "Infiltration", MmPerDay, 100.0, 0.0, 500.0, "The maximum rate at which water can infiltrate into a box from overlying boxes");
 	auto RetainedWaterDepth = RegisterParameterDouble(Model, SoilsLand, "Retained water depth", Mm, 100.0, 0.0, 100000.0, "The depth of water in a box which does not contribute to runoff but can contribute to evapotranspiration and to diluting nutrient inputs to the box. For the soil water box, this is similar to the field capacity");
     auto DroughtRunoffFraction = RegisterParameterDouble(Model, SoilsLand, "Drought runoff fraction", Dimensionless, 0.0, 0.0, 0.5, "The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth");
-    auto TimeConstant = RegisterParameterDouble(Model, SoilsLand, "Time constant", Days, 5.0, 1.0, 9999.0, "The inverse of the rate at which water flows out of a box");
+    auto TimeConstant = RegisterParameterDouble(Model, SoilsLand, "Time constant", Days, 5.0, 1.0, 9999.0, "The inverse of the rate at which water flows out of a box", "Tc");
 	auto EvapotranspirationAdjustment = RegisterParameterDouble(Model, SoilsLand, "Evapotranspiration adjustment", Dimensionless, 1.0, 0.0, 10.0, "A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)");
 	auto RelativeEvapotranspirationIndex = RegisterParameterDouble(Model, SoilsLand, "Relative evapotranspiration index", Dimensionless, 1.0, 0.0, 1.0, "The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket");
 	auto MaximumCapacity = RegisterParameterDouble(Model, SoilsLand, "Maximum capacity", Mm, 1000.0, 0.0, 9999.0, "The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity");
@@ -79,7 +79,7 @@ Computation of reach flow based on the Manning flow equations.
 	auto ReachBottomWidth         = RegisterParameterDouble(Model, Reaches, "Reach bottom width", Meters, 10.0, 0.1, 9999.0, "The bottom width of the main stem of the stream / reach in a subcatchment");
 	auto ReachBankSlope           = RegisterParameterDouble(Model, Reaches, "Reach bank slope", Dimensionless, 0.3, 0.01, 10.0, "The slope of the river bank");
 	auto ReachSlope               = RegisterParameterDouble(Model, Reaches, "Reach slope", Dimensionless, 0.01, 0.000001, 0.2, "Roughly the difference in elevation between the ends divided by the length");
-	auto ManningsRoughness        = RegisterParameterDouble(Model, Reaches, "Manning's roughness coefficent", SecondsPerCubeRootM, 0.04, 0.01, 0.1, "The roughness coefficent n in Manning's flow velocity equation");
+	auto ManningsRoughness        = RegisterParameterDouble(Model, Reaches, "Manning's roughness coefficent", SecondsPerCubeRootM, 0.04, 0.01, 0.1, "The roughness coefficent n in Manning's flow velocity equation", "Cmann");
 	auto SnowThresholdTemperature = RegisterParameterDouble(Model, Reaches, "Snow threshold temperature", DegreesCelsius, 0.0, -4.0, 4.0, "The temperature at or below which precipitation will fall as snow in a subcatchment");
 	auto ReachSnowMultiplier = RegisterParameterDouble(Model, Reaches, "Reach snow multiplier", Dimensionless, 1.0, 0.5, 2.0, "The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment");
 	auto ReachRainMultiplier = RegisterParameterDouble(Model, Reaches, "Reach rain multiplier", Dimensionless, 1.0, 0.5, 2.0, "The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment");
@@ -95,7 +95,7 @@ Computation of reach flow based on the Manning flow equations.
     auto Percent = RegisterParameterDouble(Model, LandUsePercentages, "%", PercentU, 25.0, 0.0, 100.0, "The percentage of a subcatchment occupied by a specific land cover type");
 
 	auto Percolation = RegisterParameterGroup(Model, "Percolation", LandscapeUnits, SoilBoxes, SoilBoxes);
-	auto PercolationMatrix = RegisterParameterDouble(Model, Percolation, "Percolation matrix", Dimensionless, 0.05, 0.0, 1.0);
+	auto PercolationMatrix = RegisterParameterDouble(Model, Percolation, "Percolation matrix", Dimensionless, 0.05, 0.0, 1.0, "The fraction of runoff that goes from one box to another", "perc");
 	
 	
 	auto SnowFall = RegisterEquation(Model, "Snow fall", MmPerDay);
