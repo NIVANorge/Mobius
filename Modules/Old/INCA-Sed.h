@@ -247,9 +247,9 @@ AddINCASedModel(mobius_model *Model)
 	
 	EQUATION(Model, ReachUpstreamSuspendedSediment,
 		double sum = 0.0;
-		FOREACH_INPUT(Reach,
-			sum += RESULT(ReachSuspendedSedimentOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			sum += RESULT(ReachSuspendedSedimentOutput, Input);
+		
 		return sum;
 	)
 	

@@ -463,9 +463,9 @@ Moreover, in-stream physics are now computed based on newer experiments with mic
 	EQUATION(Model, ReachUpstreamSuspendedGrain,
 		double sum = 0.0;
 		index_t GrainIndex = CURRENT_INDEX(Class);
-		FOREACH_INPUT(Reach,
-			sum += RESULT(ReachSuspendedGrainOutput, *Input, GrainIndex);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			sum += RESULT(ReachSuspendedGrainOutput, Input, GrainIndex);
+	
 		return sum;
 	)
 	

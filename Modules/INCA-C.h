@@ -656,9 +656,8 @@ This implementation also has some additional processes that were not specified i
 	
 	EQUATION(Model, ReachDOCInput,
 		double upstreamdoc = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamdoc += RESULT(ReachDOCOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamdoc += RESULT(ReachDOCOutput, Input);
 		
 		return upstreamdoc + RESULT(TotalDiffuseDOCOutput) + RESULT(ReachEffluentDOC);
 	)
@@ -700,9 +699,8 @@ This implementation also has some additional processes that were not specified i
 	
 	EQUATION(Model, ReachDICInput,
 		double upstreamdic = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamdic += RESULT(ReachDICOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamdic += RESULT(ReachDICOutput, Input);
 		
 		return upstreamdic + RESULT(TotalDiffuseDICOutput); // + effluent?
 	)

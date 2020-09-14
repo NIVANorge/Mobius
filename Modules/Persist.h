@@ -349,18 +349,17 @@ Computation of reach flow based on the Manning flow equations.
 	EQUATION(Model, ReachFlowInput,
 		double reachInput = RESULT(TotalDiffuseFlowOutput) + IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(DailyMeanReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(DailyMeanReachFlow, Input);
 
 		return reachInput;
 	)
     
 	EQUATION(Model, InitialReachFlow,
 		double upstreamFlow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamFlow += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamFlow += RESULT(ReachFlow, Input);
+		
 		double initialFlow  = PARAMETER(InitialStreamFlow);
 		
 		return (INPUT_COUNT(Reach) == 0) ? initialFlow : upstreamFlow;

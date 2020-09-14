@@ -254,9 +254,9 @@ For reference, here is the original Python implementation of [^https://github.co
 	
 	EQUATION(Model, ReachTDPInputFromUpstream,
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanStreamTDPFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanStreamTDPFlux, Input);
+		
 		return upstreamflux;
 	)
 	
@@ -283,9 +283,9 @@ For reference, here is the original Python implementation of [^https://github.co
 	
 	EQUATION(Model, ReachPPInputFromUpstream,
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanStreamPPFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanStreamPPFlux, Input);
+		
 		return upstreamflux;
 	)
 	

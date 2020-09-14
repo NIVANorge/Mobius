@@ -1579,46 +1579,33 @@ GetInputCount(model_run_state *RunState, index_set_h IndexSet)
 }
 
 
-//TODO: The branch input iterator is way more complicated than it needs to be. Could be redesigned to just iterate over the BranchInputs[IndexSet.Handle][Branch] array. The only complicated part is that it can't do that in the registration run, and instead has to iterate over another object that has just one index.
-
-inline size_t
-BranchInputIteratorEnd(model_run_state *RunState, index_set_h IndexSet, index_t Branch)
-{
-	return RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Count : 1;
-}
+//NOTE: Ideally we just want to iterate over the  BranchInputs[IndexSet.Handle][Branch] array. The only complicated part is that it can't do that in the registration run, and instead has to iterate over another object that has just one index.
 
 struct branch_input_iterator
 {
-	index_t *InputIndexes;
-	size_t CurrentInputIndexIndex;
+	array<index_t> *BranchInputs;
+	index_t     DummyIndexes[2];
 	
-	void operator++() { CurrentInputIndexIndex++; }
-	
-	const index_t& operator*(){ return InputIndexes[CurrentInputIndexIndex]; }
-
-	bool operator!=(const size_t& Idx) { return CurrentInputIndexIndex != Idx; }
+	index_t     *begin() {return BranchInputs ? BranchInputs->begin() : &DummyIndexes[0]; }
+	index_t     *end()   {return BranchInputs ? BranchInputs->end()   : &DummyIndexes[1]; }
 };
 
 inline branch_input_iterator
-BranchInputIteratorBegin(model_run_state *RunState, index_set_h IndexSet, index_t Branch)
+BranchInputs(model_run_state *RunState, index_set_h IndexSet, index_t Index)
 {
-	static index_t DummyData;
-	DummyData = index_t(IndexSet, 0);
-	
-	branch_input_iterator Iterator;
-	Iterator.InputIndexes = RunState->Running ? RunState->DataSet->BranchInputs[IndexSet.Handle][Branch].Data : &DummyData;
-	Iterator.CurrentInputIndexIndex = 0;
-	return Iterator;
+	branch_input_iterator Result;
+	if(RunState->Running)
+		Result.BranchInputs = &RunState->DataSet->BranchInputs[IndexSet.Handle][Index.Index];
+	else
+	{
+		Result.BranchInputs = nullptr;
+		Result.DummyIndexes[0] = index_t { IndexSet.Handle, 0};
+		Result.DummyIndexes[1] = index_t { IndexSet.Handle, 1};
+	}
+	return Result;
 }
 
-#define BRANCH_INPUT_BEGIN(IndexSetH) (BranchInputIteratorBegin(RunState__, IndexSetH, CURRENT_INDEX(IndexSetH)))
-#define BRANCH_INPUT_END(IndexSetH) (BranchInputIteratorEnd(RunState__, IndexSetH, CURRENT_INDEX(IndexSetH)))
-
-#define FOREACH_INPUT(IndexSetH, Body) \
-for(auto Input = BRANCH_INPUT_BEGIN(IndexSetH); Input != BRANCH_INPUT_END(IndexSetH); ++Input) \
-{ \
-Body \
-}
+#define BRANCH_INPUTS(IndexSet) BranchInputs(RunState__, IndexSet, CURRENT_INDEX(IndexSet))
 
 #define MOBIUS_MODEL_H
 #endif

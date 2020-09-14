@@ -175,9 +175,9 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, StreamDOCMass,
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanStreamDOCFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanStreamDOCFlux, Input);
+		
 		return
 			(RESULT(TotalQuickFlowCarbonFlux)
 			+ RESULT(TotalSoilwaterCarbonFluxToReach)) * PARAMETER(CatchmentArea)

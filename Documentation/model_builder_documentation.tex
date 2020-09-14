@@ -886,15 +886,14 @@ Iterating over all the branch inputs to the current index of the branched index 
 \begin{lstlisting}[style=mycpp]
 EQUATION(Model, ReachUpstreamFlow,
 	double upstreamflow = 0.0;
-	FOREACH_INPUT(Reach,
-		upstreamflow += RESULT(ReachFlow, *Input);
-	)
+	for(index\_t Input : BRANC\_INPUTS(Reach))
+		upstreamflow += RESULT(ReachFlow, Input);
 	return upstreamflow;
 )
 \end{lstlisting}
 \end{example}
 
-The {\tt FOREACH\_INPUT} expression is a macro that expands to an iteration over the branches. The {\tt index\_t} of each branch that is iterated over is given by {\tt *Input}.
+The {\tt BRANCH\_INPUTS} expression is a macro that expands to an iteration over the branches.
 
 \subsection{Debugging features}
 
@@ -944,9 +943,9 @@ Instead of doing the reach flow in one calculation,
 \begin{lstlisting}[style=mycpp]
 EQUATION(Model, ReachFlow,         //ReachFlow is an ODE equation
 	double reachflowinput = 0.0;
-	FOREACH_INPUT(Reach,
-		reachflowinput += RESULT(ReachFlow, *Input);
-	)
+	for(index_t Input : BRANCH_INPUTS(Reach))
+		reachflowinput += RESULT(ReachFlow, Input);
+	
 	reachflowinput += RESULT(TotalDiffuseFlowOutput);	
 
 	return ( reachflowinput - RESULT(ReachFlow) ) / ( RESULT(ReachTimeConstant) * (1.0 - PARAMETER(B)));
@@ -956,9 +955,9 @@ separate out the expensive bit that uses explicit indexing (and don't run the ex
 \begin{lstlisting}[style=mycpp]
 EQUATION(Model, ReachFlowInput,            //ReachFlowInput should not run on the solver
 	double upstreamflow = 0.0;
-	FOREACH_INPUT(Reach,
-		upstreamflow += RESULT(ReachFlow, *Input);
-	)
+	for(index_t Input : BRANCH_INPUTS(Reach))
+		upstreamflow += RESULT(ReachFlow, Input);
+	
 	return upstreamflow + RESULT(TotalDiffuseFlowOutput);
 )
 
@@ -986,7 +985,7 @@ Every equation has three types of dependencies that are important to model struc
 When processing information about equation dependencies during model finalization (in the {\tt EndModelDefinition} procedure), every equation gets its index set dependencies and result dependencies using the following rules:
 \begin{enumerate}[i]
 \item A cumulation equation has the equation it cumulates as a direct result dependency (this is an exception to the description of direct result dependencies above). It also gets all the index set dependencies of the equation it cumulates \emph{minus} the index set it cumulates over.
-\item An equation gets all the index set dependencies of all the parameters and inputs it references. If the reference uses explicit indexing, it will not get a dependency for the index sets that are explicitly indexed. It will also get a dependency on index sets it calls {\tt CURRENT\_INDEX} or {\tt FOREACH\_INDEX} on.
+\item An equation gets all the index set dependencies of all the parameters and inputs it references. If the reference uses explicit indexing, it will not get a dependency for the index sets that are explicitly indexed. It will also get a dependency on index sets it calls {\tt CURRENT\_INDEX} or {\tt BRANCH\_INPUTS} on.
 \item An equation gets all the index set dependencies of its initial value parameter or initial value equation if it has one.
 \item An equation gets all the index set dependencies of all the other equations it references the {\tt RESULT} or {\tt LAST\_RESULT} of. The same rules for explicit indexing hold as for parameters. Note that this creates a large directed dependency graph between equations, where index set dependencies propagate down all the paths of the graph. Thus an equation can inherit an index set dependency not only from an equation it directly accesses the result of, but also one that was accessed by that equation and so on.
 \end{enumerate}
@@ -1488,12 +1487,9 @@ The following macros are only available inside the {\tt Decl} of an {\tt EQUATIO
 \apidesc{Returns the current (numeric) index of the given index set. This is a macro that expands to an expression that either extracts the value from the {\tt model\_run\_state} or registers a dependency of the surrounding {\tt Equation} on this index set, depending on the contex of the evaluation.}
 }
 
-\apientry{FOREACH\_INPUT}{Equation macro}{
+\apientry{BRANCH\_INPUTS}{Equation macro}{
 \apipar{index\_set\_h IndexSet}{Handle to a branched index set.}
-\apipar{Def}{The code to put inside of the for loop.}
-\apidesc{Expands to something that looks like}
-\multicolumn{2}{|z|}{\BUseVerbatim{ForCode}}\\
-\multicolumn{2}{|z|}{Inside {\tt Def} you can refer to the index of the iterated branch by {\tt *Input}. Note that {\tt FOREACH\_INPUT} calls {\tt CURRENT\_INDEX(IndexSet)}, and thus registers an index set dependency.}\\
+\apidesc{Retuns a struc that allows you to iterate over input branches of a branched index set. Note that {\tt BRANCH\_INPUTS} calls {\tt CURRENT\_INDEX(IndexSet)}, and thus registers an index set dependency.}\\
 }
 
 \apientry{INPUT\_COUNT}{Equation macro}{

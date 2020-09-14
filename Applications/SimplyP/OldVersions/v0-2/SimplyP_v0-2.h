@@ -321,18 +321,17 @@ AddSimplyPHydrologyModule(mobius_model *Model)
 	
 	EQUATION(Model, ReachFlowInput,
 		double upstreamflow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflow += RESULT(DailyMeanReachFlow, *Input) * PARAMETER(CatchmentArea, *Input) / PARAMETER(CatchmentArea);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflow += RESULT(DailyMeanReachFlow, Input) * PARAMETER(CatchmentArea, Input) / PARAMETER(CatchmentArea);
 		
 		return upstreamflow + RESULT(InfiltrationExcess) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
 	)
 	
 	EQUATION(Model, InitialReachFlow,
 		double upstreamflow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflow += RESULT(ReachFlow, *Input) * PARAMETER(CatchmentArea, *Input) / PARAMETER(CatchmentArea);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflow += RESULT(ReachFlow, Input) * PARAMETER(CatchmentArea, Input) / PARAMETER(CatchmentArea);
+		
 		double initflow = ConvertM3PerSecondToMmPerDay(PARAMETER(InitialInStreamFlow), PARAMETER(CatchmentArea));
 
 		if(INPUT_COUNT(Reach) == 0) return initflow;
@@ -536,9 +535,8 @@ AddSimplyPSedimentModule(mobius_model *Model)
         //        - (Msus_i/Vr_i)*Qr_i)                                             # Outflow from the reach;(kg/mm)*(mm/day)
 		
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, Input);
 		
 		return RESULT(ReachSedimentInput) + upstreamflux - RESULT(SuspendedSedimentFlux);
 	)
@@ -1039,9 +1037,8 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 					- Qr_i*(TDPr_i/Vr_i))                       # Reach outflow. Units: (mm/d)(kg/mm)
 		*/
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanStreamTDPFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanStreamTDPFlux, Input);
 		
 		double f_A = PARAMETER(LandUseProportions, Arable) + PARAMETER(LandUseProportions, ImprovedGrassland);
 		double f_S = PARAMETER(LandUseProportions, Seminatural);
@@ -1108,9 +1105,9 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 			) * coeff;
 		
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanStreamPPFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanStreamPPFlux, Input);
+		
 		return
 			  sedimentinput
 			+ upstreamflux

@@ -196,9 +196,9 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, StreamDOCInputFromUpstream,
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanStreamDOCFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanStreamDOCFlux, Input);
+		
 		return upstreamflux;
 	)
 	

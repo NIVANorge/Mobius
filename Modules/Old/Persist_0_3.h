@@ -349,9 +349,9 @@ This implementation is slightly simpler than specified in the paper, removing pr
 		double reachInput = RESULT(TotalDiffuseFlowOutput);
 		double effluent   = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachFlow, Input);
+		
 		if(PARAMETER(ReachHasEffluentInput)) reachInput += effluent;
 		return reachInput;
 	)
@@ -382,9 +382,9 @@ This implementation is slightly simpler than specified in the paper, removing pr
     
 	EQUATION(Model, InitialReachFlow,
 		double upstreamFlow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamFlow += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamFlow += RESULT(ReachFlow, Input);
+		
 		double initialFlow  = PARAMETER(InitialStreamFlow);
 		
 		return (INPUT_COUNT(Reach) == 0) ? initialFlow : upstreamFlow;

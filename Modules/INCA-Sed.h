@@ -253,9 +253,9 @@ A notable difference with this implementation is that it is rigged to be run in 
 	
 	EQUATION(Model, ReachUpstreamSuspendedSediment,
 		double sum = 0.0;
-		FOREACH_INPUT(Reach,
-			sum += RESULT(ReachSuspendedSedimentOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			sum += RESULT(ReachSuspendedSedimentOutput, Input);
+		
 		return sum;
 	)
 	

@@ -681,14 +681,12 @@ AddINCANClassicModel(mobius_model *Model)
 		double reachInput = RESULT(TotalDiffuseWaterOutput);
 		double effluentInput = PARAMETER(EffluentFlow);
 		
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachFlow, Input);
 		
 		if(PARAMETER(ReachHasEffluentInput))
-		{
 			reachInput += effluentInput;
-		}
+		
 		return reachInput;
 	)
 
@@ -709,9 +707,9 @@ AddINCANClassicModel(mobius_model *Model)
 
 	EQUATION(Model, InitialReachFlow,
 		double upstreamFlow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamFlow += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamFlow += RESULT(ReachFlow, Input);
+		
 		double initialFlow  = PARAMETER(InitialStreamFlow);
 		
 		return (INPUT_COUNT(Reach) == 0) ? initialFlow : upstreamFlow;
@@ -790,9 +788,8 @@ AddINCANClassicModel(mobius_model *Model)
 		double reachInput = 0.0;
 		CURRENT_INDEX(Reach); //NOTE: Just to register a dependency
 		
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachNitrateOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachNitrateOutput, Input);
 
 		return reachInput;
 	)
@@ -825,9 +822,8 @@ AddINCANClassicModel(mobius_model *Model)
 		double reachInput = 0.0;
 		CURRENT_INDEX(Reach); //NOTE: Just to register a dependency
 		
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachAmmoniumOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachAmmoniumOutput, Input);
 
 		return reachInput;
 	)

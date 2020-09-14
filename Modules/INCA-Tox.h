@@ -423,9 +423,8 @@ New to the Mobius version is some simplification in process implementations.
 	
 	EQUATION(Model, ReachContaminantInput,
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(ReachContaminantFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(ReachContaminantFlux, Input);
 	
 		return
 			upstreamflux

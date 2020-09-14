@@ -140,9 +140,9 @@ This is a simple DOC model intended only for use with INCA-Tox. It is not suitab
 	
 	EQUATION(Model, ReachDOCInput,
 		double upstreamdoc = 0.0;
-		FOREACH_INPUT(Reaches,
-			upstreamdoc += RESULT(ReachDOCOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamdoc += RESULT(ReachDOCOutput, Input);
+		
 		double diffusedoc = RESULT(TotalDiffuseDOCOutput);
 	
 		return diffusedoc + upstreamdoc;

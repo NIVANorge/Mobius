@@ -256,15 +256,13 @@ The implementation is informed by the implementation in [^https://github.com/got
 	EQUATION_OVERRIDE(Model, FlowInputFromUpstream,
 		double upstreamflow = 0.0;
 
-		FOREACH_INPUT(Reach,
-			if(PARAMETER(IsLake, *Input))
-				upstreamflow += RESULT(LakeOutflow, *Input); //TODO: make daily mean
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			if(PARAMETER(IsLake, Input))
+				upstreamflow += RESULT(LakeOutflow, Input); //TODO: make daily mean
 			else
-			{
-				//WarningPrint("Index is ", CURRENT_INDEX(Reach), ", upstream is a river of index ", *Input, ", with flow ", RESULT(DailyMeanReachFlow, *Input), "\n");
-				upstreamflow += RESULT(DailyMeanReachFlow, *Input);
-			}
-		)
+				upstreamflow += RESULT(DailyMeanReachFlow, Input);
+		}
 		return upstreamflow;
 	)
 	

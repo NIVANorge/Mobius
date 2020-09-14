@@ -295,9 +295,8 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	EQUATION(Model, SoilContaminantFormation,
 		double formation = 0.0;
 		
-		FOREACH_INPUT(Radionuclide,
-			formation += RESULT(SoilContaminantDegradation, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Radionuclide))
+			formation += RESULT(SoilContaminantDegradation, Input);
 		
 		return formation;
 	)
@@ -329,9 +328,8 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	EQUATION(Model, GroundwaterContaminantFormation,
 		double formation = 0.0;
 		
-		FOREACH_INPUT(Radionuclide,
-			formation += RESULT(GroundwaterContaminantDegradation, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Radionuclide))
+			formation += RESULT(GroundwaterContaminantDegradation, Input);
 		
 		return formation;
 	)
@@ -425,9 +423,8 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	
 	EQUATION(Model, ReachContaminantInput,
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(ReachContaminantFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(ReachContaminantFlux, Input);
 	
 		return
 			upstreamflux
@@ -454,9 +451,8 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	EQUATION(Model, ReachContaminantFormation,
 		double formation = 0.0;
 		
-		FOREACH_INPUT(Radionuclide,
-			formation += RESULT(ReachContaminantDegradation, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Radionuclide))
+			formation += RESULT(ReachContaminantDegradation, Input);
 		
 		return formation;
 	)
@@ -653,9 +649,8 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	EQUATION(Model, BedContaminantFormation,
 		double formation = 0.0;
 		
-		FOREACH_INPUT(Radionuclide,
-			formation += RESULT(BedContaminantDegradation, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Radionuclide))
+			formation += RESULT(BedContaminantDegradation, Input);
 		
 		return formation;
 	)

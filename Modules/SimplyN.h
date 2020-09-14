@@ -197,9 +197,9 @@ This module is in early development.
 	
 	EQUATION(Model, ReachDINInputFromUpstream,
 		double inputs = 0.0;
-		FOREACH_INPUT(Reach,
-			inputs += RESULT(DailyMeanReachDINFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			inputs += RESULT(DailyMeanReachDINFlux, Input);
+		
 		return inputs;
 	)
 	

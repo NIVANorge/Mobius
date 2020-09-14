@@ -410,9 +410,9 @@ AddReachFlowRoutine(mobius_model *Model)
 		double reachInput = RESULT(FlowFromRoutingToReach);
 		double effluentInput = PARAMETER(EffluentFlow);
 		if(PARAMETER(ReachHasEffluentInput)) reachInput += effluentInput;
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachFlow, Input);
+		
 		return reachInput;
 	)
 	
@@ -428,9 +428,9 @@ AddReachFlowRoutine(mobius_model *Model)
     
 	EQUATION(Model, InitialReachFlow,
 		double upstreamFlow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamFlow += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamFlow += RESULT(ReachFlow, Input);
+		
 		double initialFlow  = PARAMETER(InitialFlow);
 		
 		return (INPUT_COUNT(Reach) == 0) ? initialFlow : upstreamFlow;

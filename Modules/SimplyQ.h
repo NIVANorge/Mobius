@@ -207,10 +207,11 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 
 	EQUATION(Model, ComputedUpstreamArea,
 		double upstreamarea = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamarea += PARAMETER(CatchmentArea, *Input);
-			upstreamarea += PARAMETER(UpstreamArea, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			upstreamarea += PARAMETER(CatchmentArea, Input);
+			upstreamarea += PARAMETER(UpstreamArea, Input);
+		}
 		
 		return upstreamarea;
 	)
@@ -272,9 +273,9 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 		
 		double tc = PARAMETER(GroundwaterTimeConstant);
 		double upstreamvol = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamvol += RESULT(GroundwaterVolume, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamvol += RESULT(GroundwaterVolume, Input);
+		
 		u64 upstreamcount = INPUT_COUNT(Reach);
 		
 		if(upstreamcount == 0)
@@ -319,18 +320,18 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 	
 	EQUATION(Model, ReachFlowInputFromUpstream,
 		double upstreamflow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflow += RESULT(DailyMeanReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflow += RESULT(DailyMeanReachFlow, Input);
+
 		return upstreamflow;
 	)
 	
 	EQUATION(Model, InitialReachFlow,
 		// TO DO: ability to add initial reach flow for any reach, and estimate it for others by e.g. area-scaling
 		double upstreamflow = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflow += RESULT(ReachFlow, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflow += RESULT(ReachFlow, Input);
+
 		double initflow = PARAMETER(InitialInStreamFlow);
 
 		if(INPUT_COUNT(Reach) == 0) return initflow;

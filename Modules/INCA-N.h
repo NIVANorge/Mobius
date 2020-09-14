@@ -630,9 +630,9 @@ This version is based on the INCA-N software developed by Dan Butterfield, which
 	
 	EQUATION(Model, ReachUpstreamNitrate,
 		double reachInput = 0.0;
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachNitrateOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachNitrateOutput, Input);
+
 		return reachInput;
 	)
 	
@@ -672,9 +672,9 @@ This version is based on the INCA-N software developed by Dan Butterfield, which
 	
 	EQUATION(Model, ReachUpstreamAmmonium,
 		double reachInput = 0.0;
-		FOREACH_INPUT(Reach,
-			reachInput += RESULT(ReachAmmoniumOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			reachInput += RESULT(ReachAmmoniumOutput, Input);
+		
 		return reachInput;
 	)
 	

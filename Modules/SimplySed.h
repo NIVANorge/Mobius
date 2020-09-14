@@ -148,9 +148,8 @@ This is a simple sediment transport module created as a part of SimplyP.
 	
 	EQUATION(Model, SuspendedSedimentMass,	
 		double upstreamflux = 0.0;
-		FOREACH_INPUT(Reach,
-			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, Input);
 		
 		return RESULT(ReachSedimentInput) + upstreamflux - RESULT(SuspendedSedimentFlux);
 	)

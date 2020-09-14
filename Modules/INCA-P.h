@@ -683,9 +683,8 @@ One difference between the Mobius version and the older version is that the mode
 	EQUATION(Model, WaterColumnTDPInput,
 		double upstreamtdp = 0.0;
 		
-		FOREACH_INPUT(Reach,
-			upstreamtdp += RESULT(WaterColumnTDPOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamtdp += RESULT(WaterColumnTDPOutput, Input);
 		
 		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentTDPConcentrationTimeseries, EffluentTDPConcentration);
@@ -696,9 +695,8 @@ One difference between the Mobius version and the older version is that the mode
 	EQUATION(Model, WaterColumnPPInput,
 		double upstreampp = 0.0;
 		
-		FOREACH_INPUT(Reach,
-			upstreampp += RESULT(WaterColumnPPOutput, *Input);
-		)
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreampp += RESULT(WaterColumnPPOutput, Input);
 		
 		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 		double effluentconc = IF_INPUT_ELSE_PARAMETER(EffluentPPConcentrationTimeseries, EffluentPPConcentration);
