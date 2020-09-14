@@ -116,14 +116,14 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	if(DataSet->IndexNames)
 	{
 		Copy->IndexNames = Copy->BucketMemory.Allocate<const char **>(Model->IndexSets.Count());
-		for(entity_handle IndexSetHandle = 0; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
+		for(index_set_h IndexSet : Model->IndexSets)
 		{
-			if(DataSet->IndexNames[IndexSetHandle])
+			if(DataSet->IndexNames[IndexSet.Handle])
 			{
-				Copy->IndexNames[IndexSetHandle] = Copy->BucketMemory.Allocate<const char *>(DataSet->IndexCounts[IndexSetHandle]);
-				for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
+				Copy->IndexNames[IndexSet.Handle] = Copy->BucketMemory.Allocate<const char *>(DataSet->IndexCounts[IndexSet.Handle]);
+				for(index_t Index = {IndexSet.Handle, 0}; Index < DataSet->IndexCounts[IndexSet.Handle]; ++Index)
 				{
-					Copy->IndexNames[IndexSetHandle][Index] = Copy->BucketMemory.CopyString(DataSet->IndexNames[IndexSetHandle][Index]);
+					Copy->IndexNames[IndexSet.Handle][Index] = Copy->BucketMemory.CopyString(DataSet->IndexNames[IndexSet.Handle][Index]);
 				}
 			}
 		}
@@ -134,14 +134,14 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	if(DataSet->BranchInputs)
 	{
 		Copy->BranchInputs = Copy->BucketMemory.Allocate<array<index_t> *>(Model->IndexSets.Count());
-		for(entity_handle IndexSetHandle = 0; IndexSetHandle < Model->IndexSets.Count(); ++IndexSetHandle)
+		for(index_set_h IndexSet : Model->IndexSets)
 		{
-			if(DataSet->BranchInputs[IndexSetHandle])
+			if(DataSet->BranchInputs[IndexSet.Handle])
 			{
-				Copy->BranchInputs[IndexSetHandle] = Copy->BucketMemory.Allocate<array<index_t>>(DataSet->IndexCounts[IndexSetHandle]);
-				for(index_t Index = {IndexSetHandle, 0}; Index < DataSet->IndexCounts[IndexSetHandle]; ++Index)
+				Copy->BranchInputs[IndexSet.Handle] = Copy->BucketMemory.Allocate<array<index_t>>(DataSet->IndexCounts[IndexSet.Handle]);
+				for(index_t Index = {IndexSet.Handle, 0}; Index < DataSet->IndexCounts[IndexSet.Handle]; ++Index)
 				{
-					Copy->BranchInputs[IndexSetHandle][Index] = DataSet->BranchInputs[IndexSetHandle][Index].Copy(&DataSet->BucketMemory);
+					Copy->BranchInputs[IndexSet.Handle][Index] = DataSet->BranchInputs[IndexSet.Handle][Index].Copy(&DataSet->BucketMemory);
 				}
 			}
 		}

@@ -200,9 +200,7 @@ DllSetBranchIndexes(void *DataSetPtr, char *IndexSetName, u64 IndexCount, dll_br
 	SetBranchIndexes(DataSet, token_string(IndexSetName), Inputs);
 	
 	if(DataSet->AllIndexesHaveBeenSet)
-	{
 		AllocateParameterStorage(DataSet);
-	}
 	
 	CHECK_ERROR_END
 }
@@ -1096,8 +1094,7 @@ DllGetBranchInputsCount(void *DataSetPtr, const char *IndexSetName, const char *
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	index_set_h IndexSet = GetIndexSetHandle(DataSet->Model, IndexSetName);
 	
-	index_set_type Type = DataSet->Model->IndexSets[IndexSet].Type;
-	if(Type != IndexSetType_Branched)
+	if(DataSet->Model->IndexSets[IndexSet].Type != IndexSetType_Branched)
 		FatalError("ERROR: Tried to read branch inputs from the index set ", IndexSetName, ", but that is not a branched index set.\n");
 	
 	index_t Index = GetIndex(DataSet, IndexSet, IndexName);

@@ -973,7 +973,7 @@ EndModelDefinition(mobius_model *Model)
 	std::cout << "\nSorted structure:\n";
 	for(equation_batch_group &Group : Model->BatchGroups)
 	{
-		if(Group.IndexSets.Count==0) std::cout << "[]"; 
+		if(Group.IndexSets.Count == 0) std::cout << "[]"; 
 		for(index_set_h IndexSet : Group.IndexSets)
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
 		std::cout << "\n";
@@ -1061,6 +1061,12 @@ EndModelDefinition(mobius_model *Model)
 			for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 			{
 				equation_batch &Batch = Model->EquationBatches[BatchIdx];
+				
+				if(IsValid(Batch.Solver))
+				{
+					solver_spec &SolverSpec = Model->Solvers[Batch.Solver];
+					if(IsValid(SolverSpec.hParam)) AllParameterDependenciesForBatchGroup.insert(SolverSpec.hParam);
+				}
 				
 				ForAllBatchEquations(Batch,
 				[Model, &AllParameterDependenciesForBatchGroup, &AllInputDependenciesForBatchGroup, &AllResultDependenciesForBatchGroup, &AllLastResultDependenciesForBatchGroup](equation_h Equation)
@@ -1175,9 +1181,7 @@ EndModelDefinition(mobius_model *Model)
 						array<index_set_h> &ThisResultDependsOn = Model->BatchGroups[ResultBatchGroupIndex].IndexSets;
 						
 						if(ThisResultDependsOn.Count == 0)
-						{
 							LastResultsToReadAtBase.push_back(Equation);
-						}
 					}
 				}
 			}
@@ -1477,7 +1481,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 					};
 				}
 				
-				double h = DataSet->hSolver[Batch.Solver.Handle]; // The desired solver step. (Guideline only, solver is free to its step during error correction).
+				// The desired solver step. (Guideline only, solver is free to correct its step during error correction).
+				double h = SolverSpec.h;
+				if(IsValid(SolverSpec.hParam)) h = RunState->CurParameters[SolverSpec.hParam.Handle].ValDouble;
 				
 				//NOTE: Solve the system using the provided solver
 				SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
@@ -1822,35 +1828,33 @@ RunModel(mobius_data_set *DataSet)
 	for(const mobius_preprocessing_step &PreprocessingStep : Model->PreprocessingSteps)
 		PreprocessingStep(DataSet);
 	
-	// If some solvers have parametrized step size, read in the actual value of the parameter from the parameter data, then store it for use when running the model.
-	if(DataSet->hSolver.Count == 0)
-		DataSet->hSolver.Allocate(&DataSet->BucketMemory, Model->Solvers.Count());
-	
-	for(solver_h Solver : Model->Solvers)
+	// Check if solver step size makes sense.
+	for(solver_h Solver: Model->Solvers)
 	{
-		const solver_spec &Spec = Model->Solvers[Solver];
-		double hValue;
+		const solver_spec &SolverSpec = Model->Solvers[Solver];
+		double Correct = true;
 		
-		if(IsValid(Spec.hParam))
+		if(IsValid(SolverSpec.hParam))
 		{
-			if(Model->Parameters[Spec.hParam].IndexSetDependencies.size() > 0)
-				WarningPrint("WARNING: The parameter \"", GetName(Model, Spec.hParam), "\" is used to control the step size of the solver \"", Spec.Name, "\". The parameter has one or more index set dependencies, but only the first value will be used.\n");
-			
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Spec.hParam.Handle);
-			hValue = DataSet->ParameterData[Offset].ValDouble;
+			parameter_h Par = SolverSpec.hParam;
+			ForeachParameterInstance(DataSet, SolverSpec.hParam, [DataSet, Par, &Correct](index_t *Indexes, size_t IndexesCount)
+			{
+				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, Par.Handle);
+				double h = DataSet->ParameterData[Offset].ValDouble;
+				if(h <= 0.0 || h > 1.0) Correct = false;
+			});
 		}
 		else
-			hValue = Spec.h;
+		{
+			double h = SolverSpec.h;
+			if(h <= 0.0 || h > 1.0) Correct = false;
+		}
 		
-		if(hValue <= 0.0 || hValue > 1.0)
-			FatalError("The solver \"", Spec.Name, "\" was given a step size that is smaller than 0 or larger than 1.\n");
-		
-		DataSet->hSolver[Solver.Handle] = hValue;
+		if(!Correct)
+			FatalError("ERROR: The solver \"", SolverSpec.Name, "\" was given a step that is not in the range (0,1]");
 	}
 	
 	///////////// Setting up fast lookup ////////////////////
-	
-	
 	
 	//NOTE: This is a hack, where we first set the Count for each array in the FastLookupCounter routine, then allocate, then set it to 0 to use it as an iterator in FastLookupSetupInnerLoop
 	ModelLoop(DataSet, &RunState, FastLookupCounter);

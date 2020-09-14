@@ -498,9 +498,7 @@ struct mobius_data_set
 	
 	parameter_value *ParameterData;
 	storage_structure ParameterStorageStructure;
-	
-	array<double> hSolver; //TODO: Should just be in the RunState?
-	
+		
 	double *InputData;
 	bool   *InputTimeseriesWasProvided;
 	storage_structure InputStorageStructure;
@@ -598,7 +596,7 @@ struct model_run_state
 	model_run_state(const mobius_model *Model)
 	{
 		Running = false;
-		DataSet = 0;
+		DataSet = nullptr;
 		this->Model = Model;
 	}
 	
@@ -914,7 +912,7 @@ RegisterParameter_(mobius_model *Model, parameter_group_h Group, const char *Nam
 }
 
 inline parameter_double_h
-RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, double Default, double Min = -DBL_MAX, double Max = DBL_MAX, const char *Description = 0, const char *ShortName = 0)
+RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, double Default, double Min = -DBL_MAX, double Max = DBL_MAX, const char *Description = nullptr, const char *ShortName = nullptr)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -926,7 +924,7 @@ RegisterParameterDouble(mobius_model *Model, parameter_group_h Group, const char
 }
 
 inline parameter_uint_h
-RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, u64 Default, u64 Min = 0, u64 Max = 0xffffffffffffffff, const char *Description = 0, const char *ShortName = 0)
+RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *Name, unit_h Unit, u64 Default, u64 Min = 0, u64 Max = 0xffffffffffffffff, const char *Description = nullptr, const char *ShortName = nullptr)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -938,7 +936,7 @@ RegisterParameterUInt(mobius_model *Model, parameter_group_h Group, const char *
 }
 
 inline parameter_bool_h
-RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *Name, bool Default, const char *Description = 0, const char *ShortName = 0)
+RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *Name, bool Default, const char *Description = nullptr, const char *ShortName = nullptr)
 {
 	REGISTRATION_BLOCK(Model)
 	
@@ -950,7 +948,7 @@ RegisterParameterBool(mobius_model *Model, parameter_group_h Group, const char *
 }
 
 inline parameter_time_h
-RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *Name, const char *Default, const char *Min = "1000-1-1", const char *Max = "3000-12-31", const char *Description = 0, const char *ShortName = 0)
+RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *Name, const char *Default, const char *Min = "1000-1-1", const char *Max = "3000-12-31", const char *Description = nullptr, const char *ShortName = nullptr)
 {
 	REGISTRATION_BLOCK(Model)
 	
