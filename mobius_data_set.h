@@ -45,7 +45,7 @@ mobius_data_set::~mobius_data_set()
 
 template<typename handle_type>
 static void
-CopyStorageStructure(const storage_structure<handle_type> *Source, storage_structure<handle_type> *Dest, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
+CopyStorageStructure(const storage_structure<handle_type> *Source, storage_structure<handle_type> *Dest, bucket_allocator *BucketMemory)
 {
 	//NOTE: Copy is not nested, so we still have to copy each array entry.
 	Dest->Units = Source->Units.Copy(BucketMemory);
@@ -55,17 +55,14 @@ CopyStorageStructure(const storage_structure<handle_type> *Source, storage_struc
 		Dest->Units[UnitIndex].Handles   = Source->Units[UnitIndex].Handles.Copy(BucketMemory);
 	}
 	
-	size_t UnitCount = Dest->Units.Count;
+	Dest->TotalCountForUnit      = Source->TotalCountForUnit.Copy(BucketMemory);
+	Dest->OffsetForUnit          = Source->OffsetForUnit.Copy(BucketMemory);
+	Dest->UnitForHandle          = Source->UnitForHandle.Copy(BucketMemory);
+	Dest->LocationOfHandleInUnit = Source->LocationOfHandleInUnit.Copy(BucketMemory);
+	Dest->TotalCount             = Source->TotalCount;
+	Dest->HasBeenSetUp           = Source->HasBeenSetUp;
 	
-	//TODO: It may be ok to have these as std::vector<size_t> instead of size_t*, in which case we would not have to do all this work doing explicit copies.
-	if(Source->TotalCountForUnit) Dest->TotalCountForUnit           = BucketMemory->Copy(Source->TotalCountForUnit, UnitCount);
-	if(Source->OffsetForUnit)     Dest->OffsetForUnit               = BucketMemory->Copy(Source->OffsetForUnit, UnitCount);
-	if(Source->UnitForHandle)     Dest->UnitForHandle               = BucketMemory->Copy(Source->UnitForHandle, FirstUnusedHandle);
-	if(Source->LocationOfHandleInUnit) Dest->LocationOfHandleInUnit = BucketMemory->Copy(Source->LocationOfHandleInUnit, FirstUnusedHandle);
-	Dest->TotalCount   = Source->TotalCount;
-	Dest->HasBeenSetUp = Source->HasBeenSetUp;
-	
-	Dest->Model = Source->Model;
+	Dest->Model                  = Source->Model;
 }
 
 static mobius_data_set *
@@ -80,13 +77,13 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	Copy->BucketMemory.Initialize(1024*1024);
 	
 	if(DataSet->ParameterData) Copy->ParameterData = CopyArray(parameter_value, DataSet->ParameterStorageStructure.TotalCount, DataSet->ParameterData);
-	CopyStorageStructure(&DataSet->ParameterStorageStructure, &Copy->ParameterStorageStructure, Model->Parameters.Count(), &Copy->BucketMemory);
+	CopyStorageStructure(&DataSet->ParameterStorageStructure, &Copy->ParameterStorageStructure, &Copy->BucketMemory);
 	
 	if(DataSet->InputData)
 		Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
 	
 	else Copy->InputData = nullptr; //Should not be necessary...
-	CopyStorageStructure(&DataSet->InputStorageStructure, &Copy->InputStorageStructure, Model->Inputs.Count(), &Copy->BucketMemory);
+	CopyStorageStructure(&DataSet->InputStorageStructure, &Copy->InputStorageStructure, &Copy->BucketMemory);
 	Copy->InputDataStartDate = DataSet->InputDataStartDate;
 	Copy->InputDataHasSeparateStartDate = DataSet->InputDataHasSeparateStartDate;
 	Copy->InputDataTimesteps = DataSet->InputDataTimesteps;
@@ -96,7 +93,7 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	if(CopyResults)
 	{
 		if(DataSet->ResultData) Copy->ResultData = CopyArray(double, DataSet->ResultStorageStructure.TotalCount * (DataSet->TimestepsLastRun + 1), DataSet->ResultData);
-		CopyStorageStructure(&DataSet->ResultStorageStructure, &Copy->ResultStorageStructure, Model->Equations.Count(), &Copy->BucketMemory);
+		CopyStorageStructure(&DataSet->ResultStorageStructure, &Copy->ResultStorageStructure, &Copy->BucketMemory);
 		Copy->TimestepsLastRun = DataSet->TimestepsLastRun;
 		Copy->StartDateLastRun = DataSet->StartDateLastRun;
 		Copy->HasBeenRun = DataSet->HasBeenRun;
@@ -150,10 +147,10 @@ SetupStorageStructureSpecifer(storage_structure<handle_type> *Structure, index_t
 	//TODO Call FirstUnusedHandle   TotalHandleCount or something like that instead?
 	
 	size_t UnitCount = Structure->Units.Count;
-	Structure->TotalCountForUnit = BucketMemory->Allocate<size_t>(UnitCount);
-	Structure->OffsetForUnit     = BucketMemory->Allocate<size_t>(UnitCount);
-	Structure->UnitForHandle     = BucketMemory->Allocate<size_t>(FirstUnusedHandle);
-	Structure->LocationOfHandleInUnit = BucketMemory->Allocate<size_t>(FirstUnusedHandle);
+	Structure->TotalCountForUnit.Allocate(BucketMemory, UnitCount);
+	Structure->OffsetForUnit.Allocate(BucketMemory, UnitCount);
+	Structure->UnitForHandle.Allocate(BucketMemory, FirstUnusedHandle);
+	Structure->LocationOfHandleInUnit.Allocate(BucketMemory, FirstUnusedHandle);
 	Structure->TotalCount = 0;
 	
 	size_t UnitIndex = 0;

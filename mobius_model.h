@@ -363,10 +363,10 @@ struct storage_structure
 {
 	array<storage_unit_specifier<handle_type>> Units;
 	
-	size_t *TotalCountForUnit;   //TODO: Make array<size_t>!
-	size_t *OffsetForUnit;
-	size_t *UnitForHandle;
-	size_t *LocationOfHandleInUnit;       // Units[UnitForHandle[H]].Handles[LocationOfHandleInUnit[H]] == H;
+	array<size_t> TotalCountForUnit;   //TODO: Make array<size_t>!
+	array<size_t> OffsetForUnit;
+	array<size_t> UnitForHandle;
+	array<size_t> LocationOfHandleInUnit;       // Units[UnitForHandle[H]].Handles[LocationOfHandleInUnit[H]] == H;
 	size_t TotalCount;
 	
 	bool HasBeenSetUp = false;
