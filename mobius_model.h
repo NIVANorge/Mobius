@@ -1581,28 +1581,20 @@ GetInputCount(model_run_state *RunState, index_set_h IndexSet)
 
 //NOTE: Ideally we just want to iterate over the  BranchInputs[IndexSet.Handle][Branch] array. The only complicated part is that it can't do that in the registration run, and instead has to iterate over another object that has just one index.
 
-struct branch_input_iterator
-{
-	array<index_t> *BranchInputs;
-	index_t     DummyIndexes[2];
-	
-	index_t     *begin() {return BranchInputs ? BranchInputs->begin() : &DummyIndexes[0]; }
-	index_t     *end()   {return BranchInputs ? BranchInputs->end()   : &DummyIndexes[1]; }
-};
-
-inline branch_input_iterator
+inline array<index_t>&
 BranchInputs(model_run_state *RunState, index_set_h IndexSet, index_t Index)
 {
-	branch_input_iterator Result;
+	//TODO: This could break if you do nested branch iteration, but we don't have a use-case for that...
+	static index_t     DummyIndex;
+	static array<index_t> DummyIndexes;
+	
 	if(RunState->Running)
-		Result.BranchInputs = &RunState->DataSet->BranchInputs[IndexSet.Handle][Index.Index];
-	else
-	{
-		Result.BranchInputs = nullptr;
-		Result.DummyIndexes[0] = index_t { IndexSet.Handle, 0};
-		Result.DummyIndexes[1] = index_t { IndexSet.Handle, 1};
-	}
-	return Result;
+		return RunState->DataSet->BranchInputs[IndexSet.Handle][Index.Index];
+	
+	DummyIndex = index_t { IndexSet.Handle, 0};
+	DummyIndexes.Count = 1;
+	DummyIndexes.Data = &DummyIndex;
+	return DummyIndexes;
 }
 
 #define BRANCH_INPUTS(IndexSet) BranchInputs(RunState__, IndexSet, CURRENT_INDEX(IndexSet))
