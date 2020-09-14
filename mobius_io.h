@@ -62,7 +62,7 @@ WriteParameterValues(FILE *File, parameter_h Parameter, parameter_type Type, mob
 {
 	if(IndexSetCount == 0)
 	{
-		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter.Handle);
+		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter);
 		parameter_value Value = DataSet->ParameterData[Offset];
 		WriteParameterValue(File, Value, Type);
 		return;
@@ -76,7 +76,7 @@ WriteParameterValues(FILE *File, parameter_h Parameter, parameter_type Type, mob
 		Indexes[Level] = Index;
 		if(Level + 1 == IndexSetCount)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexSetCount, DataSet->IndexCounts, Parameter.Handle);
+			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexSetCount, DataSet->IndexCounts, Parameter);
 			parameter_value Value = DataSet->ParameterData[Offset];
 			WriteParameterValue(File, Value, Type);
 			if(Index + 1 != IndexCount) fprintf(File, " ");
@@ -602,7 +602,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					}
 				}
 				
-				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexSets.size(), DataSet->IndexCounts, Input.Handle);
+				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexSets.size(), DataSet->IndexCounts, Input);
 				
 				Offsets.push_back(Offset);
 			}
@@ -617,7 +617,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				Stream.PrintErrorHeader();
 				FatalError("Did not get the right amount of indexes for input \"", InputName, "\". Got 0, expected ", IndexSets.size(), ".\n");
 			}
-			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input.Handle);
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
 			Offsets.push_back(Offset);
 		}
 		

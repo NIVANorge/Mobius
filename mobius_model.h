@@ -34,6 +34,7 @@ MODEL_ENTITY_HANDLE(parameter_group_h)
 { \
 	entity_handle Handle; \
 	operator parameter_h() const { return {Handle}; } \
+	void operator=(const parameter_h &Other) { Handle = Other.Handle; } \
 }; \
 bool operator==(const Type &A, const Type &B) { return A.Handle == B.Handle; } \
 bool operator!=(const Type &A, const Type &B) { return A.Handle != B.Handle; } \
@@ -47,20 +48,6 @@ MODEL_PARAMETER_HANDLE(parameter_bool_h)
 MODEL_PARAMETER_HANDLE(parameter_time_h)
 #undef MODEL_PARAMETER_HANDLE
 
-enum entity_type   //NOTE: Is currently only used so that the storage_structure knows what it is storing and can ask the Model for the name associated to a handle if an error occurs.
-{
-	EntityType_Parameter,
-	EntityType_Input,
-	EntityType_Equation,
-};
-
-inline const char *
-GetEntityTypeName(entity_type Type)
-{
-	//NOTE: It is important that this matches the above enum:
-	const char *Typenames[3] = {"parameter", "input", "equation"};
-	return Typenames[(size_t)Type];
-}
 
 
 struct index_t
@@ -362,19 +349,21 @@ struct equation_batch_group
 };
 
 
+template<typename handle_type>
 struct storage_unit_specifier
 {
 	array<index_set_h> IndexSets;
-	array<entity_handle> Handles;      //TODO: We could template this on the handle type to make it safer.
+	array<handle_type> Handles;
 };
 
 struct mobius_model;
 
+template<typename handle_type>
 struct storage_structure
 {
-	array<storage_unit_specifier> Units;
+	array<storage_unit_specifier<handle_type>> Units;
 	
-	size_t *TotalCountForUnit;
+	size_t *TotalCountForUnit;   //TODO: Make array<size_t>!
 	size_t *OffsetForUnit;
 	size_t *UnitForHandle;
 	size_t *LocationOfHandleInUnit;       // Units[UnitForHandle[H]].Handles[LocationOfHandleInUnit[H]] == H;
@@ -382,12 +371,14 @@ struct storage_structure
 	
 	bool HasBeenSetUp = false;
 	
-	//NOTE: The following two are only here in case we need to look up the name of an index set or handle when reporting an error about misindexing if the MOBIUS_INDEX_BOUNDS_TESTS is turned on. It is not that clean to have this information here, though :(
+	//NOTE: The model pointer is only here in case we need to look up the name of an index set or handle when reporting an error about misindexing if the MOBIUS_INDEX_BOUNDS_TESTS is turned on. It is not that clean to have this information here, though :(
 	const mobius_model *Model;
-	entity_type Type;
 };
 
-typedef std::unordered_map<token_string, entity_handle, token_string_hash_function> string_map;
+template <typename handle_type>
+using string_map = std::unordered_map<token_string, handle_type, token_string_hash_function>;
+
+//typedef std::unordered_map<token_string, entity_handle, token_string_hash_function> string_map;
 
 struct mobius_data_set;
 typedef std::function<void(mobius_data_set *)> mobius_preprocessing_step;
@@ -397,7 +388,7 @@ template <typename handle_type, typename spec_type>
 struct entity_registry
 {
 	std::vector<spec_type> Specs;
-	string_map NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
+	string_map<handle_type> NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
 	
 	entity_registry() { Specs.push_back({}); } //NOTE: Reserving the 0 index as an invalid index. TODO: Should maybe use U32_MAX instead, but would require some rework, and 0 is safer since we can then just 0-initialize everything.
 	
@@ -405,22 +396,18 @@ struct entity_registry
 	{
 		auto Find = NameToHandle.find(Name);
 		if(Find != NameToHandle.end())
-			return {Find->second};
+			return Find->second;
 		else
 		{
 			entity_handle Handle = (entity_handle)Specs.size();
 			Specs.push_back({});
 			Specs[Handle].Name = Name;
-			NameToHandle[Name] = Handle;
+			NameToHandle[Name] = {Handle};
 			return {Handle};
 		}
 	}
 	
-	bool Has(const char *Name) const
-	{
-		auto Find = NameToHandle.find(Name);
-		return Find != NameToHandle.end();
-	}
+	bool Has(const char *Name) const { return NameToHandle.find(Name) != NameToHandle.end(); }
 	
 	      spec_type& operator[](handle_type Handle)       { return Specs[Handle.Handle]; }
 	const spec_type& operator[](handle_type Handle) const { return Specs[Handle.Handle]; }
@@ -497,21 +484,21 @@ struct mobius_data_set
 	bucket_allocator BucketMemory;   //NOTE: Important! This should only be used for storage of "small" arrays such as IndexCounts or IndexNames, NOT the large arrays such as InputData or ResultData.
 	
 	parameter_value *ParameterData;
-	storage_structure ParameterStorageStructure;
+	storage_structure<parameter_h> ParameterStorageStructure;
 		
 	double *InputData;
 	bool   *InputTimeseriesWasProvided;
-	storage_structure InputStorageStructure;
+	storage_structure<input_h> InputStorageStructure;
 	datetime InputDataStartDate;
 	bool InputDataHasSeparateStartDate = false; //NOTE: Whether or not a start date was provided for the input data, which is potentially different from the start date of the model run.
 	u64 InputDataTimesteps;
 	
 	double *ResultData;
-	storage_structure ResultStorageStructure;
+	storage_structure<equation_h> ResultStorageStructure;
 	
 	index_t *IndexCounts;
 	const char ***IndexNames;  // IndexNames[IndexSet.Handle][IndexNamesToHandle[IndexSet.Handle][IndexName]] == IndexName;
-	std::vector<string_map> IndexNamesToHandle;
+	std::vector<string_map<u32>> IndexNamesToHandle;
 	bool AllIndexesHaveBeenSet;
 	
 	//TODO: could make this array<array<array<index_t>>>, but I don't know if it improves the code..
@@ -696,39 +683,13 @@ GET_ENTITY_NAME(module_h, Modules)
 #undef GET_ENTITY_NAME
 
 
-//TODO: This one is only really used in one place: Move it there instead?
-inline const char *
-GetName(const mobius_model *Model, entity_type Type, entity_handle Handle)
-{
-	switch(Type)
-	{
-		case EntityType_Parameter:
-		return GetName(Model, parameter_h {Handle});
-		break;
-		
-		case EntityType_Input:
-		return GetName(Model, input_h {Handle});
-		break;
-		
-		case EntityType_Equation:
-		return GetName(Model, equation_h {Handle});
-		break;
-		
-		default:
-		FatalError("ERROR: (internal) ended up with wrong entity type!?\n");
-		return "unknown entity type";
-	}
-}
-
 #define GET_ENTITY_HANDLE(Type, Registry, Typename) \
 inline Type Get##Typename##Handle(const mobius_model *Model, const token_string &Name) \
 { \
-	entity_handle Handle = 0; \
+	Type Handle = {0}; \
 	auto Find = Model->Registry.NameToHandle.find(Name); \
 	if(Find != Model->Registry.NameToHandle.end()) \
-	{ \
 		Handle = Find->second; \
-	} \
 	else \
 	{ \
 		if(!Model->Finalized && IsValid(Model->CurrentModule)) \
@@ -737,11 +698,11 @@ inline Type Get##Typename##Handle(const mobius_model *Model, const token_string 
 		} \
 		FatalError("ERROR: Tried to look up the handle of the ", #Typename, " \"", Name, "\", but it was not registered with the model.\n"); \
 	} \
-	return { Handle }; \
+	return Handle; \
 } \
 inline Type Get##Typename##Handle(const mobius_model *Model, const token_string &Name, bool &Success) \
 { \
-	entity_handle Handle = 0; \
+	Type Handle = {0}; \
 	auto Find = Model->Registry.NameToHandle.find(Name); \
 	if(Find != Model->Registry.NameToHandle.end()) \
 	{ \
@@ -749,10 +710,8 @@ inline Type Get##Typename##Handle(const mobius_model *Model, const token_string 
 		Handle = Find->second; \
 	} \
 	else \
-	{ \
 		Success = false; \
-	} \
-	return { Handle }; \
+	return Handle; \
 } \
 
 GET_ENTITY_HANDLE(equation_h, Equations, Equation)
@@ -1362,9 +1321,9 @@ GetCurrentParameter(model_run_state *RunState, parameter_bool_h Parameter)
 }
 
 
-size_t OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, const index_t *IndexCounts, const index_t *OverrideIndexes, size_t OverrideCount, entity_handle Handle);
-
-
+//NOTE: Defined in mobius_data_set.h
+template<typename handle_type>
+size_t OffsetForHandle(storage_structure<handle_type> &Structure, const index_t* CurrentIndexes, const index_t *IndexCounts, const index_t *OverrideIndexes, size_t OverrideCount, handle_type Handle);
 
 template<typename... T> double
 GetCurrentParameter(model_run_state *RunState, parameter_double_h Parameter, T... Indexes)
@@ -1372,7 +1331,7 @@ GetCurrentParameter(model_run_state *RunState, parameter_double_h Parameter, T..
 	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, (parameter_h)Parameter);
 	return DataSet->ParameterData[Offset].ValDouble;
 }
 
@@ -1382,7 +1341,7 @@ GetCurrentParameter(model_run_state *RunState, parameter_uint_h Parameter, T... 
 	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, (parameter_h)Parameter);
 	return DataSet->ParameterData[Offset].ValUInt;
 }
 
@@ -1392,7 +1351,7 @@ GetCurrentParameter(model_run_state *RunState, parameter_bool_h Parameter, T... 
 	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, (parameter_h)Parameter);
 	return DataSet->ParameterData[Offset].ValBool;
 }
 
@@ -1415,7 +1374,7 @@ GetCurrentResult(model_run_state *RunState, equation_h Result, T... Indexes)
 	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result);
 	return RunState->AllCurResultsBase[Offset];
 }
 
@@ -1426,7 +1385,7 @@ GetLastResult(model_run_state *RunState, equation_h Result, T... Indexes)
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
 
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result);
 	return RunState->AllLastResultsBase[Offset];
 }
 
@@ -1436,7 +1395,7 @@ GetEarlierResult(model_run_state *RunState, equation_h Result, u64 StepBack, T..
 	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result);
 	
 	//TODO: Make proper accessor for this that belongs to mobius_data_set.cpp so that this file does not need to have knowledge of the inner workings of the storage system.
 	double *Initial = DataSet->ResultData + Offset;
@@ -1538,7 +1497,7 @@ SetResult(model_run_state *RunState, double Value, equation_h Result, T... Index
 	mobius_data_set *DataSet = RunState->DataSet;
 	const size_t OverrideCount = sizeof...(Indexes);
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, Result);
 	RunState->AllCurResultsBase[Offset] = Value;
 }
 
@@ -1546,7 +1505,7 @@ void
 SetResult(model_run_state *RunState, double Value, equation_h Result)
 {
 	mobius_data_set *DataSet = RunState->DataSet;
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, nullptr, 0, Result.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, nullptr, 0, Result);
 	RunState->AllCurResultsBase[Offset] = Value;
 	RunState->CurResults[Result.Handle] = Value;
 }

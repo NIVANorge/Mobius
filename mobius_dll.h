@@ -822,9 +822,7 @@ DllIsParameterGroupName(void *DataSetPtr, char *Name)
 {
 	CHECK_ERROR_BEGIN
 	
-	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	
-	return DataSet->Model->ParameterGroups.NameToHandle.find(Name) != DataSet->Model->ParameterGroups.NameToHandle.end();
+	return ((mobius_data_set *)DataSetPtr)->Model->ParameterGroups.Has(Name);
 	
 	CHECK_ERROR_END
 	

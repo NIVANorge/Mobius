@@ -1390,7 +1390,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 			if(IsValid(Batch.Conditional)) //TODO: This is inefficient for now. We should pre-determine what batches are going to be executed for what indexes. This can then also be used to e.g. inform the UI about this.
 			{
 				const conditional_spec &Conditional = Model->Conditionals[Batch.Conditional];
-				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Conditional.Switch.Handle);
+				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Conditional.Switch);
 				parameter_value SwitchValue = DataSet->ParameterData[Offset];
 				if(SwitchValue != Conditional.Value)
 				{
@@ -1545,26 +1545,26 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 		for(parameter_h Parameter : BatchGroup.IterationData[CurrentLevel].ParametersToRead)
 		{
 			//NOTE: Parameters are special here in that we can just store the value in the fast lookup, instead of the offset. This is because they don't change with the timestep.
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Parameter.Handle);
+			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Parameter);
 			parameter_value Value = DataSet->ParameterData[Offset];
 			RunState->FastParameterLookup[RunState->FastParameterLookup.Count++] = Value;
 		}
 		
 		for(input_h Input : BatchGroup.IterationData[CurrentLevel].InputsToRead)
 		{
-			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Input.Handle);
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Input);
 			RunState->FastInputLookup[RunState->FastInputLookup.Count++] = Offset;
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].ResultsToRead)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
+			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation);
 			RunState->FastResultLookup[RunState->FastResultLookup.Count++] = Offset;
 		}
 		
 		for(equation_h Equation : BatchGroup.IterationData[CurrentLevel].LastResultsToRead)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
+			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation);
 			RunState->FastLastResultLookup[RunState->FastLastResultLookup.Count++] = Offset;
 		}
 	}
@@ -1572,7 +1572,7 @@ INNER_LOOP_BODY(FastLookupSetupInnerLoop)
 	{
 		for(equation_h Equation : BatchGroup.LastResultsToReadAtBase)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation.Handle);
+			size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Equation);
 			RunState->FastLastResultLookup[RunState->FastLastResultLookup.Count++] = Offset;
 		}
 	}
@@ -1588,26 +1588,18 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 	double Initial = 0.0;
 	if(IsValid(Spec.InitialValue))
 	{
-		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Spec.InitialValue.Handle);
+		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, (parameter_h)Spec.InitialValue);
 		//NOTE: We should not get a type mismatch here since we only allow for registering initial values using handles of type parameter_double_h. Thus we do not need to test for which type it is.
 		Initial = DataSet->ParameterData[Offset].ValDouble;
 	}
 	else if(Spec.HasExplicitInitialValue)
-	{
 		Initial = Spec.ExplicitInitialValue;
-	}
 	else if(IsValid(Spec.InitialValueEquation))
-	{
 		Initial = Model->EquationBodies[Spec.InitialValueEquation.Handle](RunState);
-	}
 	else
-	{
 		//NOTE: Equations without any type of initial value act as their own initial value equation
 		Initial = Model->EquationBodies[Equation.Handle](RunState);
-	}
 	
-	//std::cout << "Initial value of " << GetName(Model, Equation) << " is " << Initial << std::endl;
- 	
 	size_t ResultStorageLocation = DataSet->ResultStorageStructure.LocationOfHandleInUnit[Equation.Handle];
 	
 	RunState->AtResult[ResultStorageLocation] = Initial;
@@ -1691,21 +1683,17 @@ ProcessComputedParameters(mobius_data_set *DataSet, model_run_state *RunState)
 					
 					for(parameter_h DependentParameter : EqSpec.ParameterDependencies)
 					{
-						size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, DependentParameter.Handle);
+						size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, DependentParameter);
 						RunState->CurParameters[DependentParameter.Handle] = DataSet->ParameterData[Offset];
 					}
 					
-					size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, Parameter.Handle);
+					size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, Parameter);
 					double ValD = DataSet->Model->EquationBodies[Equation.Handle](RunState);
 					parameter_value Value;
 					if(Spec.Type == ParameterType_Double)
-					{
 						Value.ValDouble = ValD;
-					}
 					else if(Spec.Type == ParameterType_UInt)
-					{
 						Value.ValUInt = (u64)ValD; //Or should we do a more sophisticated rounding?
-					}
 					DataSet->ParameterData[Offset] = Value;
 				}
 			);
@@ -1754,7 +1742,7 @@ RunModel(mobius_data_set *DataSet)
 		{
 			const module_spec &ModuleSpec = Model->Modules[Module];
 			std::cout << ModuleSpec.Name << " V" << ModuleSpec.Version;
-			if(ModuleHandle != Model->Modules.Count()-1) std::cout << ", ";
+			if(Module.Handle != Model->Modules.Count()-1) std::cout << ", ";
 		}
 		std::cout << ")";
 	}
@@ -1839,7 +1827,7 @@ RunModel(mobius_data_set *DataSet)
 			parameter_h Par = SolverSpec.hParam;
 			ForeachParameterInstance(DataSet, SolverSpec.hParam, [DataSet, Par, &Correct](index_t *Indexes, size_t IndexesCount)
 			{
-				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, Par.Handle);
+				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, Par);
 				double h = DataSet->ParameterData[Offset].ValDouble;
 				if(h <= 0.0 || h > 1.0) Correct = false;
 			});
@@ -1899,20 +1887,20 @@ RunModel(mobius_data_set *DataSet)
 	//NOTE: If any system parameters exist, the storage units are sorted such that the system parameters have to belong to storage unit [0].
 	if(DataSet->ParameterStorageStructure.Units.Count != 0 && DataSet->ParameterStorageStructure.Units[0].IndexSets.Count == 0)
 	{
-		for(entity_handle ParameterHandle : DataSet->ParameterStorageStructure.Units[0].Handles)
+		for(parameter_h Parameter : DataSet->ParameterStorageStructure.Units[0].Handles)
 		{
-			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, ParameterHandle);
-			RunState.CurParameters[ParameterHandle] = DataSet->ParameterData[Offset];
+			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter);
+			RunState.CurParameters[Parameter.Handle] = DataSet->ParameterData[Offset];
 		}
 	}
 	
 	//NOTE: Similarly we have to set which of the unindexed inputs were provided.
 	if(DataSet->InputStorageStructure.Units.Count != 0 && DataSet->InputStorageStructure.Units[0].IndexSets.Count == 0)
 	{
-		for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
+		for(input_h Input : DataSet->InputStorageStructure.Units[0].Handles)
 		{
-			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, InputHandle);
-			RunState.CurInputWasProvided[InputHandle] = DataSet->InputTimeseriesWasProvided[Offset];
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
+			RunState.CurInputWasProvided[Input.Handle] = DataSet->InputTimeseriesWasProvided[Offset];
 		}
 	}
 	
@@ -1934,10 +1922,10 @@ RunModel(mobius_data_set *DataSet)
 	//NOTE: We have to update the inputs that don't depend on any index sets here, as that is not handled by the "fast lookup system".
 	if(DataSet->InputStorageStructure.Units.Count != 0 && DataSet->InputStorageStructure.Units[0].IndexSets.Count == 0)
 	{
-		for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
+		for(input_h Input : DataSet->InputStorageStructure.Units[0].Handles)
 		{
-			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, InputHandle);
-			RunState.CurInputs[InputHandle] = RunState.AllCurInputsBase[Offset];
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
+			RunState.CurInputs[Input.Handle] = RunState.AllCurInputsBase[Offset];
 		}
 	}
 #if MOBIUS_TIMESTEP_VERBOSITY >= 1
@@ -1984,10 +1972,10 @@ RunModel(mobius_data_set *DataSet)
 		//NOTE: We have to update the inputs that don't depend on any index sets here, as that is not handled by the "fast lookup system".
 		if(DataSet->InputStorageStructure.Units.Count != 0 && DataSet->InputStorageStructure.Units[0].IndexSets.Count == 0)
 		{
-			for(entity_handle InputHandle : DataSet->InputStorageStructure.Units[0].Handles)
+			for(input_h Input : DataSet->InputStorageStructure.Units[0].Handles)
 			{
-				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, InputHandle);
-				RunState.CurInputs[InputHandle] = RunState.AllCurInputsBase[Offset];
+				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
+				RunState.CurInputs[Input.Handle] = RunState.AllCurInputsBase[Offset];
 			}
 		}
 		
@@ -2112,8 +2100,8 @@ PrintParameterStorageStructure(mobius_data_set *DataSet)
 			std::cout << "[]";
 		for(index_set_h IndexSet : IndexSets)
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
-		for(entity_handle ParameterHandle : DataSet->ParameterStorageStructure.Units[StorageIdx].Handles)
-			std::cout << "\n\t" << GetName(Model, parameter_h {ParameterHandle});
+		for(parameter_h Parameter : DataSet->ParameterStorageStructure.Units[StorageIdx].Handles)
+			std::cout << "\n\t" << GetName(Model, Parameter);
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;
@@ -2139,9 +2127,8 @@ PrintInputStorageStructure(mobius_data_set *DataSet)
 			std::cout << "[]";
 		for(index_set_h IndexSet : IndexSets)
 			std::cout << "[" << GetName(Model, IndexSet) << "]";
-		for(entity_handle Handle : DataSet->InputStorageStructure.Units[StorageIdx].Handles)
-			std::cout << "\n\t" << GetName(Model, input_h {Handle});
-
+		for(input_h Handle : DataSet->InputStorageStructure.Units[StorageIdx].Handles)
+			std::cout << "\n\t" << GetName(Model, Handle);
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;
@@ -2168,7 +2155,7 @@ PrintEquationProfiles(mobius_data_set *DataSet, model_run_state *RunState)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			std::cout << "\n\t-----";
-			if(Batch.Type == BatchType_Solver) std::cout << " Solver \"" << GetName(Model, Batch.Solver) << "\"";
+			if(IsValid(Batch.Solver)) std::cout << " Solver \"" << GetName(Model, Batch.Solver) << "\"";
 			
 			ForAllBatchEquations(Batch,
 			[Model, RunState, &TotalHits, &SumCc](equation_h Equation)

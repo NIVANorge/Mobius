@@ -26,13 +26,8 @@ GenerateDataSet(mobius_model *Model)
 	}
 	
 	DataSet->ParameterStorageStructure.Model = Model;
-	DataSet->ParameterStorageStructure.Type  = EntityType_Parameter;
-	
 	DataSet->InputStorageStructure.Model     = Model;
-	DataSet->InputStorageStructure.Type      = EntityType_Input;
-	
 	DataSet->ResultStorageStructure.Model    = Model;
-	DataSet->ResultStorageStructure.Type     = EntityType_Equation;
 	
 	DataSet->TimestepsLastRun = 0;
 	
@@ -48,8 +43,9 @@ mobius_data_set::~mobius_data_set()
 	BucketMemory.DeallocateAll();
 }
 
+template<typename handle_type>
 static void
-CopyStorageStructure(const storage_structure *Source, storage_structure *Dest, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
+CopyStorageStructure(const storage_structure<handle_type> *Source, storage_structure<handle_type> *Dest, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
 {
 	//NOTE: Copy is not nested, so we still have to copy each array entry.
 	Dest->Units = Source->Units.Copy(BucketMemory);
@@ -87,9 +83,8 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	CopyStorageStructure(&DataSet->ParameterStorageStructure, &Copy->ParameterStorageStructure, Model->Parameters.Count(), &Copy->BucketMemory);
 	
 	if(DataSet->InputData)
-	{
 		Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
-	}
+	
 	else Copy->InputData = nullptr; //Should not be necessary...
 	CopyStorageStructure(&DataSet->InputStorageStructure, &Copy->InputStorageStructure, Model->Inputs.Count(), &Copy->BucketMemory);
 	Copy->InputDataStartDate = DataSet->InputDataStartDate;
@@ -107,9 +102,7 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 		Copy->HasBeenRun = DataSet->HasBeenRun;
 	}
 	else
-	{
 		Copy->HasBeenRun = false;
-	}
 	
 	if(DataSet->IndexCounts) Copy->IndexCounts = Copy->BucketMemory.Copy(DataSet->IndexCounts, Model->IndexSets.Count());
 	
@@ -150,8 +143,9 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	return Copy;
 }
 
+template<typename handle_type>
 static void
-SetupStorageStructureSpecifer(storage_structure *Structure, index_t *IndexCounts, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
+SetupStorageStructureSpecifer(storage_structure<handle_type> *Structure, index_t *IndexCounts, size_t FirstUnusedHandle, bucket_allocator *BucketMemory)
 {
 	//TODO Call FirstUnusedHandle   TotalHandleCount or something like that instead?
 	
@@ -164,19 +158,17 @@ SetupStorageStructureSpecifer(storage_structure *Structure, index_t *IndexCounts
 	
 	size_t UnitIndex = 0;
 	size_t OffsetForUnitSoFar = 0;
-	for(storage_unit_specifier &Unit : Structure->Units)
+	for(storage_unit_specifier<handle_type> &Unit : Structure->Units)
 	{
 		Structure->TotalCountForUnit[UnitIndex] = Unit.Handles.Count;
 		for(index_set_h IndexSet : Unit.IndexSets)
-		{
 			Structure->TotalCountForUnit[UnitIndex] *= IndexCounts[IndexSet.Handle];
-		}
 		
 		size_t HandleIdx = 0;
-		for(entity_handle Handle : Unit.Handles)
+		for(handle_type Handle : Unit.Handles)
 		{
-			Structure->UnitForHandle[Handle] = UnitIndex;
-			Structure->LocationOfHandleInUnit[Handle] = HandleIdx;
+			Structure->UnitForHandle[Handle.Handle] = UnitIndex;
+			Structure->LocationOfHandleInUnit[Handle.Handle] = HandleIdx;
 			++HandleIdx;
 		}
 		
@@ -196,12 +188,13 @@ SetupStorageStructureSpecifer(storage_structure *Structure, index_t *IndexCounts
 
 
 // NOTE: Returns the storage index of the first instance of a value corresponding to this Handle, i.e where all indexes that this handle depends on are the first index of their index set.
+template<typename handle_type>
 inline size_t
-OffsetForHandle(storage_structure &Structure, entity_handle Handle)
+OffsetForHandle(storage_structure<handle_type> &Structure, handle_type Handle)
 {
-	size_t UnitIndex = Structure.UnitForHandle[Handle];
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
 	size_t OffsetForUnit = Structure.OffsetForUnit[UnitIndex];
-	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle];
+	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle.Handle];
 	
 	return OffsetForUnit + LocationOfHandleInUnit;
 }
@@ -211,15 +204,27 @@ OffsetForHandle(storage_structure &Structure, entity_handle Handle)
 #define MOBIUS_INDEX_BOUNDS_TESTS 0
 #endif
 
+template<typename handle_type> const char *
+GetHandleTypeName() { FatalError("INTERNAL ERROR: Tried to look up the name of an unknown type\n."); return ""; }
+template<> const char *
+GetHandleTypeName<parameter_h>() { return "Parameter"; }
+template<> const char *
+GetHandleTypeName<input_h>() { return "Input"; }
+template<> const char *
+GetHandleTypeName<equation_h>() { return "Equation"; }
+
+
+
+template<typename handle_type>
 inline void
-CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index, size_t Count, entity_type Type, entity_handle Handle)
+CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index, size_t Count, handle_type Handle)
 {
 	bool CountError = (Index >= Count);
 	bool HandleError = (Index.IndexSetHandle != IndexSet.Handle);
 	if(CountError || HandleError)
 	{
-		const char *EntityName = GetName(Model, Type, Handle);
-		const char *TypeName   = GetEntityTypeName(Type);
+		const char *EntityName = GetName(Model, Handle);
+		const char *TypeName   = GetHandleTypeName<handle_type>();
 		if(CountError)
 			ErrorPrint("ERROR: Index out of bounds for index set \"", GetName(Model, IndexSet), "\", got index ", Index, ", count was ", Count, '\n');
 		if(HandleError)
@@ -231,14 +236,15 @@ CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index,
 // NOTE: Returns the storage index of a value corresponding to this Handle with the given index set indexes.
 // CurrentIndexes must be set up so that for any index set with handle IndexSetHandle, CurrentIndexes[IndexSetHandle] is the current index of that index set. (Typically ValueSet->CurrentIndexes)
 // IndexCounts    must be set up so that for any index set with handle IndexSetHandle, IndexCounts[IndexSetHandle] is the index count of that index set. (Typically DataSet->IndexCounts)
+template<typename handle_type>
 inline size_t
-OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, const index_t *IndexCounts, entity_handle Handle)
+OffsetForHandle(storage_structure<handle_type> &Structure, const index_t *CurrentIndexes, const index_t *IndexCounts, handle_type Handle)
 {
-	size_t UnitIndex = Structure.UnitForHandle[Handle];
-	storage_unit_specifier &Specifier = Structure.Units[UnitIndex];
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
+	storage_unit_specifier<handle_type> &Specifier = Structure.Units[UnitIndex];
 	size_t NumHandlesInUnitInstance = Specifier.Handles.Count;
 	size_t OffsetForUnit = Structure.OffsetForUnit[UnitIndex];
-	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle];
+	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle.Handle];
 	
 	size_t InstanceOffset = 0;
 	for(index_set_h IndexSet : Specifier.IndexSets)
@@ -247,7 +253,7 @@ OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, con
 		index_t Index = CurrentIndexes[IndexSet.Handle];
 		
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -261,14 +267,15 @@ OffsetForHandle(storage_structure &Structure, const index_t *CurrentIndexes, con
 // Indexes must be set up so that Indexes[I] is the index of the I'th index set that the entity one wishes to look up depends on.
 // IndexesCount is the number of index sets the entity depends on (and so the length of the array Indexes).
 // IndexCounts    must be set up so that for any index set with handle IndexSetHandle, IndexCounts[IndexSetHandle] is the index count of that index set. (Typically DataSet->IndexCounts)
+template<typename handle_type>
 inline size_t
-OffsetForHandle(storage_structure &Structure, const index_t *Indexes, size_t IndexesCount, const index_t *IndexCounts, entity_handle Handle)
+OffsetForHandle(storage_structure<handle_type> &Structure, const index_t *Indexes, size_t IndexesCount, const index_t *IndexCounts, handle_type Handle)
 {
-	size_t UnitIndex = Structure.UnitForHandle[Handle];
-	storage_unit_specifier &Specifier = Structure.Units[UnitIndex];
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
+	storage_unit_specifier<handle_type> &Specifier = Structure.Units[UnitIndex];
 	size_t NumHandlesInUnitInstance = Specifier.Handles.Count;
 	size_t OffsetForUnit = Structure.OffsetForUnit[UnitIndex];
-	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle];
+	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle.Handle];
 	
 	size_t InstanceOffset = 0;
 	size_t Level = 0;
@@ -278,7 +285,7 @@ OffsetForHandle(storage_structure &Structure, const index_t *Indexes, size_t Ind
 		index_t Index = Indexes[Level];
 		
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -300,14 +307,15 @@ OffsetForHandle(storage_structure &Structure, const index_t *Indexes, size_t Ind
 // then this function returns the storage index of the parameter value corresponding to this Handle, and with indexes [0, 1, 5, 6]
 //
 // This function is designed to be used by the system for explicit indexing of lookup values, such as when one uses access macros like "PARAMETER(MyParameter, Index1, Index2)" etc. inside equations.
+template<typename handle_type>
 inline size_t
-OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, const index_t *IndexCounts, const index_t *OverrideIndexes, size_t OverrideCount, entity_handle Handle)
+OffsetForHandle(storage_structure<handle_type> &Structure, const index_t* CurrentIndexes, const index_t *IndexCounts, const index_t *OverrideIndexes, size_t OverrideCount, handle_type Handle)
 {
-	size_t UnitIndex = Structure.UnitForHandle[Handle];
-	storage_unit_specifier &Specifier = Structure.Units[UnitIndex];
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
+	storage_unit_specifier<handle_type> &Specifier = Structure.Units[UnitIndex];
 	size_t NumHandlesInUnitInstance = Specifier.Handles.Count;
 	size_t OffsetForUnit = Structure.OffsetForUnit[UnitIndex];
-	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle];
+	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle.Handle];
 	
 	size_t IndexSetCount = Specifier.IndexSets.Count;
 	size_t InstanceOffset = 0;
@@ -317,16 +325,12 @@ OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, con
 		size_t Count = IndexCounts[IndexSet.Handle];
 		index_t Index;
 		if(IndexSetLevel < (IndexSetCount - OverrideCount))
-		{
 			Index = CurrentIndexes[IndexSet.Handle];
-		}
 		else
-		{
 			Index = OverrideIndexes[IndexSetLevel + (OverrideCount - IndexSetCount)];
-		}
 		
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -349,14 +353,15 @@ OffsetForHandle(storage_structure &Structure, const index_t* CurrentIndexes, con
 // DataSet->ParameterData[Offset] + Idx*SubsequentOffset is the value of MyParameter with indexes {Idx, 1};
 //
 // This function is designed to be used with the system that evaluates cumulation equations.
+template<typename handle_type>
 static size_t
-OffsetForHandle(storage_structure &Structure, index_t *CurrentIndexes, index_t *IndexCounts, index_set_h Skip, size_t& SubsequentOffset, entity_handle Handle)
+OffsetForHandle(storage_structure<handle_type> &Structure, index_t *CurrentIndexes, index_t *IndexCounts, index_set_h Skip, size_t& SubsequentOffset, handle_type Handle)
 {
-	size_t UnitIndex = Structure.UnitForHandle[Handle];
-	storage_unit_specifier &Specifier = Structure.Units[UnitIndex];
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
+	storage_unit_specifier<handle_type> &Specifier = Structure.Units[UnitIndex];
 	size_t NumHandlesInUnitInstance = Specifier.Handles.Count;
 	size_t OffsetForUnit = Structure.OffsetForUnit[UnitIndex];
-	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle];
+	size_t LocationOfHandleInUnit = Structure.LocationOfHandleInUnit[Handle.Handle];
 	
 	size_t InstanceOffset = 0;
 	SubsequentOffset = 1;
@@ -366,9 +371,7 @@ OffsetForHandle(storage_structure &Structure, index_t *CurrentIndexes, index_t *
 		size_t Count = IndexCounts[IndexSet.Handle];
 		index_t Index = CurrentIndexes[IndexSet.Handle];
 		if(Skipped)
-		{
 			SubsequentOffset *= Count;
-		}
 		if(IndexSet == Skip)
 		{
 			Index = {IndexSet, 0};
@@ -376,7 +379,7 @@ OffsetForHandle(storage_structure &Structure, index_t *CurrentIndexes, index_t *
 		}
 
 #if MOBIUS_INDEX_BOUNDS_TESTS
-		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Structure.Type, Handle);
+		CheckIndexErrors(Structure.Model, IndexSet, Index, Count, Handle);
 #endif
 		
 		InstanceOffset = InstanceOffset * Count + Index;
@@ -395,7 +398,7 @@ SetMultipleValuesForParameter(mobius_data_set *DataSet, parameter_h Parameter, p
 	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];	
 	size_t Stride = DataSet->ParameterStorageStructure.Units[UnitIndex].Handles.Count;
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter);
 	parameter_value *Base = DataSet->ParameterData + Offset;
 	
 	for(size_t Idx = 0; Idx < Count; ++Idx)
@@ -415,7 +418,7 @@ GetStartDate(mobius_data_set *DataSet)
 	auto FindTime = Model->Parameters.NameToHandle.find("Start date");
 	if(FindTime != Model->Parameters.NameToHandle.end())
 	{
-		entity_handle StartTimeHandle = FindTime->second;
+		parameter_h StartTimeHandle = FindTime->second;
 		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, StartTimeHandle);
 		return DataSet->ParameterData[Offset].ValTime; //TODO: Check that it was actually registered with the correct type and that it does not have any index set dependencies.
 	}
@@ -443,7 +446,7 @@ GetTimesteps(mobius_data_set *DataSet)
 	auto FindEndDate = Model->Parameters.NameToHandle.find("End date");
 	if(FindEndDate != Model->Parameters.NameToHandle.end())
 	{
-		entity_handle EndDateHandle = FindEndDate->second;
+		parameter_h EndDateHandle = FindEndDate->second;
 		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, EndDateHandle);
 		datetime EndDate = DataSet->ParameterData[Offset].ValTime;
 		datetime StartDate = GetStartDate(DataSet);
@@ -461,7 +464,7 @@ GetTimesteps(mobius_data_set *DataSet)
 	auto FindTimestep = Model->Parameters.NameToHandle.find("Timesteps");
 	if(FindTimestep != Model->Parameters.NameToHandle.end())
 	{
-		entity_handle TimestepHandle = FindTimestep->second;
+		parameter_h TimestepHandle = FindTimestep->second;
 		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, TimestepHandle);
 		return DataSet->ParameterData[Offset].ValUInt; 
 	}
@@ -622,14 +625,14 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 	if(DataSet->ParameterData)
 		FatalError("ERROR: Tried to allocate parameter storage twice.\n");
 	
-	std::map<std::vector<index_set_h>, std::vector<entity_handle>> TransposedParameterDependencies;
+	std::map<std::vector<index_set_h>, std::vector<parameter_h>> TransposedParameterDependencies;
 	for(parameter_h Parameter : Model->Parameters)
 	{
 		std::vector<index_set_h> Dependencies = Model->Parameters[Parameter].IndexSetDependencies;
-		TransposedParameterDependencies[Dependencies].push_back(Parameter.Handle);
+		TransposedParameterDependencies[Dependencies].push_back(Parameter);
 	}
 	size_t ParameterStorageUnitCount = TransposedParameterDependencies.size();
-	array<storage_unit_specifier> &Units = DataSet->ParameterStorageStructure.Units;
+	array<storage_unit_specifier<parameter_h>> &Units = DataSet->ParameterStorageStructure.Units;
 	Units.Allocate(&DataSet->BucketMemory, ParameterStorageUnitCount);
 	
 	size_t UnitIndex = 0;
@@ -637,7 +640,6 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 	{
 		Units[UnitIndex].IndexSets.CopyFrom(&DataSet->BucketMemory, Structure.first);
 		Units[UnitIndex].Handles.CopyFrom(&DataSet->BucketMemory, Structure.second);
-
 		++UnitIndex;
 	}
 	
@@ -647,16 +649,16 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 	
 	//NOTE: Setting up default values.
 	UnitIndex = 0;
-	for(storage_unit_specifier& Unit : Units)
+	for(storage_unit_specifier<parameter_h>& Unit : Units)
 	{
 		size_t HandlesInInstance = Unit.Handles.Count;
 		size_t TotalHandlesForUnit = DataSet->ParameterStorageStructure.TotalCountForUnit[UnitIndex];
 		
 		size_t ParameterIndex = 0;
-		for(entity_handle ParameterHandle : Unit.Handles)
+		for(parameter_h Parameter : Unit.Handles)
 		{
-			parameter_value DefaultValue = Model->Parameters.Specs[ParameterHandle].Default;
-			size_t At = OffsetForHandle(DataSet->ParameterStorageStructure, ParameterHandle);
+			parameter_value DefaultValue = Model->Parameters[Parameter].Default;
+			size_t At = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter);
 			for(size_t Instance = 0; Instance < TotalHandlesForUnit; Instance += HandlesInInstance)
 			{
 				DataSet->ParameterData[At] = DefaultValue;
@@ -680,16 +682,16 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 	if(DataSet->InputData)
 		FatalError("ERROR: Tried to allocate input storage twice.\n");
 
-	std::map<std::vector<index_set_h>, std::vector<entity_handle>> TransposedInputDependencies;
+	std::map<std::vector<index_set_h>, std::vector<input_h>> TransposedInputDependencies;
 	
 	for(input_h Input : Model->Inputs)
 	{
 		const input_spec &Spec = Model->Inputs[Input];
-		TransposedInputDependencies[Spec.IndexSetDependencies].push_back(Input.Handle);
+		TransposedInputDependencies[Spec.IndexSetDependencies].push_back(Input);
 	}
 	
 	size_t InputStorageUnitCount = TransposedInputDependencies.size();
-	array<storage_unit_specifier> &Units = DataSet->InputStorageStructure.Units;
+	array<storage_unit_specifier<input_h>> &Units = DataSet->InputStorageStructure.Units;
 	Units.Allocate(&DataSet->BucketMemory, InputStorageUnitCount);
 	size_t UnitIndex = 0;
 	for(auto& Structure : TransposedInputDependencies)
@@ -724,25 +726,20 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 	if(!DataSet->HasBeenRun) //If it was run once before we don't need to set up the storage structure again. //TODO: This should be a flag on the storage structure instead, and it should be the same for all AllocateXStorage functions.
 	{
 		size_t ResultStorageUnitCount = Model->BatchGroups.Count;
-		array<storage_unit_specifier> &Units = DataSet->ResultStorageStructure.Units;
+		array<storage_unit_specifier<equation_h>> &Units = DataSet->ResultStorageStructure.Units;
 		Units.Allocate(&DataSet->BucketMemory, ResultStorageUnitCount);
 		for(size_t UnitIndex = 0; UnitIndex < ResultStorageUnitCount; ++UnitIndex)
 		{
 			const equation_batch_group &BatchGroup = Model->BatchGroups[UnitIndex];
-			storage_unit_specifier &Unit = Units[UnitIndex];
+			storage_unit_specifier<equation_h> &Unit = Units[UnitIndex];
 			Unit.IndexSets = BatchGroup.IndexSets.Copy(&DataSet->BucketMemory);
 			
-			std::vector<entity_handle> Handles;
+			std::vector<equation_h> Handles;
 			for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 			{
 				const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-				
-				ForAllBatchEquations(Batch,
-				[&Handles](equation_h Equation)
-				{
-					Handles.push_back(Equation.Handle);
-					return false;
-				});
+				Handles.insert(Handles.end(), Batch.Equations.begin(), Batch.Equations.end());
+				Handles.insert(Handles.end(), Batch.EquationsODE.begin(), Batch.EquationsODE.end());
 			}
 			
 			Unit.Handles.CopyFrom(&DataSet->BucketMemory, Handles);
@@ -813,7 +810,7 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	for(size_t Level = 0; Level < IndexCount; ++Level)
 		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter);
 	DataSet->ParameterData[Offset] = Value;
 }
 
@@ -877,7 +874,7 @@ GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	for(size_t Level = 0; Level < IndexCount; ++Level)
 		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter);
 	return DataSet->ParameterData[Offset];
 }
 
@@ -911,7 +908,7 @@ CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h Cumula
 	double Total = 0.0;
 	
 	size_t SubsequentOffset;
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation);
 	
 	double *Lookup = LookupBase + Offset;
 	for(index_t Index = {CumulateOverIndexSet, 0}; Index < DataSet->IndexCounts[CumulateOverIndexSet.Handle]; ++Index)
@@ -930,10 +927,10 @@ CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h Cumula
 	double Total0 = 0.0;
 	
 	size_t SubsequentOffset;
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation);
 	
 	size_t ParSubsequentOffset;
-	size_t ParOffset = OffsetForHandle(DataSet->ParameterStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, ParSubsequentOffset, Weight.Handle);
+	size_t ParOffset = OffsetForHandle(DataSet->ParameterStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, ParSubsequentOffset, (parameter_h)Weight);
 	
 	double *Lookup = LookupBase + Offset;
 	parameter_value *ParLookup = DataSet->ParameterData + ParOffset;
@@ -974,7 +971,7 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
 	
-	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
+	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input);
 	double *At = DataSet->InputData + Offset;
 	s64 TimestepOffset = 0;
 	
@@ -1040,7 +1037,7 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
 
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Equation.Handle);
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Equation);
 	double *Lookup = DataSet->ResultData + Offset;
 	
 	for(size_t Idx = 0; Idx < NumToWrite; ++Idx)
@@ -1076,7 +1073,7 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
 
-	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
+	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input);
 	double *Lookup = DataSet->InputData + Offset;
 	
 	s64 TimestepOffset = 0;
@@ -1126,7 +1123,7 @@ InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const char * 
 	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
 		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
 	
-	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input.Handle);
+	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input);
 	
 	return DataSet->InputTimeseriesWasProvided[Offset];
 }
@@ -1241,7 +1238,7 @@ ForeachInputInstance(mobius_data_set *DataSet, const char *InputName, const std:
 	input_h Input = GetInputHandle(Model, InputName);
 	
 	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	storage_unit_specifier &Unit = DataSet->InputStorageStructure.Units[UnitIndex];
+	storage_unit_specifier<input_h> &Unit = DataSet->InputStorageStructure.Units[UnitIndex];
 	
 	ForeachRecursive(DataSet, CurrentIndexNames, Unit.IndexSets, Do, -1);
 }
@@ -1256,7 +1253,7 @@ ForeachResultInstance(mobius_data_set *DataSet, const char *ResultName, const st
 	equation_h Equation = GetEquationHandle(Model, ResultName);
 	
 	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
-	storage_unit_specifier &Unit = DataSet->ResultStorageStructure.Units[UnitIndex];
+	storage_unit_specifier<equation_h> &Unit = DataSet->ResultStorageStructure.Units[UnitIndex];
 	
 	ForeachRecursive(DataSet, CurrentIndexNames, Unit.IndexSets, Do, -1);
 }
@@ -1271,7 +1268,7 @@ ForeachParameterInstance(mobius_data_set *DataSet, const char *ParameterName, co
 	parameter_h Parameter = GetParameterHandle(Model, ParameterName);
 	
 	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-	storage_unit_specifier &Unit = DataSet->ParameterStorageStructure.Units[UnitIndex];
+	storage_unit_specifier<parameter_h> &Unit = DataSet->ParameterStorageStructure.Units[UnitIndex];
 	
 	ForeachRecursive(DataSet, CurrentIndexNames, Unit.IndexSets, Do, -1);
 }
@@ -1282,9 +1279,7 @@ static void
 ForeachRecursive(mobius_data_set *DataSet, index_t *CurrentIndexes, const array<index_set_h> &IndexSets, const std::function<void(index_t *Indexes, size_t IndexesCount)> &Do, s32 Level)
 {
 	if(Level + 1 == IndexSets.Count)
-	{
 		Do(CurrentIndexes, IndexSets.Count);
-	}
 	else
 	{
 		index_set_h IterateOver = IndexSets[Level + 1];
@@ -1305,7 +1300,7 @@ ForeachParameterInstance(mobius_data_set *DataSet, parameter_h Parameter, const 
 	index_t CurrentIndexes[256];
 	
 	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-	storage_unit_specifier &Unit = DataSet->ParameterStorageStructure.Units[UnitIndex];
+	storage_unit_specifier<parameter_h> &Unit = DataSet->ParameterStorageStructure.Units[UnitIndex];
 	
 	ForeachRecursive(DataSet, CurrentIndexes, Unit.IndexSets, Do, -1);
 }
