@@ -1,6 +1,7 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-11 11:50:03
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-16 13:29:50
 
 index_sets:
+"Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
 
 parameters:
 
@@ -27,10 +28,10 @@ parameters:
 0.4
 
 "Initial water level" :     #(m) [0, 1642]
-15
+10
 
 "Water level at which outflow is 0" :     #(m) [0, 1642]
-15
+10
 
 "Outflow rating curve shape" :     #(dimensionless) [0, 1] 0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.
 0.8
@@ -38,8 +39,7 @@ parameters:
 "Outflow rating curve magnitude" :     #(dimensionless) [0.01, 100] Outflow is proportional to 10^(magnitude)
 -0.4
 
-"Reference air density" :     #(kg/m3) [1000, 1100]
-1025
+
 
 "Emissivity" :     #(dimensionless) [0, 1]
 0.97
@@ -54,8 +54,14 @@ parameters:
 4
 
 "Initial epilimnion thickness" :     #(m) [0, 20]
-5
+2
 
 "Shortwave absorbance" :     #(1/m) [-1.79769313486232e+308, 1.79769313486232e+308]
 1.5
+
+
+# Temperature calibration depths ("Temperature calibration depth") #
+
+"Calibration depth" :     #(m) [0, 1642]
+0.5 1.5 2 3 4 6 8
 

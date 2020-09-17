@@ -38,10 +38,10 @@ This is a very simple lake model for use along with cathcment models.
 The physical part of the model simulates water balance and temperature.
 
 The water balance part of the model is conceptually similar to VEMALA
-[^https://doi.org/10.1007/s10666-015-9470-6 A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109]
+[^https://doi.org/10.1007/s10666-015-9470-6^ A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109]
 
 Air-lake heat fluxes are based off of
-[^https://link.springer.com/article/10.1007/BF00232256 Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112]
+[^https://link.springer.com/article/10.1007/BF00232256^ Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112]
 The implementation is informed by the implementation in [^https://github.com/gotm-model GOTM]
 )"""");
 	
@@ -90,6 +90,11 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto WaterLevelAtWhichOutflowIsZero = RegisterParameterDouble(Model, PhysParams, "Water level at which outflow is 0", M, 10.0, 0.0, 1642.0);
 	auto OutflowRatingCurveShape        = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve shape", Dimensionless, 0.3, 0.0, 1.0, "0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.");
 	auto OutflowRatingCurveMagnitude    = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve magnitude", Dimensionless, 1.0, 0.01, 100.0, "Outflow is proportional to 10^(magnitude)");
+	
+	
+	auto TemperatureCalibrationDepth = RegisterIndexSet(Model, "Temperature calibration depth");
+	auto TempDepths                  = RegisterParameterGroup(Model, "Temperature calibration depths", TemperatureCalibrationDepth);
+	auto CalibDepth                  = RegisterParameterDouble(Model, TempDepths, "Calibration depth", M, 0.0, 0.0, 1642.0);
 	
 	auto Precipitation    = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature   = RegisterInput(Model, "Air temperature", DegreesCelsius);
@@ -194,8 +199,6 @@ The implementation is informed by the implementation in [^https://github.com/got
 	)
 	
 	
-	//TODO: Does reference density have to be a parameter, or could it be constant?
-	auto ReferenceDensity = RegisterParameterDouble(Model, PhysParams, "Reference air density", KgPerM3, 1025.0, 1000.0, 1100.0); //TODO: What is this actually? Density of water at a specific temperature??
 	auto Emissivity       = RegisterParameterDouble(Model, PhysParams, "Emissivity", Dimensionless, 0.97, 0.0, 1.0);
 	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
 	auto InitialEpilimnionTemperature = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion temperature", DegreesCelsius, 20.0, 0.0, 50.0);
@@ -219,7 +222,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2, LakeSolver);
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
 	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2, LakeSolver);
-	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2);
+	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2, LakeSolver);
 	
 	//SetInitialValue;
 	//TODO: Visibility should eventually depend on DOC concentration
@@ -249,6 +252,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto IceEnergy           = RegisterEquation(Model, "Ice energy", WPerM2, LakeSolver);
 	auto IceThickness        = RegisterEquationODE(Model, "Ice thickness", M, LakeSolver);
 	
+	auto TemperatureAtDepth  = RegisterEquation(Model, "Temperature at depth", DegreesCelsius);
 	
 #ifdef EASYLAKE_SIMPLYQ
 	auto DailyMeanReachFlow    = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
@@ -273,9 +277,10 @@ The implementation is informed by the implementation in [^https://github.com/got
 	SetConditional(Model, ActualSpecificHumidity, ThisIsALake);
 	SetConditional(Model, AirDensity, ThisIsALake);
 	SetConditional(Model, DownwellingLongwaveRadation, ThisIsALake);
-	SetConditional(Model, ShortwaveRadiation, ThisIsALake);
+	//SetConditional(Model, ShortwaveRadiation, ThisIsALake);
 	SetConditional(Model, EpilimnionThickness, ThisIsALake);
 	SetConditional(Model, BottomTemperature, ThisIsALake);
+	SetConditional(Model, TemperatureAtDepth, ThisIsALake);
 	
 	//NOTE: If we do the following, we exclude groundwater computations from lake subcatchments, and we have to have a separate computation of flow input from land. Instead we just run the river computations, and ignore their values. It could be confusing for users though, so we have to see if we have to add something for the UI for this.
 	/*
@@ -464,7 +469,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	)
 	
 	EQUATION(Model, Evaporation,
-		double evap = (RESULT(AirDensity) / PARAMETER(ReferenceDensity)) * RESULT(TransferCoefficientForLatentHeatFlux) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
+		double ref_density = 1025.0;
+		double evap = (RESULT(AirDensity) / ref_density) * RESULT(TransferCoefficientForLatentHeatFlux) * INPUT(WindSpeed) * (RESULT(ActualSpecificHumidity) - RESULT(SaturationSpecificHumidity));
 		
 		return -86400000.0*evap; //NOTE: Convert m/s to mm/day. Also, we want positive sign for value.
 	)
@@ -509,7 +515,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	EQUATION(Model, LongwaveRadiation,
 		//NOTE: have different albedo for longwave and shortwave?
-		double albedo = 0.045; //TODO: Should be different when ice/snow?
+		double albedo = 0.045;
 		return (1.0 - albedo) * RESULT(DownwellingLongwaveRadation) - RESULT(EmittedLongwaveRadiation);
 	)
 	
@@ -559,6 +565,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		*/
 		
 		double albedo = 0.045; //TODO: Needs snow/ice-correction. Maybe also correction for solar angle!
+		//if(RESULT(IsIce)) albedo = 0.4; //NOTE: This screws things up. Weird.
 		return (1.0 - albedo) * INPUT(GlobalRadiation);
 	)
 	
@@ -686,13 +693,12 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double z_b = RESULT(WaterLevel);
 		double a   = RESULT(LakeSurfaceArea);
 	
-		// Integrate[(1 - z/b)*((T*(h - z) + Y*(z - b))/(h - b)), {z, h, b}]
+		// parabola: Integrate[(1 - z/b)*((z-b)^2*(T-Y)/(e - b)^2 + Y), {z, e, b}]
 		double V   = RESULT(LakeVolume); // = 0.5*a*z_D;
 		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
 		double V_e = V - V_h;
-		double c_1 = V_h / 3.0;
 		
-		return ( V_e*T_e +  c_1*(T_e+2.0*T_b)) / V;
+		return ( V_e*T_e + 0.5*V_h*(T_e+T_b)) / V;
 	)
 	
 	EQUATION(Model, EpilimnionTemperature,
@@ -702,12 +708,24 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double z_b = RESULT(WaterLevel);
 		double a   = RESULT(LakeSurfaceArea);
 	
-		double V   = RESULT(LakeVolume); // = 0.5*a*z_D;
+		double V   = RESULT(LakeVolume); // = 0.5*a*z_b;
 		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
 		double V_e = V - V_h;
-		double c_1 = V_h / 3.0;
 		
-		return (T_m*V - c_1*2.0*T_b) / (V_e + c_1);
+		return (T_m*V - 0.5*T_b*V_h) / (V_e + 0.5*V_h);
+	)
+	
+	EQUATION(Model, TemperatureAtDepth,
+		double z = PARAMETER(CalibDepth);
+		double T_e = RESULT(EpilimnionTemperature);
+		double T_b = RESULT(BottomTemperature);
+		double z_e = RESULT(EpilimnionThickness);
+		double z_b = RESULT(WaterLevel);
+		
+		if(z < 0 || z > z_b) return std::numeric_limits<double>::quiet_NaN();
+		if(z < z_e) return T_e;
+		//return LinearInterpolate(z, z_e, z_b, T_e, T_b);
+		return (z-z_b)*(z-z_b)*(T_e-T_b)/((z_e-z_b)*(z_e-z_b)) + T_b;
 	)
 	
 	EQUATION(Model, BottomTemperature,

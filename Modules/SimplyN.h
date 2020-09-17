@@ -209,7 +209,8 @@ This module is in early development.
 	
 	EQUATION(Model, ReachDenitrification,
 		double conc       = SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
-		double tempfactor = std::pow(PARAMETER(ReachDenitrificationQ10), (INPUT(AirTemperature) - 20.0)/10.0); //TODO: Maybe use the water temperature module
+		double watertemp  = Max(0.0, INPUT(AirTemperature)); //TODO: Maybe use the water temperature module
+		double tempfactor = std::pow(PARAMETER(ReachDenitrificationQ10), (watertemp - 20.0)/10.0); 
 		return conc * PARAMETER(ReachDenitrificationRate) * tempfactor;
 	)
 	
