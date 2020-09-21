@@ -56,6 +56,7 @@ AddSedimentOxygenModule(mobius_model *Model)
 	auto UMolsPerUMols  = RegisterUnit(Model, "µmol(oxygen)/µmol(photons)");
 	auto UMolsPerUMolsPerS = RegisterUnit(Model, "µmol(oxygen)/µmol(TOC)/s");
 	auto UMolsPerCm3    = RegisterUnit(Model, "µmol(oxygen)/cm3");
+	auto UMolsTOCPerCm3    = RegisterUnit(Model, "µmol(TOC)/cm3");
 	auto PerS           = RegisterUnit(Model, "1/s");
 	auto Days           = RegisterUnit(Model, "days");
 	auto Hours          = RegisterUnit(Model, "hours");
@@ -80,7 +81,7 @@ AddSedimentOxygenModule(mobius_model *Model)
 	auto Q10Prod                    = RegisterParameterDouble(Model, SedimentOx, "Production rate response to a 10° change in temperature (Q10)", Dimensionless, 2.0, 1.0, 4.0);
 	
 	auto RespirationAt20Degrees     = RegisterParameterDouble(Model, SedimentOx, "Respiration rate at 20°C", UMolsPerUMolsPerS, 0.0, 0.0, 0.01);
-	auto TOCConcentration           = RegisterParameterDouble(Model, SedimentOx, "TOC concentration", UMolsPerCm3, 0.0, 0.0, 0.1);
+	auto TOCConcentration           = RegisterParameterDouble(Model, SedimentOx, "TOC concentration", UMolsTOCPerCm3, 0.0, 0.0, 0.1);
 	auto Q10Resp                    = RegisterParameterDouble(Model, SedimentOx, "Respiration rate response to a 10° change in temperature (Q10)", Dimensionless, 2.0, 1.0, 4.0);
 	auto RespirationCutoffThreshold = RegisterParameterDouble(Model, SedimentOx, "Respiration cutoff threshold", UMolsPerCm3, 10.0, 0.01, 100.0);
 	
@@ -177,20 +178,10 @@ AddSedimentOxygenModule(mobius_model *Model)
 		return RefDiff * (DynamicViscosity(10.0, 0.0, 1.0) / DynamicViscosity(PARAMETER(Temperature), PARAMETER(Salinity), Pressure))*(PARAMETER(Temperature)+273.15)/283.15;
 	)
 	
-	// z = DLB thickness: Constant ocean conc.
-	// z = 0:              Conc at ocean-sediment interface
-	// z = -prodzone thickness/2 : Conc in center of production zone
-	// z = -prodzone thickness   : Conc at interface between prod. and nonprod. zone
-	// z = -(prod + nonprod/2)     : Conc at center of nonprod zone.
-	// z = -(prod + nonprod)       : Const 0 conc.
-	
 
 	auto SedSolver = RegisterSolver(Model, "Sediment solver", 0.1, IncaDascru);
 	
 	auto Conc0     = RegisterEquation(Model, "C0", UMolsPerCm3);
-	//auto Conc1     = RegisterEquationODE(Model, "C1 - oxygen conc at center of production zone", UMolsPerCm3, SedSolver);
-	//auto Conc2     = RegisterEquationODE(Model, "C2 - oxygen conc at boundary between prod and non-prod zones", UMolsPerCm3, SedSolver);
-	//auto Conc3     = RegisterEquationODE(Model, "C3 - oxygen conc at center of non-production zone", UMolsPerCm3, SedSolver);
 	
 	EQUATION(Model, Conc0,
 		//NOTE: Garcia & Gordon 92
@@ -261,66 +252,5 @@ AddSedimentOxygenModule(mobius_model *Model)
 	
 	#undef LevelEq
 	
-/*	
-	EQUATION(Model, Conc0,
-		double Zupp = PARAMETER(DBLThickness);
-		double Z    = 0.0;
-		double Zlow = -0.5*PARAMETER(ProductionZoneThickness);
-		double Cupp = RESULT(ConcOcean);
-		double C = RESULT(Conc0);
-		double Clow = RESULT(Conc1);
-		double Dupp = RESULT(OxygenDiffusivityInWater);
-		double Dlow = Dupp*PARAMETER(SedimentPorosity);
-		double diff = Diffusion(Z, Zlow, Zupp, Dlow, Dupp, C, Clow, Cupp);
-		double ProdRate = RESULT(OxygenProductionRate)/PARAMETER(ProductionZoneThickness);
-		double RespRate = RESULT(OxygenRespirationRate)*C;  //TODO
-		double prod = ProdRate * 0.5; //To account for that this is on a boundary between prod. and nonprod. TODO: see if this is really ok!
-		double resp = RespRate * 0.5; //See above
-		return (diff + prod - resp)*3600.0; // Convert 1/s to 1/h
-	)
-	
-	EQUATION(Model, Conc1,
-		double Zupp = 0.0;
-		double Z    = -0.5*PARAMETER(ProductionZoneThickness);
-		double Zlow = -PARAMETER(ProductionZoneThickness);
-		double Cupp = RESULT(Conc0);
-		double C    = RESULT(Conc1);
-		double Clow = RESULT(Conc2);
-		double D    = RESULT(OxygenDiffusivityInWater)*PARAMETER(SedimentPorosity);
-		double diff = Diffusion(Z, Zlow, Zupp, D, D, C, Clow, Cupp);
-		double prod = RESULT(OxygenProductionRate)/PARAMETER(ProductionZoneThickness);
-		double resp = RESULT(OxygenRespirationRate)*C;
-		return (diff + prod - resp)*3600.0; // Convert 1/s to 1/h
-	)
-	
-	EQUATION(Model, Conc2,
-		double Zupp = -0.5*PARAMETER(ProductionZoneThickness);
-		double Z    = -PARAMETER(ProductionZoneThickness);
-		double Zlow = -PARAMETER(ProductionZoneThickness) - 0.5*PARAMETER(NonProductionZoneThickness);
-		double Cupp = RESULT(Conc1);
-		double C    = RESULT(Conc2);
-		double Clow = RESULT(Conc3);
-		double D    = RESULT(OxygenDiffusivityInWater)*PARAMETER(SedimentPorosity);
-		double diff = Diffusion(Z, Zlow, Zupp, D, D, C, Clow, Cupp);
-		double ProdRate = RESULT(OxygenProductionRate)/PARAMETER(ProductionZoneThickness);
-		double prod = ProdRate*0.5; //Again, on a boundary. TODO: Figure out if ok.
-		double resp = RESULT(OxygenRespirationRate)*C;
-		return (diff + prod - resp)*3600.0; // Convert 1/s to 1/h
-	)
-	
-	EQUATION(Model, Conc3,
-		double Zupp = -PARAMETER(ProductionZoneThickness);
-		double Z    = -PARAMETER(ProductionZoneThickness) - 0.5*PARAMETER(NonProductionZoneThickness);
-		double Zlow = -PARAMETER(ProductionZoneThickness) - PARAMETER(NonProductionZoneThickness);
-		double Cupp = RESULT(Conc2);
-		double C    = RESULT(Conc3);
-		double Clow = 0.0;
-		double D    = RESULT(OxygenDiffusivityInWater)*PARAMETER(SedimentPorosity);
-		double diff = Diffusion(Z, Zlow, Zupp, D, D, C, Clow, Cupp);
-		double prod = 0.0;
-		double resp = RESULT(OxygenRespirationRate)*C;
-		return (diff + prod - resp)*3600.0; // Convert 1/s to 1/h
-	)
-*/
 	EndModule(Model);
 }
