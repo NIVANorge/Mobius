@@ -291,7 +291,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 }
 
 static void
-ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
+ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool IgnoreUnknown=false)
 {
 	token_stream Stream(Filename);
 	
@@ -419,8 +419,6 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				Token = Stream.PeekToken();
 				if(Token.Type != TokenType_QuotedString) break;
 					
-				
-				
 				token_string ParameterName = Stream.ExpectQuotedString();
 				Stream.ExpectToken(TokenType_Colon);
 				
@@ -428,33 +426,47 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename)
 				parameter_h Parameter = GetParameterHandle(Model, ParameterName, Found);
 				if(!Found)
 				{
-					Stream.PrintErrorHeader();
-					FatalError("The parameter \"", ParameterName, "\" was not registered with the model.\n");
+					if(!IgnoreUnknown)
+					{
+						Stream.PrintErrorHeader();
+						FatalError("The parameter \"", ParameterName, "\" was not registered with the model.\n");
+					}
+					else
+					{
+						while(true) // Just skip through
+						{
+							Token = Stream.PeekToken();
+							if(Token.Type == TokenType_QuotedString) break;
+							Stream.ReadToken();
+						}
+					}
 				}
-				
-				const parameter_spec &Spec = Model->Parameters[Parameter];
-				
-				if(Spec.ShouldNotBeExposed)
+				else
 				{
-					Stream.PrintErrorHeader();
-					FatalError("The parameter \"", ParameterName, "\" is computed by the model, and should not be provided in a parameter file.\n");
-				}
-				
-				parameter_type Type = Spec.Type;
-				size_t ExpectedCount = 1;
-				size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-				for(index_set_h IndexSet : DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets)
-					ExpectedCount *= DataSet->IndexCounts[IndexSet.Handle];
+					const parameter_spec &Spec = Model->Parameters[Parameter];
+					
+					if(Spec.ShouldNotBeExposed)
+					{
+						Stream.PrintErrorHeader();
+						FatalError("The parameter \"", ParameterName, "\" is computed by the model, and should not be provided in a parameter file.\n");
+					}
+					
+					parameter_type Type = Spec.Type;
+					size_t ExpectedCount = 1;
+					size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
+					for(index_set_h IndexSet : DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets)
+						ExpectedCount *= DataSet->IndexCounts[IndexSet.Handle];
 
-				std::vector<parameter_value> Values;
-				Values.reserve(ExpectedCount);
-				Stream.ReadParameterSeries(Values, Type);
-				if(Values.size() != ExpectedCount)                                                                   
-				{                                                                                                    
-					Stream.PrintErrorHeader();                                                                       
-					FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
-				}                                                                                                    
-				SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
+					std::vector<parameter_value> Values;
+					Values.reserve(ExpectedCount);
+					Stream.ReadParameterSeries(Values, Type);
+					if(Values.size() != ExpectedCount)                                                                   
+					{                                                                                                    
+						Stream.PrintErrorHeader();                                                                       
+						FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
+					}                                                                                                    
+					SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
+				}
 			}
 		}
 	}
@@ -984,6 +996,8 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 static void
 ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 {
+	if(!Filename || strlen(Filename)==0) return;
+	
 	token_stream Stream(Filename);
 
 	while(true)

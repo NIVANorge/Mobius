@@ -10,7 +10,7 @@ from importlib.machinery import SourceFileLoader
 wr = SourceFileLoader("mobius", r"../mobius.py").load_module()
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
-wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
+wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
 param_file_prefix = 'optim_params_doc'

@@ -143,12 +143,12 @@ DllReadInputs(void *DataSetPtr, char *InputFilename)
 }
 
 DLLEXPORT void
-DllReadParameters(void *DataSetPtr, char *ParameterFilename)
+DllReadParameters(void *DataSetPtr, char *ParameterFilename, bool IgnoreUnknown)
 {
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	ReadParametersFromFile(DataSet, ParameterFilename);
+	ReadParametersFromFile(DataSet, ParameterFilename, IgnoreUnknown);
 	
 	CHECK_ERROR_END
 }

@@ -30,7 +30,7 @@ def initialize(dllname) :
 	
 	mobiusdll.DllReadInputs.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 	
-	mobiusdll.DllReadParameters.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+	mobiusdll.DllReadParameters.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_bool]
 	
 	mobiusdll.DllSetIndexes.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char_p)]
 		
@@ -190,6 +190,20 @@ class DataSet :
 		datasetptr = mobiusdll.DllSetupModelBlankIndexSets(_CStr(inputfilename))
 		check_dll_error()
 		return cls(datasetptr)
+		
+	@classmethod
+	def clean_parameter_file(cls, parfilename) :
+		'''
+		Remove any parameters with unrecognized names from a parameter file.
+		'''
+		datasetptr = mobiusdll.DllSetupModelBlankIndexSets(_CStr(''))
+		check_dll_error()
+		mobiusdll.DllReadParameters(datasetptr, _CStr(parfilename), True)
+		check_dll_error()
+		mobiusdll.DllWriteParametersToFile(datasetptr, _CStr(parfilename))
+		check_dll_error()
+		mobiusdll.DllDeleteDataSet(datasetptr)   #oops, does not actually delete model object.. So if you call this function a lot, it could be leaky
+		check_dll_error()
 	
 	def set_indexes(self, index_set, indexes):
 		'''
@@ -226,11 +240,12 @@ class DataSet :
 		mobiusdll.DllReadInputs(self.datasetptr, _CStr(inputfilename))
 		check_dll_error()
 		
-	def read_parameters(self, parfilename) :
+	def read_parameters(self, parfilename, ignore_unknown=False) :
 		'''
 		Read in index set and parameter data into an incomplete dataset. Any index sets that are not given indexes in this parameter file has to have been given indexes prior to this call using set_indexes and/or set_indexes_branched.
+		If ignore_unknown=True, it will not give an error at unknown parameter names, but will ignore them instead.
 		'''
-		mobiusdll.DllReadParameters(self.datasetptr, _CStr(parfilename))
+		mobiusdll.DllReadParameters(self.datasetptr, _CStr(parfilename), ignore_unknown)
 		check_dll_error()
 		
 	def run_model(self) :
