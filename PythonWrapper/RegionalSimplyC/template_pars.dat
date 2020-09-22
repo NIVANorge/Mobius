@@ -80,24 +80,6 @@ parameters:
 "Reach slope" :     #(m/m) [1e-05, 3]
 0.02
 
-"This is a lake" :
-false
-
-"Lake surface area" :     #(m2) [0, 371000000000] This parameter is only used if the reach is a lake
-1000
-
-"Lake depth at 0 outflow" :     #(m) [0, 1642] This parameter is only used if the reach is a lake
-10
-
-"Lake rating curve constant" :     #(m2/s) [1e-06, 1000000] How much outflow is generated per meter the water level is above the level of the outlet. This parameter is only used if the reach is a lake
-0.1
-
-"Lake rating curve exponent" :     #(dimensionless) [0.5, 3] Exponent on the outflow as a function of water level. This parameter is only used if the reach is a lake
-1
-
-"Lake degree-day evaporation" :     #(mm/°C/day) [0, 1] This parameter is only used if the reach is a lake
-0.1
-
 
 ###################### Hydrology subcatchment/reach {"Reaches"} ######################
 

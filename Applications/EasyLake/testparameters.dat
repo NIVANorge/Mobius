@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-16 13:29:50
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-21 18:50:06
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -21,9 +21,6 @@ parameters:
 "Initial lake surface area" :     #(m2) [0, 371000000000]
 107183
 
-"Lake length" :     #(m) [0, 1030000] This parameter should be adjusted when calibrating lake outflow
-600
-
 "Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
 0.4
 
@@ -39,11 +36,6 @@ parameters:
 "Outflow rating curve magnitude" :     #(dimensionless) [0.01, 100] Outflow is proportional to 10^(magnitude)
 -0.4
 
-
-
-"Emissivity" :     #(dimensionless) [0, 1]
-0.97
-
 "Latitude" :     #(°) [-90, 90]
 60
 
@@ -56,8 +48,8 @@ parameters:
 "Initial epilimnion thickness" :     #(m) [0, 20]
 2
 
-"Shortwave absorbance" :     #(1/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-1.5
+"Freezing thermal conductivity" :     #(dimensionless) [0, 20000]
+200
 
 
 # Temperature calibration depths ("Temperature calibration depth") #

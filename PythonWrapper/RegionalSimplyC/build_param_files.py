@@ -7,7 +7,7 @@ from importlib.machinery import SourceFileLoader
 wr = SourceFileLoader("mobius", r"../mobius.py").load_module()
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
-wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
+wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 parfile = 'template_pars.dat'
 inputfile = 'template_inputs.dat'

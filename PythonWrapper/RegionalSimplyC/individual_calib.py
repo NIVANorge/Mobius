@@ -10,7 +10,7 @@ from importlib.machinery import SourceFileLoader
 wr = SourceFileLoader("mobius", r"../mobius.py").load_module()
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
-wr.initialize('../../Applications/SimplyC/simplyc_regional.dll')
+wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
 
@@ -50,7 +50,7 @@ def main() :
 	
 	comparisons = [
                 ('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', []),
-                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', []),
+                #('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', []),
                ]
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -64,7 +64,7 @@ def main() :
 		print('********** Processing location %s ***********' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 		
@@ -73,7 +73,7 @@ def main() :
 		
 		dataset.run_model()
 		
-		params = setup_calibration_params(dataset, do_doc=True)
+		params = setup_calibration_params(dataset, do_doc=False)
 		
 		print('Initial GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
@@ -86,7 +86,7 @@ def main() :
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		print('\n\n\n')
 		
-		dataset.write_parameters_to_file('MobiusFiles/optim_params_doc_%d_%s_2.dat' % (catch_no, catch_name))
+		dataset.write_parameters_to_file('MobiusFiles/optim_params_Q_%d_%s.dat' % (catch_no, catch_name))
 		
 		dataset.delete()
 		
