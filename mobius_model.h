@@ -508,7 +508,6 @@ struct mobius_data_set
 	u64 TimestepsLastRun;
 	datetime StartDateLastRun;
 	
-	
 	~mobius_data_set();
 };
 
@@ -565,6 +564,8 @@ struct model_run_state
 	double *JacobianTempStorage;   //NOTE: Temporary storage for use by Jacobian estimation
 	
 
+	//So that some models can do random generation
+	std::mt19937 RandomGenerator;
 	
 	//NOTE: For use during dependency registration:
 	std::vector<dependency_registration<parameter_h>> ParameterDependencies;
@@ -612,6 +613,20 @@ struct model_run_state
 		SolverTempX0 = nullptr;
 		SolverTempWorkStorage = nullptr;
 		JacobianTempStorage = nullptr;
+		
+		//NOTE: Code borrowed from stack exchange. Should really clean it up!
+		std::random_device Dev;
+		std::mt19937::result_type Seed = Dev() ^ (
+            (std::mt19937::result_type)
+            std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+                ).count() +
+            (std::mt19937::result_type)
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch()
+                ).count() );
+		
+		RandomGenerator = std::mt19937(Seed);
 	}
 	
 	~model_run_state()
@@ -1539,6 +1554,18 @@ BranchInputs(model_run_state *RunState, index_set_h IndexSet, index_t Index)
 }
 
 #define BRANCH_INPUTS(IndexSet) BranchInputs(RunState__, IndexSet, CURRENT_INDEX(IndexSet))
+
+inline u64
+UniformRandomU64(model_run_state *RunState, u64 Low, u64 High)
+{
+	std::uniform_int_distribution<u64> Distribution(Low, High);
+	return Distribution(RunState->RandomGenerator);
+}
+
+#define UNIFORM_RANDOM_UINT(Low, High) (UniformRandomU64(RunState__, Low, High))
+
+
+
 
 #define MOBIUS_MODEL_H
 #endif

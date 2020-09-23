@@ -1,15 +1,22 @@
-# Parameter file generated for model Shrimp tox, containing modules (Shrimp tox V0.1) at 2020-02-14 15:24:01
+# Parameter file generated for model Shrimp tox, containing modules (Shrimp tox V0.1) at 2020-09-23 16:10:12
 
 index_sets:
 "Age class" : {"1  Larva" "2  Juvenile" "3  Juvenile" "4  Juvenile" "5  Juvenile" "6  Immature male" "7  Mature male" "8  Mature male" "9  Transitional" "10 Immature female" "11 Ovigerous female I" "12 Ovigerous female I" "13 Spent female I" "14 Spent female I" "15 Ovigerous female II" "16 Ovigerous female II" "17 Spent female II" "18 Spent female II" "19 Ovigerous female III" "20 Ovigerous female III"}
 
 parameters:
-###################### (no index sets) ######################
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2020-01-01
+
 "Timesteps" :     #(days) [0, 18446744073709551615]
 400
 
-"Start date" :     # [1000-01-01, 3000-12-31]
-2020-01-01
+
+###################### Shrimp tox V0.1 ######################
+
+# General (no index sets) #
 
 "Strength of density dependence (a)" :     #(1/(ind/100m2)) [-1.79769313486232e+308, 1.79769313486232e+308]
 0.0001
@@ -20,7 +27,21 @@ parameters:
 "First adult age class" :     #(season) [1, 100]
 6
 
-###################### "Age class" ######################
+"Bad year type" :     #(dimensionless) [0, 2] 0=None, 1=Once, 2=0.25% chance each year
+0
+
+"Bad year" :     #(year) [1000, 3000] What year is the bad year if there is only one
+2040
+
+"Reduction of larva survival in bad year" :     #(dimensionless) [0, 1] Multiplier to larva survival rate
+0.5
+
+"Variation in survival" :     #(dimensionless) [0.8, 1.2] Exponent in survival rate. Used for changing rate when running the model stochastically
+1
+
+
+# Age class ("Age class") #
+
 "Base survival rate" :     #(dimensionless) [0, 1]
 0.05 0.75 0.95 0.95 0.75 0.95 0.95 0.75 0.75 0.95 0.7 0.9 0.7 0.9 0.7 0.9 0.7 0.9 0.7 0
 

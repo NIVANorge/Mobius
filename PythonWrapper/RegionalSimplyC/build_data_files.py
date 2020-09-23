@@ -173,6 +173,7 @@ def create_mobius_input_file(catch_no, catch_name, met_df, era5_df, flow_df, doc
 	outfile.write('additional_timeseries:\n')
 	outfile.write('"Observed flow" unit "m3/s"\n')
 	outfile.write('"Observed DOC"  unit "mg/L"\n')
+	#outfile.write('"Observed DOC flux" unit "kg/day"\n')
 
 	outfile.write('\n')
 
