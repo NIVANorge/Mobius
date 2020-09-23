@@ -36,7 +36,7 @@ parameters:
 "Reduction of larva survival in bad year" :     #(dimensionless) [0, 1] Multiplier to larva survival rate
 0.5
 
-"Variation in survival" :     #(dimensionless) [0.8, 1.2] Exponent in survival rate. Used for changing rate when running the model stochastically
+"Variation in survival" :     #(dimensionless) [0.8, 1.2] Exponent to survival rate. Used for changing rate when running the model stochastically
 1
 
 
