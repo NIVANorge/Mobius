@@ -1,4 +1,4 @@
-# Parameter file generated for model Shrimp tox, containing modules (Shrimp tox V0.1) at 2020-09-23 16:10:12
+# Parameter file generated for model SimplyQ, containing modules (Shrimp tox V0.1) at 2020-09-24 13:57:25
 
 index_sets:
 "Age class" : {"1  Larva" "2  Juvenile" "3  Juvenile" "4  Juvenile" "5  Juvenile" "6  Immature male" "7  Mature male" "8  Mature male" "9  Transitional" "10 Immature female" "11 Ovigerous female I" "12 Ovigerous female I" "13 Spent female I" "14 Spent female I" "15 Ovigerous female II" "16 Ovigerous female II" "17 Spent female II" "18 Spent female II" "19 Ovigerous female III" "20 Ovigerous female III"}
@@ -27,8 +27,8 @@ parameters:
 "First adult age class" :     #(season) [1, 100]
 6
 
-"Bad year type" :     #(dimensionless) [0, 2] 0=None, 1=Once, 2=0.25% chance each year
-0
+"Bad year type" :     # [None, Once, Multiple] 0=None, 1=Once, 2=0.25% chance each year
+None
 
 "Bad year" :     #(year) [1000, 3000] What year is the bad year if there is only one
 2040
@@ -37,6 +37,9 @@ parameters:
 0.5
 
 "Variation in survival" :     #(dimensionless) [0.8, 1.2] Exponent to survival rate. Used for changing rate when running the model stochastically
+1
+
+"Toxicity multiplier" :     #(dimensionless) [0.1, 1] Multiplier to survival rate of non-larvae caused by toxicity
 1
 
 
@@ -49,5 +52,5 @@ parameters:
 0 0 0 0 0 0 0 0 0 0 0 1000 0 0 0 1500 0 0 0 2000
 
 "Initial population size" :     #(ind/100m2) [-1.79769313486232e+308, 1.79769313486232e+308]
-3000 400 400 300 300 250 250 250 250 200 200 200 200 100 100 100 100 50 50 50
+58000 0 0 0 1800 0 0 0 180 0 0 0 18 0 0 0 2 0 0 0
 

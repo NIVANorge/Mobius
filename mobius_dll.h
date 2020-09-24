@@ -426,6 +426,28 @@ DllSetParameterTime(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	CHECK_ERROR_END
 }
 
+DLLEXPORT void
+DllSetParameterEnum(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCount, char *Val)
+{
+	CHECK_ERROR_BEGIN
+	
+	if(!Val || !strlen(Val))
+		FatalError("ERROR: Got a value string for the parameter \"", Name, "\" with length 0.\n");
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	parameter_value Value;
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+	auto Find = Spec.EnumNameToValue.find(Val);
+	if(Find != Spec.EnumNameToValue.end())
+		Value.ValUInt = Find->second;
+	else
+		FatalError("ERROR: The parameter \"", Name, "\" does not take the value \"", Val, "\".\n");
+
+	SetParameterValue(DataSet, Name, IndexNames, IndexCount, Value, ParameterType_Enum);
+	
+	CHECK_ERROR_END
+}
+
 DLLEXPORT double
 DllGetParameterDouble(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCount)
 {
@@ -472,6 +494,49 @@ DllGetParameterTime(void *DataSetPtr, const char *Name, char **IndexNames, u64 I
 	datetime DateTime = GetParameterValue((mobius_data_set *)DataSetPtr, Name, IndexNames, (size_t)IndexCount, ParameterType_Time).ValTime;
 	char *TimeStr = DateTime.ToString();
 	strcpy(WriteTo, TimeStr);
+	
+	CHECK_ERROR_END
+}
+
+DLLEXPORT const char *
+DllGetParameterEnum(void *DataSetPtr, const char *Name, char **IndexNames, u64 IndexCount)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	u64 Value = GetParameterValue(DataSet, Name, IndexNames, IndexCount, ParameterType_Enum).ValUInt;
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+	return Spec.EnumNames[Value];
+	
+	CHECK_ERROR_END
+	
+	return nullptr;
+}
+
+DLLEXPORT u64
+DllGetEnumValuesCount(void *DataSetPtr, const char *Name)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+	return Spec.EnumNames.size();
+	
+	CHECK_ERROR_END
+	
+	return 0;
+}
+
+DLLEXPORT void
+DllGetEnumValues(void *DataSetPtr, const char *Name, const char **NamesOut)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+	int Idx = 0;
+	for(const char *EnumName : Spec.EnumNames)
+		NamesOut[Idx++] = EnumName;
 	
 	CHECK_ERROR_END
 }

@@ -69,6 +69,8 @@ def initialize(dllname) :
 
 	mobiusdll.DllSetParameterTime.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64, ctypes.c_char_p]
 
+	mobiusdll.DllSetParameterEnum.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64, ctypes.c_char_p]
+	
 	mobiusdll.DllWriteParametersToFile.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
 	mobiusdll.DllGetParameterDouble.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64]
@@ -81,6 +83,9 @@ def initialize(dllname) :
 	mobiusdll.DllGetParameterBool.restype  = ctypes.c_bool
 
 	mobiusdll.DllGetParameterTime.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64, ctypes.c_char_p]
+
+	mobiusdll.DllGetParameterEnum.agtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64]
+	mobiusdll.DllGetParameterEnum.restype = ctypes.c_char_p
 
 	mobiusdll.DllSetInputSeries.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64, ctypes.POINTER(ctypes.c_double), ctypes.c_uint64, ctypes.c_bool]
 	
@@ -399,6 +404,18 @@ class DataSet :
 		mobiusdll.DllSetParameterTime(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), strvalue.encode('utf-8'))
 		check_dll_error()
 		
+	def set_parameter_enum(self, name, indexes, value):
+		'''
+		Overwrite the value of one parameter. Can only be called on parameters that were registered with the type enum.
+		
+		Arguments:
+			name             -- string. The name of the parameter. Example : "Start date"
+			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
+			value            -- string. The value to write to the parameter. Must be one of the recognized values for this enum.
+		'''
+		mobiusdll.DllSetParameterEnum(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes), value.encode('utf-8'))
+		check_dll_error()
+		
 	def get_parameter_double(self, name, indexes) :
 		'''
 		Read the value of one parameter. Can only be called on parameters that were registered with the type double.
@@ -463,6 +480,22 @@ class DataSet :
 		except :
 			result = dt.datetime.strptime(datestr, '%Y-%m-%d')
 		return result
+		
+	def get_parameter_enum(self, name, indexes) :
+		'''
+		Read the value of one parameter. Can only be called on parameters that were registered with the type enum.
+		
+		Arguments:
+			name             -- string. The name of the parameter. Example : "Start date"
+			indexes          -- list of strings. A list of index names to identify the particular parameter instance. Example : [], ["Langtjern"] or ["Langtjern", "Forest"]
+		
+		Returns:
+			The value of the parameter (as a string).
+		'''
+
+		string = mobiusdll.DllGetParameterEnum(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes))
+		check_dll_error()
+		return string.value.decode('utf-8')
 		
 	def get_parameter_double_min_max(self, name) :
 		'''

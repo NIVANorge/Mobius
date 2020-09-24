@@ -46,6 +46,7 @@ MODEL_PARAMETER_HANDLE(parameter_double_h)
 MODEL_PARAMETER_HANDLE(parameter_uint_h)
 MODEL_PARAMETER_HANDLE(parameter_bool_h)
 MODEL_PARAMETER_HANDLE(parameter_time_h)
+MODEL_PARAMETER_HANDLE(parameter_enum_h)
 #undef MODEL_PARAMETER_HANDLE
 
 
@@ -61,10 +62,7 @@ struct index_t
 	
 	index_t(entity_handle IndexSetHandle, u32 Index) : IndexSetHandle(IndexSetHandle), Index(Index) {};
 	
-	void operator++()
-	{
-		Index++;
-	}
+	void operator++() { Index++; }
 	
 	index_t operator+(s32 Add) const
 	{
@@ -80,22 +78,52 @@ struct index_t
 		return Result;
 	}
 	
-	bool operator<=(const index_t& Other) const
+	//NOTE: This does NOT check if they came from a different index set. That check has to be done by the caller if needed.
+	bool operator<=(const index_t& Other) const { return Index <= Other.Index; }
+	
+	//NOTE: This does NOT check if they came from a different index set. That check has to be done by the caller if needed.
+	bool operator<(const index_t& Other) const { return Index < Other.Index; }
+	
+	operator size_t() const { return (size_t)Index;	}
+};
+
+template <typename handle_type>
+using string_map = std::unordered_map<token_string, handle_type, token_string_hash_function>;
+
+template <typename handle_type, typename spec_type>
+struct entity_registry
+{
+	std::vector<spec_type> Specs;
+	string_map<handle_type> NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
+	
+	entity_registry() { Specs.push_back({}); } //NOTE: Reserving the 0 index as an invalid index. TODO: Should maybe use U32_MAX instead, but would require some rework, and 0 is safer since we can then just 0-initialize everything.
+	
+	handle_type Register(const char *Name)
 	{
-		//NOTE: This does NOT check if they came from a different index set. That check has to be done by the caller if needed.
-		return Index <= Other.Index;
+		auto Find = NameToHandle.find(Name);
+		if(Find != NameToHandle.end())
+			return Find->second;
+		else
+		{
+			entity_handle Handle = (entity_handle)Specs.size();
+			Specs.push_back({});
+			Specs[Handle].Name = Name;
+			NameToHandle[Name] = {Handle};
+			return {Handle};
+		}
 	}
 	
-	bool operator<(const index_t& Other) const
-	{
-		//NOTE: This does NOT check if they came from a different index set. That check has to be done by the caller if needed.
-		return Index < Other.Index;
-	}
+	bool Has(const char *Name) const { return NameToHandle.find(Name) != NameToHandle.end(); }
 	
-	operator size_t() const
-	{
-		return (size_t)Index;
-	}
+	      spec_type& operator[](handle_type Handle)       { return Specs[Handle.Handle]; }
+	const spec_type& operator[](handle_type Handle) const { return Specs[Handle.Handle]; }
+	
+	size_t Count() const { return Specs.size();	}     //TODO; Should probably return size-1 since the first index is discounted, but we have to make sure it doesn't break other code then.
+	
+	handle_type begin() { return {1}; }              //NOTE: Start at 1 since 0 is considered invalid
+	handle_type end()   { return {(entity_handle)Specs.size()} ; }
+	const handle_type begin() const { return {1}; }  //NOTE: Start at 1 since 0 is considered invalid
+	const handle_type end()   const { return {(entity_handle)Specs.size()} ; }
 };
 
 union parameter_value
@@ -118,13 +146,14 @@ enum parameter_type
 	ParameterType_UInt,
 	ParameterType_Bool,
 	ParameterType_Time,
+	ParameterType_Enum,
 };
 
 inline const char *
 GetParameterTypeName(parameter_type Type)
 {
 	//NOTE: It is important that this matches the above parameter_type enum:
-	const char *Typenames[4] = {"double", "uint", "bool", "time"};
+	const char *Typenames[5] = {"double", "uint", "bool", "time", "enum"};
 	return Typenames[(size_t)Type];
 }
 
@@ -144,6 +173,9 @@ struct parameter_spec
 	bool ShouldNotBeExposed; //NOTE: Any user interface or file handler should not deal with a parameter if ShouldNotBeExposed = true;
 	
 	parameter_group_h Group;
+	
+	std::vector<const char *> EnumNames;
+	string_map<u32> EnumNameToValue;
 	
 	//NOTE: This not set before EndModelDefinition:
 	//TODO: Should not really store it here though.
@@ -375,50 +407,8 @@ struct storage_structure
 	const mobius_model *Model;
 };
 
-template <typename handle_type>
-using string_map = std::unordered_map<token_string, handle_type, token_string_hash_function>;
-
-//typedef std::unordered_map<token_string, entity_handle, token_string_hash_function> string_map;
-
 struct mobius_data_set;
 typedef std::function<void(mobius_data_set *)> mobius_preprocessing_step;
-
-
-template <typename handle_type, typename spec_type>
-struct entity_registry
-{
-	std::vector<spec_type> Specs;
-	string_map<handle_type> NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
-	
-	entity_registry() { Specs.push_back({}); } //NOTE: Reserving the 0 index as an invalid index. TODO: Should maybe use U32_MAX instead, but would require some rework, and 0 is safer since we can then just 0-initialize everything.
-	
-	handle_type Register(const char *Name)
-	{
-		auto Find = NameToHandle.find(Name);
-		if(Find != NameToHandle.end())
-			return Find->second;
-		else
-		{
-			entity_handle Handle = (entity_handle)Specs.size();
-			Specs.push_back({});
-			Specs[Handle].Name = Name;
-			NameToHandle[Name] = {Handle};
-			return {Handle};
-		}
-	}
-	
-	bool Has(const char *Name) const { return NameToHandle.find(Name) != NameToHandle.end(); }
-	
-	      spec_type& operator[](handle_type Handle)       { return Specs[Handle.Handle]; }
-	const spec_type& operator[](handle_type Handle) const { return Specs[Handle.Handle]; }
-	
-	size_t Count() const { return Specs.size();	}     //TODO; Should probably return size-1 since the first index is discounted, but we have to make sure it doesn't break other code then.
-	
-	handle_type begin() { return {1}; }              //NOTE: Start at 1 since 0 is considered invalid
-	handle_type end()   { return {(entity_handle)Specs.size()} ; }
-	const handle_type begin() const { return {1}; }  //NOTE: Start at 1 since 0 is considered invalid
-	const handle_type end()   const { return {(entity_handle)Specs.size()} ; }
-};
 
 
 struct mobius_model
@@ -943,6 +933,50 @@ RegisterParameterDate(mobius_model *Model, parameter_group_h Group, const char *
 	return {Parameter.Handle};
 }
 
+inline parameter_enum_h
+RegisterParameterEnum(mobius_model *Model, parameter_group_h Group, const char *Name, const std::initializer_list<const char *> &EnumNames, const char *Default = nullptr, const char *Description = nullptr, const char *ShortName = nullptr)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	parameter_value Default_; Default_.ValUInt = 0; //Temporary
+	parameter_value Min_;     Min_.ValUInt = 0;
+	parameter_value Max_;     Max_.ValUInt = (u64)EnumNames.size();
+	
+	if(EnumNames.size() == 0)
+		FatalError("ERROR: The enum parameter \"", Name, "\" was registered with 0 possible enum values. It has to have at least 1.\n");
+	
+	parameter_h Parameter = RegisterParameter_(Model, Group, Name, {}, Default_, Min_, Max_, Description, ShortName, ParameterType_Enum);
+	parameter_spec &Spec = Model->Parameters[Parameter];
+	
+	u32 Idx = 0;
+	s64 FoundDefault = -1;
+	for(const char *EnumName : EnumNames)
+	{
+		const char *C = EnumName;
+		while(*C != 0)
+		{
+			if(!isalpha(*C) && *C != '_')
+				FatalError("ERROR: The enum parameter \"", Name, "\" was given the possible value \"", EnumName, "\", which contains characters that are not alphabetical or '_'.\n");
+			++C;
+		}
+		
+		if(Default && strcmp(EnumName, Default)==0) FoundDefault = (s64)Idx;
+		
+		Spec.EnumNameToValue[EnumName] = Idx;
+		++Idx;
+	}
+	
+	Spec.EnumNames = EnumNames; //NOTE: vector copy
+	
+	if(Default && (FoundDefault == -1))
+		FatalError("ERROR: The enum parameter \"", Name, "\" was given the default value \"", Default, "\" which does not appear on its list of possible values.\n");
+	
+	if(FoundDefault >= 0)
+		Spec.Default.ValUInt = (u64)FoundDefault;
+	
+	return {Parameter.Handle};
+}
+
 inline void
 ParameterIsComputedBy(mobius_model *Model, parameter_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
 {
@@ -1335,6 +1369,12 @@ GetCurrentParameter(model_run_state *RunState, parameter_bool_h Parameter)
 	return RunState->CurParameters[Parameter.Handle].ValBool;
 }
 
+inline u64
+GetCurrentParameter(model_run_state *RunState, parameter_enum_h Parameter)
+{
+	return RunState->CurParameters[Parameter.Handle].ValUInt;
+}
+
 
 //NOTE: Defined in mobius_data_set.h
 template<typename handle_type>
@@ -1368,6 +1408,16 @@ GetCurrentParameter(model_run_state *RunState, parameter_bool_h Parameter, T... 
 	index_t OverrideIndexes[OverrideCount] = {Indexes...};
 	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, (parameter_h)Parameter);
 	return DataSet->ParameterData[Offset].ValBool;
+}
+
+template<typename... T> u64
+GetCurrentParameter(model_run_state *RunState, parameter_enum_h Parameter, T... Indexes)
+{
+	mobius_data_set *DataSet = RunState->DataSet;
+	const size_t OverrideCount = sizeof...(Indexes);
+	index_t OverrideIndexes[OverrideCount] = {Indexes...};
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, OverrideIndexes, OverrideCount, (parameter_h)Parameter);
+	return DataSet->ParameterData[Offset].ValUInt;
 }
 
 

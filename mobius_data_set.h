@@ -832,14 +832,31 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<
 }
 
 inline void
-SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, const char *TimeValue)
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, const char *StrValue)
 {
+	if(!StrValue || !strlen(StrValue))
+		FatalError("ERROR: Got a value string for the parameter \"", Name, "\" with length 0.\n");
+		
 	parameter_value Val;
-	bool ParseSuccess;
-	Val.ValTime = datetime(TimeValue, &ParseSuccess);
-	
-	if(!ParseSuccess)
-		FatalError("ERROR: Unrecognized date format when setting the value of the parameter \"", Name, "\".\n");
+	if(StrValue[0] >= '0' && StrValue[0] <= '9')
+	{
+		//Interpret this as a time value
+		bool ParseSuccess;
+		Val.ValTime = datetime(StrValue, &ParseSuccess);
+		
+		if(!ParseSuccess)
+			FatalError("ERROR: Unrecognized date format when setting the value of the parameter \"", Name, "\".\n");
+	}
+	else
+	{
+		//Interpret this as a possible enum value
+		const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+		auto Find = Spec.EnumNameToValue.find(StrValue);
+		if(Find != Spec.EnumNameToValue.end())
+			Val.ValUInt = Find->second;
+		else
+			FatalError("ERROR: The parameter \"", Name, "\" does not take the value \"", StrValue, "\".\n");
+	}
 	
 	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Val, ParameterType_Time);
 }
@@ -881,6 +898,14 @@ inline u64
 GetParameterUInt(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes)
 {
 	return GetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), ParameterType_UInt).ValUInt;
+}
+
+inline const char *
+GetParameterEnum(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes)
+{
+	u64 Value = GetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), ParameterType_Enum).ValUInt;
+	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+	return Spec.EnumNames[Value];
 }
 
 inline bool

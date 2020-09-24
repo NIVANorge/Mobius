@@ -8,15 +8,15 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/EcoTox/ShrimpTox.h"
+#include "../../Modules/EcoTox/Shrimpact.h"
 
 
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("Shrimp tox", false, "3M");
+	mobius_model *Model = BeginModelDefinition("SHRIMPACT", false, "3M");
 	
-	AddShrimpToxModel(Model);
+	AddShrimpactModel(Model);
 	
 	return Model;
 }

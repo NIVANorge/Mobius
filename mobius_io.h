@@ -35,9 +35,9 @@ DlmWriteResultSeriesToFile(mobius_data_set *DataSet, const char *Filename, std::
 }
 
 static void
-WriteParameterValue(FILE *File, parameter_value Value, parameter_type Type)
+WriteParameterValue(FILE *File, parameter_value Value, const parameter_spec &Spec)
 {
-	switch(Type)
+	switch(Spec.Type)
 	{
 		case ParameterType_Double:
 		fprintf(File, "%.15g", Value.ValDouble);
@@ -54,17 +54,20 @@ WriteParameterValue(FILE *File, parameter_value Value, parameter_type Type)
 		case ParameterType_Time:
 		fprintf(File, "%s", Value.ValTime.ToString());
 		break;
+		
+		case ParameterType_Enum:
+		fprintf(File, "%s", Spec.EnumNames[Value.ValUInt]);
 	}
 }
 
 static void
-WriteParameterValues(FILE *File, parameter_h Parameter, parameter_type Type, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
+WriteParameterValues(FILE *File, parameter_h Parameter, const parameter_spec &Spec, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
 {
 	if(IndexSetCount == 0)
 	{
 		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter);
 		parameter_value Value = DataSet->ParameterData[Offset];
-		WriteParameterValue(File, Value, Type);
+		WriteParameterValue(File, Value, Spec);
 		return;
 	}
 	
@@ -78,12 +81,12 @@ WriteParameterValues(FILE *File, parameter_h Parameter, parameter_type Type, mob
 		{
 			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexSetCount, DataSet->IndexCounts, Parameter);
 			parameter_value Value = DataSet->ParameterData[Offset];
-			WriteParameterValue(File, Value, Type);
+			WriteParameterValue(File, Value, Spec);
 			if(Index + 1 != IndexCount) fprintf(File, " ");
 		}
 		else
 		{
-			WriteParameterValues(File, Parameter, Type, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1);
+			WriteParameterValues(File, Parameter, Spec, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1);
 			if(Index + 1 != IndexCount)
 			{
 				if(Level + 2 == IndexSetCount) fprintf(File, "\n");
@@ -206,16 +209,31 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 						fprintf(File, "     #(%s)", GetName(Model, Spec.Unit));
 						PrintedPnd = true;
 					}
-					if(Spec.Type != ParameterType_Bool)
+					if(Spec.Type != ParameterType_Bool && Spec.Type != ParameterType_Enum)
 					{
 						if(!PrintedPnd) fprintf(File, "     #");
 						PrintedPnd = true;
 						fprintf(File, " [");
-						WriteParameterValue(File, Spec.Min, Spec.Type);
+						WriteParameterValue(File, Spec.Min, Spec);
 						fprintf(File, ", ");
-						WriteParameterValue(File, Spec.Max, Spec.Type);
+						WriteParameterValue(File, Spec.Max, Spec);
 						fprintf(File, "]");
 					}
+					else if(Spec.Type == ParameterType_Enum)
+					{
+						if(!PrintedPnd) fprintf(File, "     #");
+						PrintedPnd = true;
+						fprintf(File, " [");
+						int Idx = 0;
+						for(token_string EnumName : Spec.EnumNames)
+						{
+							fprintf(File, "%s", EnumName.Data);
+							if(Idx != Spec.EnumNames.size()-1) fprintf(File, ", ");
+							++Idx;
+						}
+						fprintf(File, "]");
+					}
+					
 					if(Spec.Description)
 					{
 						if(!PrintedPnd) fprintf(File, "     #");
@@ -226,7 +244,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 					size_t IndexSetCount = Group.IndexSets.size();
 					index_t *CurrentIndexes = AllocClearedArray(index_t, IndexSetCount);
 					
-					WriteParameterValues(File, Parameter, Spec.Type, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
+					WriteParameterValues(File, Parameter, Spec, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
 					
 					fprintf(File, "\n\n");
 					free(CurrentIndexes);
@@ -459,7 +477,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 
 					std::vector<parameter_value> Values;
 					Values.reserve(ExpectedCount);
-					Stream.ReadParameterSeries(Values, Type);
+					Stream.ReadParameterSeries(Values, Spec);
 					if(Values.size() != ExpectedCount)                                                                   
 					{                                                                                                    
 						Stream.PrintErrorHeader();                                                                       

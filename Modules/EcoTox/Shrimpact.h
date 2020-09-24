@@ -5,9 +5,9 @@
 // S. Jannicke Moe & al. 2019, Effects of an aquaculture pesticide (diflubenzuron) on non-target shrimp populations: Extrapolation from laboratory experiments to the risk of population decline.  Ecological Modelling 413, 108833
 
 
-void AddShrimpToxModel(mobius_model *Model)
+void AddShrimpactModel(mobius_model *Model)
 {
-	BeginModule(Model, "Shrimp tox", "0.1");
+	BeginModule(Model, "SHRIMPACT", "0.1");
 	
 	auto Dimensionless        = RegisterUnit(Model);
 	auto Individuals          = RegisterUnit(Model, "ind/100m2");
@@ -25,8 +25,8 @@ void AddShrimpToxModel(mobius_model *Model)
 	auto DegreeOfCompensation        = RegisterParameterDouble(Model, GeneralParam, "Degree of compensation (b)", Dimensionless, 1.0);
 	auto FirstAdultClass             = RegisterParameterUInt(Model, GeneralParam, "First adult age class", Season, 6, 1, 100);
 	
-	auto BadYearType                 = RegisterParameterUInt(Model, GeneralParam, "Bad year type", Dimensionless, 0, 0, 2, "0=None, 1=Once, 2=0.25% chance each year");
-	auto BadYearNumber               = RegisterParameterUInt(Model, GeneralParam, "Bad year", Year, 2040, 1000, 3000, "What year is the bad year if there is only one");
+	auto BadYearType                 = RegisterParameterEnum(Model, GeneralParam, "Bad year type", {"None", "Once", "Multiple"}, "None", "If 'Multiple', there is a 25% chance of a bad year each year.");
+	auto BadYearNumber               = RegisterParameterUInt(Model, GeneralParam, "Bad year", Year, 2040, 1000, 3000, "What year is the bad year if it happens only once.");
 	auto BadYearSurvivalReduction  = RegisterParameterDouble(Model, GeneralParam, "Reduction of larva survival in bad year", Dimensionless, 0.5, 0.0, 1.0, "Multiplier to larva survival rate");
 	auto VariationInSurvival         = RegisterParameterDouble(Model, GeneralParam, "Variation in survival", Dimensionless, 1.0, 0.8, 1.2, "Exponent to survival rate. Used for changing rate when running the model stochastically"); 
 	auto Toxicity                    = RegisterParameterDouble(Model, GeneralParam, "Toxicity multiplier", Dimensionless, 1.0, 0.1, 1.0, "Multiplier to survival rate of non-larvae caused by toxicity");

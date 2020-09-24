@@ -126,7 +126,7 @@ struct token_stream
 	void ReadQuotedStringList(std::vector<token_string> &ListOut);
 	void ReadQuotedStringList(std::vector<const char *> &ListOut);
 	void ReadDoubleSeries(std::vector<double> &ListOut);
-	void ReadParameterSeries(std::vector<parameter_value> &ListOut, parameter_type Type);
+	void ReadParameterSeries(std::vector<parameter_value> &ListOut, const parameter_spec &Spec);
 	
 	void PrintErrorHeader(bool CurrentColumn=false);
 
@@ -724,11 +724,11 @@ token_stream::ReadDoubleSeries(std::vector<double> &ListOut)
 
 
 void
-token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, parameter_type Type)
+token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, const parameter_spec &Spec)
 {
 	parameter_value Value;
 	
-	if(Type == ParameterType_Double)
+	if(Spec.Type == ParameterType_Double)
 	{
 		while(true)
 		{
@@ -738,7 +738,7 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, paramet
 			ListOut.push_back(Value);
 		}
 	}
-	else if(Type == ParameterType_UInt)
+	else if(Spec.Type == ParameterType_UInt)
 	{
 		while(true)
 		{
@@ -748,7 +748,7 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, paramet
 			ListOut.push_back(Value);
 		}
 	}
-	else if(Type == ParameterType_Bool)
+	else if(Spec.Type == ParameterType_Bool)
 	{
 		while(true)
 		{
@@ -758,13 +758,27 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, paramet
 			ListOut.push_back(Value);
 		}
 	}
-	else if(Type == ParameterType_Time)
+	else if(Spec.Type == ParameterType_Time)
 	{
 		while(true)
 		{
 			token Token = PeekToken();
 			if(Token.Type != TokenType_Date) break;
 			Value.ValTime = ExpectDateTime();
+			ListOut.push_back(Value);
+		}
+	}
+	else if (Spec.Type == ParameterType_Enum)
+	{
+		while(true)
+		{
+			token Token = PeekToken();
+			if(Token.Type != TokenType_UnquotedString) break;
+			token_string Val = ExpectUnquotedString();
+			auto Find = Spec.EnumNameToValue.find(Val);
+			if(Find == Spec.EnumNameToValue.end())
+				FatalError("ERROR: The parameter \"", Spec.Name, "\" does not have a possible enum value called \"", Val, "\".\n");
+			Value.ValUInt = Find->second;
 			ListOut.push_back(Value);
 		}
 	}
