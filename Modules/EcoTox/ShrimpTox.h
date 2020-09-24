@@ -29,6 +29,8 @@ void AddShrimpToxModel(mobius_model *Model)
 	auto BadYearNumber               = RegisterParameterUInt(Model, GeneralParam, "Bad year", Year, 2040, 1000, 3000, "What year is the bad year if there is only one");
 	auto BadYearSurvivalReduction  = RegisterParameterDouble(Model, GeneralParam, "Reduction of larva survival in bad year", Dimensionless, 0.5, 0.0, 1.0, "Multiplier to larva survival rate");
 	auto VariationInSurvival         = RegisterParameterDouble(Model, GeneralParam, "Variation in survival", Dimensionless, 1.0, 0.8, 1.2, "Exponent to survival rate. Used for changing rate when running the model stochastically"); 
+	auto Toxicity                    = RegisterParameterDouble(Model, GeneralParam, "Toxicity multiplier", Dimensionless, 1.0, 0.1, 1.0, "Multiplier to survival rate of non-larvae caused by toxicity");
+	
 	
 	auto BaseSurvivalRate            = RegisterParameterDouble(Model, AgeParam, "Base survival rate", Dimensionless, 0.9, 0.0, 1.0);
 	auto Fertility                   = RegisterParameterDouble(Model, AgeParam, "Fertility", Dimensionless, 0.0, 0.0, 1.0);
@@ -36,7 +38,7 @@ void AddShrimpToxModel(mobius_model *Model)
 	auto InitialPopulationSize       = RegisterParameterDouble(Model, AgeParam, "Initial population size", Individuals, 500.0);
 	
 	
-	auto TotalAdultPopulation = RegisterEquation(Model, "Total adult population", Individuals);
+	
 	auto Birth                = RegisterEquation(Model, "Birth", IndividualsPerSeason);
 	auto TotalBirth           = RegisterEquationCumulative(Model, "Total birth", Birth, AgeClass);
 	auto SurvivalRate         = RegisterEquation(Model, "Survival rate", Dimensionless);
@@ -44,12 +46,16 @@ void AddShrimpToxModel(mobius_model *Model)
 	auto PopulationSize       = RegisterEquation(Model, "Population size", Individuals);
 	SetInitialValue(Model, PopulationSize, InitialPopulationSize);
 	
+	auto TotalAdultPopulation = RegisterEquation(Model, "Total adult population", Individuals);
+	
 	EQUATION(Model, SurvivalRate,
 		index_t Age    = CURRENT_INDEX(AgeClass);
 		double survivalRate = PARAMETER(BaseSurvivalRate);
 		double lastRate = LAST_RESULT(SurvivalRate);
+		double toxicity = PARAMETER(Toxicity);
 		
 		survivalRate = std::pow(survivalRate, PARAMETER(VariationInSurvival));
+		if(Age != FIRST_INDEX(AgeClass)) survivalRate *= toxicity;
 		
 		double badYearReduction = PARAMETER(BadYearSurvivalReduction);
 		u64    badYearNumber    = PARAMETER(BadYearNumber);

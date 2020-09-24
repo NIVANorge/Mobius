@@ -239,8 +239,8 @@ AddSedimentOxygenModule(mobius_model *Model)
 		double Clow = RESULT(Conc##LevIDXLow);                                             \
 		double D0   = RESULT(OxygenDiffusivityInWater);                                    \
 		double D    = D0*PARAMETER(SedimentPorosity);                                      \
-		double Dupp = LevIDX <= PARAMETER(UpperProductionIndex) ?  D : D0;                 \
-		double Dlow = LevIDX < PARAMETER(UpperProductionIndex) ?  D : D0;                  \
+		double Dupp = LevIDX <= PARAMETER(UpperProductionIndex) ?  D0 : D;                 \
+		double Dlow = LevIDX < PARAMETER(UpperProductionIndex) ?  D0 : D;                  \
 		double diff = Diffusion(Z, Zlow, Zupp, Dlow, Dupp, C, Clow, Cupp);                 \
 		double prod = RESULT(OxygenProductionRate);                                        \
 		if(LevIDX < PARAMETER(UpperProductionIndex) || LevIDX > PARAMETER(LowerProductionIndex)) prod = 0.0;  \

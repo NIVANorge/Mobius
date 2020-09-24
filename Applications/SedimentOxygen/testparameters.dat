@@ -1,4 +1,4 @@
-# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-09-18 13:46:40
+# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-09-24 10:37:01
 
 index_sets:
 
@@ -18,10 +18,10 @@ parameters:
 # Sediment oxygen (no index sets) #
 
 "Atmospheric O2 partial pressure" :     #(% atm) [0, 100]
-4
+21
 
 "Temperature" :     #(°C) [-5, 40]
-35
+15
 
 "Salinity" :     #(PSS-78) [0, 1000]
 35
@@ -39,7 +39,7 @@ parameters:
 0
 
 "Sediment porosity" :     #(dimensionless) [0, 1]
-0.7
+0.6
 
 "Attenuation coefficient" :     #(1/m) [0, 0.2]
 0.5
