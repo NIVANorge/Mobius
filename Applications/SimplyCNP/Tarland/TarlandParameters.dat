@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev, SimplyC Vtest_03, SimplyP V0.4) at 2020-09-25 17:07:56
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev, SimplyC Vtest_03, SimplyP V0.4) at 2020-09-25 23:01:53
 
 index_sets:
 "Landscape units" : {"Arable" "Improved grassland" "Semi-natural"}
@@ -201,13 +201,13 @@ true
 # Carbon global (no index sets) #
 
 "Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 20] 
-0.1
+0.15
 
 "Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20] 
 0
 
 "Mineral soil/groundwater DOC concentration" :     #(mg/l) [0, 70]
-2
+2.4
 
 
 # Carbon land ("Landscape units") #
@@ -216,10 +216,10 @@ true
 3 3 3
 
 "Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0
-5 5 5
+3.1 3.1 3.1
 
 "DOC mineralisation+sorption rate" :     #(1/day) [0, 1] 
-0.6 0.6 0.6
+0.967741935483871 0.967741935483871 0.967741935483871
 
 "Compute mineralisation+sorption rate from baseline conc." :     # If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration
 true true true
