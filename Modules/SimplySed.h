@@ -60,7 +60,7 @@ This is a simple sediment transport module created as a part of SimplyP.
 	
 	// Equations already defined
 	auto ReachFlow          = GetEquationHandle(Model, "Reach flow (end-of-day)");
-	auto ReachFlowInputFromLand = GetEquationHandle(Model, "Reach flow input from land");
+	auto ReachFlowInputFromLand = GetEquationHandle(Model, "Flow input from land");
 	auto DailyMeanReachFlow = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
 	auto ReachVolume        = GetEquationHandle(Model, "Reach volume");
 	
