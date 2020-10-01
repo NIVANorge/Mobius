@@ -28,6 +28,7 @@ SaturationVaporPressure(double Temperature)
 	return (a0 + t*(a1 + t*(a2 + t*(a3 + t*(a4 + t*(a5 + t*a6))))));
 }
 
+
 static void
 AddEasyLakePhysicalModule(mobius_model *Model)
 {
@@ -69,13 +70,13 @@ The implementation is informed by the implementation in [^https://github.com/got
 #ifdef EASYLAKE_STANDALONE
 	auto LakeInflow       = RegisterInput(Model, "Lake inflow", M3PerS);
 	
-	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters");
+	auto PhysParams = RegisterParameterGroup(Model, "Lake physical");
 #endif
 
 #ifdef EASYLAKE_SIMPLYQ
 	auto Reach            = GetIndexSetHandle(Model, "Reaches");
 	
-	auto PhysParams = RegisterParameterGroup(Model, "Lake physical parameters", Reach);
+	auto PhysParams = RegisterParameterGroup(Model, "Lake physical", Reach);
 	
 	auto IsLake     = RegisterParameterBool(Model, PhysParams, "This section is a lake", false, "If false this is a river section: ignore the parameters below");
 
@@ -118,10 +119,16 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto WaterLevel = RegisterEquationODE(Model, "Water level", M, LakeSolver);
 	SetInitialValue(Model, WaterLevel, InitialWaterLevel);
 	
+	auto EpilimnionVolume  = RegisterEquation(Model, "Epilimnion volume", M3, LakeSolver);  //NOTE: In their current form, they are just put on the solver to not cause circular references in EasyLakeCNP.
+	auto HypolimnionVolume = RegisterEquation(Model, "Hypolimnion volume", M3, LakeSolver);
+	
 	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerDay, LakeSolver);
 	auto OutletWaterLevel = RegisterEquation(Model, "Outlet water level", M, LakeSolver);
 	auto LakeOutflow = RegisterEquation(Model, "Lake outflow", M3PerS, LakeSolver);
 	auto Evaporation = RegisterEquation(Model, "Evaporation", MmPerDay, LakeSolver);
+	
+	auto DailyMeanLakeOutflow = RegisterEquationODE(Model, "Lake outflow (daily mean)", M3PerS, LakeSolver);
+	ResetEveryTimestep(Model, DailyMeanLakeOutflow);
 	
 	
 	auto LakeLengthComputation = RegisterEquationInitialValue(Model, "Lake length computation", M);
@@ -207,6 +214,10 @@ The implementation is informed by the implementation in [^https://github.com/got
 		return std::pow(10.0, PARAMETER(OutflowRatingCurveMagnitude)) * (C3*outletlevel + (1.0 - C3)*outletlevel*outletlevel);
 	)
 	
+	EQUATION(Model, DailyMeanLakeOutflow,
+		return RESULT(LakeOutflow);
+	)
+	
 	
 	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
 	auto InitialEpilimnionTemperature = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion temperature", DegreesCelsius, 20.0, 0.0, 50.0);
@@ -272,7 +283,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		for(index_t Input : BRANCH_INPUTS(Reach))
 		{
 			if(PARAMETER(IsLake, Input))
-				upstreamflow += RESULT(LakeOutflow, Input); //TODO: make daily mean
+				upstreamflow += RESULT(DailyMeanLakeOutflow, Input);
 			else
 				upstreamflow += RESULT(DailyMeanReachFlow, Input);
 		}
@@ -703,13 +714,24 @@ The implementation is informed by the implementation in [^https://github.com/got
 	)
 	
 	EQUATION(Model, BottomTemperature,
-		return LAST_RESULT(BottomTemperature);      //TODO!
+		return LAST_RESULT(BottomTemperature);      //Note: may eventually be dynamic
 	)
 	
 	EQUATION(Model, EpilimnionThickness,
-		return LAST_RESULT(EpilimnionThickness);   //TODO!
+		return LAST_RESULT(EpilimnionThickness);   //Note: may eventually be dynamic
 	)
 	
+	EQUATION(Model, EpilimnionVolume,
+		double ze = RESULT(EpilimnionThickness);
+		double zd = RESULT(WaterLevel);
+		return RESULT(LakeSurfaceArea)*ze*(1.0 - 0.5*ze/zd);
+	)
+	
+	EQUATION(Model, HypolimnionVolume,
+		double ze = RESULT(EpilimnionThickness);
+		double zd = RESULT(WaterLevel);
+		return RESULT(LakeSurfaceArea)*0.5*(zd-ze)*(zd-ze)/zd;
+	)
 	
 	EndModule(Model);
 }

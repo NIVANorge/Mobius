@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Sed, containing modules (PERSiST V1.4, INCA-Sed V0.9) at 2020-03-09 11:12:25
+# Parameter file generated for model INCA-Sed, containing modules (PERSiST V1.4, INCA-Sed V0.9) at 2020-09-30 11:14:03
 
 index_sets:
 "Landscape units" : {"All"}
@@ -7,14 +7,26 @@ index_sets:
 "Sediment size class" : {"Clay" "Silt" "Fine sand" "Medium sand" "Coarse sand"}
 
 parameters:
-###################### (no index sets) ######################
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2004-01-01
+
 "Timesteps" :     #(days) [0, 18446744073709551615]
 400
 
-"Start date" :     # [1000-01-01, 3000-12-31]
-2004-01-01
 
-###################### "Landscape units" ######################
+###################### PERSiST V1.4 ######################
+
+# Solver resolution (no index sets) #
+
+"Solver resolution" :     #(dimensionless) [0.001, 0.5] Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km
+0.1
+
+
+# Hydrology by land class ("Landscape units") #
+
 "Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
 1
 
@@ -39,56 +51,9 @@ parameters:
 "Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
 0
 
-"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.12
 
-"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+# Soil characteristics by land class ("Soils" "Landscape units") #
 
-"Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.12
-
-"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.3
-
-"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
-
-"Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
-
-"Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.0012
-
-"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.029
-
-"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
-2
-
-"Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
-
-"Initial surface sediment store" :     #(kg/km^2) [0, 10]
-0
-
-"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
-2
-
-"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
-600
-
-###################### "Landscape units" "Soils" "Soils" ######################
-"Percolation matrix" :     #(dimensionless) [0, 1]
-0.01 0.99 0
-1 0.35 0.65
-1 0 1
-
-###################### "Soils" ######################
-"This is a quick box" :
-true false false
-
-###################### "Soils" "Landscape units" ######################
 "Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
 0
 300
@@ -134,7 +99,15 @@ true false false
 350
 1000
 
-###################### "Reaches" ######################
+
+# Soil box type ("Soils") #
+
+"This is a quick box" :
+true false false
+
+
+# Reach and subcatchment characteristics ("Reaches") #
+
 "Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
 50.6
 
@@ -171,23 +144,67 @@ true false false
 "Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
 0.87
 
-"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
 
-"Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+# Land use percentages ("Reaches" "Landscape units") #
 
-"Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
-
-"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-9e-08
-
-###################### "Reaches" "Landscape units" ######################
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
 100
 
-###################### "Sediment size class" ######################
+
+# Percolation ("Landscape units" "Soils" "Soils") #
+
+"Percolation matrix" :     #(dimensionless) [0, 1] The fraction of runoff that goes from one box to another
+0.01 0.99 0
+1 0.35 0.65
+1 0 1
+
+
+###################### INCA-Sed V0.9 ######################
+
+# Sediments ("Landscape units") #
+
+"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.12
+
+"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.12
+
+"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.3
+
+"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.0012
+
+"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.029
+
+"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
+2
+
+"Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Initial surface sediment store" :     #(kg/km^2) [0, 10]
+0
+
+"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
+2
+
+"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
+600
+
+
+# Sediment size class ("Sediment size class") #
+
 "Percentage of sediment in grain size class" :     #(%) [-1.79769313486232e+308, 1.79769313486232e+308]
 5 5 20 35 35
 
@@ -197,7 +214,9 @@ true false false
 "Largest diameter of sediment in size class" :     #(m) [0, 1]
 2e-06 6e-05 0.0002 0.0006 0.002
 
-###################### "Sediment size class" "Reaches" ######################
+
+# Sediment by subcatchment ("Sediment size class" "Reaches") #
+
 "Effluent sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 0
@@ -218,4 +237,19 @@ true false false
 0
 0
 0
+
+
+# Erosion and transport by subcatchment ("Reaches") #
+
+"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1
+
+"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+9e-08
 

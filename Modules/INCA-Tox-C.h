@@ -108,7 +108,7 @@ This is a simple DOC model intended only for use with INCA-Tox. It is not suitab
 	)
 	
 	EQUATION(Model, SoilDOCFluxToReach,
-		return RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterDOCConcentration); //NOTE: convert mm * mg/l  to kg/km2 (factor is 1)
+		return (RESULT(RunoffToReach, Soilwater) + RESULT(RunoffToReach, DirectRunoff)) * RESULT(SoilWaterDOCConcentration); //NOTE: convert mm * mg/l  to kg/km2 (factor is 1)
 	)
 	
 	//NOTE: this is currently not used to modify DOC concentration in the groundwater, it is just here for contaminant transport.
@@ -140,7 +140,7 @@ This is a simple DOC model intended only for use with INCA-Tox. It is not suitab
 	
 	EQUATION(Model, ReachDOCInput,
 		double upstreamdoc = 0.0;
-		for(index_t Input : BRANCH_INPUTS(Reach))
+		for(index_t Input : BRANCH_INPUTS(Reaches))
 			upstreamdoc += RESULT(ReachDOCOutput, Input);
 		
 		double diffusedoc = RESULT(TotalDiffuseDOCOutput);

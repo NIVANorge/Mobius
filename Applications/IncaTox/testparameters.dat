@@ -5,6 +5,7 @@ index_sets:
 "Soils" : {"Direct runoff" "Soil water" "Groundwater"}
 "Reaches" : {"One"}
 "Sediment size class" : {"Clay and silt" "Sand"}
+"Contaminants" : {"PCB_something"}
 
 parameters:
 ###################### (no index sets) ######################

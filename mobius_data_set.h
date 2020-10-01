@@ -610,12 +610,29 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 }
 
 static void
+ErrorPrintUnfilledIndexSets(mobius_data_set *DataSet)
+{
+	const mobius_model *Model = DataSet->Model;
+	
+	ErrorPrint("The following index sets are empty:");
+	for(index_set_h IndexSet : Model->IndexSets)
+	{
+		if(DataSet->IndexCounts[IndexSet.Handle] == 0)
+			ErrorPrint(" \"", GetName(Model, IndexSet), "\"");
+	}
+	FatalError("\n");
+}
+
+static void
 AllocateParameterStorage(mobius_data_set *DataSet)
 {
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
-		FatalError("ERROR: Tried to allocate parameter storage before all index sets were filled.\n");
+	{
+		ErrorPrint("ERROR: Tried to allocate parameter storage before all index sets were filled.\n");
+		ErrorPrintUnfilledIndexSets(DataSet);
+	}
 	
 	if(DataSet->ParameterData)
 		FatalError("ERROR: Tried to allocate parameter storage twice.\n");
@@ -672,7 +689,10 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
-		FatalError("ERROR: Tried to allocate input storage before all index sets were filled.\n");
+	{
+		ErrorPrint("ERROR: Tried to allocate input storage before all index sets were filled.\n");
+		ErrorPrintUnfilledIndexSets(DataSet);
+	}
 	
 	if(DataSet->InputData)
 		FatalError("ERROR: Tried to allocate input storage twice.\n");
@@ -711,7 +731,10 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
-		FatalError("ERROR: Tried to allocate result storage before all index sets were filled.\n");
+	{
+		ErrorPrint("ERROR: Tried to allocate result storage before all index sets were filled.\n");
+		ErrorPrintUnfilledIndexSets(DataSet);
+	}
 	
 	if(DataSet->ResultData)
 		FatalError("ERROR: Tried to allocate result storage twice.\n");
@@ -779,7 +802,10 @@ static void
 SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_value Value, parameter_type Type)
 {
 	if(!DataSet->AllIndexesHaveBeenSet)
-		FatalError("ERROR: Tried to set a parameter value before all index sets have been filled with indexes.\n");
+	{
+		ErrorPrint("ERROR: Tried to set a parameter value before all index sets have been filled with indexes.\n");
+		ErrorPrintUnfilledIndexSets(DataSet);
+	}
 
 	if(DataSet->ParameterData == 0)
 		AllocateParameterStorage(DataSet);

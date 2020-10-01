@@ -224,15 +224,13 @@ For reference, here is the original Python implementation of [^https://github.co
 	auto StreamPPMass  = RegisterEquationODE(Model, "Reach PP mass", Kg, ReachSolver);
 	SetInitialValue(Model, StreamPPMass, 0.0);
 	auto DailyMeanStreamTDPFlux = RegisterEquationODE(Model, "Reach daily mean TDP flux", KgPerDay, ReachSolver);
-	SetInitialValue(Model, DailyMeanStreamTDPFlux, 0.0);
 	ResetEveryTimestep(Model, DailyMeanStreamTDPFlux);
-	
 	auto DailyMeanStreamPPFlux = RegisterEquationODE(Model, "Reach daily mean PP flux", KgPerDay, ReachSolver);
-	SetInitialValue(Model, DailyMeanStreamPPFlux, 0.0);
 	ResetEveryTimestep(Model, DailyMeanStreamPPFlux);
 	
-	auto ReachTDPInputFromUpstream = RegisterEquation(Model, "Reach TDP input from upstream", KgPerDay);
-	auto ReachPPInputFromErosion   = RegisterEquation(Model, "Reach PP input from erosion and entrainment", KgPerDay, ReachSolver);
+	auto ReachTDPInputFromUpstream  = RegisterEquation(Model, "Reach TDP input from upstream", KgPerDay);
+	auto ReachTDPInputFromCatchment = RegisterEquation(Model, "Reach TDP input from catchment", KgPerDay, ReachSolver);
+	auto ReachPPInputFromErosion    = RegisterEquation(Model, "Reach PP input from erosion and entrainment", KgPerDay, ReachSolver);
 	//auto TotalReachPPInputFromErosion = RegisterEquationCumulative(Model, "Total reach PP input from erosion", ReachPPInputFromErosion, LandscapeUnits);
 	auto ReachPPInputFromUpstream  = RegisterEquation(Model, "Reach PP input from upstream", KgPerDay);
 	
@@ -260,11 +258,16 @@ For reference, here is the original Python implementation of [^https://github.co
 		return upstreamflux;
 	)
 	
-	EQUATION(Model, StreamTDPMass,
+	EQUATION(Model, ReachTDPInputFromCatchment,
 		return
 			  RESULT(TotalSoilTDPOutput) * PARAMETER(CatchmentArea)
 			+ RESULT(GroundwaterFlow) * ConvertMgPerLToKgPerMm(PARAMETER(GroundwaterTDPConcentration), PARAMETER(CatchmentArea))
-			+ IF_INPUT_ELSE_PARAMETER(EffluentTDPTimeseries, EffluentTDP)
+			+ IF_INPUT_ELSE_PARAMETER(EffluentTDPTimeseries, EffluentTDP);
+	)
+	
+	EQUATION(Model, StreamTDPMass,
+		return
+			  RESULT(ReachTDPInputFromCatchment)
 			+ RESULT(ReachTDPInputFromUpstream)
 			- RESULT(StreamTDPFlux);
 	)

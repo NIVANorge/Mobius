@@ -9,7 +9,7 @@
 static void
 AddIncaToxModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox", "0.3");
+	BeginModule(Model, "INCA-Tox", "0.2");
 	
 	SetModuleDescription(Model, R""""(
 Inca-Tox, also called INCA-Contaminants or INCA-POP is described in
@@ -19,8 +19,6 @@ Inca-Tox, also called INCA-Contaminants or INCA-POP is described in
 [^https://www.niva.no/en/publications/inca-contaminants^ Model home page]
 
 New to the Mobius version is some simplification in process implementations.
-
-New to V0.3: Multiple contaminants at a time.
 )"""");
 	
 	auto Dimensionless    = RegisterUnit(Model);
@@ -64,13 +62,10 @@ New to V0.3: Multiple contaminants at a time.
 	auto Soilwater    = RequireIndex(Model, Soils, "Soil water");
 	auto Groundwater  = RequireIndex(Model, Soils, "Groundwater");
 	
-	auto Contaminant  = RegisterIndexSet(Model, "Contaminants");
 	
 	
-	auto Chemistry = RegisterParameterGroup(Model, "Chemistry", Contaminant);
-	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits, Contaminant);
-	auto ContaminantReach = RegisterParameterGroup(Model, "Contaminants by reach", Reach, Contaminant);
-	auto ReachChar = RegisterParameterGroup(Model, "Additional Reach characteristics", Reach);
+	auto Chemistry = RegisterParameterGroup(Model, "Chemistry");
+	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits);
 
 	//TODO: As always, find better default, min, max values for parameters!
 	
@@ -90,17 +85,22 @@ New to V0.3: Multiple contaminants at a time.
 	auto TemperatureAtWhichDegradationRatesAreMeasured = RegisterParameterDouble(Model, Chemistry, "Temperature at which degradation rates are measured", DegreesCelsius, 20.0, -20.0, 50.0);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
+	
+	//auto ContaminantsGrain = RegisterParameterGroup(Model, "Contaminants by grain class", Class);
+	//auto ContaminantSOCScalingFactor = RegisterParameterDouble(Model, ContaminantsGrain, "Contaminant SOC scaling factor", Dimensionless, 1.0, 0.0, 1.0);
+	
+	
+	auto ContaminantReach = RegisterParameterGroup(Model, "Contaminants by reach", Reach);
+	
 	auto InitialContaminantMassInSoil  = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil", NgPerKm2, 0.0, 0.0, 1e3);
-	
-	
 	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
 	
 	//Seems a little weird to put this in the contaminants "folder", but there is no reason to put it anywhere else.
-	auto HeightOfLargeStones = RegisterParameterDouble(Model, ReachChar, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5);
-	auto AverageBedGrainDiameter = RegisterParameterDouble(Model, ReachChar, "Average bed grain diameter", M, 0.0001, 0.0, 0.1);
+	auto HeightOfLargeStones = RegisterParameterDouble(Model, ContaminantReach, "Average height of large stones in the stream bed", M, 0.0, 0.0, 0.5);
+	auto AverageBedGrainDiameter = RegisterParameterDouble(Model, ContaminantReach, "Average bed grain diameter", M, 0.0001, 0.0, 0.1);
 	//auto SedimentDryDensity = RegisterParameterDouble(Model, ContaminantReach, "Sediment dry density", KgPerM3, 2000.0, 0.0, 10000.0);
-	auto SedimentPorosity   = RegisterParameterDouble(Model, ReachChar, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
+	auto SedimentPorosity   = RegisterParameterDouble(Model, ContaminantReach, "Sediment porosity", Dimensionless, 0.1, 0.0, 0.99);
 	
 	
 	 //SoilTemperature.h
@@ -681,15 +681,6 @@ New to V0.3: Multiple contaminants at a time.
 	EQUATION(Model, DiffusiveSedimentReachExchangeFlux,
 		double z = 0.1; // Thickness of sediment layer that participates in diffusive exchange.
 		return RESULT(DiffusivityOfDissolvedCompoundInWater) * (RESULT(ReachWaterContaminantConcentration) - RESULT(BedWaterContaminantConcentration)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth) * 86400.0 / z;
-	)
-	
-	auto GrainSOCDensity = GetParameterDoubleHandle(Model, "Grain SOC density");
-	auto ReachSPMContaminantConcentration = RegisterEquation(Model, "Reach suspended particulate matter contaminant concentration", NgPerKg);
-	
-	EQUATION(Model, ReachSPMContaminantConcentration,
-		auto conc = RESULT(ReachSOCContaminantConcentration);  //ng(contaminant) / kg(SOC)
-		auto dens = PARAMETER(GrainSOCDensity);                //kg(SOC) / kg(suspended_solid)
-		return conc * dens;
 	)
 
 	EndModule(Model);

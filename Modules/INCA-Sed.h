@@ -46,7 +46,7 @@ A notable difference with this implementation is that it is rigged to be run in 
 	
 	auto DirectRunoff = RequireIndex(Model, SoilBoxes, "Direct runoff");
 	
-	auto Sediment = RegisterParameterGroup(Model, "Sediments", LandscapeUnits);
+	auto Sediment = RegisterParameterGroup(Model, "Sediment mobilisation", LandscapeUnits);
 	
 	//TODO : Find default/min/max/description for these e.g. in the INCA-P documentation
 	
