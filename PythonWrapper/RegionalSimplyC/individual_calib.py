@@ -23,15 +23,17 @@ def resid(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 	dataset_copy.run_model()
 
 	for i, comparison in enumerate(comparisons):
-		simname, simindexes, obsname, obsindexes = comparison
+		simname, simindexes, obsname, obsindexes, weight = comparison
 
 		sim = dataset_copy.get_result_series(simname, simindexes)[skip_timesteps:]
 		obs = dataset_copy.get_input_series(obsname, obsindexes, alignwithresults=True)[skip_timesteps:]
 
 		if np.isnan(sim).any() :
 			raise ValueError('Got a NaN in the simulated data')
+		
+		nvalues = np.sum(~np.isnan(obs))
 
-		resid = (sim - obs) / np.nanmean(obs)
+		resid = np.sqrt(weight)*(sim - obs) / (np.nanmean(obs) * npsqrt(nvalues))
 
 		residuals.append(resid)
 
@@ -49,8 +51,8 @@ def main() :
 	skip_timesteps = 50      #Model 'burn-in' period
 	
 	comparisons = [
-                ('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', []),
-                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', []),
+                ('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
+                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.2),
                ]
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')

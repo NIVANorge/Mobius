@@ -11,6 +11,9 @@ def configure_params(params, do_doc):
 	params['Ts_F'].max = 12
 	params['Ts_S'].max = 2
 
+	for lu in ['F', 'S', 'P'] :
+		params['Ts_%s' % lu].min = 1
+
 	if do_doc :
 		for lu in ['F', 'S', 'P']:
 			params['alphaPET_%s' % lu].max = 3.0
