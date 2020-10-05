@@ -33,7 +33,7 @@ def main() :
 	
 	skip_timesteps = 50
 	
-	print('Name NS(Q) NS(DOC conc) NS(DOC flux)')
+	print('Name NS(Q) NS(DOC conc) NS(DOC flux) NS(DOC flux month)')
 	
 	for index, row in catch_setup.iterrows():
 		catch_no = row['met_index']
@@ -43,7 +43,8 @@ def main() :
 		#if catch_name != 'Dalelva' : continue
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/norm_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
 		
 		try:
 			dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
@@ -77,9 +78,12 @@ def main() :
 		obsfluxname = 'Observed DOC flux'
 		
 		doc_df = df[[obsdocconcname]].copy()
-		doc_df.interpolate(inplace=True)
+		doc_df.interpolate(inplace=True, limit_area='inside', limit=30)
 		
 		df[obsfluxname] = doc_df[obsdocconcname].values * df[obsQname].values * 86.4  # flux = concentration * flow
+		
+		month_df = df[skip_timesteps:]
+		month_df = month_df.resample('M').mean()
 		
 		NS_Q = nash_sutcliffe(df[simQname].values[skip_timesteps:], df[obsQname].values[skip_timesteps:])
 		
@@ -87,7 +91,9 @@ def main() :
 		
 		NS_DOC_flux = nash_sutcliffe(df[simfluxname].values[skip_timesteps:], df[obsfluxname].values[skip_timesteps:])
 		
-		print('%s %g %g %g' % (fullname, NS_Q, NS_DOC_conc, NS_DOC_flux))
+		NS_DOC_flux_month = nash_sutcliffe(month_df[simfluxname].values, month_df[obsfluxname].values)
+		
+		print('%s %g %g %g %g' % (fullname, NS_Q, NS_DOC_conc, NS_DOC_flux, NS_DOC_flux_month))
 		
 		
 

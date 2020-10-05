@@ -13,8 +13,6 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
-param_file_prefix = 'optim_params_doc'
-
 simmed   = ('Reach flow (daily mean, cumecs)', ['R0'])
 observed = ('Observed flow', [])
 
@@ -57,6 +55,9 @@ def main() :
 		
 		#if catch_name != 'Dalelva' : continue
 		
+		#param_file_prefix = 'optim_params_DOC'
+		param_file_prefix = 'norm_optim_params_DOC'
+		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 		parfile = 'MobiusFiles/%s_%d_%s.dat' % (param_file_prefix, catch_no, catch_name)
 		
@@ -80,7 +81,7 @@ def main() :
 		obsfluxname = 'Observed DOC flux'
 		
 		doc_df = df[[obsdocname]].copy()
-		doc_df.interpolate(inplace=True)
+		doc_df.interpolate(inplace=True, limit_area='inside', limit=60)   # limit: don't fill in more than one missing month
 		
 		df[obsfluxname] = doc_df[obsdocname].values * df[obsname].values * 86.4  # flux = concentration * flow
 		
@@ -93,12 +94,12 @@ def main() :
 		
 		
 		for idx, row in df_month.iterrows() :
-			sim[idx.month-1] += row[simname]
 			if not np.isnan(row[obsname]):
+				sim[idx.month-1] += row[simname]
 				obs[idx.month-1] += row[obsname]
 				
-			fluxsim[idx.month-1] += row[simdocname]
 			if not np.isnan(row[obsfluxname]):
+				fluxsim[idx.month-1] += row[simdocname]
 				fluxobs[idx.month-1] += row[obsfluxname]
 		
 		month_x = range(1, 13)
@@ -116,7 +117,8 @@ def main() :
 		ax_month[2*index+1].set_xticks(month_x)
 		ax_month[2*index+1].axhline(0, color='grey')
 		
-		df_year = df.resample('Y').mean()
+		#df_year = df.resample('Y').mean()    #TODO: problematic beginning or ending years with many lacking values...
+		df_year = df.resample('Y').agg(lambda x: np.nanmean(x.values) if np.isnan(x.values).sum() <= 60 else np.nan)   #Skip years with more than 60 missing values
 		
 		#print(df_year)
 		

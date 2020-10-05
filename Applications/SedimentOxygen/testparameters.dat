@@ -1,4 +1,4 @@
-# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-09-24 10:37:01
+# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-10-05 14:38:05
 
 index_sets:
 
@@ -48,7 +48,7 @@ parameters:
 4.1
 
 "Maximum O2 production at 20°C" :     #(µmol(oxygen)/cm2/s) [0, 1000]
-0.00017
+1.7e-05
 
 "Maximum light utilization" :     #(µmol(oxygen)/µmol(photons)) [0, 10]
 1.6e-09
@@ -57,7 +57,7 @@ parameters:
 2.5
 
 "Respiration rate at 20°C" :     #(µmol(oxygen)/µmol(TOC)/s) [0, 0.01]
-1e-05
+1.5e-06
 
 "TOC concentration" :     #(µmol(TOC)/cm3) [0, 0.1]
 1
@@ -72,10 +72,10 @@ parameters:
 10
 
 "Upper layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the topmost one belonging to production zone
-9
+4
 
 "Lower layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the lowest one belonging to the production zone
-11
+6
 
 "Z resolution" :     #(cm) [0.001, 1] Thickness of each computed layer
 0.05

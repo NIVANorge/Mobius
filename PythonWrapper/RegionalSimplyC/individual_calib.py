@@ -33,7 +33,7 @@ def resid(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 		
 		nvalues = np.sum(~np.isnan(obs))
 
-		resid = np.sqrt(weight)*(sim - obs) / (np.nanmean(obs) * npsqrt(nvalues))
+		resid = np.sqrt(weight)*(sim - obs) / (np.nanmean(obs) * np.sqrt(nvalues))
 
 		residuals.append(resid)
 
@@ -88,7 +88,7 @@ def main() :
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		print('\n\n\n')
 		
-		dataset.write_parameters_to_file('MobiusFiles/norm_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
+		dataset.write_parameters_to_file('MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
 		
 		dataset.delete()
 		

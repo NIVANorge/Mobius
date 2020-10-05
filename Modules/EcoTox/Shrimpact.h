@@ -30,6 +30,7 @@ void AddShrimpactModel(mobius_model *Model)
 	auto BadYearSurvivalReduction  = RegisterParameterDouble(Model, GeneralParam, "Reduction of larva survival in bad year", Dimensionless, 0.5, 0.0, 1.0, "Multiplier to larva survival rate");
 	auto VariationInSurvival         = RegisterParameterDouble(Model, GeneralParam, "Variation in survival", Dimensionless, 1.0, 0.8, 1.2, "Exponent to survival rate. Used for changing rate when running the model stochastically"); 
 	auto Toxicity                    = RegisterParameterDouble(Model, GeneralParam, "Toxicity multiplier", Dimensionless, 1.0, 0.1, 1.0, "Multiplier to survival rate of non-larvae caused by toxicity");
+	auto LarvaToxicity               = RegisterParameterDouble(Model, GeneralParam, "Larva toxicity multiplier", Dimensionless, 1.0, 0.1, 1.0, "Multiplier to survival rate of larvae caused by toxicity");
 	
 	
 	auto BaseSurvivalRate            = RegisterParameterDouble(Model, AgeParam, "Base survival rate", Dimensionless, 0.9, 0.0, 1.0);
@@ -49,13 +50,15 @@ void AddShrimpactModel(mobius_model *Model)
 	auto TotalAdultPopulation = RegisterEquation(Model, "Total adult population", Individuals);
 	
 	EQUATION(Model, SurvivalRate,
-		index_t Age    = CURRENT_INDEX(AgeClass);
-		double survivalRate = PARAMETER(BaseSurvivalRate);
-		double lastRate = LAST_RESULT(SurvivalRate);
-		double toxicity = PARAMETER(Toxicity);
+		index_t Age           = CURRENT_INDEX(AgeClass);
+		double survivalRate   = PARAMETER(BaseSurvivalRate);
+		double lastRate       = LAST_RESULT(SurvivalRate);
+		double toxicity       = PARAMETER(Toxicity);
+		double larvaetoxicity = PARAMETER(LarvaToxicity);
 		
 		survivalRate = std::pow(survivalRate, PARAMETER(VariationInSurvival));
 		if(Age != FIRST_INDEX(AgeClass)) survivalRate *= toxicity;
+		else                             survivalRate *= larvaetoxicity;
 		
 		double badYearReduction = PARAMETER(BadYearSurvivalReduction);
 		u64    badYearNumber    = PARAMETER(BadYearNumber);
