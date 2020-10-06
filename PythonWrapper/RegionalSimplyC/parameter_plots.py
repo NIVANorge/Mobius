@@ -28,7 +28,7 @@ def collect_parameter_distributions(non_validation_only=False) :
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/norm_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 		

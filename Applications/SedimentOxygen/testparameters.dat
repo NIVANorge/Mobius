@@ -1,4 +1,4 @@
-# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-10-05 14:38:05
+# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-10-06 12:02:31
 
 index_sets:
 
@@ -75,7 +75,7 @@ parameters:
 4
 
 "Lower layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the lowest one belonging to the production zone
-6
+5
 
 "Z resolution" :     #(cm) [0.001, 1] Thickness of each computed layer
 0.05
