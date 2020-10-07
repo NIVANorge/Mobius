@@ -229,7 +229,7 @@ CheckIndexErrors(const mobius_model *Model, index_set_h IndexSet, index_t Index,
 }
 
 // NOTE: Returns the storage index of a value corresponding to this Handle with the given index set indexes.
-// CurrentIndexes must be set up so that for any index set with handle IndexSetHandle, CurrentIndexes[IndexSetHandle] is the current index of that index set. (Typically ValueSet->CurrentIndexes)
+// CurrentIndexes must be set up so that for any index set with handle IndexSetHandle, CurrentIndexes[IndexSetHandle] is the current index of that index set. (Typically RunState->CurrentIndexes)
 // IndexCounts    must be set up so that for any index set with handle IndexSetHandle, IndexCounts[IndexSetHandle] is the index count of that index set. (Typically DataSet->IndexCounts)
 template<typename handle_type>
 inline size_t
@@ -1177,6 +1177,82 @@ InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const std::ve
 {
 	return InputSeriesWasProvided(DataSet, Name, IndexNames.data(), IndexNames.size());
 }
+
+inline bool
+EquationWasComputed(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount)
+{
+	if(!DataSet->ResultData)
+		return false;
+	if(!DataSet->HasBeenRun)
+		return false;
+	
+	const mobius_model *Model = DataSet->Model;
+	
+	equation_h Equation = GetEquationHandle(Model, Name);
+	
+	size_t StorageUnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle]; //NOTE: is the same as the batch group index.
+	
+	const equation_batch_group &BatchGroup = Model->BatchGroups[StorageUnitIndex];
+	size_t FoundIdx = 0;
+	bool Found = false;
+	for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
+	{
+		const equation_batch &Batch = Model->EquationBatches[BatchIdx];
+		ForAllBatchEquations(Batch, [Equation, BatchIdx, &FoundIdx, &Found](equation_h Eq)
+		{
+			if(Equation == Eq)
+			{
+				FoundIdx = BatchIdx;
+				Found = true;
+				return true;
+			}
+			return false;
+		});
+		if(Found) break;
+	}
+	if(!Found)
+		FatalError("INTERNAL ERROR: Could not find equation \"", Name, "\" in the batch it is supposed to be in.\n");
+	
+	const equation_batch &Batch = Model->EquationBatches[FoundIdx];
+	
+	parameter_h          Switch = Batch.ConditionalSwitch;
+	parameter_value SwitchValue = Batch.ConditionalValue;
+	
+	if(!IsValid(Switch)) return true;
+	
+	array<index_set_h> &EquationIndexSets = DataSet->ResultStorageStructure.Units[StorageUnitIndex].IndexSets;
+
+	if(IndexCount != EquationIndexSets.Count)
+		FatalError("ERROR: Got the wrong amount of indexes when checking the result series for \"", Name, "\". Got ", IndexCount, ", expected ", EquationIndexSets.Count, ".\n");
+	
+	size_t SwitchStorageUnitIdx = DataSet->ParameterStorageStructure.UnitForHandle[Switch.Handle];
+	
+	array<index_set_h> &SwitchIndexSets = DataSet->ParameterStorageStructure.Units[SwitchStorageUnitIdx].IndexSets;
+	
+	index_t SwitchIndexes[256];
+	for(size_t IdxIdx = 0; IdxIdx < SwitchIndexSets.Count; ++IdxIdx)
+	{
+		index_set_h IndexSet = SwitchIndexSets[IdxIdx];
+		size_t EqIdxIdx = 0;
+		for(index_set_h EqIdxSet : EquationIndexSets)
+		{
+			if(EqIdxSet == IndexSet)
+				break;
+			++EqIdxIdx;
+		}
+		if(EqIdxIdx == EquationIndexSets.Count)
+			FatalError("INTERNAL ERROR: The equation \"", Name, "\" is conditionally executed on the parameter \"", GetName(Model, Switch), "\", but it does not have all of its index set dependencies!\n");
+		SwitchIndexes[IdxIdx] = GetIndex(DataSet, IndexSet, IndexNames[EqIdxIdx]);
+	}
+
+	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, SwitchIndexes, SwitchIndexSets.Count, DataSet->IndexCounts, Switch);
+	
+	bool WasComputed = DataSet->ParameterData[Offset] == SwitchValue;
+	
+	return WasComputed;
+}
+
+
 
 static void
 PrintResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)

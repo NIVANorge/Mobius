@@ -9,6 +9,12 @@ void AddShrimpactModel(mobius_model *Model)
 {
 	BeginModule(Model, "SHRIMPACT", "0.1");
 	
+	SetModuleDescription(Model, R""""(
+This is a shrimp population model that can react to environmental stressors. It has been published as:
+
+[^https://doi.org/10.1016/j.ecolmodel.2019.108833^ S. Jannicke Moe & al. 2019, Effects of an aquaculture pesticide (diflubenzuron) on non-target shrimp populations: Extrapolation from laboratory experiments to the risk of population decline.  Ecological Modelling 413, 108833]	
+)"""");
+	
 	auto Dimensionless        = RegisterUnit(Model);
 	auto Individuals          = RegisterUnit(Model, "ind/100m2");
 	auto IndividualsPerSeason = RegisterUnit(Model, "ind/100m2/season");
@@ -21,8 +27,8 @@ void AddShrimpactModel(mobius_model *Model)
 	auto GeneralParam = RegisterParameterGroup(Model, "General");
 	auto AgeParam     = RegisterParameterGroup(Model, "Age class", AgeClass);
 	
-	auto StrengthOfDensityDependence = RegisterParameterDouble(Model, GeneralParam, "Strength of density dependence (a)", PerInd, 0.01);
-	auto DegreeOfCompensation        = RegisterParameterDouble(Model, GeneralParam, "Degree of compensation (b)", Dimensionless, 1.0);
+	auto StrengthOfDensityDependence = RegisterParameterDouble(Model, GeneralParam, "Strength of density dependence (a)", PerInd, 0.01, 1e-6, 1);
+	auto DegreeOfCompensation        = RegisterParameterDouble(Model, GeneralParam, "Degree of compensation (b)", Dimensionless, 1.0, 0.1, 10.0);
 	auto FirstAdultClass             = RegisterParameterUInt(Model, GeneralParam, "First adult age class", Season, 6, 1, 100);
 	
 	auto BadYearType                 = RegisterParameterEnum(Model, GeneralParam, "Bad year type", {"None", "Once", "Multiple"}, "None", "If 'Multiple', there is a 25% chance of a bad year each year.");
@@ -36,7 +42,7 @@ void AddShrimpactModel(mobius_model *Model)
 	auto BaseSurvivalRate            = RegisterParameterDouble(Model, AgeParam, "Base survival rate", Dimensionless, 0.9, 0.0, 1.0);
 	auto Fertility                   = RegisterParameterDouble(Model, AgeParam, "Fertility", Dimensionless, 0.0, 0.0, 1.0);
 	
-	auto InitialPopulationSize       = RegisterParameterDouble(Model, AgeParam, "Initial population size", Individuals, 500.0);
+	auto InitialPopulationSize       = RegisterParameterDouble(Model, AgeParam, "Initial population size", Individuals, 500.0, 0.0, 5000.0);
 	
 	
 	

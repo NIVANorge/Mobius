@@ -51,20 +51,27 @@ def collect_parameter_distributions(non_validation_only=False) :
 
 def draw_random_parameter_set(params, param_values) :
 	for parname in params :
-		distr = param_values[parname]
-		idx = np.random.randint(0, len(distr))
-		params[parname].value = distr[distr.keys()[idx]]
+		if parname in param_values :
+			distr = param_values[parname]
+			idx = np.random.randint(0, len(distr))
+			params[parname].value = distr[list(distr)[idx]]
 		
 def extrapolate_test() :
 	param_values = collect_parameter_distributions(True)
 	
-	ndraws = 1000
+	ndraws = 1500
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
+	fig, ax = plt.subplots(2, 2)
+	fig.set_size_inches(20, 20)
+	ax = ax.flatten()
+	
+	plotindex = 0
 	for index, row in catch_setup.iterrows():
 		catch_no = row['met_index']
 		catch_name = row['name']
+		fullanme = row['fullname']
 		
 		if row['validation_set'] == '-' :
 			continue
@@ -72,7 +79,7 @@ def extrapolate_test() :
 		print('Extrapolating for catchment %s' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated 
 		
 		start_date = '1985-1-1'
 		timesteps  = 12052
@@ -84,7 +91,7 @@ def extrapolate_test() :
 		skip_timesteps = 50      #Model 'burn-in' period
 		
 		comparisons = [
-					('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
+					#('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
 					('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.2),
 				]
 		
@@ -96,6 +103,7 @@ def extrapolate_test() :
 		while firstday < len(obsseries) :
 			#find the first day with value in the autumn and record that:
 			for day in range(firstday+274, firstday+365):
+				if day >= len(obsseries) :  break
 				val = obsseries[day]
 				if not np.isnan(val) :
 					newobs[day] = val
@@ -105,12 +113,42 @@ def extrapolate_test() :
 		
 		dataset.set_input_series('Observed DOC', [], newobs, alignwithresults=True)
 		
-		params = setup_calibration_params(dataset, do_doc=True)
+		params = setup_calibration_params(dataset, do_doc=True, do_hydro=False)
 		
-		for idx in range(nruns) :
+		#NOTE: inefficient for now... double running of model
+		pars   = []
+		resids = []
+		
+		for idx in range(ndraws) :
 			draw_random_parameter_set(params, param_values)
 			res = resid(params, dataset, comparisons, norm=True, skip_timesteps=skip_timesteps)
+			res = np.nansum(np.multiply(res, res))
+			pars.append(params)
+			resids.append(res)
+			
+		maxres = np.max(resids)
 		
+		xvals = cu.get_date_index(dataset)
+		
+		dataset_copy = dataset.copy()
+		for idx in range(ndraws) :
+			
+			cu.set_parameter_values(pars[idx], dataset_copy)
+			dataset_copy.run_model()
+			results = dataset_copy.get_result_series('Reach DOC concentration (volume weighted daily mean)', ['R0'])
+			
+			alpha = 1.0 - resids[idx]/maxres
+			ax[plotindex].plot(xvals, results, color='black', alpha=alpha)
+
+		ax[plotindex].plot(xvals, newobs, color='red', marker='o')
+			
+		dataset_copy.delete()
+		
+		plotindex = plotindex+1
+	
+	fig.tight_layout()
+	plt.savefig('Figures/extrapolations.png')
+	plt.close()
 		
 	
 def make_plots() :
@@ -157,7 +195,8 @@ def make_plots() :
 	plt.close()
 
 def main() :
-	make_plots()
+	#make_plots()
+	extrapolate_test()
 	
 
 if __name__ == "__main__":

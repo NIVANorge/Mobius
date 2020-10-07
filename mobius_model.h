@@ -357,7 +357,11 @@ struct iteration_data
 struct equation_batch
 {
 	solver_h          Solver = {};
-	conditional_h     Conditional = {};
+	
+	conditional_h     Conditional;
+	//NOTE: The following two could in theory be looked up using the handle above, but we make a separate copy here to avoid the extra lookup during model run.
+	parameter_h       ConditionalSwitch = {};
+	parameter_value   ConditionalValue;
 	
 	array<equation_h> Equations;
 	array<equation_h> EquationsODE;   //NOTE: Should be empty unless IsValid(Solver)
@@ -1279,6 +1283,26 @@ RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_ui
 	Spec.SwitchType = ParameterType_UInt;
 	Spec.Switch = Switch;
 	Spec.Value.ValUInt = Value;
+	
+	return Conditional;
+}
+
+static conditional_h
+RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_enum_h Switch, const char *Value)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	conditional_h Conditional = Model->Conditionals.Register(Name);
+	conditional_spec &Spec = Model->Conditionals[Conditional];
+	Spec.SwitchType = ParameterType_UInt;
+	Spec.Switch = Switch;
+	parameter_spec &SwitchSpec = Model->Parameters[Switch];
+	
+	auto Find = SwitchSpec.EnumNameToValue.find(Value);
+	if(Find == SwitchSpec.EnumNameToValue.end())
+		FatalError("ERROR: While registering the conditional execution \"", Name, "\", the enum parameter \"", SwitchSpec.Name, "\" was not registered with the possible the value \"", Value, "\".\n");
+	
+	Spec.Value.ValUInt = Find->second;
 	
 	return Conditional;
 }

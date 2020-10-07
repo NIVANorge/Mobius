@@ -696,7 +696,12 @@ ProcessBatchGroups(mobius_model *Model, std::vector<pre_batch> &PreBatches, std:
 			}
 			
 			for(equation_batch &Batch : InnerEquationBatches)
+			{
 				Batch.Conditional = PreGroup.Conditional;
+				conditional_spec &ConditionalSpec = Model->Conditionals[PreGroup.Conditional];
+				Batch.ConditionalSwitch = ConditionalSpec.Switch;
+				Batch.ConditionalValue  = ConditionalSpec.Value;
+			}
 			
 			EquationBatches.insert(EquationBatches.end(), InnerEquationBatches.begin(), InnerEquationBatches.end());
 			
@@ -1068,6 +1073,9 @@ EndModelDefinition(mobius_model *Model)
 					if(IsValid(SolverSpec.hParam)) AllParameterDependenciesForBatchGroup.insert(SolverSpec.hParam);
 				}
 				
+				if(IsValid(Batch.ConditionalSwitch))
+					AllParameterDependenciesForBatchGroup.insert(Batch.ConditionalSwitch);
+				
 				ForAllBatchEquations(Batch,
 				[Model, &AllParameterDependenciesForBatchGroup, &AllInputDependenciesForBatchGroup, &AllResultDependenciesForBatchGroup, &AllLastResultDependenciesForBatchGroup](equation_h Equation)
 				{
@@ -1284,13 +1292,20 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 		for(parameter_h Par : Spec.ParameterDependencies )
 		{
 			//TODO: Make an ErrorPrintParameterValue or something like that?
-			parameter_type Type = Model->Parameters[Par].Type;
+			const parameter_spec &ParSpec = Model->Parameters[Par];
+			parameter_type Type = ParSpec.Type;
+			parameter_value Value = RunState->CurParameters[Par.Handle];
+			ErrorPrint("Value of \"", GetName(Model, Par), "\" is ");
 			if(Type == ParameterType_Double)
-				ErrorPrint("Value of \"", GetName(Model, Par), "\" is ", RunState->CurParameters[Par.Handle].ValDouble, '\n');
+				ErrorPrint(Value.ValDouble);
 			else if(Type == ParameterType_UInt)
-				ErrorPrint("Value of \"", GetName(Model, Par), "\" is ", RunState->CurParameters[Par.Handle].ValUInt, '\n');
+				ErrorPrint(Value.ValUInt);
 			else if(Type == ParameterType_Bool)
-				ErrorPrint("Value of \"", GetName(Model, Par), "\" is ", RunState->CurParameters[Par.Handle].ValBool ? "true" : "false", '\n');
+				ErrorPrint(Value.ValBool ? "true" : "false");
+			else if(Type == ParameterType_Enum)
+				ErrorPrint(ParSpec.EnumNames[Value.ValUInt]);
+			
+			ErrorPrint('\n');
 		}
 		for(input_h In : Spec.InputDependencies)
 		{
@@ -1387,17 +1402,12 @@ INNER_LOOP_BODY(RunInnerLoop)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			
-			if(IsValid(Batch.Conditional)) //TODO: This is inefficient for now. We should pre-determine what batches are going to be executed for what indexes. This can then also be used to e.g. inform the UI about this.
+			//Check if there is a conditional execution of this batch and if it should be executed. If it shouldn't, skip it.
+			if(IsValid(Batch.ConditionalSwitch) && Batch.ConditionalValue != RunState->CurParameters[Batch.ConditionalSwitch.Handle])
 			{
-				const conditional_spec &Conditional = Model->Conditionals[Batch.Conditional];
-				size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, RunState->CurrentIndexes, DataSet->IndexCounts, Conditional.Switch);
-				parameter_value SwitchValue = DataSet->ParameterData[Offset];
-				if(SwitchValue != Conditional.Value)
-				{
-					RunState->AtResult += Batch.Equations.Count;
-					RunState->AtResult += Batch.EquationsODE.Count;
-					continue;
-				}
+				RunState->AtResult += Batch.Equations.Count;
+				RunState->AtResult += Batch.EquationsODE.Count;
+				continue;
 			}
 			
 			if(!IsValid(Batch.Solver))
@@ -2053,15 +2063,17 @@ PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			Out << "\n\t-----";
 			if(IsValid(Batch.Solver)) Out << " Solver \"" << GetName(Model, Batch.Solver) << "\"";
-			if(IsValid(Batch.Conditional))
+			if(IsValid(Batch.ConditionalSwitch))
 			{
 				const conditional_spec &Conditional = Model->Conditionals[Batch.Conditional];
-				const parameter_spec &SwitchSpec = Model->Parameters[Conditional.Switch];
+				const parameter_spec &SwitchSpec = Model->Parameters[Batch.ConditionalSwitch];
 				Out << " Conditional \"" << Conditional.Name << "\" on \"" << GetName(Model, Conditional.Switch) << "\" == ";
 				if(SwitchSpec.Type == ParameterType_UInt)
-					Out << Conditional.Value.ValUInt;
+					Out << Batch.ConditionalValue.ValUInt;
 				else if(SwitchSpec.Type == ParameterType_Bool)
-					Out << (Conditional.Value.ValBool ? "true" : "false");
+					Out << (Batch.ConditionalValue.ValBool ? "true" : "false");
+				else if(SwitchSpec.Type == ParameterType_Enum)
+					Out << SwitchSpec.EnumNames[Batch.ConditionalValue.ValUInt];
 			}
 			
 			ForAllBatchEquations(Batch,

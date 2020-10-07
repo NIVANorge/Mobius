@@ -1138,14 +1138,16 @@ DllInputWasProvided(void *DataSetPtr, const char *Name, char **IndexNames, u64 I
 
 DLLEXPORT bool
 DllResultWasComputed(void *DataSetPtr, const char *Name, char **IndexNames, u64 IndexCount)
-{
-	//TODO!!!!!!!!!!!!!!
-	
+{	
 	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	return EquationWasComputed(DataSet, Name, IndexNames, IndexCount);
 	
 	CHECK_ERROR_END
 	
-	return true;
+	return false;
 }
 
 
