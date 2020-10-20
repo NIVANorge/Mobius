@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyQ, containing modules (Shrimp tox V0.1) at 2020-09-24 13:57:25
+# Parameter file generated for model SHRIMPACT, containing modules (SHRIMPACT V0.1) at 2020-10-09 14:43:26
 
 index_sets:
 "Age class" : {"1  Larva" "2  Juvenile" "3  Juvenile" "4  Juvenile" "5  Juvenile" "6  Immature male" "7  Mature male" "8  Mature male" "9  Transitional" "10 Immature female" "11 Ovigerous female I" "12 Ovigerous female I" "13 Spent female I" "14 Spent female I" "15 Ovigerous female II" "16 Ovigerous female II" "17 Spent female II" "18 Spent female II" "19 Ovigerous female III" "20 Ovigerous female III"}
@@ -14,32 +14,38 @@ parameters:
 400
 
 
-###################### Shrimp tox V0.1 ######################
+###################### SHRIMPACT V0.1 ######################
 
 # General (no index sets) #
 
-"Strength of density dependence (a)" :     #(1/(ind/100m2)) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Strength of density dependence (a)" :     #(1/(ind/100m2)) [1e-06, 1]
 0.0001
 
-"Degree of compensation (b)" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Degree of compensation (b)" :     #(dimensionless) [0.1, 10]
 1
 
 "First adult age class" :     #(season) [1, 100]
 6
 
-"Bad year type" :     # [None, Once, Multiple] 0=None, 1=Once, 2=0.25% chance each year
+"Bad year type" :     # [None, Once, Multiple]
 None
 
-"Bad year" :     #(year) [1000, 3000] What year is the bad year if there is only one
+"Bad year" :     #(year) [1000, 3000] What year is the bad year if it happens only once.
 2040
 
-"Reduction of larva survival in bad year" :     #(dimensionless) [0, 1] Multiplier to larva survival rate
+"Bad year chance" :     #(%) [0, 100] What is the chance that a year is bad if there are multiple bad years.
+25
+
+"Reduction of larva survival in bad year" :     #(dimensionless) [0, 1] Multiplier to larva survival rate in a bad year
 0.5
 
 "Variation in survival" :     #(dimensionless) [0.8, 1.2] Exponent to survival rate. Used for changing rate when running the model stochastically
 1
 
 "Toxicity multiplier" :     #(dimensionless) [0.1, 1] Multiplier to survival rate of non-larvae caused by toxicity
+1
+
+"Larva toxicity multiplier" :     #(dimensionless) [0.1, 1] Multiplier to survival rate of larvae caused by toxicity
 1
 
 
@@ -51,6 +57,6 @@ None
 "Fertility" :     #(dimensionless) [0, 1]
 0 0 0 0 0 0 0 0 0 0 0 1000 0 0 0 1500 0 0 0 2000
 
-"Initial population size" :     #(ind/100m2) [-1.79769313486232e+308, 1.79769313486232e+308]
+"Initial population size" :     #(ind/100m2) [0, 5000]
 58000 0 0 0 1800 0 0 0 180 0 0 0 18 0 0 0 2 0 0 0
 

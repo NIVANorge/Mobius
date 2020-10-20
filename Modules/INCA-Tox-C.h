@@ -5,11 +5,12 @@
 static void
 AddIncaToxDOCModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox Carbon", "0.1");
+	BeginModule(Model, "INCA-Tox Carbon", "0.1.1");
 SetModuleDescription(Model, R""""(
 This is a simple DOC model intended only for use with INCA-Tox. It is not suitable for studying complicated carbon transport dynamics in itself. It does for instance not try to keep track of the carbon balance or soil processes, it just provides a way to set up a simple empirical model of DOC transport in order for contaminants bound in the carbon to be transported correctly.
 )"""");
 	
+	auto Dimensionless = RegisterUnit(Model);
 	auto MgPerL   = RegisterUnit(Model, "mg/l");
 	auto Kg       = RegisterUnit(Model, "kg");
 	auto KgPerDay = RegisterUnit(Model, "kg/day");
@@ -34,7 +35,8 @@ This is a simple DOC model intended only for use with INCA-Tox. It is not suitab
 	auto Land = RegisterParameterGroup(Model, "Carbon by land class", LandscapeUnits);
 	auto Reach = RegisterParameterGroup(Model, "Carbon by subcatchment", Reaches);
 	
-	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerKm2, 0.0, 0.0, 1e7);
+	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerM2, 0.0, 0.0, 1e7);
+	auto SizeOfEasilyAccessibleFraction    = RegisterParameterDouble(Model, Land, "Size of easily accessible SOC fraction", Dimensionless, 0.1, 0.0, 1.0);
 	auto SoilWaterBaselineDOCConcentration = RegisterParameterDouble(Model, Land, "Soil water baseline DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	auto SoilWaterDOCTemperatureResponse   = RegisterParameterDouble(Model, Land, "Soil water DOC temperature response", MgPerLPerC, 0.0, 0.0, 5.0);
 	auto MineralLayerDOCConcentration      = RegisterParameterDouble(Model, Reach, "Mineral layer DOC concentration", MgPerL, 0.0, 0.0, 20.0);

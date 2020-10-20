@@ -15,13 +15,42 @@ Diffusion(double Z, double Zlow, double Zupp, double Dlow, double Dupp, double C
 }
 
 inline double
-DynamicViscosity(double Temperature, double Salinity, double Pressure)
+DynamicViscosity(double Temperature, double Salinity)
 {
-	//Temperature: deg C, Salinity: PSS, Pressure: bar
-	// return unit Pa*s
+#if 1
+	// Formula from J.P. Riley, Chemical Oceanography, vol 4, 2nd edition. AP. 1975
 	
-	//TODO: Needs salinity correction!
+	//Temperature: deg C, Salinity: PSU (PSS-78)
+	// return unit Pa*s
+	//NOTE: It is also possible to add pressure corrections. Pressure is here assumed to be at 1atm.
+	
+	double eta20 = 1.0020; //viscosity at t=20, s=0
+	double t    = Temperature;
+	double tm20 = 20.0-t;
+	double logratio = (1.1709*tm20 - 0.001827*tm20*tm20) / (t + 89.93);
+	
+	// Dynamic viscosity of distilled water corrected for temperature
+	double eta_t = eta20*pow(10.0, logratio);
+	
+	double A = LinearInterpolate(t, 5.0, 25.0, 0.000366, 0.001403);
+	double B = LinearInterpolate(t, 5.0, 25.0, 0.002756, 0.003416);
+	
+	double dtemp = (t + 273.15 - 277.13); // Difference between temperature and reference temperature
+	double density = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp); // density of water (kg/m3)
+	double Cl = Max((Salinity - 0.03)/1.805, 0.0); // The given formula is actually Salinity = 0.03 + 1.805*Cl, but that does not allow for 0 salinity.
+	// Volume chlorinity:
+	double Clv = density*1e-3 * Cl;   //Density should apparently be in kg/l instead of kg/m3 for this formula even though it is not stated.
+	
+	// Dynamic viscosity corrected for salinity
+	double eta_t_s = eta_t*(1.0 + A*sqrt(Clv) + B*Clv);
+	
+	return eta_t_s * 1e-3;  //Convert centipoise -> Pa*s
+	
+#else
+	// Something is wrong with above implementation. Have to fall back to the simple one without salinity correction:
+	
 	return 2.414e-5*pow(10.0, 247.8 / (Temperature+273.15 - 140.0));
+#endif
 }
 
 inline double
@@ -174,8 +203,11 @@ AddSedimentOxygenModule(mobius_model *Model)
 	EQUATION(Model, OxygenDiffusivityInWater,
 		double RefDiff = 1.57e-5;   //Reference diffusivity at 10C, distilled water
 		//TODO: Formula of temperature and salinity
-		double Pressure = 1.0; //bar  TODO: Should we correct it for ocean depth?
-		return RefDiff * (DynamicViscosity(10.0, 0.0, 1.0) / DynamicViscosity(PARAMETER(Temperature), PARAMETER(Salinity), Pressure))*(PARAMETER(Temperature)+273.15)/283.15;
+
+		double t = PARAMETER(Temperature);
+		double s = PARAMETER(Salinity);
+		
+		return RefDiff * (DynamicViscosity(10.0, 0.0) / DynamicViscosity(t, s)) * (t+273.15)/283.15;
 	)
 	
 

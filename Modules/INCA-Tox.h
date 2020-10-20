@@ -9,7 +9,7 @@
 static void
 AddIncaToxModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Tox", "0.3");
+	BeginModule(Model, "INCA-Tox", "0.3.1");
 	
 	SetModuleDescription(Model, R""""(
 Inca-Tox, also called INCA-Contaminants or INCA-POP is described in
@@ -28,12 +28,14 @@ New to V0.3: Multiple contaminants at a time.
 	auto M                = RegisterUnit(Model, "m");
 	auto M3               = RegisterUnit(Model, "m3");
 	auto M3PerM2          = RegisterUnit(Model, "m3/m2");
+	auto M3PerDay         = RegisterUnit(Model, "m3/day");
 	auto NgPerKm2         = RegisterUnit(Model, "ng/km2");
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerDay         = RegisterUnit(Model, "ng/day");
 	auto NgPerM2PerDay    = RegisterUnit(Model, "ng/m2/day");
 	auto NgPerM2          = RegisterUnit(Model, "ng/m2");
 	auto NgPerM3          = RegisterUnit(Model, "ng/m3");
+	auto NgPerL           = RegisterUnit(Model, "ng/l");
 	auto NgPerKg          = RegisterUnit(Model, "ng/kg");
 	auto KgPerM3          = RegisterUnit(Model, "kg/m3");
 	auto M3PerKg          = RegisterUnit(Model, "m3/kg");
@@ -45,11 +47,13 @@ New to V0.3: Multiple contaminants at a time.
 	auto M2PerS           = RegisterUnit(Model, "m2/s");
 	auto PGPerM3          = RegisterUnit(Model, "pg/m3");
 	auto K                = RegisterUnit(Model, "K");
+	auto Days             = RegisterUnit(Model, "day");
 	auto PerDay           = RegisterUnit(Model, "1/day");
 	auto GPerMol          = RegisterUnit(Model, "g/mol");
 	auto Cm3PerMol        = RegisterUnit(Model, "cm3/mol");
 	auto GPerCmPerSPerHundred = RegisterUnit(Model, "10^-2 g/cm/s");
 	auto DegreesCelsius   = RegisterUnit(Model, "°C");
+	auto Log10            = RegisterUnit(Model, "log10");
 	
 	auto DepositionToLand         = RegisterInput(Model, "Contaminant deposition to land", NgPerM2PerDay);
 	auto DepositionToReach        = RegisterInput(Model, "Contaminant deposition to reach", NgPerDay);
@@ -79,19 +83,33 @@ New to V0.3: Multiple contaminants at a time.
 	auto AirWaterPhaseTransferEnthalpy         = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase transfer between air and water", KiloJoulesPerMol, 0.0);
 	auto OctanolWaterPhaseTransferEntalphy     = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase tranfer between octanol and water", KiloJoulesPerMol, 0.0);
 	auto HenrysConstant25                      = RegisterParameterDouble(Model, Chemistry, "Henry's constant at 25°C", PascalM3PerMol, 0.0);
-	auto OctanolWaterPartitioningCoefficient25 = RegisterParameterDouble(Model, Chemistry, "Octanol-water partitioning coefficient at 25°C", Dimensionless, 0.0);
+	auto Log10OctanolWaterPartitioningCoefficient25 = RegisterParameterDouble(Model, Chemistry, "Log10 Octanol-water partitioning coefficient at 25°C", Dimensionless, 0.0);
 	
 	auto AtmosphericContaminantConcentration   = RegisterParameterDouble(Model, Chemistry, "Atmospheric contaminant concentration", NgPerM3, 0.0, 0.0, 100.0);
-	auto SoilContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in soil", PerDay, 0.0, 0.0, 1.0);
-	auto GroundwaterContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in groundwater", PerDay, 0.0, 0.0, 1.0);
-	auto ReachContaminantDegradationRateConstant    = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream", PerDay, 0.0, 0.0, 1.0);
-	auto BedContaminantDegradationRateConstant      = RegisterParameterDouble(Model, Chemistry, "Contaminant degradation rate constant in the stream bed", PerDay, 0.0, 0.0, 1.0);
-	auto DegradationResponseToTemperature           = RegisterParameterDouble(Model, Chemistry, "Degradation rate response to one degree change in temperature", Dimensionless, 1.0, 1.0, 1.5);
+	
+	auto SoilContaminantHalfLife                   = RegisterParameterDouble(Model, Chemistry, "Soil contaminant half life (easily accessible fraction)", Days, 3650.0, 10.0, 365000.0);
+	auto SoilContaminantHalfLifePotentially        = RegisterParameterDouble(Model, Chemistry, "Soil contaminant half life (potentially accessible fraction)", Days, 3650.0, 10.0, 365000.0);
+	auto GroundwaterContaminantHalfLife            = RegisterParameterDouble(Model, Chemistry, "Groundwater contaminant half life", Days, 3650.0, 10.0, 365000.0);
+	auto ReachContaminantHalfLife                  = RegisterParameterDouble(Model, Chemistry, "Reach contaminant half life", Days, 3650.0, 10.0, 365000.0);
+	auto StreamBedContaminantHalfLife              = RegisterParameterDouble(Model, Chemistry, "Stream bed contaminant half life", Days, 3650.0, 10.0, 365000.0);
+	
+	#define CONST_LN_2 0.69314718056
+	
+	auto DegradationResponseToTemperature           = RegisterParameterDouble(Model, Chemistry, "Degradation rate response to 10°C change in temperature", Dimensionless, 1.0, 0.5, 5.0);
 	auto TemperatureAtWhichDegradationRatesAreMeasured = RegisterParameterDouble(Model, Chemistry, "Temperature at which degradation rates are measured", DegreesCelsius, 20.0, -20.0, 50.0);
+	auto DepositionToLandPar                   = RegisterParameterDouble(Model, Chemistry, "Deposition to land", NgPerM2PerDay, 0.0, 0.0, 100.0, "Constant daily deposition. Alternative to time series of the same name");
+	auto ComputeWetDeposition                  = RegisterParameterBool(Model, Chemistry, "Compute wet deposition", false, "If true, precipitation is assumed to have an equilibrium concentration of contaminants relative to the atmospheric concentration");
+	auto ComputeDryDeposition                  = RegisterParameterBool(Model, Chemistry, "Compute dry deposition", false, "If true, dry deposition flux is given by atmospheric concentration multiplied with dry deposition velocity");
+	auto DryDepositionVelocity                 = RegisterParameterDouble(Model, Chemistry, "Dry deposition velocity", MPerDay, 0.0, 0.0, 100.0, "Used if dry deposition is computed");
+	
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
-	auto InitialContaminantMassInSoil  = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil", NgPerKm2, 0.0, 0.0, 1e3);
+	auto TransferCoefficientBetweenEasilyAndPotentiallyAccessible = RegisterParameterDouble(Model, Land, "Transfer coefficient between easily and potentially accessible fractions", MPerDay, 0.0, 0.0, 100.0);
+	//auto InitialContaminantMassInSoil  = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil (easily accessible fraction)", NgPerKm2, 0.0, 0.0, 1e15);
+	//auto InitialContaminantMassInPotentiallyAccessibleFraction = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil (potentially accessible fraction)", NgPerKm2, 0.0, 0.0, 1e15);
 	
+	auto InitialSoilWaterContaminantConcentration = RegisterParameterDouble(Model, Land, "Initial soil water contaminant concentration", NgPerM3, 0.0, 0.0, 1e5);
+	auto InitialSoilSOCContaminantConcentration = RegisterParameterDouble(Model, Land, "Initial soil SOC contaminant concentration", NgPerKg, 0.0, 0.0, 1e5);
 	
 	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
@@ -110,6 +128,7 @@ New to V0.3: Multiple contaminants at a time.
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature");
 	
 	 //PERSiST.h
+	auto Precipitation   = GetInputHandle(Model, "Actual precipitation");
 	auto WaterDepth      = GetEquationHandle(Model, "Water depth");
 	auto RunoffToReach   = GetEquationHandle(Model, "Runoff to reach");
 	auto PercolationInput= GetEquationHandle(Model, "Percolation input");
@@ -144,6 +163,7 @@ New to V0.3: Multiple contaminants at a time.
 	
 	//INCA-Tox-C.h
 	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");
+	auto SizeOfEasilyAccessibleFraction = GetParameterDoubleHandle(Model, "Size of easily accessible SOC fraction");
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
 	auto SoilDegradationTemperatureModifier = RegisterEquation(Model, "Temperature modifier for degradation in soil", Dimensionless);
@@ -154,11 +174,11 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, SoilDegradationTemperatureModifier,
-		return pow(PARAMETER(DegradationResponseToTemperature), RESULT(SoilTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured));
+		return pow(PARAMETER(DegradationResponseToTemperature), 0.1*(RESULT(SoilTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured)));
 	)
 	
 	EQUATION(Model, ReachDegradationTemperatureModifier,
-		return pow(PARAMETER(DegradationResponseToTemperature), RESULT(WaterTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured));
+		return pow(PARAMETER(DegradationResponseToTemperature), 0.1*(RESULT(WaterTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured)));
 	)
 	
 	
@@ -172,45 +192,62 @@ New to V0.3: Multiple contaminants at a time.
 	auto WaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Water-SOC partitioning coefficient", M3PerKg);
 	auto WaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Water-DOC partitioning coefficient", M3PerKg);
 	
-	auto ContaminantDeliveryToReachByErosion = RegisterEquation(Model, "Contaminant delivery to reach by erosion", NgPerDay);
-	SetSolver(Model, ContaminantDeliveryToReachByErosion, SoilSolver);
+	auto ContaminantDeliveryToReachByErosion = RegisterEquation(Model, "Contaminant delivery to reach by erosion", NgPerDay, SoilSolver);
 	
 	auto TotalContaminantDeliveryToReach     = RegisterEquationCumulative(Model, "Contaminant delivery to reach by erosion summed over land classes", ContaminantDeliveryToReachByErosion, LandscapeUnits);
 	
-	auto SoilWaterContaminantConcentration = RegisterEquation(Model, "Soil water contaminant concentration", NgPerM3);
-	SetSolver(Model, SoilWaterContaminantConcentration, SoilSolver);
-	auto SoilSOCContaminantConcentration   = RegisterEquation(Model, "Soil SOC contaminant concentration", NgPerKg);
-	SetSolver(Model, SoilSOCContaminantConcentration, SoilSolver);
-	auto SoilDOCContaminantConcentration   = RegisterEquation(Model, "Soil DOC contaminant concentration", NgPerKg);
-	SetSolver(Model, SoilDOCContaminantConcentration, SoilSolver);
-	auto SoilAirContaminantConcentration   = RegisterEquation(Model, "Soil Air contaminant concentration", NgPerM3);
-	SetSolver(Model, SoilAirContaminantConcentration, SoilSolver);
-	auto DiffusiveAirSoilExchangeFlux      = RegisterEquation(Model, "Diffusive exchange of contaminants between soil and atmosphere", NgPerKm2PerDay);
-	SetSolver(Model, DiffusiveAirSoilExchangeFlux, SoilSolver);
-	auto SoilContaminantDegradation        = RegisterEquation(Model, "Soil contaminant degradation", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantDegradation, SoilSolver);
+	auto SoilWaterContaminantConcentration = RegisterEquation(Model, "Soil water contaminant concentration", NgPerM3, SoilSolver);
+	auto SoilSOCContaminantConcentration   = RegisterEquation(Model, "Soil SOC contaminant concentration (easily accessible fraction)", NgPerKg, SoilSolver);
+	auto SoilSOCContaminantConcentrationPotentiallyAccessible = RegisterEquation(Model, "Soil SOC contaminant concentration (potentially accessible fraction)", NgPerKg, SoilSolver);
+	auto SoilDOCContaminantConcentration   = RegisterEquation(Model, "Soil DOC contaminant concentration", NgPerKg, SoilSolver);
+	auto SoilAirContaminantConcentration   = RegisterEquation(Model, "Soil Air contaminant concentration", NgPerM3, SoilSolver);
+	auto DiffusiveAirSoilExchangeFlux      = RegisterEquation(Model, "Diffusive exchange of contaminants between soil and atmosphere", NgPerKm2PerDay, SoilSolver);
+	auto SoilContaminantDegradation        = RegisterEquation(Model, "Soil contaminant degradation (easily accessible fraction)", NgPerKm2PerDay, SoilSolver);
+	auto SoilContaminantDegradationPotentiallyAccessible = RegisterEquation(Model, "Soil contaminant degradation (potentially accessible fraction)", NgPerKm2PerDay, SoilSolver);
 	
 	auto SoilWaterVolume                   = RegisterEquation(Model, "Soil water volume", M3PerKm2);
 	auto SoilAirVolume                     = RegisterEquation(Model, "Soil air volume", M3PerKm2);
 	
+	auto ComputedPrecipitationContaminantConcentration = RegisterEquation(Model, "Computed contaminant concentration in precipitation", NgPerM3);
+	auto ComputedWetDeposition             = RegisterEquation(Model, "Computed wet deposition", NgPerM2PerDay);
+	auto ComputedDryDeposition             = RegisterEquation(Model, "Computed dry deposition", NgPerM2PerDay);
 	auto ContaminantInputsToSoil           = RegisterEquation(Model, "Contaminant inputs to soil", NgPerKm2PerDay);
-	auto ContaminantMassInSoil             = RegisterEquationODE(Model, "Contaminant mass in soil", NgPerKm2);
-	SetSolver(Model, ContaminantMassInSoil, SoilSolver);
-	SetInitialValue(Model, ContaminantMassInSoil, InitialContaminantMassInSoil);
-	auto SoilContaminantFluxToReach        = RegisterEquation(Model, "Soil contaminant flux to reach", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantFluxToReach, SoilSolver);
-	auto SoilContaminantFluxToGroundwater  = RegisterEquation(Model, "Soil contaminant flux to groundwater", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantFluxToGroundwater, SoilSolver);
-	auto SoilContaminantFluxToDirectRunoff = RegisterEquation(Model, "Soil contaminant flux to direct runoff", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantFluxToDirectRunoff, SoilSolver);
 	
-	auto GroundwaterContaminantDegradation = RegisterEquation(Model, "Groundwater contaminant degradation", NgPerKm2PerDay);
-	SetSolver(Model, GroundwaterContaminantDegradation, SoilSolver);
-	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay);
-	SetSolver(Model, GroundwaterContaminantFluxToReach, SoilSolver);
-	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2);
-	SetSolver(Model, ContaminantMassInGroundwater, SoilSolver);
+	auto InitialContaminantMassInSoil  = RegisterEquationInitialValue(Model, "Initial contaminant mass in soil (easily accessible fraction)", NgPerKm2);
+	auto InitialContaminantMassInPotentiallyAccessibleFraction = RegisterEquationInitialValue(Model, "Initial contaminant mass in soil (potentially accessible fraction)", NgPerKm2);
+	
+	auto ContaminantMassInSoil             = RegisterEquationODE(Model, "Contaminant mass in soil (easily accessible fraction)", NgPerKm2, SoilSolver);
+	SetInitialValue(Model, ContaminantMassInSoil, InitialContaminantMassInSoil);
+	
+	auto ContaminantMassInPotentiallyAccessibleFraction = RegisterEquationODE(Model, "Contaminant mass in soil (potentially accessible fraction)", NgPerKm2, SoilSolver);
+	SetInitialValue(Model, ContaminantMassInPotentiallyAccessibleFraction, InitialContaminantMassInPotentiallyAccessibleFraction);
+	auto TransferFromPotentiallyToEasilyAccessible = RegisterEquation(Model, "Contaminant transfer from potentially to easily accessible fraction", NgPerKm2PerDay, SoilSolver);
+	
+	
+	auto SoilContaminantFluxToReach        = RegisterEquation(Model, "Soil contaminant flux to reach", NgPerKm2PerDay, SoilSolver);
+	auto SoilContaminantFluxToGroundwater  = RegisterEquation(Model, "Soil contaminant flux to groundwater", NgPerKm2PerDay, SoilSolver);
+	
+	auto GroundwaterContaminantDegradation = RegisterEquation(Model, "Groundwater contaminant degradation", NgPerKm2PerDay, SoilSolver);
+	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay, SoilSolver);
+	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2, SoilSolver);
 	SetInitialValue(Model, ContaminantMassInGroundwater, InitialContaminantMassInGroundwater);
+	
+	EQUATION(Model, InitialContaminantMassInSoil,
+		double concinsoc = PARAMETER(InitialSoilSOCContaminantConcentration);
+		double socmass   = PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6; //kg/m2 -> kg/km2
+		double concinwater = PARAMETER(InitialSoilWaterContaminantConcentration);
+		double watervolume = RESULT(SoilWaterVolume);
+		
+		return concinsoc*socmass + concinwater*watervolume;
+	)
+	
+	EQUATION(Model, InitialContaminantMassInPotentiallyAccessibleFraction,
+		double concinsoc = PARAMETER(InitialSoilSOCContaminantConcentration);
+		double socmass   = PARAMETER(SoilSOCMass)*(1.0 - PARAMETER(SizeOfEasilyAccessibleFraction))*1e6; //kg/m2 -> kg/km2
+		return concinsoc * socmass;
+	)
+	
+	
 	
 	EQUATION(Model, HenrysConstant,
 		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
@@ -226,7 +263,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, OctanolWaterPartitioningCoefficient,
-		double LogKOW25 = std::log10(PARAMETER(OctanolWaterPartitioningCoefficient25));
+		double LogKOW25 = PARAMETER(Log10OctanolWaterPartitioningCoefficient25);
 		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
 		double tdiff = (1.0 / RESULT(SoilTemperatureKelvin) - 1.0/(273.15 + 25.0));
 		double LogKOWT = LogKOW25 - (1e3*PARAMETER(OctanolWaterPhaseTransferEntalphy) / (std::log(10.0)*R))   * tdiff;
@@ -256,7 +293,7 @@ New to V0.3: Multiple contaminants at a time.
 		return 
 			RESULT(ContaminantMassInSoil) /
 			(
-			  RESULT(WaterSOCPartitioningCoefficient) * PARAMETER(SoilSOCMass)
+			  RESULT(WaterSOCPartitioningCoefficient) * PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6
 			+ RESULT(WaterDOCPartitioningCoefficient) * RESULT(SoilDOCMass)
 			+ RESULT(AirWaterPartitioningCoefficient) * RESULT(SoilAirVolume)
 			+ RESULT(SoilWaterVolume)
@@ -275,15 +312,57 @@ New to V0.3: Multiple contaminants at a time.
 		return RESULT(SoilWaterContaminantConcentration) * RESULT(AirWaterPartitioningCoefficient);
 	)
 	
+	EQUATION(Model, ContaminantMassInPotentiallyAccessibleFraction,
+		return
+			  -RESULT(TransferFromPotentiallyToEasilyAccessible)
+			  -RESULT(SoilContaminantDegradationPotentiallyAccessible);
+	)
+	
+	EQUATION(Model, TransferFromPotentiallyToEasilyAccessible,
+		return 1e6 * PARAMETER(TransferCoefficientBetweenEasilyAndPotentiallyAccessible) * (RESULT(SoilSOCContaminantConcentrationPotentiallyAccessible) - RESULT(SoilSOCContaminantConcentration));
+	)
+	
+	EQUATION(Model, SoilSOCContaminantConcentrationPotentiallyAccessible,
+		double SOCmass = PARAMETER(SoilSOCMass)*(1.0 - PARAMETER(SizeOfEasilyAccessibleFraction))*1e6;
+		return SafeDivide(RESULT(ContaminantMassInPotentiallyAccessibleFraction), SOCmass);
+	)
+	
+	EQUATION(Model, SoilContaminantDegradationPotentiallyAccessible,
+		return (CONST_LN_2 / PARAMETER(SoilContaminantHalfLifePotentially)) * RESULT(SoilDegradationTemperatureModifier) * RESULT(ContaminantMassInPotentiallyAccessibleFraction);
+	)
+	
+	
 	EQUATION(Model, DiffusiveAirSoilExchangeFlux,
 		double atmospheric = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
-		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (1e-3*atmospheric - RESULT(SoilAirContaminantConcentration));
+		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (/*1e-3*/atmospheric - RESULT(SoilAirContaminantConcentration));
+	)
+	
+	EQUATION(Model, ComputedPrecipitationContaminantConcentration,
+		double airwater_p = RESULT(AirWaterPartitioningCoefficient); //NOTE: This uses soil temperature, but should use air temperature. Can fix this later?
+		double air_c = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		return air_c/airwater_p; // ng/m3
+	)
+	
+	EQUATION(Model, ComputedWetDeposition,
+		double water_in = INPUT(Precipitation) * 1e-3; // m/day
+		double conc = RESULT(ComputedPrecipitationContaminantConcentration); // ng/m3
+		if(PARAMETER(ComputeWetDeposition))
+			return conc * water_in; // ng/m2/day
+		return 0.0;
+	)
+	
+	EQUATION(Model, ComputedDryDeposition,
+		double conc = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		double velocity = PARAMETER(DryDepositionVelocity);
+		if(PARAMETER(ComputeDryDeposition))
+			return conc * velocity;
+		return 0.0;
 	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,
 		//TODO: Maybe let the user parametrize this in case they don't have detailed timeseries
-		//NOTE: convert ng/m2 -> ng/km2
-		return INPUT(DepositionToLand) * 1e6;
+		double input = IF_INPUT_ELSE_PARAMETER(DepositionToLand, DepositionToLandPar) + RESULT(ComputedWetDeposition) + RESULT(ComputedDryDeposition);
+		return input * 1e6; //NOTE: convert ng/m2 -> ng/km2
 	)
 	
 	EQUATION(Model, ContaminantDeliveryToReachByErosion,
@@ -291,8 +370,9 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, SoilContaminantFluxToReach,
+		double water_runoff = RESULT(RunoffToReach, Soilwater) + RESULT(RunoffToReach, DirectRunoff);
 		return
-			RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
+			water_runoff * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
 		  + RESULT(SoilDOCFluxToReach) * RESULT(SoilDOCContaminantConcentration);
 	)
 	
@@ -302,17 +382,13 @@ New to V0.3: Multiple contaminants at a time.
 		  + RESULT(SoilDOCFluxToGroundwater) * RESULT(SoilDOCContaminantConcentration);
 	)
 	
-	EQUATION(Model, SoilContaminantFluxToDirectRunoff,
-		return 0.0; //TODO
-	)
-	
 	EQUATION(Model, SoilContaminantDegradation,
 		double degradablemass =
 		  RESULT(SoilWaterVolume) * RESULT(SoilWaterContaminantConcentration)
 		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
-		+ PARAMETER(SoilSOCMass)  * RESULT(SoilSOCContaminantConcentration);
+		+ PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6  * RESULT(SoilSOCContaminantConcentration);
 		
-		return PARAMETER(SoilContaminantDegradationRateConstant) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
+		return (CONST_LN_2 / PARAMETER(SoilContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInSoil,
@@ -320,10 +396,10 @@ New to V0.3: Multiple contaminants at a time.
 		  RESULT(ContaminantInputsToSoil)
 		- RESULT(SoilContaminantFluxToReach)
 		- RESULT(SoilContaminantFluxToGroundwater)
-		- RESULT(SoilContaminantFluxToDirectRunoff)
 		+ RESULT(DiffusiveAirSoilExchangeFlux)
 		- RESULT(SoilContaminantDegradation)
-		- RESULT(ContaminantDeliveryToReachByErosion);
+		- RESULT(ContaminantDeliveryToReachByErosion)
+		+ RESULT(TransferFromPotentiallyToEasilyAccessible);
 	)
 	
 	EQUATION(Model, GroundwaterContaminantFluxToReach,
@@ -333,7 +409,7 @@ New to V0.3: Multiple contaminants at a time.
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
-		return PARAMETER(GroundwaterContaminantDegradationRateConstant) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
+		return (CONST_LN_2 / PARAMETER(GroundwaterContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInGroundwater,
@@ -352,13 +428,12 @@ New to V0.3: Multiple contaminants at a time.
 	auto DiffuseContaminantOutput      = RegisterEquation(Model, "Diffuse contaminant output", NgPerDay);
 	auto TotalDiffuseContaminantOutput = RegisterEquationCumulative(Model, "Total diffuse contaminant output", DiffuseContaminantOutput, LandscapeUnits);
 	auto ReachContaminantInput         = RegisterEquation(Model, "Reach contaminant input", NgPerDay);
-	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng);
-	SetSolver(Model, ContaminantMassInReach, ReachSolver);
+	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng, ReachSolver);
 	SetInitialValue(Model, ContaminantMassInReach, InitialContaminantMassInReach);
-	auto ReachContaminantFlux          = RegisterEquation(Model, "Reach contaminant flux", NgPerDay);
-	SetSolver(Model, ReachContaminantFlux, ReachSolver);
-	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay);
-	SetSolver(Model, ReachContaminantDegradation, ReachSolver);
+	auto ReachContaminantDissolvedFlux = RegisterEquation(Model, "Reach flux of dissolved contaminants", NgPerDay, ReachSolver);
+	auto ReachContaminantSolidFlux     = RegisterEquation(Model, "Reach flux of solid-bound contaminants", NgPerDay, ReachSolver);
+	auto ReachContaminantFlux          = RegisterEquation(Model, "Total reach contaminant flux", NgPerDay, ReachSolver);
+	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay, ReachSolver);
 	
 	auto ReachHenrysConstant                      = RegisterEquation(Model, "Reach Henry's constant", PascalM3PerMol);
 	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Reach air-water partitioning coefficient", Dimensionless);
@@ -380,36 +455,26 @@ New to V0.3: Multiple contaminants at a time.
 	auto ReachAirContaminantTransferVelocity      = RegisterEquation(Model, "Reach air contamninant transfer velocity", MPerDay);
 	auto ReachWaterContaminantTransferVelocity    = RegisterEquation(Model, "Reach water contaminant transfer velocity", MPerDay);
 	auto ReachOverallAirWaterContaminantTransferVelocity = RegisterEquation(Model, "Reach overall air-water transfer velocity", MPerDay);
-	auto DiffusiveAirReachExchangeFlux            = RegisterEquation(Model, "Diffusive air reach exchange flux", NgPerDay);
-	SetSolver(Model, DiffusiveAirReachExchangeFlux, ReachSolver);
+	auto DiffusiveAirReachExchangeFlux            = RegisterEquation(Model, "Diffusive air reach exchange flux", NgPerDay, ReachSolver);
 	
-	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3);
-	SetSolver(Model, ReachWaterContaminantConcentration, ReachSolver);
-	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg);
-	SetSolver(Model, ReachDOCContaminantConcentration, ReachSolver);
-	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg);
-	SetSolver(Model, ReachSOCContaminantConcentration, ReachSolver);
+	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3, ReachSolver);
+	auto ReachWaterContaminantConcentrationNgL = RegisterEquation(Model, "Reach water contaminant concentration ng/l", NgPerL);
+	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg, ReachSolver);
+	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg, ReachSolver);
 	
-	auto ReachContaminantDeposition = RegisterEquation(Model, "Reach contaminant deposition", NgPerM2PerDay);
-	SetSolver(Model, ReachContaminantDeposition, ReachSolver);
-	auto ReachContaminantEntrainment = RegisterEquation(Model, "Reach contaminant entrainment", NgPerM2PerDay);
-	SetSolver(Model, ReachContaminantEntrainment, ReachSolver);
+	auto ReachContaminantDeposition = RegisterEquation(Model, "Reach contaminant deposition", NgPerM2PerDay, ReachSolver);
+	auto ReachContaminantEntrainment = RegisterEquation(Model, "Reach contaminant entrainment", NgPerM2PerDay, ReachSolver);
 	
 	auto PoreWaterVolume = RegisterEquation(Model, "Pore water volume", M3PerM2);
 	
-	auto BedContaminantDegradation        = RegisterEquation(Model, "Stream bed contaminant degradation", NgPerM2PerDay);
-	SetSolver(Model, BedContaminantDegradation, ReachSolver);
-	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2);
-	SetSolver(Model, BedContaminantMass, ReachSolver);
+	auto BedContaminantDegradation        = RegisterEquation(Model, "Stream bed contaminant degradation", NgPerM2PerDay, ReachSolver);
+	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2, ReachSolver);
 	//SetInitialValue
 
-	auto BedWaterContaminantConcentration = RegisterEquation(Model, "Stream bed pore water contaminant concentration", NgPerM3);
-	SetSolver(Model, BedWaterContaminantConcentration, ReachSolver);
-	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
-	SetSolver(Model, BedSOCContaminantConcentration, ReachSolver);
+	auto BedWaterContaminantConcentration = RegisterEquation(Model, "Stream bed pore water contaminant concentration", NgPerM3, ReachSolver);
+	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg, ReachSolver);
 	
-	auto DiffusiveSedimentReachExchangeFlux = RegisterEquation(Model, "Diffusive sediment reach water exchange flux", NgPerDay);
-	SetSolver(Model, DiffusiveSedimentReachExchangeFlux, ReachSolver);
+	auto DiffusiveSedimentReachExchangeFlux = RegisterEquation(Model, "Diffusive sediment reach water exchange flux", NgPerDay, ReachSolver);
 	
 	
 	
@@ -434,16 +499,23 @@ New to V0.3: Multiple contaminants at a time.
 			;
 	)
 	
+	EQUATION(Model, ReachContaminantDissolvedFlux,
+		return
+			  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration) * 86400.0
+			+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration);
+	)
+	
+	EQUATION(Model, ReachContaminantSolidFlux,
+		return RESULT(TotalReachSOCFlux) * RESULT(ReachSOCContaminantConcentration);
+	)
 	
 	EQUATION(Model, ReachContaminantFlux,
 		return
-		  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration) * 86400.0
-		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration)
-		+ RESULT(TotalReachSOCFlux) * RESULT(ReachSOCContaminantConcentration);
+		  RESULT(ReachContaminantDissolvedFlux) + RESULT(ReachContaminantSolidFlux);
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
-		return RESULT(ContaminantMassInReach) * RESULT(ReachDegradationTemperatureModifier) * PARAMETER(ReachContaminantDegradationRateConstant);
+		return (CONST_LN_2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(ContaminantMassInReach) * RESULT(ReachDegradationTemperatureModifier);
 	)
 	
 	
@@ -476,7 +548,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, ReachOctanolWaterPartitioningCoefficient,
-		double LogKOW25 = std::log10(PARAMETER(OctanolWaterPartitioningCoefficient25));
+		double LogKOW25 = PARAMETER(Log10OctanolWaterPartitioningCoefficient25);
 		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
 		double tdiff = (1.0 / RESULT(WaterTemperatureKelvin) - 1.0/(273.15 + 25.0));
 		double LogKOWT = LogKOW25 - (1e3*PARAMETER(OctanolWaterPhaseTransferEntalphy) / (std::log(10.0)*R))   * tdiff;
@@ -624,6 +696,10 @@ New to V0.3: Multiple contaminants at a time.
 			  (RESULT(ReachWaterDOCPartitioningCoefficient)*RESULT(ReachDOCMass) + RESULT(ReachWaterSOCPartitioningCoefficient)*RESULT(TotalSuspendedSOCMass) + RESULT(ReachVolume));
 	)
 	
+	EQUATION(Model, ReachWaterContaminantConcentrationNgL,
+		return 1e-3 * RESULT(ReachWaterContaminantConcentration);
+	)
+	
 	EQUATION(Model, ReachDOCContaminantConcentration,
 		return RESULT(ReachWaterContaminantConcentration) * RESULT(ReachWaterDOCPartitioningCoefficient);
 	)
@@ -642,7 +718,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, BedContaminantDegradation,
-		return RESULT(BedContaminantMass) * RESULT(ReachDegradationTemperatureModifier) * PARAMETER(BedContaminantDegradationRateConstant);
+		return (CONST_LN_2 / PARAMETER(StreamBedContaminantHalfLife)) * RESULT(BedContaminantMass) * RESULT(ReachDegradationTemperatureModifier);
 	)
 	
 	EQUATION(Model, BedContaminantMass,

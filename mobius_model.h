@@ -1636,8 +1636,15 @@ UniformRandomU64(model_run_state *RunState, u64 Low, u64 High)
 	return Distribution(RunState->RandomGenerator);
 }
 
-#define UNIFORM_RANDOM_UINT(Low, High) (UniformRandomU64(RunState__, Low, High))
+inline double
+UniformRandomDouble(model_run_state *RunState, double Low, double High)
+{
+	std::uniform_real_distribution<double> Distribution(Low, High);
+	return Distribution(RunState->RandomGenerator);
+}
 
+#define UNIFORM_RANDOM_UINT(Low, High) (UniformRandomU64(RunState__, Low, High))
+#define UNIFORM_RANDOM_DOUBLE(Low, High) (UniformRandomDouble(RunState__, Low, High))
 
 
 

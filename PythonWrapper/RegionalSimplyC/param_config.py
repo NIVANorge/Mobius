@@ -8,21 +8,34 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 def configure_params(params, do_doc, do_hydro):
 	
 	if do_hydro :
+		params['alphaPET_F'].max = 2.0
+		params['alphaPET_F'].min = 0.5
+	
+		params['fquick'].min = 0.0
 		params['fquick'].max = 0.1
 		
-		params['Ts_F'].max = 12
-		params['Ts_S'].max = 2
-
-		for lu in ['F', 'S', 'P'] :
-			params['Ts_%s' % lu].min = 1
+		params['Ts_F'].max = 5
+		params['Ts_S'].max = 5
+		params['Ts_P'].max = 20
+		
+		params['Ts_F'].min = 1
+		params['Ts_S'].min = 1
+		params['Ts_P'].min = 2
+		
+		
+		
+		#TODO: Should this be different per land type or not?
+		for lu in ['S', 'P']:
+			params['alphaPET_%s' % lu].set(expr='alphaPET_F')
 			
-		for lu in ['F', 'S', 'P']:
-			params['alphaPET_%s' % lu].max = 3.0
-			params['fc_%s' % lu].min = 40
 
 	if do_doc :
+		
+		params['fc_F'].min = 60
+		params['fc_S'].min = 40
+		params['fc_P'].min = 100
 	
-		params['fc_F'].max = 300
+		params['fc_F'].max = 200
 		params['fc_S'].max = 100
 		params['fc_P'].max = 400
 	
@@ -31,6 +44,12 @@ def configure_params(params, do_doc, do_hydro):
 
 		params['kSO4'].min = 0.0
 		params['kSO4'].max = 0.2
+		
+		params['depthST'].min = -1
+		params['depthST'].max = -0.1
+		
+		params['STC_F'].min = 0.01
+		params['STC_F'].max = 0.7
 
 		params['STC_S'].set(expr='STC_F')
 		params['STC_P'].set(expr='STC_F')

@@ -21,6 +21,7 @@ This is a shrimp population model that can react to environmental stressors. It 
 	auto PerInd               = RegisterUnit(Model, "1/(ind/100m2)");
 	auto Season               = RegisterUnit(Model, "season");
 	auto Year                 = RegisterUnit(Model, "year");
+	auto Percent              = RegisterUnit(Model, "%");
 	
 	auto AgeClass = RegisterIndexSet(Model, "Age class");
 	
@@ -31,9 +32,10 @@ This is a shrimp population model that can react to environmental stressors. It 
 	auto DegreeOfCompensation        = RegisterParameterDouble(Model, GeneralParam, "Degree of compensation (b)", Dimensionless, 1.0, 0.1, 10.0);
 	auto FirstAdultClass             = RegisterParameterUInt(Model, GeneralParam, "First adult age class", Season, 6, 1, 100);
 	
-	auto BadYearType                 = RegisterParameterEnum(Model, GeneralParam, "Bad year type", {"None", "Once", "Multiple"}, "None", "If 'Multiple', there is a 25% chance of a bad year each year.");
+	auto BadYearType                 = RegisterParameterEnum(Model, GeneralParam, "Bad year type", {"None", "Once", "Multiple"}, "None");
 	auto BadYearNumber               = RegisterParameterUInt(Model, GeneralParam, "Bad year", Year, 2040, 1000, 3000, "What year is the bad year if it happens only once.");
-	auto BadYearSurvivalReduction  = RegisterParameterDouble(Model, GeneralParam, "Reduction of larva survival in bad year", Dimensionless, 0.5, 0.0, 1.0, "Multiplier to larva survival rate");
+	auto BadYearChance               = RegisterParameterDouble(Model, GeneralParam, "Bad year chance", Percent, 25.0, 0.0, 100.0, "What is the chance that a year is bad if there are multiple bad years.");
+	auto BadYearSurvivalReduction    = RegisterParameterDouble(Model, GeneralParam, "Reduction of larva survival in bad year", Dimensionless, 0.5, 0.0, 1.0, "Multiplier to larva survival rate in a bad year");
 	auto VariationInSurvival         = RegisterParameterDouble(Model, GeneralParam, "Variation in survival", Dimensionless, 1.0, 0.8, 1.2, "Exponent to survival rate. Used for changing rate when running the model stochastically"); 
 	auto Toxicity                    = RegisterParameterDouble(Model, GeneralParam, "Toxicity multiplier", Dimensionless, 1.0, 0.1, 1.0, "Multiplier to survival rate of non-larvae caused by toxicity");
 	auto LarvaToxicity               = RegisterParameterDouble(Model, GeneralParam, "Larva toxicity multiplier", Dimensionless, 1.0, 0.1, 1.0, "Multiplier to survival rate of larvae caused by toxicity");
@@ -68,6 +70,7 @@ This is a shrimp population model that can react to environmental stressors. It 
 		
 		double badYearReduction = PARAMETER(BadYearSurvivalReduction);
 		u64    badYearNumber    = PARAMETER(BadYearNumber);
+		double badYearChance    = PARAMETER(BadYearChance);
 		
 		u64 badtype = PARAMETER(BadYearType);
 		if(badtype > 0 && Age == FIRST_INDEX(AgeClass))
@@ -78,7 +81,8 @@ This is a shrimp population model that can react to environmental stressors. It 
 			{
 				if(CURRENT_TIME().Month == 1)
 				{
-					if(UNIFORM_RANDOM_UINT(1, 4)==1) survivalRate *= badYearReduction;
+					if(UNIFORM_RANDOM_DOUBLE(0, 100) <= badYearChance)
+						survivalRate *= badYearReduction;
 				}
 				else
 					survivalRate = lastRate;
