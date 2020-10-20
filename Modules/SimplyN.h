@@ -24,6 +24,7 @@ This module is in early development.
 	auto KgPerHaPerDay  = RegisterUnit(Model, "kg/Ha/day");
 	auto MPerYear       = RegisterUnit(Model, "m/year");
 	auto MPerDay        = RegisterUnit(Model, "m/day");
+	auto M3PerDay       = RegisterUnit(Model, "m3/day");
 	auto Days           = RegisterUnit(Model, "day");
 	auto PerDay         = RegisterUnit(Model, "1/day");
 	
@@ -34,17 +35,17 @@ This module is in early development.
 	
 	auto NitrogenGlobal = RegisterParameterGroup(Model, "Nitrogen global");
 	
-	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerDay, 0.0, 0.0, 1.0, "", "imms");
+	auto SoilWaterDINImmobilisationRate   = RegisterParameterDouble(Model, NitrogenGlobal, "Soil water DIN uptake+immobilisation rate at 20°C", MPerDay, 0.0, 0.0, 10.0, "", "imms");
 	auto SoilWaterDINImmobilisationQ10    = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 5.0, "", "Q10imms");
 	auto UseGrowthCurve                   = RegisterParameterBool(Model, NitrogenGlobal, "Use growth curve", false);
 	auto DayOfHighestGrowth               = RegisterParameterDouble(Model, NitrogenGlobal, "Day of highest uptake+immobilisation", Days, 200.0, 1.0, 365.0);
 	auto Growth95Percentile               = RegisterParameterDouble(Model, NitrogenGlobal, "Length of interval where 95% of growth takes place", Days, 200.0, 0.0, 365.0);
 	
-	auto GroundwaterDINConcentration      = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater DIN concentration", MgPerL, 0.0, 0.0, 5.0, "", "DINgw");
+	auto GroundwaterDINConcentration      = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater DIN concentration", MgPerL, 0.0, 0.0, 30.0, "", "DINgw");
 	auto GroundwaterDINConstant           = RegisterParameterBool(Model, NitrogenGlobal, "Constant groundwater DIN concentration", true, "Keep the concentration of DIN in the groundwater constant instead of simulating it.");
 	auto GroundwaterBufferVolume          = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater retention volume", Mm, 0.0, 0.0, 2000.0, "Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.");
 	
-	auto ReachDenitrificationRate         = RegisterParameterDouble(Model, NitrogenGlobal, "Reach denitrification rate at 20°C", MPerDay, 0.0, 0.0, 1.0, "", "den");
+	auto ReachDenitrificationRate         = RegisterParameterDouble(Model, NitrogenGlobal, "Reach denitrification rate at 20°C", M3PerDay, 0.0, 0.0, 1e6, "", "den"); //NOTE: m3/day is a weird unit. Alternatively we could have m/day, and then multiply that with the reach dimensions.
 	auto ReachDenitrificationQ10          = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Reach denitrification rate response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 5.0, "", "Q10den");
 	
 	
@@ -56,7 +57,7 @@ This module is in early development.
 	
 	auto NitrogenReach  = RegisterParameterGroup(Model, "Nitrogen by reach", Reach);
 	
-	auto EffluentDIN    = RegisterParameterDouble(Model, NitrogenReach, "Effluent DIN inputs", KgPerDay, 0.0, 0.0, 100.0);
+	auto EffluentDIN    = RegisterParameterDouble(Model, NitrogenReach, "Effluent DIN inputs", KgPerDay, 0.0, 0.0, 100.0, "", "DINeff");
 	
 	//From SimplyQ:
 	auto LandSolver  = GetSolverHandle(Model, "SimplyQ land solver");
@@ -133,7 +134,7 @@ This module is in early development.
 		double growthfactor = RESULT(GrowthCurve);
 		if(!PARAMETER(UseGrowthCurve)) growthfactor = 1.0;
 		double tempfactor   = std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
-		return RESULT(SoilWaterDINConcentration) * 1e-3 * PARAMETER(SoilWaterDINImmobilisationRate) * tempfactor * growthfactor;
+		return RESULT(SoilWaterDINConcentration) * 1e-3 * PARAMETER(SoilWaterDINImmobilisationRate) * tempfactor * growthfactor * 1e6;
 	)
 	
 	EQUATION(Model, InitialSoilWaterDINMass,

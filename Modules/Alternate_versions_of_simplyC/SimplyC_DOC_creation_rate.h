@@ -48,7 +48,7 @@ AddSimplyCModel(mobius_model *Model)
 	
 
 #ifdef SIMPLYQ_GROUNDWATER
-	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 70.0);
+	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 70.0, "", "DOCgw");
 #endif
 
 	// Carbon params that vary with land class

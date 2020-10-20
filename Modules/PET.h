@@ -61,8 +61,8 @@ This is a very simple PET model using a linear relationship between PET and air 
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	auto PETParams      = RegisterParameterGroup(Model, "Potential evapotranspiration", LandscapeUnits);
 	
-	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, PETParams, "Degree-day evapotranspiration", MmPerDegCPerDay, 0.12, 0.05, 0.2);
-	auto EtpTemperatureMin           = RegisterParameterDouble(Model, PETParams, "Minimal temperature for evapotranspiration", Degrees, 0.0, -5.0, 5.0);
+	auto DegreeDayEvapotranspiration = RegisterParameterDouble(Model, PETParams, "Degree-day evapotranspiration", MmPerDegCPerDay, 0.12, 0.05, 0.2, "", "DDET");
+	auto EtpTemperatureMin           = RegisterParameterDouble(Model, PETParams, "Minimal temperature for evapotranspiration", Degrees, 0.0, -5.0, 5.0, "", "ETPtmin");
 	
 	auto PotentialEvapotranspiration = RegisterEquation(Model, "Potential evapotranspiration", MmPerDay);
 	
