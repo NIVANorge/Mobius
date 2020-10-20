@@ -52,7 +52,7 @@ def main() :
 	
 	comparisons = [
                 ('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
-                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.2),
+          #      ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.2),
                ]
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -66,7 +66,8 @@ def main() :
 		print('********** Processing location %s ***********' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 		
@@ -75,7 +76,7 @@ def main() :
 		
 		dataset.run_model()
 		
-		params = setup_calibration_params(dataset, do_doc=True)
+		params = setup_calibration_params(dataset, do_hydro=True, do_doc=False)
 		
 		print('Initial GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
@@ -88,6 +89,7 @@ def main() :
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		print('\n\n\n')
 		
+		dataset.write_parameters_to_file('MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name))
 		dataset.write_parameters_to_file('MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
 		
 		dataset.delete()

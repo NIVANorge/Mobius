@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev, SimplyC Vtest_03, SimplyP V0.4) at 2020-09-25 23:01:53
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev, SimplyC Vtest_03, SimplyP V0.4) at 2020-10-20 13:16:22
 
 index_sets:
 "Landscape units" : {"Arable" "Improved grassland" "Semi-natural"}
@@ -33,25 +33,25 @@ parameters:
 "Initial snow depth as water equivalent" :     #(mm) [0, 50000]
 0
 
-"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5]
+"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
 2.92
 
 
 # Hydrology (no index sets) #
 
-"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
+"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
 0.02
 
-"Soil field capacity" :     #(mm) [0, 1000]
+"Soil field capacity" :     #(mm) [0, 1000] 
 290
 
-"Baseflow index" :     #(dimensionless) [0, 1]
+"Baseflow index" :     #(dimensionless) [0, 1] 
 0.7
 
-"Groundwater time constant" :     #(days) [0.5, 400]
+"Groundwater time constant" :     #(days) [0.5, 400] 
 104
 
-"Minimum groundwater flow" :     #(mm/day) [0, 10]
+"Minimum groundwater flow" :     #(mm/day) [0, 10] 
 0
 
 "Manning's coefficient" :     #(s/(m^1/3)) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
@@ -78,13 +78,13 @@ parameters:
 
 # Hydrology land ("Landscape units") #
 
-"Soil water time constant" :     #(days) [0.01, 40]
+"Soil water time constant" :     #(days) [0.01, 40] 
 3 3 10
 
 
 # Land cover ("Reaches" "Landscape units") #
 
-"Land use proportions" :     #(dimensionless) [0, 1]
+"Land use proportions" :     #(dimensionless) [0, 1] Must sum to 1 over the landscape units for each given reach.
 0.2 0.3 0.5
 
 
@@ -115,7 +115,7 @@ true
 "Reach sediment input scaling factor" :     #(kg/m^3) [0, 1000] Calibrated parameter linking simulated sediment input from land to simulated flow from land
 14.9
 
-"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5]
+"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
 2
 
 "Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
@@ -150,8 +150,8 @@ true
 
 # Nitrogen global (no index sets) #
 
-"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/day) [0, 1] 
-11000
+"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/day) [0, 10] 
+0.011
 
 "(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
 2.3
@@ -165,7 +165,7 @@ false
 "Length of interval where 95% of growth takes place" :     #(day) [0, 365]
 200
 
-"Groundwater DIN concentration" :     #(mg/l) [0, 5] 
+"Groundwater DIN concentration" :     #(mg/l) [0, 30] 
 3.2
 
 "Constant groundwater DIN concentration" :     # Keep the concentration of DIN in the groundwater constant instead of simulating it.
@@ -174,7 +174,7 @@ true
 "Groundwater retention volume" :     #(mm) [0, 2000] Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.
 0
 
-"Reach denitrification rate at 20°C" :     #(m/day) [0, 1] 
+"Reach denitrification rate at 20°C" :     #(m3/day) [0, 1000000] 
 5500
 
 "(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
@@ -192,7 +192,7 @@ true
 
 # Nitrogen by reach ("Reaches") #
 
-"Effluent DIN inputs" :     #(kg/day) [0, 100]
+"Effluent DIN inputs" :     #(kg/day) [0, 100] 
 2.75
 
 
@@ -241,7 +241,7 @@ false
 "Phosphorous sorption coefficient" :     #(l/mg) [0, 0.1] Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model
 0.00931
 
-"Groundwater TDP concentration" :     #(mg/l) [0, 10]
+"Groundwater TDP concentration" :     #(mg/l) [0, 10] 
 0.015
 
 "Particulate P enrichment factor" :     #(dimensionless) [1, 5] P content of eroded material compared to P content of bulk soils
@@ -256,7 +256,7 @@ false
 
 # Phosphorous reach ("Reaches") #
 
-"Reach effluent TDP inputs" :     #(kg/day) [0, 10]
+"Reach effluent TDP inputs" :     #(kg/day) [0, 10] 
 0.48
 
 
