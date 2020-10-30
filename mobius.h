@@ -69,6 +69,7 @@ ErrorPrint(t Value, v... Tail)
 }
 
 template<typename... v>
+void
 FatalError(v... Tail)
 {
 	ErrorPrint(Tail...);
