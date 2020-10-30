@@ -10,7 +10,7 @@ ParticleEquivalentDiameter(double a, double Ratio, int ShapeType)
 	double c = b;
 
 	double d_equi;
-	if(ShapeType == 0 || ShapeType == 1)
+	if(ShapeType == 0)
 		d_equi = std::cbrt(a*b*c);
 	else
 		d_equi = c;
@@ -28,7 +28,7 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 	// a, b, c                      -     longest, intermediate, shortest particle side lengths (m)
 	// nu                           -     Water kinematic viscosity, (m2/s)
 	// rho_f, rho_p                 -     Densities of water and plastic (kg/m3)
-	// ShapeType                    -     0=pellet, 1=fragment, 2=fiber
+	// ShapeType                    -     0=fragment, 1=fiber
 	
 	if(rho_p < rho_f)
 		FatalError("ERROR: Currently, only plastic that is heavier than water is supported.\n");
@@ -41,7 +41,7 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 	
 	// Equivalent particle diameter
 	double d_equi;
-	if(ShapeType == 0 || ShapeType == 1)
+	if(ShapeType == 0)
 		d_equi = std::cbrt(a*b*c);
 	else
 		d_equi = c;
@@ -60,7 +60,7 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 		
 		// Drag coefficient
 		double C_D;
-		if(ShapeType == 0 || ShapeType == 1)
+		if(ShapeType == 0)
 			C_D = 3.0 / (CSF * std::cbrt(Re));
 		else
 			C_D = 4.7/std::sqrt(Re) + std::sqrt(CSF);
@@ -94,7 +94,7 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 static void
 AddINCAMicroplasticsModel(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Microplastics", "0.11");
+	BeginModule(Model, "INCA-Microplastics", "0.12");
 	//NOTE: Is designed to work with PERSiST
 	
 	SetModuleDescription(Model, R""""(
@@ -113,12 +113,11 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 )"""");
 
 	auto Dimensionless = RegisterUnit(Model);
-	auto SPerM         = RegisterUnit(Model, "s/m");
+	auto Day           = RegisterUnit(Model, "day");
 	auto MPerS         = RegisterUnit(Model, "m/s");
 	auto M2PerS        = RegisterUnit(Model, "m2/s");
-	auto SPerM2        = RegisterUnit(Model, "s/m2");
-	auto M3PerSPerKm2  = RegisterUnit(Model, "m3/s/km2");
 	auto Kg            = RegisterUnit(Model, "kg");
+	auto KgPerM        = RegisterUnit(Model, "kg/m");
 	auto KgPerM3       = RegisterUnit(Model, "kg/m3");
 	auto KgPerM2PerKm2 = RegisterUnit(Model, "kg/m2/km2");
 	auto KgPerSPerKm2  = RegisterUnit(Model, "kg/s/km2");
@@ -129,12 +128,12 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto KgPerKm2      = RegisterUnit(Model, "kg/km2");
 	auto KgPerM2       = RegisterUnit(Model, "kg/m2");
 	auto KgPerM2PerDay = RegisterUnit(Model, "kg/m2/day");
-	auto JPerSPerM2    = RegisterUnit(Model, "J/s/m2");
 	auto MgPerL        = RegisterUnit(Model, "mg/L");
 	auto Metres        = RegisterUnit(Model, "m");
-	auto KgPerM2PerM3SPerDay = RegisterUnit(Model, "kg/m2/m3 s/day");
 	auto S2PerKg       = RegisterUnit(Model, "s2/kg");
 	auto NewtonPerM2   = RegisterUnit(Model, "N/m2");
+	auto MmPerDay      = RegisterUnit(Model, "mm/day");
+	auto PerDay        = RegisterUnit(Model, "1/day");
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
@@ -146,36 +145,41 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	
 	//TODO : Find default/min/max/description for these
 	
-	//TODO: Some of these should probably also be per grain class
-	auto FlowErosionScalingFactor               = RegisterParameterDouble(Model, Reaches, "Flow erosion scaling factor", SPerM2, 1.0);
-	auto FlowErosionDirectRunoffThreshold       = RegisterParameterDouble(Model, Reaches, "Flow erosion direct runoff threshold", M3PerSPerKm2, 0.001);
-	auto FlowErosionNonlinearCoefficient        = RegisterParameterDouble(Model, Reaches, "Flow erosion non-linear coefficient", Dimensionless, 1.0);
-	auto TransportCapacityScalingFactor         = RegisterParameterDouble(Model, Reaches, "Transport capacity scaling factor", KgPerM2PerKm2, 1.0);
-	auto TransportCapacityDirectRunoffThreshold = RegisterParameterDouble(Model, Reaches, "Transport capacity direct runoff threshold", M3PerSPerKm2, 0.001);
+	auto TransportCapacityScalingFactor         = RegisterParameterDouble(Model, Reaches, "Transport capacity scaling factor", KgPerM2PerKm2, 0.074, 0.0, 1.0);
+	auto TransportCapacityDirectRunoffThreshold = RegisterParameterDouble(Model, Reaches, "Transport capacity direct runoff threshold", MmPerDay, 0, 0.0, 1000.0, "The amount of direct runoff needed before there is any transport of particles");
 	auto TransportCapacityNonlinearCoefficient  = RegisterParameterDouble(Model, Reaches, "Transport capacity non-linear coefficient", Dimensionless, 1.0);
+	auto FlowErosionScalingFactor               = RegisterParameterDouble(Model, Reaches, "Flow erosion scaling factor", KgPerM2PerKm2, 0.074, 0.0, 1.0);
+	auto FlowErosionDirectRunoffThreshold       = RegisterParameterDouble(Model, Reaches, "Flow erosion direct runoff threshold", MmPerDay, 0.0, 0.0, 1000.0, "The amount of direct runoff needed before there is any flow erosion of particles");
+	auto FlowErosionNonlinearCoefficient        = RegisterParameterDouble(Model, Reaches, "Flow erosion non-linear coefficient", Dimensionless, 1.0);
+	
 	
 	auto Class = RegisterIndexSet(Model, "Grain class");
 	auto GrainClass = RegisterParameterGroup(Model, "Grain class", Class);
 	
-	auto ClassShapeType                 = RegisterParameterEnum(Model, GrainClass, "Shape type", {"Pellet", "Fragment", "Fiber"}, "Pellet");
+	auto ClassShapeType                 = RegisterParameterEnum(Model, GrainClass, "Shape type", {"Fragment", "Fiber"}, "Fragment");
 	auto SmallestDiameterOfClass        = RegisterParameterDouble(Model, GrainClass, "Smallest major diameter of grain in class", Metres, 0.0, 0.0, 2e3);
 	auto LargestDiameterOfClass         = RegisterParameterDouble(Model, GrainClass, "Largest major diameter of grain in class", Metres, 2e-6, 0.0, 2e3);
 	auto RatioOfMajorToMinor            = RegisterParameterDouble(Model, GrainClass, "Ratio of major to minor diameter", Dimensionless, 1.0, 1.0, 1000.0);
 	auto DensityOfClass                 = RegisterParameterDouble(Model, GrainClass, "Density of grain class", KgPerM3, 1000.0);
 	
 	auto Land = RegisterParameterGroup(Model, "Erosion by land class", LandscapeUnits);
-	auto VegetationIndex                        = RegisterParameterDouble(Model, Land, "Vegetation index", Dimensionless, 1.0);
+	auto SplashDetachmentSoilErodibility        = RegisterParameterDouble(Model, Land, "Splash detachment soil erodibility", Dimensionless, 1.0, 0.0, 1.0, "How much the vegetation affects the splash detachment rate");
+	auto VegetationIndex                        = RegisterParameterDouble(Model, Land, "Vegetation index", Dimensionless, 1.0, 0.0, 9.9, "How much of the land is covered in vegetation");
+	auto GrowingSeasonBegin                     = RegisterParameterUInt(Model, Land, "First day of year of the growing season", Day, 60, 1, 365);
+	auto GrowingSeasonDuration                  = RegisterParameterUInt(Model, Land, "Growing season duration", Day, 200, 1, 365);
+	
 	
 	auto SedimentLand = RegisterParameterGroup(Model, "Erosion by grain and land class", Class, LandscapeUnits);
-	auto SplashDetachmentScalingFactor          = RegisterParameterDouble(Model, SedimentLand, "Splash detachment scaling factor", SPerM, 0.001);
-	auto FlowErosionPotential                   = RegisterParameterDouble(Model, SedimentLand, "Flow erosion potential", KgPerSPerKm2, 0.074);
-	auto SplashDetachmentSoilErodibility        = RegisterParameterDouble(Model, SedimentLand, "Splash detachment soil erodibility", KgPerM2PerS, 1.0);
-	auto InitialSurfaceStore                    = RegisterParameterDouble(Model, SedimentLand, "Initial surface grain store", KgPerKm2, 0.0);
-	auto InitialImmobileStore                   = RegisterParameterDouble(Model, SedimentLand, "Initial immobile grain store", KgPerKm2, 0.0);
-	auto GrainInput                             = RegisterParameterDouble(Model, SedimentLand, "Grain input to land", KgPerKm2PerDay, 0.0);
+	
+	auto SplashDetachmentScalingFactor          = RegisterParameterDouble(Model, SedimentLand, "Splash detachment scaling factor", KgPerM, 0.001, 0.0, 1.0, "Particle class specific splash detachment behaviour");
+	auto FlowErosionPotential                   = RegisterParameterDouble(Model, SedimentLand, "Flow erosion potential", Dimensionless, 1.0, 0.0, 1000.0, "Particle class specific flow erosion scaling");
+	auto InfiltrationRate                       = RegisterParameterDouble(Model, SedimentLand, "Grain infiltration rate", PerDay, 0.0, 0.0, 1.0, "The rate at which particles infiltrate from the surface store to the immobile store");
+	auto InitialSurfaceStore                    = RegisterParameterDouble(Model, SedimentLand, "Initial surface grain store", KgPerKm2, 0.0, 0.0, 1e10);
+	auto InitialImmobileStore                   = RegisterParameterDouble(Model, SedimentLand, "Initial immobile grain store", KgPerKm2, 0.0, 0.0, 1e10);
+	auto GrainInput                             = RegisterParameterDouble(Model, SedimentLand, "Grain input to land", KgPerKm2PerDay, 0.0, 0.0, 1e10, "Is overridden by the time series of the same name if it is provided");
 	
 	auto TransferMatrix = RegisterParameterGroup(Model, "Transfer matrix", Class, Class);
-	auto LandMassTransferRateBetweenClasses = RegisterParameterDouble(Model, TransferMatrix, "Mass transfer rate between classes on land", Dimensionless, 0.0, 0.0, 1.0);
+	auto LandMassTransferRateBetweenClasses = RegisterParameterDouble(Model, TransferMatrix, "Mass transfer rate between classes on land", PerDay, 0.0, 0.0, 1.0);
 	
 	auto SubcatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length");
@@ -191,7 +195,6 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto SurfaceTransportCapacity     = RegisterEquation(Model, "Land surface transport capacity", KgPerKm2PerDay);
 	auto ImmobileGrainStoreBeforeMobilisation = RegisterEquation(Model, "Immobile grain store before mobilisation", KgPerKm2);
 	auto MobilisedViaSplashDetachment = RegisterEquation(Model, "Grain mass mobilised via splash detachment", KgPerKm2PerDay);
-	auto FlowErosionKFactor           = RegisterEquation(Model, "Flow erosion K factor", KgPerKm2PerDay);
 	auto SurfaceGrainStoreBeforeTransport = RegisterEquation(Model, "Surface grain store before transport", KgPerKm2);
 	auto TransportBeforeFlowErosion   = RegisterEquation(Model, "Transport before flow erosion", KgPerKm2PerDay);
 	auto PotentiallyMobilisedViaFlowErosion = RegisterEquation(Model, "Grain mass potentially mobilised via flow erosion", KgPerKm2PerDay);
@@ -216,24 +219,32 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto TotalGrainDeliveryToReach         = RegisterEquationCumulative(Model, "Total grain delivery to reach", AreaScaledGrainDeliveryToReach, LandscapeUnits);
 	
 	EQUATION(Model, SurfaceTransportCapacity,
-		double qquick = RESULT(RunoffToReach, DirectRunoff) / 86.4;
+		double qquick = RESULT(RunoffToReach, DirectRunoff);
 		double flow = Max(0.0, qquick - PARAMETER(TransportCapacityDirectRunoffThreshold));
-		return 86400.0 * PARAMETER(TransportCapacityScalingFactor) 
-			* pow((PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(TransportCapacityNonlinearCoefficient));
+		return PARAMETER(TransportCapacityScalingFactor) 
+			* pow(1e3*(PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(TransportCapacityNonlinearCoefficient));
 	)
 	
 	EQUATION(Model, ImmobileGrainStoreBeforeMobilisation,
-		return LAST_RESULT(ImmobileGrainStore) + IF_INPUT_ELSE_PARAMETER(GrainInputTimeseries, GrainInput);
+		return LAST_RESULT(ImmobileGrainStore) + LAST_RESULT(SurfaceGrainStore)*PARAMETER(InfiltrationRate);
 	)
 	
 	EQUATION(Model, MobilisedViaSplashDetachment,
-		double Reffq = RESULT(Rainfall) / 86.4;
-		double SSD = 86400.0 * PARAMETER(SplashDetachmentScalingFactor) * Reffq * pow(PARAMETER(SplashDetachmentSoilErodibility), 10.0 / (10.0 - PARAMETER(VegetationIndex)));
+		s32 DOY          = (s32)CURRENT_TIME().DayOfYear;
+		s32 GrowBegin    = (s32)PARAMETER(GrowingSeasonBegin);
+		s32 GrowDuration = (s32)PARAMETER(GrowingSeasonDuration);
+		
+		double VegIndex = PARAMETER(VegetationIndex);
+		if(DOY < GrowBegin || DOY >= GrowBegin+GrowDuration)
+			VegIndex = Min(VegIndex, 1.0);
+	
+		double Reffq = RESULT(Rainfall)*1e-3;
+		double SSD = PARAMETER(SplashDetachmentScalingFactor) * Reffq * pow(PARAMETER(SplashDetachmentSoilErodibility), 10.0 / (10.0 - VegIndex));
 		return Min(SSD, RESULT(ImmobileGrainStoreBeforeMobilisation));
 	)
 	
 	EQUATION(Model, SurfaceGrainStoreBeforeTransport,
-		return LAST_RESULT(SurfaceGrainStore) + RESULT(MobilisedViaSplashDetachment);
+		return LAST_RESULT(SurfaceGrainStore)*(1.0 - PARAMETER(InfiltrationRate)) + RESULT(MobilisedViaSplashDetachment) + IF_INPUT_ELSE_PARAMETER(GrainInputTimeseries, GrainInput);
 	)
 	
 	auto TotalSurfaceGrainstoreBeforeTransport = RegisterEquationCumulative(Model, "Total surface grain store before transport", SurfaceGrainStoreBeforeTransport, Class);
@@ -246,26 +257,19 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 		return potential;
 	)
 	
-	EQUATION(Model, FlowErosionKFactor,
-		double qquick = RESULT(RunoffToReach, DirectRunoff) / 86.4;
-		double flow = Max(0.0, qquick - PARAMETER(FlowErosionDirectRunoffThreshold));
-		return 86400.0 * PARAMETER(FlowErosionScalingFactor) * PARAMETER(FlowErosionPotential) 
-			* pow( (1e-3 * PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(FlowErosionNonlinearCoefficient));
-	)
 	
 	EQUATION(Model, PotentiallyMobilisedViaFlowErosion,
-		double TC = RESULT(SurfaceTransportCapacity);
-	
-		double SFE = RESULT(FlowErosionKFactor)
-				* SafeDivide(TC - RESULT(MobilisedViaSplashDetachment),
-							TC + RESULT(FlowErosionKFactor));
-		SFE = Max(0.0, SFE);
+		double qquick = RESULT(RunoffToReach, DirectRunoff);
+		double flow = Max(0.0, qquick - PARAMETER(FlowErosionDirectRunoffThreshold));
+		double SFE = 86400.0 * PARAMETER(FlowErosionScalingFactor) * PARAMETER(FlowErosionPotential) 
+			* pow( 1e3*(PARAMETER(SubcatchmentArea) / PARAMETER(ReachLength))*flow, PARAMETER(FlowErosionNonlinearCoefficient));
 		
 		double surfacestorebeforeerosion = RESULT(SurfaceGrainStoreBeforeTransport) - RESULT(TransportBeforeFlowErosion);
+		double m_immob = RESULT(ImmobileGrainStoreBeforeMobilisation) - RESULT(MobilisedViaSplashDetachment);
 		
 		if(surfacestorebeforeerosion > 0.0) return 0.0; //NOTE: If there is any surface sediment left we know that we already exceeded our transport capacity, and so we can not mobilise any more.
 		
-		return Min(SFE, RESULT(ImmobileGrainStoreBeforeMobilisation) - RESULT(MobilisedViaSplashDetachment));
+		return Min(SFE, m_immob);
 	)
 	
 	auto TotalPotentiallyMobilisedViaFlowErosion = RegisterEquationCumulative(Model, "Total potentially mobilised via flow erosion", PotentiallyMobilisedViaFlowErosion, Class);
@@ -378,27 +382,18 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto ReachUpstreamSuspendedGrain         = RegisterEquation(Model, "Reach upstream suspended grain", KgPerDay);
 	
 	auto EffluentGrain                       = RegisterEquation(Model, "Effluent grain inputs", KgPerDay);
-	auto GrainAbstraction                    = RegisterEquation(Model, "Grain abstraction", KgPerDay);
-	SetSolver(Model, GrainAbstraction, InstreamSedimentSolver);
 	
-	auto GrainEntrainment                    = RegisterEquation(Model, "Grain entrainment", KgPerM2PerDay);
-	SetSolver(Model, GrainEntrainment, InstreamSedimentSolver);
-	
-	auto GrainDeposition                     = RegisterEquation(Model, "Grain deposition", KgPerM2PerDay);
-	SetSolver(Model, GrainDeposition, InstreamSedimentSolver);
-	
-	auto ReachSuspendedGrainOutput           = RegisterEquation(Model, "Reach suspended grain output", KgPerDay);
-	SetSolver(Model, ReachSuspendedGrainOutput, InstreamSedimentSolver);
-	
-	auto MassOfBedGrainPerUnitArea           = RegisterEquationODE(Model, "Mass of bed grain per unit area", KgPerM2);
+	auto GrainAbstraction                    = RegisterEquation(Model, "Grain abstraction", KgPerDay, InstreamSedimentSolver);
+	auto GrainEntrainment                    = RegisterEquation(Model, "Grain entrainment", KgPerM2PerDay, InstreamSedimentSolver);
+	auto GrainDeposition                     = RegisterEquation(Model, "Grain deposition", KgPerM2PerDay, InstreamSedimentSolver);
+	auto ReachSuspendedGrainOutput           = RegisterEquation(Model, "Reach suspended grain output", KgPerDay, InstreamSedimentSolver);
+	auto MassOfBedGrainPerUnitArea           = RegisterEquationODE(Model, "Mass of bed grain per unit area", KgPerM2, InstreamSedimentSolver);
 	SetInitialValue(Model, MassOfBedGrainPerUnitArea, InitialMassOfBedGrainPerUnitArea);
-	SetSolver(Model, MassOfBedGrainPerUnitArea, InstreamSedimentSolver);
 	
 	auto TotalMassOfBedGrainPerUnitArea      = RegisterEquationCumulative(Model, "Total mass of bed grain per unit area", MassOfBedGrainPerUnitArea, Class);
 	
-	auto SuspendedGrainMass                  = RegisterEquationODE(Model, "Suspended grain mass", Kg);
+	auto SuspendedGrainMass                  = RegisterEquationODE(Model, "Suspended grain mass", Kg, InstreamSedimentSolver);
 	SetInitialValue(Model, SuspendedGrainMass, InitialSuspendedGrainMass);
-	SetSolver(Model, SuspendedGrainMass, InstreamSedimentSolver);
 	
 	auto SuspendedGrainConcentration         = RegisterEquation(Model, "Suspended grain concentration", MgPerL);
 	
@@ -466,20 +461,16 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	
 	EQUATION(Model, ClassCriticalShieldsParameter,
 
-		//NOTE: representative major diameter
-		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
-		// Equivalent particle diameter
-		double d_equi = ParticleEquivalentDiameter(a, PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
+		// Equivalent particle diameter of minimal particle
+		double d_equi = ParticleEquivalentDiameter(PARAMETER(SmallestDiameterOfClass), PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
 		
 		return 0.5588*RESULT(SedimentBedCriticalShieldsParameter) * std::pow(d_equi / PARAMETER(MedianSedimentGrainSize), -0.503);
 	)
 	
 	EQUATION(Model, ClassCriticalShearStress,
 		
-		//NOTE: representative major diameter
-		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
-		// Equivalent particle diameter
-		double d_equi = ParticleEquivalentDiameter(a, PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
+		// Equivalent particle diameter of minimal particle
+		double d_equi = ParticleEquivalentDiameter(PARAMETER(SmallestDiameterOfClass), PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
 		
 		double earthsurfacegravity = 9.807;
 		double waterdensity = 1000.0;  // TODO: Temperature dependence?
