@@ -4,6 +4,21 @@
 
 
 static double
+ParticleEquivalentDiameter(double a, double Ratio, int ShapeType)
+{
+	double b = a / Ratio;
+	double c = b;
+
+	double d_equi;
+	if(ShapeType == 0 || ShapeType == 1)
+		d_equi = std::cbrt(a*b*c);
+	else
+		d_equi = c;
+	
+	return d_equi;
+}
+
+static double
 ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double rho_f, double rho_p, int ShapeType)
 {
 	// Computation based on
@@ -73,10 +88,13 @@ ComputeTerminalSettlingVelocity(double a, double b, double c, double nu, double 
 
 
 
+
+
+
 static void
 AddINCAMicroplasticsModel(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Microplastics", "0.10.0");
+	BeginModule(Model, "INCA-Microplastics", "0.11");
 	//NOTE: Is designed to work with PERSiST
 	
 	SetModuleDescription(Model, R""""(
@@ -87,7 +105,7 @@ INCA-Microplastics is a modified version of INCA-Sediments:
 Changes include:
 [i100 [O1 Each grain class can have a separate density&][O1 Each grain class has separate on-land mobilisation and store&][O1 There can be mass transfer between classes (simulating breakdown of larger particles into smaller)&]]
 	
-Moreover, in-stream physics are now computed based on newer experiments with microplastics:
+Moreover, in-stream settling and erosion behaviour are now computed based on newer experiments with microplastics:
 
 [^https://doi.org/10.1021/acs.est.9b05394^ Erosion Behavior of Different Microplastic Particles in Comparison to Natural Sediments, K. Waldschläger and H. Schüttrumph, Environ. Sci. Technol. 2019, 53, 13219-13227]
 
@@ -139,8 +157,10 @@ Moreover, in-stream physics are now computed based on newer experiments with mic
 	auto Class = RegisterIndexSet(Model, "Grain class");
 	auto GrainClass = RegisterParameterGroup(Model, "Grain class", Class);
 	
-	auto SmallestDiameterOfClass        = RegisterParameterDouble(Model, GrainClass, "Smallest diameter of grain in class", Metres, 0.0, 0.0, 2e3);
-	auto LargestDiameterOfClass         = RegisterParameterDouble(Model, GrainClass, "Largest diameter of grain in class", Metres, 2e-6);
+	auto ClassShapeType                 = RegisterParameterEnum(Model, GrainClass, "Shape type", {"Pellet", "Fragment", "Fiber"}, "Pellet");
+	auto SmallestDiameterOfClass        = RegisterParameterDouble(Model, GrainClass, "Smallest major diameter of grain in class", Metres, 0.0, 0.0, 2e3);
+	auto LargestDiameterOfClass         = RegisterParameterDouble(Model, GrainClass, "Largest major diameter of grain in class", Metres, 2e-6, 0.0, 2e3);
+	auto RatioOfMajorToMinor            = RegisterParameterDouble(Model, GrainClass, "Ratio of major to minor diameter", Dimensionless, 1.0, 1.0, 1000.0);
 	auto DensityOfClass                 = RegisterParameterDouble(Model, GrainClass, "Density of grain class", KgPerM3, 1000.0);
 	
 	auto Land = RegisterParameterGroup(Model, "Erosion by land class", LandscapeUnits);
@@ -404,17 +424,22 @@ Moreover, in-stream physics are now computed based on newer experiments with mic
 	)
 	
 	EQUATION(Model, TerminalSettlingVelocity,
+		//NOTE: Assume a particle with major diameter of the median of the class is representative for the class.
 		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
+		
+		//NOTE: The below assumption of b=c works for either round or long cylindrical and fibre shapes. Not so much for disk-like shapes.
+		double b = a / PARAMETER(RatioOfMajorToMinor);
+		double c = b;
 		double waterkinematicviscosity = RESULT(ReachKinematicViscosity);
 		double waterdensity            = 1e3;       //TODO: Should also be temperature-adjusted?
 		double plasticdensity          = PARAMETER(DensityOfClass);
-		int    ShapeType               = 0;
+		int    ShapeType               = (int) PARAMETER(ClassShapeType);
 		
 		// Hack to not make it crash on setup evaluation
 		if(!RunState__->Running) return 0.0;
 		
 		//TODO: Support more shape types and geometries later
-		return ComputeTerminalSettlingVelocity(a, a, a, waterkinematicviscosity, waterdensity, plasticdensity, ShapeType);
+		return ComputeTerminalSettlingVelocity(a, b, c, waterkinematicviscosity, waterdensity, plasticdensity, ShapeType);
 	)
 	
 	EQUATION(Model, ReachShearStress,
@@ -440,17 +465,25 @@ Moreover, in-stream physics are now computed based on newer experiments with mic
 	)
 	
 	EQUATION(Model, ClassCriticalShieldsParameter,
-		//double a = PARAMETER(SmallestDiameterOfClass);
+
+		//NOTE: representative major diameter
 		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
-		return 0.5588*RESULT(SedimentBedCriticalShieldsParameter) * std::pow(a / PARAMETER(MedianSedimentGrainSize), -0.503);
+		// Equivalent particle diameter
+		double d_equi = ParticleEquivalentDiameter(a, PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
+		
+		return 0.5588*RESULT(SedimentBedCriticalShieldsParameter) * std::pow(d_equi / PARAMETER(MedianSedimentGrainSize), -0.503);
 	)
 	
 	EQUATION(Model, ClassCriticalShearStress,
-		//double a = PARAMETER(SmallestDiameterOfClass);
+		
+		//NOTE: representative major diameter
 		double a = (PARAMETER(LargestDiameterOfClass) + PARAMETER(SmallestDiameterOfClass)) / 2.0;
+		// Equivalent particle diameter
+		double d_equi = ParticleEquivalentDiameter(a, PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
+		
 		double earthsurfacegravity = 9.807;
 		double waterdensity = 1000.0;  // TODO: Temperature dependence?
-		return RESULT(ClassCriticalShieldsParameter) * (PARAMETER(DensityOfClass) - waterdensity) * earthsurfacegravity * a;
+		return RESULT(ClassCriticalShieldsParameter) * (PARAMETER(DensityOfClass) - waterdensity) * earthsurfacegravity * d_equi;
 	)
 	
 	EQUATION(Model, MaxGrainSizeForEntrainment,
@@ -475,8 +508,8 @@ Moreover, in-stream physics are now computed based on newer experiments with mic
 	
 	EQUATION(Model, ProportionOfGrainThatCanBeEntrained,
 		double Dcrit = RESULT(MaxGrainSizeForEntrainment);
-		double Dmin = PARAMETER(SmallestDiameterOfClass);
-		double Dmax = PARAMETER(LargestDiameterOfClass);
+		double Dmin = ParticleEquivalentDiameter(PARAMETER(SmallestDiameterOfClass), PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
+		double Dmax = ParticleEquivalentDiameter(PARAMETER(LargestDiameterOfClass), PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
 		if(Dcrit < Dmin) return 0.0;
 		if(Dcrit > Dmax) return 1.0;
 		return (Dcrit - Dmin) / (Dmax - Dmin);

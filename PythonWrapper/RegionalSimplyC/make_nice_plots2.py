@@ -56,7 +56,7 @@ def main() :
 		#if catch_name != 'Dalelva' : continue
 		
 		#param_file_prefix = 'optim_params_DOC'
-		param_file_prefix = 'norm2_optim_params_DOC'
+		param_file_prefix = 'norm3_optim_params_DOC'
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 		parfile = 'MobiusFiles/%s_%d_%s.dat' % (param_file_prefix, catch_no, catch_name)

@@ -170,8 +170,8 @@ AddSoilMoistureRoutine(mobius_model *Model)
 	auto Reaches                            = RegisterIndexSetBranched(Model, "Reaches");
 	auto ReachParameters                    = RegisterParameterGroup(Model, "Reach parameters", Reaches);
 	
-	auto LandscapePercentages               = RegisterParameterGroup(Model, "Landscape percentages", LandscapeUnits);
-	SetParentGroup(Model, LandscapePercentages, ReachParameters);
+	auto LandscapePercentages               = RegisterParameterGroup(Model, "Landscape percentages", LandscapeUnits, Reaches);
+
 	auto Percent                            = RegisterParameterDouble(Model, LandscapePercentages, "%", Dimensionless, 20.0, 0.0, 100.0, "How much of the catchment area that is made up by this type of land cover.");
 	
     //TODO: find good default (and min/max) values for these:

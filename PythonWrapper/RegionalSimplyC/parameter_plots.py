@@ -6,6 +6,8 @@ from importlib.machinery import SourceFileLoader
 from param_config import setup_calibration_params
 from individual_calib import resid
 
+import weighted_p_square as wp
+
 
 # Initialise wrapper
 wr = SourceFileLoader("mobius", r"../mobius.py").load_module()
@@ -27,7 +29,7 @@ def collect_parameter_distributions(non_validation_only=False) :
 			continue
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/norm3_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
@@ -64,7 +66,7 @@ def extrapolate_test() :
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
 	fig, ax = plt.subplots(2, 2)
-	fig.set_size_inches(20, 20)
+	fig.set_size_inches(60, 20)
 	ax = ax.flatten()
 	
 	plotindex = 0
@@ -79,6 +81,7 @@ def extrapolate_test() :
 		print('Extrapolating for catchment %s' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated 
 		parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated 
 		
 		start_date = '1985-1-1'
@@ -130,6 +133,11 @@ def extrapolate_test() :
 		
 		xvals = cu.get_date_index(dataset)
 		
+		quantiles = [5, 25, 50, 75, 95]
+		accum = wp.WeightedPSquareAccumulator(dataset.get_parameter_uint('Timesteps', []), quantiles)
+		
+		print('Finished first run')
+		
 		dataset_copy = dataset.copy()
 		for idx in range(ndraws) :
 			
@@ -137,12 +145,19 @@ def extrapolate_test() :
 			dataset_copy.run_model()
 			results = dataset_copy.get_result_series('Reach DOC concentration (volume weighted daily mean)', ['R0'])
 			
-			alpha = 1.0 - resids[idx]/maxres
-			ax[plotindex].plot(xvals, results, color='black', alpha=alpha)
+			weight = 1.0/(2.0 - resids[idx]/maxres)
+			accum.add_data(results, weight)
 
+		print('Finished second run')
+		
+		ax[plotindex].plot(xvals, obsseries, color='blue', marker='o')
 		ax[plotindex].plot(xvals, newobs, color='red', marker='o')
-			
+		for idx, quant in enumerate(quantiles) :
+			series = accum.get_quantile(idx)
+			ax[plotindex].plot(xvals, series, color='black')
+		
 		dataset_copy.delete()
+		accum.free()
 		
 		plotindex = plotindex+1
 	
@@ -195,8 +210,8 @@ def make_plots() :
 	plt.close()
 
 def main() :
-	make_plots()
-	#extrapolate_test()
+	#make_plots()
+	extrapolate_test()
 	
 
 if __name__ == "__main__":
