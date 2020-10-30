@@ -4,7 +4,7 @@
 #define MOBIUS_PRINT_TIMING_INFO 0
 #define MOBIUS_INDEX_BOUNDS_TESTS 0
 
-#include "../../mobius_dll.h"
+#include "../../mobius.h"
 
 #include "../../Modules/HBV.h"
 
