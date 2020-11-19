@@ -29,6 +29,14 @@ SaturationVaporPressure(double Temperature)
 }
 
 
+inline double
+WaterDensity(double WaterTemperature)
+{
+	double dtemp = (WaterTemperature + 273.15 - 277.13); // Difference between temperature and reference temperature
+	return 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
+}
+
+
 static void
 AddEasyLakePhysicalModule(mobius_model *Model)
 {
@@ -65,6 +73,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto Pascal         = RegisterUnit(Model, "Pa");
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto WPerM2         = RegisterUnit(Model, "W/m2");
+	auto Watts          = RegisterUnit(Model, "W");
+	auto MPerDay        = RegisterUnit(Model, "M/day");
 	auto NPerM2         = RegisterUnit(Model, "N/m2");
 
 #ifdef EASYLAKE_STANDALONE
@@ -237,6 +247,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2, LakeSolver);
 	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2, LakeSolver);
 	auto SurfaceStress                        = RegisterEquation(Model, "Surface stress", NPerM2, LakeSolver);
+	auto MixingPower                          = RegisterEquation(Model, "Mixing power", Watts, LakeSolver);
+	auto MixingVelocity                       = RegisterEquation(Model, "Mixing velocity", MPerDay, LakeSolver);
 	
 	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2, LakeSolver);
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
@@ -497,11 +509,39 @@ The implementation is informed by the implementation in [^https://github.com/got
 	)
 	
 	EQUATION(Model, SurfaceStress,
-	
 		//TODO: Also possible to correct this for rainfall.
 		double Wind = INPUT(WindSpeed);
 		return RESULT(SurfaceStressCoefficient) * RESULT(AirDensity) * Wind * Wind;
 	)
+	
+	EQUATION(Model, MixingPower,
+		double As = RESULT(LakeSurfaceArea);
+		double tau = RESULT(SurfaceStress);
+		double shelter_coeff = 1.0 - std::exp(-0.3*As);
+		double rho = WaterDensity(RESULT(EpilimnionTemperature));
+		double power = shelter_coeff*As*std::sqrt(tau*tau*tau / rho);
+		
+		if(RESULT(IsIce)) power = 0.0;
+		
+		return power;
+	)
+	
+	EQUATION(Model, MixingVelocity,
+		double power = RESULT(MixingPower);
+		double g = 9.81;
+		double As = RESULT(LakeSurfaceArea);
+		double epiT = RESULT(EpilimnionTemperature);
+		double meanHypT = (epiT + RESULT(BottomTemperature))*0.5; //TODO: too easy simplification.
+		double delta_rho = WaterDensity(meanHypT) - WaterDensity(epiT);
+		double z_e = RESULT(EpilimnionThickness);
+		double v = 0.0;
+		if(delta_rho >= 0.0)
+			v = 86400.0 * power / (g*delta_rho*As*z_e);
+		if(v >= 5.0*RESULT(WaterLevel) || !std::isfinite(v))
+			v = 5.0*RESULT(WaterLevel); //NOTE: if densities are similar, the mixing velocity gets too high. But if the mixing velocity is large enough to mix everything in a day, we don't need it larger.
+		return v;
+	)
+	
 	
 	EQUATION(Model, EmittedLongwaveRadiation,
 		double watertkelv = RESULT(EpilimnionTemperature) + 273.15;   //Change epi temp to surface temp if that is something else
@@ -630,9 +670,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	EQUATION(Model, MeanLakeTemperature,
 		double meanT = RESULT(MeanLakeTemperature);
-		double dtemp = (meanT + 273.15 - 277.13); // Difference between temperature and reference temperature
 		//NOTE: Simplification: assume uniform lake density for this purpose... Actually we should maybe keep this constant, because we don't contract the volume with changes in temperature.
-		double waterDensity = 999.98*(1.0 - 0.5*1.6509e-5*dtemp*dtemp);   //(Farmer, Carmack 1981)
+		double waterDensity = WaterDensity(meanT);
 		double specificHeatCapacityOfWater = 4186.0;
 		
 		double volume = RESULT(LakeVolume);

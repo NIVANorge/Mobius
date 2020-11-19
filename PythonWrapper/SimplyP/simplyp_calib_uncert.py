@@ -6,7 +6,8 @@ from scipy.stats import norm
 # Initialise wrapper
 wrapper_fpath = (r'../mobius.py')
 wr = imp.load_source('mobius', wrapper_fpath)
-wr.initialize('../../Applications/SimplyP/simplyp.so')
+#wr.initialize('../../Applications/SimplyP/simplyp.so')
+wr.initialize('../../Applications/SimplyP/simplyp.dll')
 
 # Calibration functions
 calib_fpath = (r'../mobius_calib_uncert_lmfit.py')

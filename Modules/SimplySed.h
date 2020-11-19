@@ -75,6 +75,8 @@ This is a simple sediment transport module created as a part of SimplyP.
 	auto ReachSedimentInput = RegisterEquation(Model, "Reach sediment input (erosion and entrainment)", KgPerDay, ReachSolver);
 	//auto TotalReachSedimentInput = RegisterEquationCumulative(Model, "Total reach sediment input (erosion and entrainment)", ReachSedimentInput, LandscapeUnits);
 	
+	auto ReachSedimentInputUpstream = RegisterEquation(Model, "Reach sediment input (upstream flux)", KgPerDay);
+	
 	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Reach suspended sediment mass", Kg, ReachSolver);
 	SetInitialValue(Model, SuspendedSedimentMass, 0.0);
 	
@@ -125,7 +127,7 @@ This is a simple sediment transport module created as a part of SimplyP.
 	)
 	
 	EQUATION(Model, ReachSedimentInputCoefficient,
-		//# Reach sed input coefficient per land use class (kg/m3). This was recently changed from kg/mm which had a different rationalization.
+		// Reach sed input coefficient per land use class (kg/m3). This was recently changed from kg/mm which had a different rationalization.
 		return
 			  PARAMETER(ReachSedimentInputScalingFactor) * 1e6 //1e6 just for convenient range in input parameter
 			* PARAMETER(ReachSlope)
@@ -146,12 +148,15 @@ This is a simple sediment transport module created as a part of SimplyP.
 		return RESULT(TotalReachSedimentInputCoefficient) * RESULT(ErosionFactor);
 	)
 	
-	EQUATION(Model, SuspendedSedimentMass,	
+	EQUATION(Model, ReachSedimentInputUpstream,
 		double upstreamflux = 0.0;
 		for(index_t Input : BRANCH_INPUTS(Reach))
 			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, Input);
-		
-		return RESULT(ReachSedimentInput) + upstreamflux - RESULT(SuspendedSedimentFlux);
+		return upstreamflux;
+	)
+	
+	EQUATION(Model, SuspendedSedimentMass,	
+		return RESULT(ReachSedimentInput) + RESULT(ReachSedimentInputUpstream) - RESULT(SuspendedSedimentFlux);
 	)
 	
 	EQUATION(Model, SuspendedSedimentFlux,

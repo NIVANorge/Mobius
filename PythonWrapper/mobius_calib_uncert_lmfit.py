@@ -442,7 +442,7 @@ def update_mcmc_results(result, nburn, thin):
     # Discard the burn samples and thin
     chain = result.chain[..., nburn::thin, :]
     ndim = result.chain.shape[-1]
-
+	
     # Take the zero'th PTsampler temperature for the parameter estimators
     if len(result.chain.shape) == 4:
         # Parallel tempering

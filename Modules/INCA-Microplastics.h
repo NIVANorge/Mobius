@@ -346,7 +346,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	)
 	
 	EQUATION(Model, AreaScaledGrainDeliveryToReach,
-		return PARAMETER(SubcatchmentArea) * PARAMETER(Percent) / 100.0 * RESULT(GrainDeliveryToReach);
+		return PARAMETER(SubcatchmentArea) * (PARAMETER(Percent) / 100.0) * RESULT(GrainDeliveryToReach);
 	)
 
 	
