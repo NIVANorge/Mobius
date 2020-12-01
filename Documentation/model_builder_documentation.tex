@@ -1048,11 +1048,13 @@ EQUATION(Model, Runoff,
 
 When making monthly or yearly - timestep models it is recommended to work with such unit conversions always since {\tt StepLengthInSeconds} could be different from month to month or from year to year. (Note: we don't currently count leap seconds, but we do count leap days).
 
-\section{Application building API}
+\section{Model interaction API}
 
-We logically separate application building from model building. By application building we mean the process of building a program that can allocate a new model, allocate a dataset for it, put values in the dataset, choose how and when to run the model using the given parameters and inputs, extract result values and process them, and so on. By model building we mean the process of filling a given model object with information about the model structure, such as what parameters and equations it has, and what the equation bodies are. It is recommended to separate out the model building to its own procedure, because then the model can be reused by different applications.
+We logically separate application building and model interaction from model building. By application building and model interaction we mean the process of building a program that can allocate a new model, allocate a dataset for it, put values in the dataset, choose how and when to run the model using the given parameters and inputs, extract result values and process them, and so on. By model building we mean the process of filling a given model object with information about the model structure, such as what parameters and equations it has, and what the equation bodies are. It is recommended to separate out the model building to its own procedure, because then the model can be reused by different applications.
 
 \subsection{Data types}
+
+(incomplete)
 
 \subsection{Procedures}
 
@@ -1064,30 +1066,30 @@ We logically separate application building from model building. By application b
 \apidesc{Heap-allocates a new model object. The model object can be freed using {\tt delete}.}
 }
 
-\apientry{ReadInputDependenciesFromFile}{Application building procedure}{
-\apipar{mobius\_model *Model}{Pointer to the model object.}
-\apipar{const char *Filename}{Name of an input file (of the .dat format).}
-\apidesc{If you wish to use an input file you have to let the model read the input dependencies before calling {\tt EndModelDefinition} so that it can properly determine the model structure. This has to happen after the inputs are registered. You then have to read the actual input values into a dataset using {\tt ReadInputsFromFile} after finalizing the model. The current procedure also registers any additional timeseries that are present in the input file.}
-}
-
 \apientry{EndModelDefinition}{Application building procedure.}{
 \apipar{mobius\_model *Model}{Pointer to the model object.}
 \apidesc{Finalizes the model object. You can no longer call model building procedures on it, and you should not try to make any further changes to it in general. This procedure generates the final equation batch structure of the model according to the rules given in Section \ref{sec:advancedbatchstructure}.}
 }
 
-\apientry{GenerateDataSet}{Application building procedure}{
+\apientry{ReadInputDependenciesFromFile}{Model interaction procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Filename}{Name of an input file (of the .dat format).}
+\apidesc{If you wish to use an input file you have to let the model read the input dependencies before calling {\tt EndModelDefinition} so that it can properly determine the model structure. This has to happen after the inputs are registered. You then have to read the actual input values into a dataset using {\tt ReadInputsFromFile} after finalizing the model. The current procedure also registers any additional timeseries that are present in the input file.}
+}
+
+\apientry{GenerateDataSet}{Model interaction procedure}{
 \apipar{mobius\_model *Model}{Pointer to the model object.}
 \apiret{A {\tt mobius\_data\_set*} pointer to a newly created dataset object.}
 \apidesc{Heap-allocates a new dataset. The dataset can be freed using {\tt delete}. You can have multiple datasets per model. You have to keep the model object alive as long as you want to use the dataset (i.e. don't {\tt delete} the model before you are finished with the dataset). You can only generate a dataset from a model that has been finalized using {\tt EndModelDefinition}.}
 }
 
-\apientry{ReadParametersFromFile}{Application building procedure}{
+\apientry{ReadParametersFromFile}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to the dataset object.}
 \apipar{const char *Filename}{The name of the parameter file (of the .dat format)}
 \apidesc{Reads the indexes of each index set and the values of all the parameters from a parameter file into the dataset.}
 }
 
-\apientry{ReadInputsFromFile}{Application building procedure}{
+\apientry{ReadInputsFromFile}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to the dataset object.}
 \apipar{const char *Filename}{The name of the input file (of the .dat format)}
 \apidesc{Reads the input timeseries from the file into the dataset. This can only be called if all the index sets registered in the model has been given indexes in the dataset (either by calling {\tt ReadParametersFromFile} or by calling {\tt SetIndexes}).}
@@ -1100,21 +1102,21 @@ We logically separate application building from model building. By application b
 
 There are a few more procedures that we will try to document soon.
 
-\apientry{CopyDataSet}{Application building procedure}{
+\apientry{CopyDataSet}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{bool CopyResults = false}{Whether or not results series should be copied.}
 \apiret{A {\tt mobius\_data\_set *} pointer to a copy of the dataset.}
 \apidesc{Creates a new mobius\_data\_set and copies all index set structure, parameter and input values from the provided dataset. If CopyResults == true, result series are also copied if present. This does not copy the mobius\_model object, instead the new dataset will refer to the same model object as the old one.} 
 }
 
-\apientry{SetIndexes}{Application building procedure}{
+\apientry{SetIndexes}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{token\_string IndexSetName}{The name of one of the index sets in the model.}
 \apipar{const std::vector<token\_string> \&Indexes}{A list of index names}
 \apidesc{Sets the indexes for the given index set in the dataset. Can only be done for an index set that has not received indexes in any way already.}
 }
 
-\apientry{SetParameterValue}{Application building procedure}{
+\apientry{SetParameterValue}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *Name}{The name of a parameter in the model.}
 \apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the parameter indexes over. These have to be in the right order.}
@@ -1122,7 +1124,7 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Sets the (indexed) parameter to the provided value. Example: {\tt SetParameterValue(DataSet, "Degree-day factor", \{"Forest"\}, 0.33);}}
 }
 
-\apientry{GetParameter{\emph X}}{Application building procedure}{
+\apientry{GetParameter{\emph X}}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *Name}{The name of a parameter in the model.}
 \apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the parameter indexes over. These have to be in the right order.}
@@ -1130,7 +1132,7 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Examples:{\tt double flow = GetParameterDouble(DataSet, "Reach flow", \{"First"\});}{\tt u64 Timesteps = GetParameterUInt(DataSet, "Timesteps", \{\});}}
 }
 
-\apientry{SetInputSeries}{Application building procedure}{
+\apientry{SetInputSeries}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *Name}{The name of an input to model.}
 \apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the input indexes over. These have to be in the right order.}
@@ -1140,7 +1142,7 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Will write the provided input timeseries into the dataset. If no input data has already been provided, the input timesteps will be set equal to {\tt InputSeriesSize}, limiting all subsequent input series to the same size. Note that you can provide an input series that is shorter than the input timesteps. The remaining values will then stay what they were before (they are initialized to 0).}
 }
 
-\apientry{GetResultSeries}{Application building procedure}{
+\apientry{GetResultSeries}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *Name}{The name of a result (equation) of the model.}
 \apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the result indexes over. These have to be in the right order.}
@@ -1149,7 +1151,7 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Extracts a result series from the DataSet. Only works if {\tt RunModel} has been called on the DataSet at least once. The caller of this function has to allocate space to write the data into: the {\tt WriteTo} array has to be at least {\tt WriteSize} long. The values are extracted starting with the first timestep. If {\tt WriteSize} is larger than the timesteps in the last run of the model, only the values for these timesteps are provided, and the rest of the {\tt WriteTo} array is left unchanged.}
 }
 
-\apientry{GetInputSeries}{Application building procedure}{
+\apientry{GetInputSeries}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *Name}{The name of an input to the model.}
 \apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the input indexes over. These have to be in the right order.}
@@ -1159,7 +1161,7 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Extracts an input series from the DataSet. The caller of this function has to allocate space to write the data into: the {\tt WriteTo} array has to be at least {\tt WriteSize} long.}
 }
 
-\apientry{PrintResultSeries or PrintInputSeries}{Application building procedure}{
+\apientry{PrintResultSeries or PrintInputSeries}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *Name}{The name of a result (equation) of the model.}
 \apipar{const std::vector<const char *>\& Indexes}{A list of index names, each index corresponding to one of the index sets the result indexes over. These have to be in the right order.}
@@ -1167,23 +1169,23 @@ There are a few more procedures that we will try to document soon.
 \apidesc{Extracts the result or input series similar to how GetResultSeries works, but instead of writing it to a provided buffer, prints it to the standard output.}
 }
 
-\apientry{PrintIndexes}{Application building procedure}{
+\apientry{PrintIndexes}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apipar{const char *IndexSetName}{The name of an index set in the model.}
 \apidesc{Prints the list of indexes for the given index set to the standard output if it has received indexes already.}
 }
 
-\apientry{PrintResultStructure}{Application building procedure}{
+\apientry{PrintResultStructure}{Model interaction procedure}{
 \apipar{mobius\_model *Model}{Pointer to the model object}
 \apidesc{Prints the batch structure of the equations in the model to the standard output. This is the same as the storage structure of the Results.}
 }
 
-\apientry{PrintParameterStorageStructure}{Application building procedure}{
+\apientry{PrintParameterStorageStructure}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apidesc{Prints the storage structure of the parameters in the model to the standard output.}
 }
 
-\apientry{PrintInputrStorageStructure}{Application building procedure}{
+\apientry{PrintInputrStorageStructure}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
 \apidesc{Prints the storage structure of the inputs in the model to the standard output.}
 }
