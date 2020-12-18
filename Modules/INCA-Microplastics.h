@@ -526,7 +526,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	
 	EQUATION(Model, EffluentGrain,
 		double effluentflow = IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow) * 86400.0;
-		double effluentconc = PARAMETER(EffluentGrainConcentration) * 1e-3;
+		double effluentconc = PARAMETER(EffluentGrainConcentration) * 1e-3;   // mg/L -> kg/m3
 		
 		return effluentflow * effluentconc;
 	)
