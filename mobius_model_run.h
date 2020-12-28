@@ -1437,13 +1437,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 				{
 					//NOTE: Reading the Equations.Specs vector here may be slightly inefficient since each element of the vector is large. We could copy out an array of the ResetEveryTimestep bools instead beforehand.
 					if(Model->Equations[Equation].ResetEveryTimestep)
-					{
 						RunState->SolverTempX0[EquationIdx] = 0;
-					}
 					else
-					{
-						RunState->SolverTempX0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState->LastResults is filled with the right values above already.
-					}
+						RunState->SolverTempX0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState->LastResults is filled with the correct values already, see above.
 					++EquationIdx;
 				}
 				// NOTE: Do we need to clear DataSet->wk to 0? (Has not been needed in the solvers we have used so far...)
@@ -1451,6 +1447,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				const solver_spec &SolverSpec = Model->Solvers[Batch.Solver];
 				
 				//NOTE: This lambda is the "equation function" of the solver. It solves the set of equations once given the values in the working sets x0 and wk. It can be run by the SolverFunction many times.
+				//TODO: This seems a little inefficient. We could pass the RunState and Batch pointer to the SolverFunction, and have the rest of the code be a macro that gets inserted in the SolverFunction ?
 				auto EquationFunction =
 				[RunState, Model, &Batch](double *x0, double* wk)
 				{	
@@ -1463,14 +1460,14 @@ INNER_LOOP_BODY(RunInnerLoop)
 						++EquationIdx;
 					}
 					
-					//NOTE: Solving basic equations tied to the solver. Values should NOT be written to the working set. They can instead be accessed from inside other equations in the solver batch using RESULT(H)
+					//NOTE: Solving basic equations tied to the solver. Values should NOT be written to the working set wk. They can instead be accessed from inside other equations in the solver batch using RESULT(H)
 					for(equation_h Equation : Batch.Equations)
 					{
 						double ResultValue = CallEquation(Model, RunState, Equation);
 						RunState->CurResults[Equation.Handle] = ResultValue;
 					}
 					
-					//NOTE: Solving ODE equations tied to the solver. These values should be written to the working set.
+					//NOTE: Solving ODE equations tied to the solver. These values should be written to the working set wk.
 					EquationIdx = 0;
 					for(equation_h Equation : Batch.EquationsODE)
 					{
@@ -1481,6 +1478,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 					}
 				};
 				
+				//TODO: Isn't this a little inefficient? We could just pass the RunState and Batch pointer to the SolverFunction instead.
 				mobius_solver_jacobi_function JacobiFunction = nullptr;
 				if(SolverSpec.UsesJacobian)
 				{
@@ -1849,7 +1847,7 @@ RunModel(mobius_data_set *DataSet)
 		}
 		
 		if(!Correct)
-			FatalError("ERROR: The solver \"", SolverSpec.Name, "\" was given a step that is not in the range (0,1]");
+			FatalError("ERROR: The solver \"", SolverSpec.Name, "\" was given a step that is not in the range (0,1]\n");
 	}
 	
 	///////////// Setting up fast lookup ////////////////////
