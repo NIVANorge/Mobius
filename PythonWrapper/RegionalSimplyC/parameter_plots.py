@@ -1,3 +1,7 @@
+
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -5,8 +9,10 @@ import matplotlib.pyplot as plt
 from importlib.machinery import SourceFileLoader
 from param_config import setup_calibration_params
 from individual_calib import resid
+from weighted_quantile import weighted_quantile
 
-import weighted_p_square as wp
+
+#import weighted_p_square as wp
 
 
 # Initialise wrapper
@@ -57,17 +63,31 @@ def draw_random_parameter_set(params, param_values) :
 			distr = param_values[parname]
 			idx = np.random.randint(0, len(distr))
 			params[parname].value = distr[list(distr)[idx]]
-		
+
+
+def nse(sim, obs, skip_timesteps=0) :
+	simm = sim[skip_timesteps:]
+	obss = obs[skip_timesteps:]
+
+	nom   = np.nansum(np.square(obss - simm))
+	denom = np.nansum(np.square(obss - np.nanmean(obss)))
+	nse = 1.0 - nom / denom
+	return nse
+	
+def nnse(sim, obs, skip_timesteps=0) :
+	#Normalized nash-sutcliffe efficiency
+	return 1.0 / (2.0 - nse(sim, obs, skip_timesteps))
+
 def extrapolate_test() :
 	param_values = collect_parameter_distributions(True)
 	
-	ndraws = 1500
+	ndraws = 10000
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
-	fig, ax = plt.subplots(2, 2)
-	fig.set_size_inches(60, 20)
-	ax = ax.flatten()
+	fig, ax = plt.subplots(2, 3)
+	fig.set_size_inches(80, 30)
+	#ax = ax.flatten()
 	
 	plotindex = 0
 	for index, row in catch_setup.iterrows():
@@ -81,8 +101,8 @@ def extrapolate_test() :
 		print('Extrapolating for catchment %s' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated 
-		parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated 
+		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated hydrology
+		parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)  # Using already-calibrated hydrology
 		
 		start_date = '1985-1-1'
 		timesteps  = 12052
@@ -93,10 +113,7 @@ def extrapolate_test() :
 		
 		skip_timesteps = 50      #Model 'burn-in' period
 		
-		comparisons = [
-					#('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
-					('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.2),
-				]
+		
 		
 		obsseries = dataset.get_input_series('Observed DOC', [], alignwithresults=True)
 		newobs = np.zeros(len(obsseries))
@@ -118,53 +135,114 @@ def extrapolate_test() :
 		
 		params = setup_calibration_params(dataset, do_doc=True, do_hydro=False)
 		
-		#NOTE: inefficient for now... double running of model
+		
 		pars   = []
-		resids = []
+		
+		all_results = np.zeros((ndraws, timesteps))
+		weights     = np.zeros(ndraws)
+		
+		dataset_copy = dataset.copy()
 		
 		for idx in range(ndraws) :
 			draw_random_parameter_set(params, param_values)
-			res = resid(params, dataset, comparisons, norm=True, skip_timesteps=skip_timesteps)
-			res = np.nansum(np.multiply(res, res))
-			pars.append(params)
-			resids.append(res)
 			
-		maxres = np.max(resids)
+			pars.append(params)
+			
+			cu.set_parameter_values(params, dataset_copy)
+			
+			dataset_copy.run_model()
+			
+			sim = dataset_copy.get_result_series('Reach DOC concentration (volume weighted daily mean)', ['R0'])
+			
+			weight = nnse(sim, newobs, skip_timesteps)
+			
+			all_results[idx, :] = sim
+			weights[idx]        = weight
+			
+			#res = resid(params, dataset, comparisons, norm=True, skip_timesteps=skip_timesteps)
+			#res = np.nansum(np.multiply(res, res))
+			
+			#resids.append(res)
+		dataset_copy.delete()
 		
 		xvals = cu.get_date_index(dataset)
 		
-		quantiles = [5, 25, 50, 75, 95]
-		accum = wp.WeightedPSquareAccumulator(dataset.get_parameter_uint('Timesteps', []), quantiles)
+		quantiles = [0.05, 0.25, 0.50, 0.75, 0.95]
+		#accum = wp.WeightedPSquareAccumulator(dataset.get_parameter_uint('Timesteps', []), quantiles)
+
+		quant_dat = np.zeros((len(quantiles), timesteps))
 		
-		print('Finished first run')
+		
+		for ts in range(timesteps) :
+			quant_dat[:, ts] = weighted_quantile(all_results[:, ts], quantiles, sample_weight=weights)
+		
+		for idx, quant in enumerate(quantiles) :
+			col='#999999'
+			thick = 2
+			if quant == 0.5:
+				col = '#8021A9'
+				thick = 3
+			ax[0,plotindex].plot(xvals, quant_dat[idx, :], label='%g%% percentile' % (quant*100.0), color=col, linewidth=thick)
+			
+		best_idx = np.argmax(weights)
+		
+		ax[0,plotindex].plot(xvals, all_results[best_idx, :], label='best', color='red', linestyle='--')
+			
+		ax[0,plotindex].plot(xvals, obsseries, color='blue', marker='o', markersize=4, label='observed')
+		ax[0,plotindex].plot(xvals, newobs, color='#A97621', marker='o', markersize=6, label='reduced observed')
+			
+		ax[0,plotindex].legend()
+		ax[0,plotindex].set_title('MC extrapolation')
+		
+		
+		print('Extrapolation run:')
+		print('N-S of extrapolated "best fit" vs the full observed data: %g' % nse(all_results[best_idx, :], obsseries, skip_timesteps))
+		
+		
+		
+		
+		
+		#Free optimization:
 		
 		dataset_copy = dataset.copy()
-		for idx in range(ndraws) :
-			
-			cu.set_parameter_values(pars[idx], dataset_copy)
-			dataset_copy.run_model()
-			results = dataset_copy.get_result_series('Reach DOC concentration (volume weighted daily mean)', ['R0'])
-			
-			weight = 1.0/(2.0 - resids[idx]/maxres)
-			accum.add_data(results, weight)
-
-		print('Finished second run')
 		
-		ax[plotindex].plot(xvals, obsseries, color='blue', marker='o')
-		ax[plotindex].plot(xvals, newobs, color='red', marker='o')
-		for idx, quant in enumerate(quantiles) :
-			series = accum.get_quantile(idx)
-			ax[plotindex].plot(xvals, series, color='black')
+		# Clean the parameter set so that we are not biased by the above run
+		params = setup_calibration_params(dataset_copy, do_doc=True, do_hydro=False)
+		
+		comparisons = [
+					#('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
+					('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 1.0),
+				]
+						
+		mi, res = cu.minimize_residuals(params, dataset_copy, comparisons, residual_method=resid, method='nelder', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
+		
+		cu.set_parameter_values(res.params, dataset_copy)
+		dataset_copy.run_model()
+		
+		free_optim_res = dataset_copy.get_result_series('Reach DOC concentration (volume weighted daily mean)', ['R0'])
+		
+		ax[1,plotindex].plot(xvals, free_optim_res, label='best', color='red', linestyle='--')
+		
+		ax[1,plotindex].plot(xvals, obsseries, color='blue', marker='o', markersize=4)
+		ax[1,plotindex].plot(xvals, newobs, color='#A97621', marker='o', markersize=6)
+		
+		ax[1,plotindex].legend()
+		ax[1,plotindex].set_title('Free optimization')
+		
+		print('Optimization run:')
+		print('N-S of freely optimized "best fit" vs the full observed data: %g' % nse(free_optim_res, obsseries, skip_timesteps))
 		
 		dataset_copy.delete()
-		accum.free()
+		
 		
 		plotindex = plotindex+1
+		
+		#break
 	
-	fig.tight_layout()
+	#fig.tight_layout()
 	plt.savefig('Figures/extrapolations.png')
 	plt.close()
-		
+
 	
 def make_plots() :
 	param_values = collect_parameter_distributions()
