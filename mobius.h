@@ -4,15 +4,6 @@
 //NOTE: This is designed to be built as a unity build, i.e. in only a single compilation unit.
 
 
-/*
-TODOs:
-	- Better encapsulation of the model_run_state subsystem. Unify lookup systems for parameters, inputs, results, last_results
-	- Have to figure out if the initial value equation system we have currently is good.
-	- Remove units as model entities entirely and only store / input them as strings? They seem like an unnecessary step right now.
-	- (Even more) convenience accessors for the DataSet so that io and application code does not have to understand the inner structure of the DataSet that much. Or rather combine the accessors with the .dll API?
-*/
-
-
 #if !defined(MOBIUS_H)
 
 
