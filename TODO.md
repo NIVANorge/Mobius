@@ -6,9 +6,12 @@
 
 ## Other
 - It would be cleaner just to have a ParameterInt (int64_t) instead of ParameterUInt.
+- Maybe remove units as separate model entities, and just have other entities store the string name of their entity. They don't do anything right now.
 - Built-in system for running sanity checks on parameter values on model startup.
 - Should be easier to have variable data availability for some timeseries. So if a timeseries is not provided, it is computed instead. This is possible right now, but is clunky.
-- Make it possible to have a batch consist of different equations depending on the index. So e.g. an index can either be a lake or a river segment, and the set of equations for these are different.
+- Better encapsulation of the model_run_state subsystem. Unify lookup systems for parameters, inputs, results, last_results
+- Figure out if the initial value equation system we have currently is good. Maybe provide error checking if the order of evaluation of input equations becomes whacky.
+- (Even more) convenience accessors for the mobius_data_set so that io and application code does not have to understand the inner structure of the DataSet that much. Or rather combine the accessors with the .dll API?
 
 ## Specific modules
 - Factor everything that has to do with solar radiation into one coherent file (from PET.h, EasyLake.h, SolarRadiation.h). Same with air pressure, humidity routines.
