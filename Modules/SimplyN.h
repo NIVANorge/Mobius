@@ -48,11 +48,17 @@ This module is in early development.
 	auto ReachDenitrificationRate         = RegisterParameterDouble(Model, NitrogenGlobal, "Reach denitrification rate at 20°C", M3PerDay, 0.0, 0.0, 1e6, "", "den"); //NOTE: m3/day is a weird unit. Alternatively we could have m/day, and then multiply that with the reach dimensions.
 	auto ReachDenitrificationQ10          = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Reach denitrification rate response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 5.0, "", "Q10den");
 	
+	auto QuickFlowIsOverland              = RegisterParameterBool(Model, NitrogenGlobal, "Quick flow is overland", false, "Whether quick flow water is clear or brings DIN from the soil");
+	
 	
 	auto NitrogenLand   = RegisterParameterGroup(Model, "Nitrogen by land use", LandscapeUnits);
 	
 	auto InitialSoilWaterDINConcentration = RegisterParameterDouble(Model, NitrogenLand, "Initial soil water DIN concentration", MgPerL, 0.0, 0.0, 10.0);
 	auto NetAnnualNInputToSoil            = RegisterParameterDouble(Model, NitrogenLand, "Net annual DIN input to soil", KgPerHaPerYear, 0.0, 0.0, 1000.0, "Inputs from deposition and fertilizer", "DINin");
+	
+	auto FertilizerBegin                  = RegisterParameterDouble(Model, NitrogenLand, "Fertilization start day", Days, 60, 1, 365);
+	auto FertilizerEnd                    = RegisterParameterDouble(Model, NitrogenLand, "Fertilization end day", Days, 120, 1, 365);
+	auto DailyFertilizerInput             = RegisterParameterDouble(Model, NitrogenLand, "Daily NO3 fertilizer inputs", KgPerHaPerDay, 0.0, 0.0, 100.0, "", "fert");
 
 	
 	auto NitrogenReach  = RegisterParameterGroup(Model, "Nitrogen by reach", Reach);
@@ -83,10 +89,13 @@ This module is in early development.
 	
 	auto GrowthCurve               = RegisterEquation(Model, "Growth curve", Dimensionless);
 	auto SoilWaterDINImmobilisation= RegisterEquation(Model, "Soil water DIN uptake+immobilisation", KgPerKm2PerDay, LandSolver);
+	auto SoilWaterDINInputs        = RegisterEquation(Model, "Soil water DIN inputs", KgPerKm2PerDay);
 	
-	auto QuickFlowDINFlux          = RegisterEquationODE(Model, "Quick flow DIN flux", KgPerKm2PerDay, LandSolver);
-	ResetEveryTimestep(Model, QuickFlowDINFlux);
-	auto TotalQuickFlowDINFluxToReach = RegisterEquationCumulative(Model, "Quick flow DIN flux summed over landscape units", QuickFlowDINFlux, LandscapeUnits, LandUseProportions);
+	auto QuickFlowDINFlux          = RegisterEquation(Model, "Quick flow DIN flux", KgPerKm2PerDay, LandSolver);
+	auto DailyMeanQuickFlowDINFlux = RegisterEquationODE(Model, "Quick flow DIN flux (daily mean)", KgPerKm2PerDay, LandSolver);
+	ResetEveryTimestep(Model, DailyMeanQuickFlowDINFlux);
+	
+	auto TotalQuickFlowDINFluxToReach = RegisterEquationCumulative(Model, "Quick flow DIN flux summed over landscape units", DailyMeanQuickFlowDINFlux, LandscapeUnits, LandUseProportions);
 	
 	auto InitialSoilWaterDINMass   = RegisterEquationInitialValue(Model, "Initial soil water DIN mass", KgPerKm2);
 	auto SoilWaterDINMass          = RegisterEquationODE(Model, "Soil water DIN mass", KgPerKm2, LandSolver);
@@ -126,12 +135,12 @@ This module is in early development.
 		double x     = (double)CURRENT_TIME().DayOfYear;
 		double xpon  = (x-mu)/sigma;
 
-		// Normalized normal distribution which then has integral equal to 1. Note that since the x axis is not -inf to inf, but 1 to 365, the actual integral will not be exactly 1, but the error should be small. There is also a small error in that we are only doing daily updates to the value, but that should also insignificant.
+		// Normalized normal distribution which then has integral equal to 1. Note that since the x axis is not -inf to inf, but 1 to 365, the actual integral will not be exactly 1, but the error should be small. There is also a small error in that we are only doing daily updates to the value, but that should also be insignificant.
 		return (0.3989422804 / sigma) * std::exp(-0.5*xpon*xpon);
 	)
 	
 	EQUATION(Model, SoilWaterDINImmobilisation,
-		double growthfactor = RESULT(GrowthCurve);
+		double growthfactor = RESULT(GrowthCurve)*365.0;
 		if(!PARAMETER(UseGrowthCurve)) growthfactor = 1.0;
 		double tempfactor   = std::pow(PARAMETER(SoilWaterDINImmobilisationQ10), (RESULT(SoilTemperature) - 20.0)/10.0);
 		return RESULT(SoilWaterDINConcentration) * 1e-3 * PARAMETER(SoilWaterDINImmobilisationRate) * tempfactor * growthfactor * 1e6;
@@ -141,11 +150,22 @@ This module is in early development.
 		return PARAMETER(InitialSoilWaterDINConcentration)*RESULT(SoilWaterVolume);   // (mg/l)*mm == kg/km2
 	)
 	
+	EQUATION(Model, SoilWaterDINInputs,
+		double input = PARAMETER(NetAnnualNInputToSoil) * 100.0/356.0;   // 1/Ha/year -> 1/km2/day
+		double fertilizer = PARAMETER(DailyFertilizerInput) * 100.0;    // 1/Ha/day -> 1/Ha
+		double doy = CURRENT_TIME().DayOfYear;
+		double begin = PARAMETER(FertilizerBegin);
+		double end   = PARAMETER(FertilizerEnd);
+		if(doy >= begin && doy <= end) input += fertilizer;
+		return input;
+	)
+	
 	EQUATION(Model, SoilWaterDINMass,
 		return
-			  PARAMETER(NetAnnualNInputToSoil) * 100.0/356.0   // 1/Ha/year -> 1/km2/day
+			  RESULT(SoilWaterDINInputs)
 			- RESULT(SoilWaterDINImmobilisation)
-			- RESULT(SoilWaterDINFlux);
+			- RESULT(SoilWaterDINFlux)
+			- RESULT(QuickFlowDINFlux);
 	)
 	
 	EQUATION(Model, SoilWaterDINConcentration,
@@ -158,7 +178,15 @@ This module is in early development.
 	
 	EQUATION(Model, QuickFlowDINFlux,
 		double dissolution_volume = RESULT(SoilWaterVolume) + RESULT(QuickFlow); //NOTE: We have to add the volume of the quick flow also, otherwise this is wrong for soil water volume close to 0.
-		return RESULT(QuickFlow) * SafeDivide(RESULT(SoilWaterDINMass), dissolution_volume);
+		double conc = 0.0;
+		double potential = SafeDivide(RESULT(SoilWaterDINMass), dissolution_volume);
+		if(!PARAMETER(QuickFlowIsOverland)) conc = potential;
+		
+		return RESULT(QuickFlow) * conc;
+	)
+	
+	EQUATION(Model, DailyMeanQuickFlowDINFlux,
+		return RESULT(QuickFlowDINFlux);
 	)
 	
 	EQUATION(Model, DailyMeanSoilWaterDINFluxToReach,

@@ -81,7 +81,7 @@ def nnse(sim, obs, skip_timesteps=0) :
 def extrapolate_test() :
 	param_values = collect_parameter_distributions(True)
 	
-	ndraws = 10000
+	ndraws = 20000
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
@@ -186,10 +186,10 @@ def extrapolate_test() :
 			
 		best_idx = np.argmax(weights)
 		
-		ax[0,plotindex].plot(xvals, all_results[best_idx, :], label='best', color='red', linestyle='--')
+		ax[0,plotindex].plot(xvals, all_results[best_idx, :], label='best', color='red')
 			
 		ax[0,plotindex].plot(xvals, obsseries, color='blue', marker='o', markersize=4, label='observed')
-		ax[0,plotindex].plot(xvals, newobs, color='#A97621', marker='o', markersize=6, label='reduced observed')
+		ax[0,plotindex].plot(xvals, newobs, color='#DF6312', marker='o', markersize=10, label='reduced observed')
 			
 		ax[0,plotindex].legend()
 		ax[0,plotindex].set_title('MC extrapolation')
@@ -221,16 +221,18 @@ def extrapolate_test() :
 		
 		free_optim_res = dataset_copy.get_result_series('Reach DOC concentration (volume weighted daily mean)', ['R0'])
 		
-		ax[1,plotindex].plot(xvals, free_optim_res, label='best', color='red', linestyle='--')
+		ax[1,plotindex].plot(xvals, free_optim_res, label='best', color='red')
 		
 		ax[1,plotindex].plot(xvals, obsseries, color='blue', marker='o', markersize=4)
-		ax[1,plotindex].plot(xvals, newobs, color='#A97621', marker='o', markersize=6)
+		ax[1,plotindex].plot(xvals, newobs, color='#DF6312', marker='o', markersize=10)
 		
 		ax[1,plotindex].legend()
 		ax[1,plotindex].set_title('Free optimization')
 		
 		print('Optimization run:')
 		print('N-S of freely optimized "best fit" vs the full observed data: %g' % nse(free_optim_res, obsseries, skip_timesteps))
+		
+		dataset_copy.write_parameters_to_file('MobiusFiles/extrapolate_params_%d_%s.dat' % (catch_no, catch_name))
 		
 		dataset_copy.delete()
 		

@@ -127,7 +127,8 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilDOCDissolution,
 		// mg/(l day) * mm = kg/(km2 day)
-		return RESULT(SoilWaterVolume)*PARAMETER(BaselineSoilDOCDissolutionRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
+		double value = RESULT(SoilWaterVolume)*PARAMETER(BaselineSoilDOCDissolutionRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
+		return Max(0.0, value);
 	)
 	
 	EQUATION(Model, SoilDOCMineralisation,
