@@ -30,26 +30,29 @@ parameters:
 "Henry's constant at 25°C" :     #(Pa m3/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
 1.1
 
-"Octanol-water partitioning coefficient at 25°C" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-2454709
+"Log10 Octanol-water partitioning coefficient at 25°C" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+6.39
 
 "Atmospheric contaminant concentration" :     #(ng/m3) [0, 100]
 0.01
 
-"Contaminant degradation rate constant in soil" :     #(1/day) [0, 1]
-0.001
+"Soil contaminant half life (easily accessible fraction)" :     #(day) [10, 365000]
+2190
 
-"Contaminant degradation rate constant in groundwater" :     #(1/day) [0, 1]
-0.001
+"Soil contaminant half life (potentially accessible fraction)" :     #(day) [10, 365000]
+2190
 
-"Contaminant degradation rate constant in the stream" :     #(1/day) [0, 1]
-0.001
+"Groundwater contaminant half life" :     #(day) [10, 365000]
+2190
 
-"Contaminant degradation rate constant in the stream bed" :     #(1/day) [0, 1]
-0.001
+"Reach contaminant half life" :     #(day) [10, 365000]
+2190
 
-"Degradation rate response to one degree change in temperature" :     #(dimensionless) [1, 1.5]
-1.05
+"Stream bed contaminant half life" :     #(day) [10, 365000]
+2190
+
+"Degradation rate response to 10°C change in temperature" :     #(dimensionless) [1, 1.5]
+1.5
 
 "Temperature at which degradation rates are measured" :     #(°C) [-20, 50]
 20
@@ -151,8 +154,11 @@ parameters:
 "Overall air-soil mass transfer coefficient" :     #(m/day) [0, 100]
 0.5 0.5
 
-"Initial contaminant mass in soil" :     #(ng/km2) [0, 1000]
-200000 0
+"Initial soil water contaminant concentration" :     #(ng/m3) [0, 100000]
+0 0
+
+"Initial soil SOC contaminant concentration" :     #(ng/kg) [0, 100000]
+9000 9000
 
 ###################### "Landscape units" "Soils" "Soils" ######################
 "Percolation matrix" :     #(dimensionless) [0, 1]
