@@ -858,7 +858,6 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	
 	//TODO: We should guard against values being out of range here, so that we don't run into infinite loop problems
 	
-	
 	double SumBaseCationConc = 2.0*Input.conc_Ca + 2.0*Input.conc_Mg + Input.conc_Na + Input.conc_K;
 	
 	//NOTE: Here we don't use the selectivity coefficients computed in SetEquilibriumConstants. So we don't use the SoilCationExchange value, i.e. we can just set it to 0.

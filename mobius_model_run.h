@@ -216,9 +216,30 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 
 typedef bool topological_sort_equations_visit(mobius_model *Model, equation_h Equation, std::vector<equation_h>& PushTo);
 
-template<typename container>
+
+//TODO: Resolve the issue of code duplication below. It is caused by the initial value order having to be allowed to grow.
+
 static void
-TopologicalSortEquations(mobius_model *Model, container &Equations, topological_sort_equations_visit *Visit)
+TopologicalSortEquations(mobius_model *Model, std::vector<equation_h> &Equations, topological_sort_equations_visit *Visit)
+{
+	std::vector<equation_h> Temporary;
+	Temporary.reserve(Equations.size());
+	for(equation_h Equation : Equations)
+	{
+		bool Success = Visit(Model, Equation, Temporary);
+		if(!Success)
+			FatalError("");
+	}
+	
+	//NOTE: The following that is commented out is NOT correct since in the case of the initial value order sort, the vector can have become larger!!
+	//for(size_t Idx = 0; Idx < Equations.size(); ++Idx)
+	//	Equations[Idx] = Temporary[Idx];
+	
+	Equations = Temporary;
+}
+
+static void
+TopologicalSortEquations(mobius_model *Model, array<equation_h> &Equations, topological_sort_equations_visit *Visit)
 {
 	std::vector<equation_h> Temporary;
 	Temporary.reserve(Equations.size());
@@ -1046,8 +1067,21 @@ EndModelDefinition(mobius_model *Model)
 		
 		//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A is before batch group B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
 		//TODO: We should report an error if that happens!
-		
+
+#if 0		
+		std::cout << "***************** Initial value order pre\n";
+		for(equation_h Equation : InitialValueOrder)
+			std::cout << GetName(Model, Equation) << "\n";
+#endif
+	
 		TopologicalSortEquations(Model, InitialValueOrder, TopologicalSortEquationsInitialValueVisit);
+		
+#if 0
+		std::cout << "***************** Initial value order post\n";
+		for(equation_h Equation : InitialValueOrder)
+			std::cout << GetName(Model, Equation) << "\n";
+#endif	
+	
 		Group.InitialValueOrder.CopyFrom(&Model->BucketMemory, InitialValueOrder);
 		++BatchGroupIdx;
 	}
@@ -2089,6 +2123,36 @@ PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)
 		Out << std::endl;
 	}
 }
+
+
+
+static void
+PrintInitialValueOrder(const mobius_model *Model, std::ostream &Out = std::cout)
+{
+	if(!Model->Finalized)
+	{
+		WarningPrint("WARNING: Tried to print initial value order before the model was finalized.\n");
+		return;
+	}
+	
+	Out << std::endl << "**** Initial value order ****" << std::endl;
+
+	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
+	{
+		if(BatchGroup.IndexSets.Count == 0) Out << "[]";
+		for(index_set_h IndexSet : BatchGroup.IndexSets)
+			Out << "[" << GetName(Model, IndexSet) << "]";
+		
+		for(equation_h Initial : BatchGroup.InitialValueOrder)
+		{
+			//TODO: Provide info about how it is evaluated (initial value eq, param, etc)
+			Out << "\n\t" << GetName(Model, Initial);
+		}
+		Out << "\n";
+	}
+}
+
+
 
 static void
 PrintParameterStorageStructure(mobius_data_set *DataSet)

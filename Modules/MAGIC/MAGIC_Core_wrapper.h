@@ -356,7 +356,7 @@ AddMagicCoreModel(mobius_model *Model)
 		{
 			MagicCoreInitial(Input, Param, Result, issoil, conv);
 		}
-		
+
 		SET_RESULT(Log10CaAlSelectCoeff, Result.Log10CaAlSelectCoeff);
 		SET_RESULT(Log10MgAlSelectCoeff, Result.Log10MgAlSelectCoeff);
 		SET_RESULT(Log10NaAlSelectCoeff, Result.Log10NaAlSelectCoeff);

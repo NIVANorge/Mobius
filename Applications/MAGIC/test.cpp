@@ -1,4 +1,4 @@
-#define MOBIUS_TIMESTEP_VERBOSITY 3
+#define MOBIUS_TIMESTEP_VERBOSITY 0
 //NOTE: the g++ compiler flag ffast-math will make it so that isnan does not work correctly, so don't use that flag.
 #define MOBIUS_TEST_FOR_NAN 1
 #define MOBIUS_EQUATION_PROFILING 0
@@ -15,7 +15,7 @@
 int main()
 {
     const char *InputFile     = "testinputs.dat";
-	const char *ParameterFile = "testparameters_microbial.dat";
+	const char *ParameterFile = "testparameters.dat";
 	
 	mobius_model *Model = BeginModelDefinition("MAGIC");
 	
@@ -23,8 +23,8 @@ int main()
 	AddMagicModel(Model);
 	
 	//Carbon and nitrogen
-	//AddSimpleMagicCarbonNitrogenModel(Model);
-	AddMicrobialMagicCarbonNitrogenModel(Model);
+	AddSimpleMagicCarbonNitrogenModel(Model);
+	//AddMicrobialMagicCarbonNitrogenModel(Model);
 	
 	
 	ReadInputDependenciesFromFile(Model, InputFile);
@@ -32,6 +32,8 @@ int main()
 	SetTimestepSize(Model, "1M");
 	
 	EndModelDefinition(Model);
+	
+	PrintInitialValueOrder(Model);
 	
 	mobius_data_set *DataSet = GenerateDataSet(Model);
     
