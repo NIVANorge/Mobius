@@ -13,7 +13,7 @@ AddThornthwaitePETModule(mobius_model *Model)
 	BeginModule(Model, "Thornthwaite PET", "1.0");
 	
 	SetModuleDescription(Model, R""""(
-This is an implementation of
+This is an implementation of the potential evapotranspiration model from
 
 [^https://doi.org/10.2307%2F210739^ Thornthwaite, C. W. (1948). An approach toward a rational classification of climate. Geographical Review. 38 (1): 55–94]
 
@@ -49,7 +49,7 @@ AddDegreeDayPETModule(mobius_model *Model)
 	BeginModule(Model, "Degree-day PET", "0.1");
 	
 	SetModuleDescription(Model, R""""(
-This is a very simple PET model using a linear relationship between PET and air temperature.
+This is a very simple potential evapotranspiration model using a linear relationship between PET and air temperature.
 )"""");
 	
 	auto MmPerDay        = RegisterUnit(Model, "mm/day");
