@@ -5,6 +5,9 @@ AddSimpleMagicCarbonNitrogenModel(mobius_model *Model)
 {
 	
 	BeginModule(Model, "MAGIC simple carbon and nitrogen", "_dev");
+	SetModuleDescription(Model, R""""(
+This is a basic module that provides Carbon and Nitrogen dynamics as drivers for the MAGIC core.
+)"""");
 	
 	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
 	auto MMolPerM2PerTs   = RegisterUnit(Model, "mmol/m2/month");

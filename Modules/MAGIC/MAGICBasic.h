@@ -12,6 +12,10 @@ void AddMagicModel(mobius_model *Model)
 {
 	BeginModule(Model, "MAGIC driver", "_dev");
 	
+	SetModuleDescription(Model, R""""(
+This is a basic module that provides flow, temperature, and other drivers for the MAGIC core.
+)"""");
+	
 	auto Dimensionless  = RegisterUnit(Model);
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");
 	auto MPerTs         = RegisterUnit(Model, "m/month");

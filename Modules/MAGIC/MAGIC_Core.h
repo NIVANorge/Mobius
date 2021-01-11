@@ -5,8 +5,6 @@ This is a translation from FORTRAN of a program written by Bernard J. Cosby .
 
 The model has been published as
 B.J Cosby, R. C. Ferrier, A. Jenkins and R. F. Wright, 2001, Modelling the effects of acid deposition: refinements, adjustments and inclusion of nitrogen dynamics in the MAGIC model. Hydrol. Earth Syst. Sci, 5(3), 499-517
-
-This adaptation is a work in progress
 */
 
 
