@@ -17,8 +17,8 @@ parameters:
 "Solver sub-step length" :     #(months) [0.001, 1]
 0.03
 
-"Catchment area" :     #(km2) [0, 100000]
-1
+#"Catchment area" :     #(km2) [0, 100000]
+#1
 
 "Precipitation" :     #(m/year) [0, 100] Default value for timesteps where no input series value is provided
 1

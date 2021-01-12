@@ -14,7 +14,7 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 	
 	auto Compartment        = GetIndexSetHandle(Model, "Compartment");
 	
-	auto CAndN              = RegisterParameterGroup(Model, "Carbon and Nitrogen by subcatchment", Compartment);
+	auto CAndN              = RegisterParameterGroup(Model, "Carbon and Nitrogen by compartment", Compartment);
 	
 	auto Nitrification      = RegisterParameterDouble(Model, CAndN, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	auto Denitrification    = RegisterParameterDouble(Model, CAndN, "Denitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
@@ -105,7 +105,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	auto Compartment        = GetIndexSetHandle(Model, "Compartment");
 	
-	auto CAndN              = RegisterParameterGroup(Model, "Carbon and Nitrogen by subcatchment", Compartment);
+	auto CAndN              = RegisterParameterGroup(Model, "Carbon and Nitrogen by compartment", Compartment);
 	
 	auto BiomassCN          = RegisterParameterDouble(Model, CAndN, "Biomass C/N", Dimensionless, 10.0, 0.0, 1000.0);
 	auto CarbEff            = RegisterParameterDouble(Model, CAndN, "Carbon efficiency", Percent, 25.0, 0.0, 100.0);

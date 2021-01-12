@@ -46,9 +46,9 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	auto GeneralParams             = RegisterParameterGroup(Model, "General parameters");
 	auto ConvergenceCriterion      = RegisterParameterDouble(Model, GeneralParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
-	auto SolverStep                = RegisterParameterDouble(Model, GeneralParams, "Solver sub-step length", Ts, 0.1, 1e-3, 1.0);
+	auto SolverStep                = RegisterParameterDouble(Model, GeneralParams, "Solver sub-step length", Ts, 0.1, 1e-3, 1.0, "Length of intermediate step between each time the solution is rebalanced");
 	
-	auto CatchmentArea             = RegisterParameterDouble(Model, GeneralParams, "Catchment area", Km2, 1.0, 0.0, 100000.0);
+	//auto CatchmentArea             = RegisterParameterDouble(Model, GeneralParams, "Catchment area", Km2, 1.0, 0.0, 100000.0);
 	
 	auto Compartment = RegisterIndexSet(Model, "Compartment");
 	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters", Compartment);

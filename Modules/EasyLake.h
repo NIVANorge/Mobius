@@ -81,17 +81,20 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto LakeInflow       = RegisterInput(Model, "Lake inflow", M3PerS);
 	
 	auto PhysParams = RegisterParameterGroup(Model, "Lake physical");
+#else
+	auto Reach            = GetIndexSetHandle(Model, "Reaches");
+	auto PhysParams = RegisterParameterGroup(Model, "Lake physical", Reach);
+	auto IsLake     = RegisterParameterBool(Model, PhysParams, "This section is a lake", false, "If false this is a river section: ignore the parameters below");
 #endif
 
-#ifdef EASYLAKE_SIMPLYQ
-	auto Reach            = GetIndexSetHandle(Model, "Reaches");
-	
-	auto PhysParams = RegisterParameterGroup(Model, "Lake physical", Reach);
-	
-	auto IsLake     = RegisterParameterBool(Model, PhysParams, "This section is a lake", false, "If false this is a river section: ignore the parameters below");
-
+#ifdef EASYLAKE_SIMPLYQ	
 	auto FlowInputFromUpstream = GetEquationHandle(Model, "Flow input from upstream");
 	auto FlowInputFromLand     = GetEquationHandle(Model, "Flow input from land");
+#endif
+
+#ifdef EASYLAKE_PERSIST
+	auto FlowInputFromUpstream = GetEquationHandle(Model, "Flow input from upstream");
+	auto FlowInputFromLand     = GetEquationHandle(Model, "Total diffuse flow output");
 #endif
 
 	auto InitialLakeSurfaceArea         = RegisterParameterDouble(Model, PhysParams, "Initial lake surface area", M2, 1e3, 0.0, 371e9);
@@ -107,7 +110,11 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto TempDepths                  = RegisterParameterGroup(Model, "Temperature calibration depths", TemperatureCalibrationDepth);
 	auto CalibDepth                  = RegisterParameterDouble(Model, TempDepths, "Calibration depth", M, 0.0, 0.0, 1642.0);
 	
+#ifdef EASYLAKE_PERSIST
+	auto Precipitation    = RegisterInput(Model, "Actual precipitation", MmPerDay);
+#else
 	auto Precipitation    = RegisterInput(Model, "Precipitation", MmPerDay);
+#endif
 	auto AirTemperature   = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	
 	//NOTE: Some of these may be hard to come by in some instances. We should provide ways to estimate them such as in PET.h
@@ -199,6 +206,9 @@ The implementation is informed by the implementation in [^https://github.com/got
 #ifdef EASYLAKE_SIMPLYQ
 		double inflow = RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand);
 #endif
+#ifdef EASYLAKE_PERSIST
+		double inflow = RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand);   //TODO: Effluents and abstraction
+#endif
 		return (inflow - RESULT(LakeOutflow)) * 86400.0 + 1e-3 * (INPUT(Precipitation) - RESULT(Evaporation)) * RESULT(LakeSurfaceArea);
 	)
 	
@@ -286,6 +296,22 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	auto TemperatureAtDepth  = RegisterEquation(Model, "Temperature at depth", DegreesCelsius);
 	
+#ifndef EASYLAKE_STANDALONE
+	auto ThisIsALake = RegisterConditionalExecution(Model, "This is a lake", IsLake, true);
+	auto ThisIsARiver = RegisterConditionalExecution(Model, "This is a river", IsLake, false);
+	
+	SetConditional(Model, LakeSolver, ThisIsALake);
+	SetConditional(Model, ActualVaporPressure, ThisIsALake);
+	SetConditional(Model, ActualSpecificHumidity, ThisIsALake);
+	SetConditional(Model, AirDensity, ThisIsALake);
+	SetConditional(Model, DownwellingLongwaveRadation, ThisIsALake);
+	//SetConditional(Model, ShortwaveRadiation, ThisIsALake);
+	SetConditional(Model, EpilimnionThickness, ThisIsALake);
+	SetConditional(Model, BottomTemperature, ThisIsALake);
+	SetConditional(Model, TemperatureAtDepth, ThisIsALake);
+#endif
+	
+	
 #ifdef EASYLAKE_SIMPLYQ
 	auto DailyMeanReachFlow    = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
 	
@@ -302,17 +328,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		return upstreamflow;
 	)
 	
-	auto ThisIsALake = RegisterConditionalExecution(Model, "This is a lake", IsLake, true);
 	
-	SetConditional(Model, LakeSolver, ThisIsALake);
-	SetConditional(Model, ActualVaporPressure, ThisIsALake);
-	SetConditional(Model, ActualSpecificHumidity, ThisIsALake);
-	SetConditional(Model, AirDensity, ThisIsALake);
-	SetConditional(Model, DownwellingLongwaveRadation, ThisIsALake);
-	//SetConditional(Model, ShortwaveRadiation, ThisIsALake);
-	SetConditional(Model, EpilimnionThickness, ThisIsALake);
-	SetConditional(Model, BottomTemperature, ThisIsALake);
-	SetConditional(Model, TemperatureAtDepth, ThisIsALake);
 	
 	//NOTE: If we do the following, we exclude groundwater computations from lake subcatchments, and we have to have a separate computation of flow input from land. Instead we just run the river computations, and ignore their values. It could be confusing for users though, so we have to see if we have to add something for the UI for this.
 	/*
@@ -326,6 +342,26 @@ The implementation is informed by the implementation in [^https://github.com/got
 	SetConditional(Model, ReachFlowMM, ThisIsARiver);
 	SetConditional(Model, Control, ThisIsARiver);
 	*/
+#endif
+
+#ifdef EASYLAKE_PERSIST
+	auto DailyMeanReachFlow = GetEquationHandle(Model, "Reach flow (daily mean)");
+	
+	EQUATION_OVERRIDE(Model, FlowInputFromUpstream,
+		double upstreamflow = 0.0;
+
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			if(PARAMETER(IsLake, Input))
+				upstreamflow += RESULT(DailyMeanLakeOutflow, Input);
+			else
+				upstreamflow += RESULT(DailyMeanReachFlow, Input);
+		}
+		return upstreamflow;
+	)
+	
+	auto ReachSolver = GetSolverHandle(Model, "Reach solver");
+	SetConditional(Model, ReachSolver, ThisIsARiver);
 #endif
 	
 	
@@ -698,6 +734,9 @@ The implementation is informed by the implementation in [^https://github.com/got
 #endif
 #ifdef EASYLAKE_SIMPLYQ
 		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand));
+#endif
+#ifdef EASYLAKE_PERSIST
+		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand)); //TODO: effluents? But what is their temperature?
 #endif
 		double rainQ   = INPUT(Precipitation)*area*1e-3;
 		double outflowQ = -RESULT(LakeOutflow)*86400.0;

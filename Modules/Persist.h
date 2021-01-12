@@ -314,6 +314,7 @@ Computation of reach flow based on the Manning flow equations.
 	auto ReachSolver = RegisterSolver(Model, "Reach solver", SolverPrec, IncaDascru);
 	
 	auto DiffuseFlowOutput = RegisterEquation(Model, "Diffuse flow output", MetresCubedPerSecond);
+	auto ReachFlowInputUpstream = RegisterEquation(Model, "Flow input from upstream", MetresCubedPerSecond);
 	auto ReachFlowInput    = RegisterEquation(Model, "Reach flow input", MetresCubedPerSecond);
 	auto ReachAbstraction  = RegisterEquation(Model, "Reach abstraction", MetresCubedPerSecond, ReachSolver);
 	
@@ -345,14 +346,18 @@ Computation of reach flow based on the Manning flow equations.
 	EQUATION(Model, DiffuseFlowOutput,
 		return (PARAMETER(TerrestrialCatchmentArea) * (PARAMETER(Percent) / 100.0) * RESULT(TotalRunoffToReach) * 1000000.0 * 0.001 * (1.0 / 86400.0));
 	)
-
-	EQUATION(Model, ReachFlowInput,
-		double reachInput = RESULT(TotalDiffuseFlowOutput) + IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
+	
+	EQUATION(Model, ReachFlowInputUpstream,
+		double input = 0.0;
 		
 		for(index_t Input : BRANCH_INPUTS(Reach))
-			reachInput += RESULT(DailyMeanReachFlow, Input);
+			input += RESULT(DailyMeanReachFlow, Input);
 
-		return reachInput;
+		return input;	
+	)
+
+	EQUATION(Model, ReachFlowInput,
+		return RESULT(ReachFlowInputUpstream) + RESULT(TotalDiffuseFlowOutput) + IF_INPUT_ELSE_PARAMETER(EffluentTimeseries, EffluentFlow);
 	)
     
 	EQUATION(Model, InitialReachFlow,
