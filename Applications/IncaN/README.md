@@ -35,7 +35,45 @@ Unfortunately there is no comprehensive full description of this version of the 
 
 See the [general description of parameter and input formats in Mobius](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf).
 
-See also a short description of [input requirements to PERSiST and INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Documentation/ModelInputRequirements)
+INCA-N builds on PERSiST, and so has all the same input requirements and options as PERSiST. See the inputs that are required by the [PERSiST module](https://github.com/NIVANorge/Mobius/blob/master/Applications/PERSiST).
+
+Here we list the ones that are added on top of that by INCA-N.
+
+### Required inputs
+
+None apart from the ones in PERSiST.
+
+### Optional inputs
+
+If an optional input is provided at all it has to have to have a value for every day of the period you intend to run the model. If it is not included, a value is typically computed for it instead based on parameter values. If you give an optional input an index set dependency, it is fine if you only provide a timeseries for some of the indexes. The value for the other indexes will then be computed as normal.
+
+
+* **"Fertilizer nitrate"**. How much NO3 is added by fertilization, in kg/Ha/day. Replaces the computed fertilisation. Recommended index set dependencies: {"Landscape units"} or {"Reaches" "Landscape units"}.
+* **"Fertilizer ammonium"**. How much NH4 is added by fertilization, in kg/Ha/day. Replaces the computed fertilisation. Recommended index set dependencies: {"Landscape units"} or {"Reaches" "Landscape units"}.
+* **"Nitrate dry deposition"**. In kg/Ha/day. Replaces the parameter of the same name.
+* **"Ammonium dry deposition"**. In kg/Ha/day. Replaces the parameter of the same name.
+* **"Nitrate wet deposition"**. In kg/Ha/day. Gives the actual wet deposition to the soil instead of having it computed based on the parameter and the precipitation.
+* **"Ammonium wet deposition"**. In kg/Ha/day. Gives the actual wet deposition to the soil instead of having it computed based on the parameter and the precipitation.
+* **"Effluent nitrate concentration"**. In mg/l. Replaces the parameter "Reach effluent nitrate concentration".
+* **"Effluent ammonium concentration"**. In $mg/l$. Replaces the parameter "Reach effluent ammonium concentration".
+
+It may be convenient to use the format of constant periods to specify e.g. fertilization inputs. An example of that is:
+
+"Fertilizer nitrate" :
+2004-04-10 to 2004-06-01 0.01
+<..etc..>
+
+There is also the possibility to specify multiple plant growth periods (which will influence plant ammonium uptake). This is done using the optional timeseries **"Growth curve offset"** and **"Growth curve amplitude"**. They should be specified using the constant periods format as in the next example. It is important that the periods in these two timeseries match up. This replaces the parameter-based growth periods.
+
+"Growth curve offset" :
+2004-04-10 to 2004-06-01 0.33
+2004-03-27 to 2004-06-15 0.31
+
+"Growth curve amplitude" :
+2004-04-10 to 2004-06-01 0.67
+2004-03-27 to 2004-06-15 0.69
+
+As with any other optional timeseries, you can give these index set dependencies, but it is important that "Growth curve offset" and "Growth curve amplitude" are given the same dependencies and that any pair of these with the same indexes match up. If series are not provided for some indexes, the growth period will be based on the parameters for those indexes as usual.
 
 ## Existing application examples
 
