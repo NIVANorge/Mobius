@@ -27,7 +27,19 @@ The version numbers found in this repository refer to the version number of the 
 
 See the [general description of parameter and input formats in Mobius](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf).
 
-See also a short description of [input requirements to PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Documentation/ModelInputRequirements)
+Required inputs have to have a value for every day of the period you intend to run the model. If you don't have values for all days, you have do use interpolation methods to fill in the missing values yourself. How to do this in a smart way is a big topic on its own, and will not be covered here.
+
+* **"Air temperature"**. The air temperature is the mean daily air temperature in degrees C. Recommended index set dependencies: none or {"Reaches"}.
+* **"Actual precipitation"**. The actual precipitation is the amount of measured precipitation in mm/day. Recommended index set dependencies: none or {"Reaches"}.
+
+### Optional inputs
+
+If an optional input is provided at all it has to have to have a value for every day of the period you intend to run the model. If it is not included, a value is typically computed for it instead based on parameter values. If you give an optional input an index set dependency, it is fine if you only provide a timeseries for some of the indexes. The value for the other indexes will then be computed as normal.
+
+
+* **"Abstraction flow"**. How much water is removed from the reach by human activity, in m^3/s. Replaces the parameter of the same name. Recommended index set dependencies: none or {"Reaches"}.
+* **"Effluent flow"**. How much water is added to the reach e.g. by sewer treatment works, in m^3/s. Replaces the parameter of the same name. Recommended index set dependencies: none or {"Reaches"}.
+
 
 
 ## References
