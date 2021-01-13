@@ -59,18 +59,18 @@ If an optional input is provided at all it has to have to have a value for every
 
 It may be convenient to use the format of constant periods to specify e.g. fertilization inputs. An example of that is:
 
-"Fertilizer nitrate" :
-2004-04-10 to 2004-06-01 0.01
+"Fertilizer nitrate" :  
+2004-04-10 to 2004-06-01 0.01  
 <..etc..>
 
 There is also the possibility to specify multiple plant growth periods (which will influence plant ammonium uptake). This is done using the optional timeseries **"Growth curve offset"** and **"Growth curve amplitude"**. They should be specified using the constant periods format as in the next example. It is important that the periods in these two timeseries match up. This replaces the parameter-based growth periods.
 
-"Growth curve offset" :
-2004-04-10 to 2004-06-01 0.33
+"Growth curve offset" :  
+2004-04-10 to 2004-06-01 0.33  
 2004-03-27 to 2004-06-15 0.31
 
-"Growth curve amplitude" :
-2004-04-10 to 2004-06-01 0.67
+"Growth curve amplitude" :  
+2004-04-10 to 2004-06-01 0.67  
 2004-03-27 to 2004-06-15 0.69
 
 As with any other optional timeseries, you can give these index set dependencies, but it is important that "Growth curve offset" and "Growth curve amplitude" are given the same dependencies and that any pair of these with the same indexes match up. If series are not provided for some indexes, the growth period will be based on the parameters for those indexes as usual.
