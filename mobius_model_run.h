@@ -21,8 +21,8 @@ BeginModelDefinition(const char *Name = "(unnamed model)", bool UseEndDate = fal
 		RegisterParameterDate(Model, System, "End date", "1970-1-1", "1000-1-1", "3000-1-1", "The end date is inclusive");
 	else
 	{
-		auto Days 	      = RegisterUnit(Model, "days");              //TODO: This should be reactive to the timestep size!!
-		RegisterParameterUInt(Model, System, "Timesteps", Days, 1);
+		auto Steps 	      = RegisterUnit(Model, TimestepSize);              //TODO: It is not that nice to display the timestep size as the unit since it is on a specific format... We should convert it.
+		RegisterParameterUInt(Model, System, "Timesteps", Steps, 1);
 	}
 	
 	SetTimestepSize(Model, TimestepSize);
@@ -1314,7 +1314,6 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 {
 	if(!std::isfinite(ResultValue))
 	{
-		//TODO: We should be able to report the timestep here.
 		ErrorPrint("ERROR: Got a NaN or Inf value as the result of the equation \"", GetName(Model, Equation), "\" at timestep ", RunState->Timestep, ".\n");
 		const equation_spec &Spec = Model->Equations[Equation];
 		ErrorPrint("Indexes:\n");
@@ -1355,6 +1354,39 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 			ErrorPrint("Last value of \"", GetName(Model, Res), "\" was ", RunState->LastResults[Res.Handle], '\n');
 		
 		FatalError("");
+	}
+}
+
+void ODEEquationFunction(double *x0, double *wk, model_run_state *RunState, const equation_batch *Batch)
+{
+	//Function that evaluates the set of ODEs once. Can be called by a solver multiple times per time step depending on the solver algorithm.
+	//x0 and wk have to be pre-allocted to be large enough.
+	
+	const mobius_model *Model = RunState->DataSet->Model;
+	size_t EquationIdx = 0;
+	//NOTE: Read in initial values of the ODE equations to the CurResults buffer to be accessible from within the batch equations using RESULT(H).
+	//NOTE: Values are not written to ResultData before the entire solution process is finished. So during the solver process one can ONLY read intermediary results from equations belonging to this solver using RESULT(H), never RESULT(H, Idx1,...) etc. However there is no reason one would want to do that any way.
+	for(equation_h Equation : Batch->EquationsODE)
+	{
+		RunState->CurResults[Equation.Handle] = x0[EquationIdx];
+		++EquationIdx;
+	}
+	
+	//NOTE: Solving basic equations tied to the solver. Values should NOT be written to the working set wk. They can instead be accessed from inside other equations in the solver batch using RESULT(H)
+	for(equation_h Equation : Batch->Equations)
+	{
+		double ResultValue = CallEquation(Model, RunState, Equation);
+		RunState->CurResults[Equation.Handle] = ResultValue;
+	}
+	
+	//NOTE: Solving ODE equations tied to the solver. These values should be written to the working set wk.
+	EquationIdx = 0;
+	for(equation_h Equation : Batch->EquationsODE)
+	{
+		double ResultValue = CallEquation(Model, RunState, Equation);
+		wk[EquationIdx] = ResultValue;
+		
+		++EquationIdx;
 	}
 }
 
@@ -1480,57 +1512,14 @@ INNER_LOOP_BODY(RunInnerLoop)
 				
 				const solver_spec &SolverSpec = Model->Solvers[Batch.Solver];
 				
-				//NOTE: This lambda is the "equation function" of the solver. It solves the set of equations once given the values in the working sets x0 and wk. It can be run by the SolverFunction many times.
-				//TODO: This seems a little inefficient. We could pass the RunState and Batch pointer to the SolverFunction, and have the rest of the code be a macro that gets inserted in the SolverFunction ?
-				auto EquationFunction =
-				[RunState, Model, &Batch](double *x0, double* wk)
-				{	
-					size_t EquationIdx = 0;
-					//NOTE: Read in initial values of the ODE equations to the CurResults buffer to be accessible from within the batch equations using RESULT(H).
-					//NOTE: Values are not written to ResultData before the entire solution process is finished. So during the solver process one can ONLY read intermediary results from equations belonging to this solver using RESULT(H), never RESULT(H, Idx1,...) etc. However there is no reason one would want to do that any way.
-					for(equation_h Equation : Batch.EquationsODE)
-					{
-						RunState->CurResults[Equation.Handle] = x0[EquationIdx];
-						++EquationIdx;
-					}
-					
-					//NOTE: Solving basic equations tied to the solver. Values should NOT be written to the working set wk. They can instead be accessed from inside other equations in the solver batch using RESULT(H)
-					for(equation_h Equation : Batch.Equations)
-					{
-						double ResultValue = CallEquation(Model, RunState, Equation);
-						RunState->CurResults[Equation.Handle] = ResultValue;
-					}
-					
-					//NOTE: Solving ODE equations tied to the solver. These values should be written to the working set wk.
-					EquationIdx = 0;
-					for(equation_h Equation : Batch.EquationsODE)
-					{
-						double ResultValue = CallEquation(Model, RunState, Equation);
-						wk[EquationIdx] = ResultValue;
-						
-						++EquationIdx;
-					}
-				};
-				
-				//TODO: Isn't this a little inefficient? We could just pass the RunState and Batch pointer to the SolverFunction instead.
-				mobius_solver_jacobi_function JacobiFunction = nullptr;
-				if(SolverSpec.UsesJacobian)
-				{
-					JacobiFunction =
-					[RunState, Model, DataSet, &Batch](double *X, mobius_matrix_insertion_function & MatrixInserter)
-					{
-						EstimateJacobian(X, MatrixInserter, Model, RunState, Batch);
-					};
-				}
-				
 				// The desired solver step. (Guideline only, solver is free to correct its step during error correction).
 				double h = SolverSpec.h;
 				if(IsValid(SolverSpec.hParam)) h = RunState->CurParameters[SolverSpec.hParam.Handle].ValDouble;
 				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, EquationFunction, JacobiFunction, SolverSpec.RelErr, SolverSpec.AbsErr);
+				SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, &Batch, RunState, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
-				//NOTE: Store out the final results from this solver to the ResultData set.
+				//NOTE: Store out the final results from this solver to the main dataset.
 				for(equation_h Equation : Batch.Equations)
 				{
 					double ResultValue = RunState->CurResults[Equation.Handle];

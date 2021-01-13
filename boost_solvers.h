@@ -1,5 +1,5 @@
 
-//#define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const mobius_solver_equation_function &EquationFunction, const mobius_solver_equation_function &JacobiFunction, double AbsErr, double RelErr)
+//#define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, model_run_state *RunState, equation_batch *Batch, double AbsErr, double RelErr)
 
 
 /*
@@ -18,35 +18,38 @@ typedef boost::numeric::ublas::matrix< double > mat_boost;
 
 struct boost_ode_system
 {
-	const mobius_solver_equation_function &EquationFunction;
+	model_run_state *RunState;
+	const equation_batch *Batch;
 	
-	boost_ode_system(const mobius_solver_equation_function &EquationFunction) : EquationFunction(EquationFunction)
+	boost_ode_system(model_run_state *RunState, const equation_batch *Batch) : RunState(RunState), Batch(Batch)
 	{
 	}
 	
 	void operator()( const vec_boost &X , vec_boost &DXDT , double /* t */ )
     {
-        EquationFunction((double *)X.data().begin(), (double *)DXDT.data().begin());
+        ODEEquationFunction((double *)X.data().begin(), (double *)DXDT.data().begin(), RunState, Batch);
     }
 };
 
 struct boost_ode_system_jacobi
 {
-	const mobius_solver_jacobi_function &JacobiFunction;
+	model_run_state *RunState;
+	const equation_batch *Batch;
 	
-	boost_ode_system_jacobi(const mobius_solver_jacobi_function &JacobiFunction) : JacobiFunction(JacobiFunction)
+	boost_ode_system_jacobi(model_run_state *RunState, const equation_batch *Batch) : RunState(RunState), Batch(Batch)
 	{
 	}
 	
-	void operator()( const vec_boost &X, mat_boost &J , const double & /* t */ , vec_boost /* &DFDT */ )
+	void operator()(const vec_boost &X, mat_boost &J, const double & /* t */ , vec_boost /* &DFDT */ )
     {
 		//NOTE: We are banking on not having to clear DFDT each time. We assume it is inputed as 0 from the solver.. However I don't know if this is documented functionality
 		
 		J.clear(); //NOTE: Unfortunately it seems like J contains garbage values at the start of each run unless we clear it. And we have to clear it since we only set the nonzero values in the JacobiEstimation.
 		
+		//TODO: it is inefficient to do it this way, it is probably better to have the EstimateJacobian function write the matrix in its own format, then copy the matrix over to the format used by the specific solver? The problem with that is if we use a sparse matrix format, though.
 		mobius_matrix_insertion_function MatrixInserter = [&](size_t Row, size_t Col, double Value){ J(Row, Col) = Value; };
 		
-		JacobiFunction((double *)X.data().begin(), MatrixInserter);
+		EstimateJacobian((double *)X.data().begin(), MatrixInserter, RunState, Batch);
 	}
 };
 
@@ -64,8 +67,8 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 	try
 	{
 	size_t NSteps = integrate_adaptive( 
-			make_controlled< rosenbrock4< double > >( AbsErr, RelErr ),
-			std::make_pair( boost_ode_system(EquationFunction), boost_ode_system_jacobi(JacobiFunction) ),
+			make_controlled< rosenbrock4< double > >(AbsErr, RelErr),
+			std::make_pair(boost_ode_system(RunState, Batch), boost_ode_system_jacobi(RunState, Batch)),
 			X, 0.0 , 1.0 , h 
 			/*TODO: add an observer to handle errors? */);
 	}
@@ -102,7 +105,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRK4Impl_)
 
 	size_t NSteps = integrate_adaptive( 
 			runge_kutta4<vec_boost>(),
-			boost_ode_system(EquationFunction),
+			boost_ode_system(RunState, Batch),
 			X, 0.0 , 1.0 , h 
 			/*TODO: add an observer to handle errors? */);
 			
@@ -133,7 +136,7 @@ MOBIUS_SOLVER_FUNCTION(BoostCashCarp54Impl_)
 
 	size_t NSteps = integrate_adaptive( 
 			controlled_runge_kutta<runge_kutta_cash_karp54<vec_boost>>(AbsErr, RelErr),
-			boost_ode_system(EquationFunction),
+			boost_ode_system(RunState, Batch),
 			X, 0.0 , 1.0 , h 
 			/*TODO: add an observer to handle errors? */);
 			

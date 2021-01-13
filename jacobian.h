@@ -84,25 +84,27 @@ BuildJacobianInfo(mobius_model *Model)
 #define USE_JACOBIAN_OPTIMIZATION 1          //Ooops! Don't turn this off unless know what you are doing. It could break some solvers.
 
 static void
-EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, const mobius_model *Model, model_run_state *RunState, const equation_batch &Batch)
+EstimateJacobian(double *X, const mobius_matrix_insertion_function &MatrixInserter, model_run_state *RunState, const equation_batch *Batch)
 {
 	// Using a callback to insert into the matrix is not optimal, but the problem is that we can't know the implementation every solver has of their linear algebra stuff.
 	
 	//NOTE: This is not a very numerically accurate estimation of the Jacobian, it is mostly optimized for speed. We'll see if it is good enough..
 
-	size_t N = Batch.EquationsODE.Count;
+	const mobius_model *Model = RunState->DataSet->Model;
+
+	size_t N = Batch->EquationsODE.Count;
 	
 	double *FBaseVec = RunState->JacobianTempStorage;
 	double *Backup   = FBaseVec + N;
 	
 	for(size_t Idx = 0; Idx < N; ++Idx)
 	{
-		equation_h Equation = Batch.EquationsODE[Idx];
+		equation_h Equation = Batch->EquationsODE[Idx];
 		RunState->CurResults[Equation.Handle] = X[Idx];
 	}
 	
 	//NOTE: Evaluation of the ODE system at base point. TODO: We should find a way to reuse the calculation we already do at the basepoint, however it is done by a separate callback, so that is tricky..
-	for(equation_h Equation : Batch.Equations)
+	for(equation_h Equation : Batch->Equations)
 	{
 		double ResultValue = CallEquation(Model, RunState, Equation);
 		RunState->CurResults[Equation.Handle] = ResultValue;
@@ -110,7 +112,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 	
 	for(size_t Idx = 0; Idx < N; ++Idx)
 	{
-		equation_h EquationToCall = Batch.EquationsODE[Idx];
+		equation_h EquationToCall = Batch->EquationsODE[Idx];
 		FBaseVec[Idx] = CallEquation(Model, RunState, EquationToCall);
 	}
 
@@ -118,7 +120,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 	
 	for(size_t Col = 0; Col < N; ++Col)
 	{
-		equation_h EquationToPermute = Batch.EquationsODE[Col];
+		equation_h EquationToPermute = Batch->EquationsODE[Col];
 		
 		//Hmm. here we assume we can use the same H for all Fs which may not be a good idea?? But it makes things significantly faster because then we don't have to recompute the non-odes in all cases.
 		double H0 = 1e-6;  //TODO: This should definitely be sensitive to the size of the base values. But how to do that?
@@ -127,9 +129,9 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 		RunState->CurResults[EquationToPermute.Handle] = X[Col] + H;
 		
 #if USE_JACOBIAN_OPTIMIZATION		
-		for(equation_h Equation : Batch.ODEIsDependencyOfNonODE[Col])
+		for(equation_h Equation : Batch->ODEIsDependencyOfNonODE[Col])
 #else
-		for(equation_h Equation : Batch.Equations)
+		for(equation_h Equation : Batch->Equations)
 #endif
 		{
 #if USE_JACOBIAN_OPTIMIZATION
@@ -140,12 +142,12 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 		}
 		
 #if USE_JACOBIAN_OPTIMIZATION
-		for(size_t Row : Batch.ODEIsDependencyOfODE[Col])
+		for(size_t Row : Batch->ODEIsDependencyOfODE[Col])
 #else
 		for(size_t Row = 0; Row < N; ++Row)
 #endif
 		{
-			equation_h EquationToCall = Batch.EquationsODE[Row];
+			equation_h EquationToCall = Batch->EquationsODE[Row];
 		
 			double FBase = FBaseVec[Row]; //NOTE: The value of the EquationToCall at the base point.
 			
@@ -162,7 +164,7 @@ EstimateJacobian(double *X, mobius_matrix_insertion_function & MatrixInserter, c
 		RunState->CurResults[EquationToPermute.Handle] = X[Col];  //NOTE: Reset the value so that it is correct for the next column.
 		
 #if USE_JACOBIAN_OPTIMIZATION
-		for(equation_h Equation : Batch.ODEIsDependencyOfNonODE[Col])
+		for(equation_h Equation : Batch->ODEIsDependencyOfNonODE[Col])
 		{
 			RunState->CurResults[Equation.Handle] = Backup[Equation.Handle];
 		}

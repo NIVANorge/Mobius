@@ -196,16 +196,15 @@ struct module_spec
 };
 
 
-
+struct equation_batch;
 struct model_run_state;
 
 typedef std::function<double(model_run_state *)> mobius_equation;
 
-typedef std::function<void(double *, double *)> mobius_solver_equation_function;
+//typedef std::function<void(double *, double *)> mobius_solver_equation_function;
 typedef std::function<void(size_t, size_t, double)> mobius_matrix_insertion_function;
-typedef std::function<void(double *, mobius_matrix_insertion_function &)> mobius_solver_jacobi_function;
 
-#define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const mobius_solver_equation_function &EquationFunction, const mobius_solver_jacobi_function &JacobiFunction, double AbsErr, double RelErr)
+#define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const equation_batch *Batch, model_run_state *RunState, double AbsErr, double RelErr)
 typedef MOBIUS_SOLVER_FUNCTION(mobius_solver_function);
 
 struct parameter_group_spec

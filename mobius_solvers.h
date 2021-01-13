@@ -1,5 +1,5 @@
 
-// #define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const mobius_solver_equation_function &EquationFunction, const mobius_solver_equation_function &JacobiFunction, double AbsErr, double RelErr)
+//#define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, model_run_state *RunState, equation_batch *Batch, double AbsErr, double RelErr)
 
 #if !defined(MOBIUS_SOLVERS_H)
 
@@ -19,7 +19,7 @@ MOBIUS_SOLVER_FUNCTION(MobiusEulerImpl_)
 			Done = true;
 		}
 		
-		EquationFunction(x0, wk);
+		ODEEquationFunction(x0, wk, RunState, Batch);
 		
 		for(u32 Idx = 0; Idx < n; ++Idx)
 		{
@@ -99,7 +99,7 @@ TT:     h3 = h / 3.0;
         for (sw=0; sw<5; sw++)
         {
 
-            EquationFunction( x0, wk );
+			ODEEquationFunction(x0, wk, RunState, Batch);
 
             for (i=0; i<(int)n; i++)
             {
