@@ -13,4 +13,6 @@ We welcome feedback on the documentation in order to make it more useful. Unless
 
 
 ### Maybe:
-Documentation of individual models. However this is time consuming. Many of these models are published in articles, and you can combine reading those with reading the model source code (under the Modules folder). The source code is often very readable and self-documenting in the choice of variable names.
+Documentation of individual models. See the individual READMEs in the Applications/<model name> folders
+
+Model documentation is time consuming and is ongoing. Many of these models are published in articles, and you can combine reading those with reading the model source code (under the Modules folder). The source code is often very readable and self-documenting.
