@@ -350,6 +350,19 @@ This window has a toolbar with two buttons on its own
 \item Load. You can load the current plot setup from a saved file. Note that the actual time series data will be from the current model run, not the one that was active when the setup was stored. Only the actual plot setup (i.e. name of time series, indexes, plot mode etc.) is stored and loaded.
 \end{enumerate}
 
+\section{Known issues}
+
+Windows 10 may scale the layout of your programs, and for MobiView this can make the window too large for your screen if the screen resolution is not very high. If this happens:
+\begin{itemize}
+\item Right click your desktop, choose 'display settings', then go to 'Change the size of text, apps, and other items' and set it to 100%.
+\end{itemize}
+If this does not work right away, you could try to
+\begin{itemize}
+\item Restart windows
+\item Right click MobiView.exe, then go to Settings$\rightarrow$Compatibility, click 'Change high DPI settings', then check the first box under 'Program DPI', then change 'Use the DPI that's set for my main display when' to 'I open this program'.
+\end{itemize}
+This is not an ideal solution since it also changes the scaling of all your other programs and may make text hard to read. We will try to see if there is a better solution.
+
 \bibliographystyle{plain}
 \bibliography{citations}
 
