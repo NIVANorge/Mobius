@@ -22,9 +22,7 @@ MOBIUS_SOLVER_FUNCTION(MobiusEulerImpl_)
 		ODEEquationFunction(x0, wk, RunState, Batch);
 		
 		for(u32 Idx = 0; Idx < n; ++Idx)
-		{
 			x0[Idx] += use_h*wk[Idx];
-		}
 		
 		if(Done) break;
 		
@@ -46,147 +44,125 @@ MOBIUS_SOLVER_FUNCTION(IncaDascruImpl_)
 {
 	//NOTE: This is the original solver from INCA based on the DASCRU Runge-Kutta 4 solver. See also
 	// Rational Runge-Kutta Methods for Solving Systems of Ordinary Differential Equations, Computing 20, 333-342.
+
+	double hmin = 0.01 * h;   //NOTE: The solver is only allowed to adjust the step length h to be 1/100 of the desired value, not smaller.
+
+	double t = 0.0;           // 0 <= t <= 1 is the time progress of the solver.
 	
-	double x, hmin, xs, hs, q, h3, r, e;
-    int ib1, ib2, sw, i, j, ijk0, ijk1, ijk2, be, bh=1, br=1, bx=1;
+	// Divide up "workspaces" for equation values.
+	double *wk0 = wk + n;
+	double *wk1 = wk0 + n;
+	double *wk2 = wk1 + n;
 
-	//NOTE: Substituting a = 0.0, b = 1.0
-/*
-    if ( a == b )
+	bool Continue = true;
+	
+    while(Continue)
     {
-        for (i=0; i<n; i++)
-        {
-            x0[i] = 0.0;
-        }
+        double t_backup = t;
+		bool StepWasReduced = false;
+		bool StepCanBeReduced = true;
 
-        return;
-    }
-*/
+		for(size_t EqIdx = 0; EqIdx < n; ++EqIdx)
+			wk0[EqIdx] = x0[EqIdx];
 
-    ib1 = n + n;
-    ib2 = ib1 + n;
-    //hmin = 0.01 * fabs( h );
-	hmin = 0.01 * h;
+FT:
+		
+        bool StepCanBeIncreased = true;
 
-/*
-    h = SIGN( fabs( h ), ( b - a ) );
-    x = double( a );
-*/
-	x = 0.0;
-
-    while ( br )
-    {
-        xs = x;
-
-        for (j=0; j<(int)n; j++)
-        {
-            ijk0 = n + j;
-            wk[ijk0] = x0[j];
-        }
-
-FT:     hs = h;
-        //q = x + h - b;
-		q = x + h - 1.0;
-        be = 1;
-
-        if (!((h > 0.0 && q >= 0.0) || (h < 0.0 && q <= 0.0))) goto TT;
-
-        //h = b - x;
-		h = 1.0 - x;
-        br = 0;
-TT:     h3 = h / 3.0;
-
-        for (sw=0; sw<5; sw++)
-        {
-
+		if (h + t > 1.0)
+		{
+			h = 1.0 - t;
+			Continue = false;
+		}
+		
+		for(int SubStep = 0; SubStep < 5; SubStep++)  // TODO: I really want to unroll this loop!
+		{
+			//NOTE: The ODEEquationFunction computes dx/dt at x0 and puts the results in wk.
 			ODEEquationFunction(x0, wk, RunState, Batch);
+			
+			double h3 = h / 3.0;
 
-            for (i=0; i<(int)n; i++)
+            for(size_t EqIdx = 0; EqIdx < n; ++EqIdx)
             {
-                q = h3 * wk[i];
-                ijk0 = n + i;
-                ijk1 = ib1 + i;
-                ijk2 = ib2 + i;
+                double dx0 = h3 * wk[EqIdx];
+				double dx;
 
-                switch( sw )
+                switch(SubStep)
                 {
-                    case 0  :   r = q;
-                                wk[ijk1] = q;
-                                break;
+                    case 0:
+						dx = dx0;
+						wk1[EqIdx] = dx0;
+					break;
 
-                    case 1  :   r = 0.5 * ( q + wk[ijk1] );
-                                break;
+                    case 1:
+						dx = 0.5 * (dx0 + wk1[EqIdx]);
+                    break;
 
-                    case 2  :   r = 3.0 * q;
-                                wk[ijk2] = r;
-                                r= 0.375 * ( r + wk[ijk1] );
-                                break;
+                    case 2:
+						dx = 3.0 * dx0;
+						wk2[EqIdx] = dx;
+						dx = 0.375 * (dx + wk1[EqIdx]);
+					break;
 
-                    case 3  :   r = wk[ijk1] + 4.0 * q;
-                                wk[ijk1] = r;
-                                r = 1.5 * ( r - wk[ijk2] );
-                                break;
+                    case 3:
+						dx = wk1[EqIdx] + 4.0 * dx0;
+						wk1[EqIdx] = dx;
+						dx = 1.5*(dx - wk2[EqIdx]);
+					break;
 
-                    case 4  :   r = 0.5 * ( q + wk[ijk1] );
-                                q = fabs( r + r - 1.5 * ( q + wk[ijk2] ) );
-                                break;
+                    case 4:
+						dx = 0.5 * (dx0 + wk1[EqIdx]);
+					break;
                 }
 
-                x0[i] = wk[ijk0] + r;
+                x0[EqIdx] = wk0[EqIdx] + dx;
 
-                if ( sw == 4 )
+                if(SubStep == 4)
                 {
-                    e = fabs( x0[i] );
-                    r = 0.0005;
+                    double Tol = 0.0005;
+					double abs_x0 = fabs(x0[EqIdx]);
+                    if (abs_x0 >= 0.001) Tol = abs_x0 * 0.0005;
+					
+					double Est = fabs(dx + dx - 1.5 * (dx0 + wk2[EqIdx]));
+					
+                    if (Est < Tol || !StepCanBeReduced)
+					{
+						if (Est >= (0.03125 * Tol))
+							StepCanBeIncreased = false;
+					}
+					else
+					{
+						Continue = true; // If we thought we reached the end of the integration, that may no longer be true since we are reducing the step size.
+						StepWasReduced = true;
+						
+						h = 0.5 * h; // Reduce the step size.
 
-                    if ( e >= 0.001 ) r = e * 0.0005;
-                    if ( q < r || !bx ) goto SXYFV;
+						if(h < hmin)
+						{
+							h = hmin;
+							StepCanBeReduced = false;
+						}
 
-                    br = 1;
-                    bh = 0;
-                    h = 0.5 * h;
+						for (size_t Idx = 0; Idx < n; ++Idx)
+							x0[Idx] = wk0[Idx];
 
-                    if ( fabs(h) < hmin )
-                    {
-						h = hmin;
-						//#define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-                        //h = SIGN( hmin, h ); //NOTE: This is probably unnecessary since we are never solving backwards?? -MDN
-						//#undef SIGN
-                        bx = 0;
-                    }
-
-                    for (j=0; j<(int)n; j++)
-                    {
-                        ijk0 = n + j;
-                        x0[j] = wk[ijk0];
-                    }
-
-                    x = xs;
-                    goto FT;
-
-SXYFV:	            if ( q >= ( 0.03125 * r ) ) be=0;
+						t = t_backup;
+						
+						goto FT;  //TODO: I really don't like this goto, but there is no easy syntax for breaking the outer loop.
+					}
                 }
             }
 
-            if ( sw == 0 ) x = x + h3;
-            if ( sw == 2 ) x = x + 0.5 * h3;
-            if ( sw == 3 ) x = x + 0.5 * h;
+            if(SubStep == 0)      t += h3;
+            else if(SubStep == 2) t += 0.5 * h3;
+            else if(SubStep == 3) t += 0.5 * h;
         }
 
-        if ( be && bh && br )
+        if(StepCanBeIncreased && !StepWasReduced && Continue)
         {
             h = h + h;
-            bx = 1;
+            StepCanBeReduced = true;
         }
-
-        bh = 1;
-    }
-
-    h = hs;
-
-    if ( bx || be )
-    {
-        return;
     }
 }
 

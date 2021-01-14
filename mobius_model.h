@@ -201,7 +201,6 @@ struct model_run_state;
 
 typedef std::function<double(model_run_state *)> mobius_equation;
 
-//typedef std::function<void(double *, double *)> mobius_solver_equation_function;
 typedef std::function<void(size_t, size_t, double)> mobius_matrix_insertion_function;
 
 #define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const equation_batch *Batch, model_run_state *RunState, double AbsErr, double RelErr)

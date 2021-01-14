@@ -13,8 +13,8 @@
 
 #include <boost/numeric/odeint.hpp>
 
-typedef boost::numeric::ublas::vector< double > vec_boost;
-typedef boost::numeric::ublas::matrix< double > mat_boost;
+typedef boost::numeric::ublas::vector<double> vec_boost;
+typedef boost::numeric::ublas::matrix<double> mat_boost;
 
 struct boost_ode_system
 {
@@ -58,11 +58,10 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 	using namespace boost::numeric::odeint;
 	
 	//It is a little stupid that we have to copy the state back and forth, but it seems like we can't create a ublas vector that has an existing pointer as its data (or correct me if I'm wrong!)
+	//TODO: This could probably be done by a memcpy
 	vec_boost X(n);
 	for(size_t Idx = 0; Idx < n; ++Idx)
-	{
 		X[Idx] = x0[Idx];
-	}
 
 	try
 	{
@@ -80,9 +79,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 	//std::cout << "N steps : " << NSteps << std::endl;
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
-	{
 		x0[Idx] = X[Idx];
-	}
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostRosenbrock4)
@@ -99,9 +96,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRK4Impl_)
 	using namespace boost::numeric::odeint;
 	vec_boost X(n);
 	for(size_t Idx = 0; Idx < n; ++Idx)
-	{
 		X[Idx] = x0[Idx];
-	}
 
 	size_t NSteps = integrate_adaptive( 
 			runge_kutta4<vec_boost>(),
@@ -112,9 +107,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRK4Impl_)
 	//std::cout << "N steps : " << NSteps << std::endl;
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
-	{
 		x0[Idx] = X[Idx];
-	}
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostRK4)
@@ -130,9 +123,7 @@ MOBIUS_SOLVER_FUNCTION(BoostCashCarp54Impl_)
 	using namespace boost::numeric::odeint;
 	vec_boost X(n);
 	for(size_t Idx = 0; Idx < n; ++Idx)
-	{
 		X[Idx] = x0[Idx];
-	}
 
 	size_t NSteps = integrate_adaptive( 
 			controlled_runge_kutta<runge_kutta_cash_karp54<vec_boost>>(AbsErr, RelErr),
@@ -143,9 +134,7 @@ MOBIUS_SOLVER_FUNCTION(BoostCashCarp54Impl_)
 	//std::cout << "N steps : " << NSteps << std::endl;
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
-	{
 		x0[Idx] = X[Idx];
-	}
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostCashCarp54)
