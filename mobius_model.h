@@ -205,6 +205,7 @@ typedef std::function<void(size_t, size_t, double)> mobius_matrix_insertion_func
 
 #define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const equation_batch *Batch, model_run_state *RunState, double AbsErr, double RelErr)
 typedef MOBIUS_SOLVER_FUNCTION(mobius_solver_function);
+typedef size_t mobius_solver_space_requirement_function(size_t n);
 
 struct parameter_group_spec
 {
@@ -315,6 +316,7 @@ struct solver_spec
 	parameter_double_h hParam; //What parameter handle to read in h from (if this is provided).
 	
 	mobius_solver_function *SolverFunction;
+	mobius_solver_space_requirement_function *SpaceRequirement;
 	
 	bool UsesErrorControl;
 	bool UsesJacobian;
@@ -1232,6 +1234,11 @@ RegisterSolver(mobius_model *Model, const char *Name, parameter_double_h hParam,
 	solver_h Solver = Model->Solvers.Register(Name);
 	solver_spec &Spec = Model->Solvers[Solver];
 	SetupFunction(&Spec);
+	if(!Spec.SolverFunction)
+		FatalError("The solver algorithm for the solver ", Name, " does not have a SolverFunction!\n");
+	if(!Spec.SpaceRequirement)
+		FatalError("The solver algorithm for the solver ", Name, " does not specify a SpaceRequirement function to say how much storage it needs to be allocated for it.\n");
+	
 	Spec.hParam = hParam;
 	return Solver;
 }

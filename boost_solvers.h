@@ -25,7 +25,7 @@ struct boost_ode_system
 	{
 	}
 	
-	void operator()( const vec_boost &X , vec_boost &DXDT , double /* t */ )
+	void operator()(const vec_boost &X, vec_boost &DXDT, double /* t */)
     {
         ODEEquationFunction((double *)X.data().begin(), (double *)DXDT.data().begin(), RunState, Batch);
     }
@@ -85,6 +85,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostRosenbrock4)
 {
 	SolverSpec->SolverFunction = BoostRosenbrock4Impl_;
+	SolverSpec->SpaceRequirement = [](size_t n)->size_t { return 0; }; //NOTE: It uses its own allocation
 	SolverSpec->UsesJacobian = true;
 	SolverSpec->UsesErrorControl = true;
 }
@@ -113,6 +114,7 @@ MOBIUS_SOLVER_FUNCTION(BoostRK4Impl_)
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostRK4)
 {
 	SolverSpec->SolverFunction = BoostRK4Impl_;
+	SolverSpec->SpaceRequirement = [](size_t n)->size_t { return 0; }; //NOTE: It uses its own allocation
 	SolverSpec->UsesJacobian = false;
 	SolverSpec->UsesErrorControl = false;
 }
@@ -140,6 +142,7 @@ MOBIUS_SOLVER_FUNCTION(BoostCashCarp54Impl_)
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostCashCarp54)
 {
 	SolverSpec->SolverFunction = BoostCashCarp54Impl_;
+	SolverSpec->SpaceRequirement = [](size_t n)->size_t { return 0; }; //NOTE: It uses its own allocation
 	SolverSpec->UsesJacobian = false;
 	SolverSpec->UsesErrorControl = true;
 }

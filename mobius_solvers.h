@@ -33,6 +33,7 @@ MOBIUS_SOLVER_FUNCTION(MobiusEulerImpl_)
 MOBIUS_SOLVER_SETUP_FUNCTION(MobiusEuler)
 {
 	SolverSpec->SolverFunction = MobiusEulerImpl_;
+	SolverSpec->SpaceRequirement = [](size_t n) { return n; };
 	SolverSpec->UsesJacobian = false;
 	SolverSpec->UsesErrorControl = false;
 }
@@ -169,6 +170,7 @@ FT:
 MOBIUS_SOLVER_SETUP_FUNCTION(IncaDascru)
 {
 	SolverSpec->SolverFunction = IncaDascruImpl_;
+	SolverSpec->SpaceRequirement = [](size_t n) { return 4*n; };
 	SolverSpec->UsesJacobian = false;
 	SolverSpec->UsesErrorControl = false; //NOTE: It actually DOES use error control, but the error control is not governed by any externally provided parameters.
 }

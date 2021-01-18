@@ -1912,17 +1912,25 @@ RunModel(mobius_data_set *DataSet)
 	//NOTE: Temporary storage for use by solvers:
 	//TODO: This code should probably be a member function of model_run_state or similar.
 	size_t MaxODECount = 0;
+	size_t MaxNonODECount = 0;
+	size_t SolverTempWorkSpace = 0;
 	for(const equation_batch_group& BatchGroup : Model->BatchGroups)
 	{
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
 			if(IsValid(Batch.Solver))
-				MaxODECount = Max(MaxODECount, Batch.EquationsODE.Count);
+			{
+				size_t ODECount = Batch.EquationsODE.Count;
+				MaxODECount = Max(MaxODECount, ODECount);
+				MaxNonODECount = Max(MaxNonODECount, Batch.Equations.Count);
+				const solver_spec &SolverSpec = Model->Solvers[Batch.Solver];
+				SolverTempWorkSpace = Max(SolverTempWorkSpace, SolverSpec.SpaceRequirement(ODECount));
+			}
 		}
 	}
-	size_t SolverTempWorkSpace = 4*MaxODECount; //TODO: 4*MaxODECount is specifically for IncaDascru. Other solvers may have other needs for storage, so this 4 should not be hard coded. Note however that the Boost solvers use their own storage, so this is not an issue in that case.
-	size_t JacobiTempWorkSpace = MaxODECount + Model->Equations.Count();//MaxNonODECount;
+
+	size_t JacobiTempWorkSpace = MaxODECount + MaxNonODECount;
 	
 	RunState.SolverTempX0          = RunState.BucketMemory.Allocate<double>(MaxODECount);
 	RunState.SolverTempWorkStorage = RunState.BucketMemory.Allocate<double>(SolverTempWorkSpace);
