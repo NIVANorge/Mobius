@@ -15,7 +15,7 @@
 int main()
 {
     const char *InputFile     = "testinputs.dat";
-	const char *ParameterFile = "testparameters_cnratio.dat";
+	const char *ParameterFile = "testparameters_cnratio2.dat";
 	
 	mobius_model *Model = BeginModelDefinition("MAGIC");
 	

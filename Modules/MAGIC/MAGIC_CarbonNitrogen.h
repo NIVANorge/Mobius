@@ -69,7 +69,10 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 		double denitr = PARAMETER(Denitrification);
 		double result = denitr * RESULT(FractionOfYear);
 		double in = RESULT(NO3Inputs);
-		if(denitr < 0.0) result = -denitr*0.01*in;
+		if(denitr < 0.0)
+			result = -denitr*0.01*in;
+		else
+			result = Min(result, in);
 		return result;
 	)
 	
@@ -132,13 +135,13 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	auto OrganicCNDecompositionRatio      = RegisterParameterDouble(Model, CAndN, "Organic C/N decomposition ratio", Dimensionless, 0.1, 0.0001, 100.0, "If 0, use the pool C/N instead");
 	auto InitialOrganicN                  = RegisterParameterDouble(Model, CAndN, "Initial organic N", MolPerM2, 0.0, 0.0, 1e8);
 
-	auto LowerCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NO3 immobilisation", Percent, 0.5, 0.0, 5.0,
+	auto LowerCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NO3 immobilisation", Dimensionless, 0.5, 0.0, 5.0,
 	"C/N below this value - 0% NO3 immobilisation");
-	auto UpperCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NO3 immobilisation", Percent, 0.5, 0.0, 5.0, "C/N above this value - 100% NO3 immobilisation");
+	auto UpperCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NO3 immobilisation", Dimensionless, 0.5, 0.0, 5.0, "C/N above this value - 100% NO3 immobilisation");
 	
-	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NH4 immobilisation", Percent, 0.5, 0.0, 5.0,
+	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NH4 immobilisation", Dimensionless, 0.5, 0.0, 5.0,
 	"C/N below this value - 0% NH4 immobilisation");
-	auto UpperCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NH4 immobilisation", Percent, 0.5, 0.0, 5.0, "C/N above this value - 100% NH4 immobilisation");
+	auto UpperCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NH4 immobilisation", Dimensionless, 0.5, 0.0, 5.0, "C/N above this value - 100% NH4 immobilisation");
 	
 	auto NO3PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NO3 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NH4 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
@@ -191,6 +194,8 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	auto NO3BasicInputs      = GetEquationHandle(Model, "NO3 basic inputs");
 	auto NH4BasicInputs      = GetEquationHandle(Model, "NH4 basic inputs");  
 	
+	auto IsSoil = GetParameterDoubleHandle(Model, "This is a soil compartment");
+	
 	
 	EQUATION(Model, InitialOrganicCScaled,
 		return PARAMETER(InitialOrganicC)*1000.0;
@@ -201,7 +206,9 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, CNRatio,
-		return SafeDivide(LAST_RESULT(OrganicC), LAST_RESULT(OrganicN));
+		double CN = SafeDivide(LAST_RESULT(OrganicC), LAST_RESULT(OrganicN));
+		if(!PARAMETER(IsSoil)) CN = 1.0;  //NOTE: to not cause crashes when we are in water. TODO: Make a conditional to exclude the entire computation in that case.
+		return CN;
 	)
 	
 	EQUATION_OVERRIDE(Model, MineralisationEq,
@@ -215,13 +222,16 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	//TODO: Carbon fixation?
 	
 	EQUATION(Model, OrganicC,
-		return 
-		  LAST_RESULT(OrganicC)
-		+ RESULT(FractionOfYear)*(
+		double dCdt = RESULT(FractionOfYear) * (
 			  PARAMETER(OrganicCInput)
 			+ PARAMETER(OrganicCLitter)
 			- PARAMETER(OrganicCSink)
-			- PARAMETER(OrganicCDecomposition));
+			- PARAMETER(OrganicCDecomposition)
+			);
+		
+		if(!PARAMETER(IsSoil)) dCdt = 0.0; //TODO: make conditional exec instead?
+			
+		return LAST_RESULT(OrganicC) + dCdt;
 	)
 	
 	
@@ -232,9 +242,7 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	
 		//TODO: Needs to be able to do uptake, immob etc in different orders.
 	
-		return
-			  LAST_RESULT(OrganicN)
-			+ RESULT(FractionOfYear)*(
+		double dNdt = RESULT(FractionOfYear)*(
 				+ PARAMETER(OrganicCInput) / PARAMETER(OrganicCNInputRatio)
 				+ PARAMETER(OrganicCLitter) / PARAMETER(OrganicCNLitterRatio)
 				- PARAMETER(OrganicCSink)  / sink_CN
@@ -243,15 +251,19 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 			+ RESULT(NH4ImmobilisationEq)
 			- RESULT(MineralisationEq)
 			- RESULT(OrganicNUptake);
+		
+		if(!PARAMETER(IsSoil)) dNdt = 0.0; //TODO: make conditional exec instead?
+	
+		return LAST_RESULT(OrganicN) + dNdt;
 	)
 	
 	EQUATION(Model, NO3ImmobilisationFraction,
 		//TODO: There should be a retention potential.
-		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNO3Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNO3Immobilisation)*0.01, 0.0, 1.0);
+		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNO3Immobilisation), PARAMETER(UpperCNThresholdForNO3Immobilisation), 0.0, 1.0);
 	)
 	
 	EQUATION(Model, NH4ImmobilisationFraction,
-		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNH4Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNH4Immobilisation)*0.01, 0.0, 1.0);
+		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNH4Immobilisation), PARAMETER(UpperCNThresholdForNH4Immobilisation), 0.0, 1.0);
 	)
 	
 	
@@ -264,11 +276,15 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DesiredNO3Immobilisation,
-		return RESULT(NO3ImmobilisationFraction) * RESULT(NO3Inputs);
+		double immob = RESULT(NO3ImmobilisationFraction) * RESULT(NO3Inputs);
+		if(!PARAMETER(IsSoil)) immob = 0.0;
+		return immob;
 	)
 	
 	EQUATION(Model, DesiredNH4Immobilisation,
-		return RESULT(NH4ImmobilisationFraction) * RESULT(NH4Inputs);
+		double immob = RESULT(NH4ImmobilisationFraction) * RESULT(NH4Inputs);
+		if(!PARAMETER(IsSoil)) immob = 0.0;
+		return immob;
 	)
 	
 	
@@ -330,6 +346,7 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	*/
 	
 	auto Nitrification     = GetParameterDoubleHandle(Model, "Nitrification");
+	auto Denitrification   = GetParameterDoubleHandle(Model, "Denitrification");
 	
 	auto DenitrificationEq = GetEquationHandle(Model, "Denitrification");
 	auto NitrificationEq   = GetEquationHandle(Model, "Nitrification");
@@ -340,7 +357,18 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 		double result = nitr * RESULT(FractionOfYear);
 		double in = RESULT(NH4Inputs) - RESULT(NH4ImmobilisationEq) - RESULT(NH4UptakeEq); //NOTE: immob. and uptake prioritized over nitrification.
 		if(nitr < 0.0)
-			result = -nitr*0.01*in;
+			result = -nitr*0.01*in; //TODO: should this instead be the desired value, and the actual is limited by what remains?
+		else
+			result = Min(result, in);
+		return result;
+	)
+	
+	EQUATION_OVERRIDE(Model, DenitrificationEq,
+		double denitr = PARAMETER(Denitrification);
+		double result = denitr * RESULT(FractionOfYear);
+		double in = RESULT(NO3Inputs) - RESULT(NO3ImmobilisationEq) - RESULT(NO3UptakeEq); //NOTE: immob. and uptake are prioritized over denitrification
+		if(denitr < 0.0)
+			result = -denitr*0.01*in; //TODO: see above!
 		else
 			result = Min(result, in);
 		return result;
