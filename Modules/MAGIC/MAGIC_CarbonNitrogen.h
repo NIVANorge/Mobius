@@ -58,7 +58,10 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 		double nitr = PARAMETER(Nitrification);
 		double result = nitr * RESULT(FractionOfYear);
 		double in = RESULT(NH4Inputs);
-		if(nitr < 0.0) result = -nitr*0.01*in;
+		if(nitr < 0.0)
+			result = -nitr*0.01*in;
+		else
+			result = Min(result, in);
 		return result;
 	)
 	
@@ -139,6 +142,9 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	auto NO3PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NO3 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
 	auto NH4PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NH4 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
+	
+	auto PlantsUseOrganicN                    = RegisterParameterBool(Model, CAndN, "Plants have access to organic nitrogen", true);
+	auto PlantsUseInorganicFirst              = RegisterParameterBool(Model, CAndN, "Plants use inorganic nitrogen before soil", true);
 
 	//NOTE: Mineralisation and immobilisation is instead determined by C/N pool
 	HideParameter(Model, GetParameterHandle(Model, "Mineralisation")); 
@@ -157,13 +163,21 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	SetInitialValue(Model, OrganicN, InitialOrganicNScaled);
 
 	auto NO3ImmobilisationFraction = RegisterEquation(Model, "NO3 immobilisation fraction", Dimensionless);
-	auto NO3ImmobilisationEq       = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
 	auto NH4ImmobilisationFraction = RegisterEquation(Model, "NH4 immobilisation fraction", Dimensionless);
+
+	auto DesiredNO3Uptake          = RegisterEquation(Model, "Desired NO3 plant uptake", MMolPerM2PerTs);
+	auto DesiredNH4Uptake          = RegisterEquation(Model, "Desired NH4 plant uptake", MMolPerM2PerTs);
+	auto DesiredNO3Immobilisation  = RegisterEquation(Model, "Desired NO3 immobilisation", MMolPerM2PerTs);
+	auto DesiredNH4Immobilisation  = RegisterEquation(Model, "Desired NH4 immobilisation", MMolPerM2PerTs);
+	
+	auto NO3ImmobilisationEq       = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
 	auto NH4ImmobilisationEq       = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
 	auto CNRatio                   = RegisterEquation(Model, "Pool C/N ratio", Dimensionless);
-
+	
 	auto NO3UptakeEq               = RegisterEquation(Model, "NO3 plant uptake", MMolPerM2PerTs);
 	auto NH4UptakeEq               = RegisterEquation(Model, "NH4 plant uptake", MMolPerM2PerTs);
+	
+	auto OrganicNUptake            = RegisterEquation(Model, "Organic N uptake", MMolPerM2PerTs);
 
 	//NOTE: The following 4 are required as an "interface" to the rest of the MAGIC model
 	// We take ownership of them from the simple model
@@ -227,15 +241,8 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 				)
 			+ RESULT(NO3ImmobilisationEq)
 			+ RESULT(NH4ImmobilisationEq)
-			- RESULT(MineralisationEq);
-	)
-	
-	EQUATION(Model, NO3UptakeEq,
-		return RESULT(FractionOfYear) * PARAMETER(NO3PlantUptake);
-	)
-	
-	EQUATION(Model, NH4UptakeEq,
-		return RESULT(FractionOfYear) * PARAMETER(NH4PlantUptake);
+			- RESULT(MineralisationEq)
+			- RESULT(OrganicNUptake);
 	)
 	
 	EQUATION(Model, NO3ImmobilisationFraction,
@@ -247,13 +254,68 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNH4Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNH4Immobilisation)*0.01, 0.0, 1.0);
 	)
 	
-	EQUATION_OVERRIDE(Model, NH4ImmobilisationEq,
-		return RESULT(FractionOfYear) * RESULT(NH4ImmobilisationFraction) * RESULT(NH4Inputs);
+	
+	EQUATION(Model, DesiredNO3Uptake,
+		return RESULT(FractionOfYear) * PARAMETER(NO3PlantUptake);
 	)
 	
-	EQUATION_OVERRIDE(Model, NO3ImmobilisationEq,
-		return RESULT(FractionOfYear) * RESULT(NO3ImmobilisationFraction) * RESULT(NO3Inputs);
+	EQUATION(Model, DesiredNH4Uptake,
+		return RESULT(FractionOfYear) * PARAMETER(NH4PlantUptake);
 	)
+	
+	EQUATION(Model, DesiredNO3Immobilisation,
+		return RESULT(NO3ImmobilisationFraction) * RESULT(NO3Inputs);
+	)
+	
+	EQUATION(Model, DesiredNH4Immobilisation,
+		return RESULT(NH4ImmobilisationFraction) * RESULT(NH4Inputs);
+	)
+	
+	
+	EQUATION(Model, NO3UptakeEq,
+		double in = RESULT(NO3Inputs);
+		double desired_uptake = RESULT(DesiredNO3Uptake);
+		double desired_immob = Min(in, RESULT(DesiredNO3Immobilisation));
+		if(!PARAMETER(PlantsUseInorganicFirst))
+			in -= desired_immob;
+		return Min(in, desired_uptake);
+	)
+	
+	EQUATION(Model, NH4UptakeEq,
+		double in = RESULT(NH4Inputs);
+		double desired_uptake = RESULT(DesiredNH4Uptake);
+		double desired_immob = Min(in, RESULT(DesiredNH4Immobilisation));
+		if(!PARAMETER(PlantsUseInorganicFirst))
+			in -= desired_immob;
+		return Min(in, desired_uptake);
+	)
+	
+	
+	EQUATION_OVERRIDE(Model, NO3ImmobilisationEq,
+		double in = RESULT(NO3Inputs);
+		double desired_immob = RESULT(DesiredNO3Immobilisation);
+		double desired_uptake = Min(in, RESULT(DesiredNO3Uptake));
+		if(PARAMETER(PlantsUseInorganicFirst))
+			in -= desired_uptake;
+		return Min(in, desired_immob);
+	)
+	
+	EQUATION_OVERRIDE(Model, NH4ImmobilisationEq,
+		double in = RESULT(NH4Inputs);
+		double desired_immob = RESULT(DesiredNH4Immobilisation);
+		double desired_uptake = Min(in, RESULT(DesiredNH4Uptake));
+		if(PARAMETER(PlantsUseInorganicFirst))
+			in -= desired_uptake;
+		return Min(in, desired_immob);
+	)
+	
+	EQUATION(Model, OrganicNUptake,
+		double pot = (RESULT(DesiredNO3Uptake) - RESULT(NO3UptakeEq)) + (RESULT(DesiredNH4Uptake) - RESULT(NH4UptakeEq));
+		if(!PARAMETER(PlantsUseOrganicN))
+			pot = 0.0;
+		return pot;
+	)
+	
 	
 	/*
 	//TODO: These seem to remain the same?
@@ -267,8 +329,22 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	*/
 	
+	auto Nitrification     = GetParameterDoubleHandle(Model, "Nitrification");
+	
 	auto DenitrificationEq = GetEquationHandle(Model, "Denitrification");
 	auto NitrificationEq   = GetEquationHandle(Model, "Nitrification");
+	
+	
+	EQUATION_OVERRIDE(Model, NitrificationEq,
+		double nitr = PARAMETER(Nitrification);
+		double result = nitr * RESULT(FractionOfYear);
+		double in = RESULT(NH4Inputs) - RESULT(NH4ImmobilisationEq) - RESULT(NH4UptakeEq); //NOTE: immob. and uptake prioritized over nitrification.
+		if(nitr < 0.0)
+			result = -nitr*0.01*in;
+		else
+			result = Min(result, in);
+		return result;
+	)
 	
 	EQUATION_OVERRIDE(Model, NO3ProcessesLoss,
 		return RESULT(DenitrificationEq) + RESULT(NO3ImmobilisationEq) + RESULT(NO3UptakeEq);

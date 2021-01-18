@@ -207,6 +207,18 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 				return false;
 			}
 		}
+		//NOTE: In an initial value setting, a LAST_RESULT is the same time step as a RESULT
+		for(equation_h Dependency : Spec.DirectLastResultDependencies)
+		{
+			if(Dependency == Equation) continue; //It doesn't matter if we depend on ourselves.
+			
+			bool Success = TopologicalSortEquationsInitialValueVisit(Model, Dependency, PushTo);
+			if(!Success)
+			{
+				PrintPartialDependencyTrace(Model, Equation);
+				return false;
+			}
+		}
 	}
 	
 	Spec.Visited = true;
@@ -1632,6 +1644,10 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 		Initial = Model->EquationBodies[Equation.Handle](RunState);
 	
 	size_t ResultStorageLocation = DataSet->ResultStorageStructure.LocationOfHandleInUnit[Equation.Handle];
+	
+#if MOBIUS_TEST_FOR_NAN
+	NaNTest(Model, RunState, Initial, Equation);
+#endif
 	
 	RunState->AtResult[ResultStorageLocation] = Initial;
 	RunState->CurResults[Equation.Handle] = Initial;

@@ -45,9 +45,9 @@ MOBIUS_SOLVER_FUNCTION(IncaDascruImpl_)
 	//NOTE: This is the original solver from INCA based on the DASCRU Runge-Kutta 4 solver. See also
 	// Rational Runge-Kutta Methods for Solving Systems of Ordinary Differential Equations, Computing 20, 333-342.
 
-	double hmin = 0.01 * h;   //NOTE: The solver is only allowed to adjust the step length h to be 1/100 of the desired value, not smaller.
+	double hmin = 0.01 * h;	  //NOTE: The solver is only allowed to adjust the step length h to be 1/100 of the desired value, not smaller.
 
-	double t = 0.0;           // 0 <= t <= 1 is the time progress of the solver.
+	double t = 0.0;			  // 0 <= t <= 1 is the time progress of the solver.
 	
 	// Divide up "workspaces" for equation values.
 	double *wk0 = wk + n;
@@ -56,9 +56,9 @@ MOBIUS_SOLVER_FUNCTION(IncaDascruImpl_)
 
 	bool Continue = true;
 	
-    while(Continue)
-    {
-        double t_backup = t;
+	while(Continue)
+	{
+		double t_backup = t;
 		bool StepWasReduced = false;
 		bool StepCanBeReduced = true;
 
@@ -67,7 +67,7 @@ MOBIUS_SOLVER_FUNCTION(IncaDascruImpl_)
 
 FT:
 		
-        bool StepCanBeIncreased = true;
+		bool StepCanBeIncreased = true;
 
 		if (h + t > 1.0)
 		{
@@ -82,50 +82,50 @@ FT:
 			
 			double h3 = h / 3.0;
 
-            for(size_t EqIdx = 0; EqIdx < n; ++EqIdx)
-            {
-                double dx0 = h3 * wk[EqIdx];
+			for(size_t EqIdx = 0; EqIdx < n; ++EqIdx)
+			{
+				double dx0 = h3 * wk[EqIdx];
 				double dx;
 
-                switch(SubStep)
-                {
-                    case 0:
+				switch(SubStep)
+				{
+					case 0:
 						dx = dx0;
 						wk1[EqIdx] = dx0;
 					break;
 
-                    case 1:
+					case 1:
 						dx = 0.5 * (dx0 + wk1[EqIdx]);
-                    break;
+					break;
 
-                    case 2:
+					case 2:
 						dx = 3.0 * dx0;
 						wk2[EqIdx] = dx;
 						dx = 0.375 * (dx + wk1[EqIdx]);
 					break;
 
-                    case 3:
+					case 3:
 						dx = wk1[EqIdx] + 4.0 * dx0;
 						wk1[EqIdx] = dx;
 						dx = 1.5*(dx - wk2[EqIdx]);
 					break;
 
-                    case 4:
+					case 4:
 						dx = 0.5 * (dx0 + wk1[EqIdx]);
 					break;
-                }
+				}
 
-                x0[EqIdx] = wk0[EqIdx] + dx;
+				x0[EqIdx] = wk0[EqIdx] + dx;
 
-                if(SubStep == 4)
-                {
-                    double Tol = 0.0005;
+				if(SubStep == 4)
+				{
+					double Tol = 0.0005;
 					double abs_x0 = fabs(x0[EqIdx]);
-                    if (abs_x0 >= 0.001) Tol = abs_x0 * 0.0005;
+					if (abs_x0 >= 0.001) Tol = abs_x0 * 0.0005;
 					
 					double Est = fabs(dx + dx - 1.5 * (dx0 + wk2[EqIdx]));
 					
-                    if (Est < Tol || !StepCanBeReduced)
+					if (Est < Tol || !StepCanBeReduced)
 					{
 						if (Est >= (0.03125 * Tol))
 							StepCanBeIncreased = false;
@@ -150,20 +150,20 @@ FT:
 						
 						goto FT;  //TODO: I really don't like this goto, but there is no easy syntax for breaking the outer loop.
 					}
-                }
-            }
+				}
+			}
 
-            if(SubStep == 0)      t += h3;
-            else if(SubStep == 2) t += 0.5 * h3;
-            else if(SubStep == 3) t += 0.5 * h;
-        }
+			if(SubStep == 0)	  t += h3;
+			else if(SubStep == 2) t += 0.5 * h3;
+			else if(SubStep == 3) t += 0.5 * h;
+		}
 
-        if(StepCanBeIncreased && !StepWasReduced && Continue)
-        {
-            h = h + h;
-            StepCanBeReduced = true;
-        }
-    }
+		if(StepCanBeIncreased && !StepWasReduced && Continue)
+		{
+			h = h + h;
+			StepCanBeReduced = true;
+		}
+	}
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(IncaDascru)

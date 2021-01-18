@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev, MAGIC simple carbon and nitrogen V_dev, MAGIC C/N ratio carbon and nitrogen V_dev) at 2021-01-15 13:17:20
+# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev, MAGIC simple carbon and nitrogen V_dev, MAGIC C/N ratio carbon and nitrogen V_dev) at 2021-01-18 12:03:53
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -320,4 +320,10 @@ true
 
 "NH4 plant uptake" :     #(mmol/m2/year) [0, 1000]
 0
+
+"Plants have access to organic nitrogen" :
+true
+
+"Plants use inorganic nitrogen before soil" :
+true
 
