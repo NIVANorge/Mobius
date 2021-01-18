@@ -1001,6 +1001,14 @@ ParameterIsComputedBy(mobius_model *Model, parameter_h Parameter, equation_h Equ
 	Spec.ShouldNotBeExposed = ShouldNotBeExposed;
 }
 
+inline void
+HideParameter(mobius_model *Model, parameter_h Parameter, bool ShouldNotBeExposed=true)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	Model->Parameters[Parameter].ShouldNotBeExposed = ShouldNotBeExposed;
+}
+
 
 inline void
 SetEquation(mobius_model *Model, equation_h Equation, mobius_equation EquationBody, bool Override = false)

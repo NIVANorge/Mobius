@@ -1,5 +1,9 @@
 
 
+
+//TODO: There is some overlap between these. We should factor some of it out.
+
+
 static void
 AddSimpleMagicCarbonNitrogenModel(mobius_model *Model)
 {
@@ -32,6 +36,7 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 	auto DenitrificationEq   = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
 	auto NO3ImmobilisationEq = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
 	auto NH4ImmobilisationEq = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
+	auto MineralisationEq    = RegisterEquation(Model, "Mineralisation", MMolPerM2PerTs);
 	
 	auto FractionOfYear = GetEquationHandle(Model, "Fraction of year");
 	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 basic inputs");
@@ -42,7 +47,11 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 	)
 	
 	EQUATION(Model, NH4Inputs,
-		return RESULT(NH4BasicInputs) + RESULT(FractionOfYear) * PARAMETER(Mineralisation);
+		return RESULT(NH4BasicInputs) + RESULT(MineralisationEq);
+	)
+	
+	EQUATION(Model, MineralisationEq,
+		return RESULT(FractionOfYear) * PARAMETER(Mineralisation);
 	)
 	
 	EQUATION(Model, NitrificationEq,
@@ -83,6 +92,190 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 	
 	EQUATION(Model, NH4ProcessesLoss,
 		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq);
+	)
+	
+	
+	EndModule(Model);
+}
+
+static void
+AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
+{
+	AddSimpleMagicCarbonNitrogenModel(Model);
+	
+	BeginModule(Model, "MAGIC C/N ratio carbon and nitrogen", "_dev");
+	
+	auto Dimensionless    = RegisterUnit(Model);
+	auto Percent          = RegisterUnit(Model, "%");
+	auto MolPerM2         = RegisterUnit(Model, "mol/m2");
+	auto MMolPerM2        = RegisterUnit(Model, "mmol/m2");
+	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
+	auto MMolPerM2PerTs   = RegisterUnit(Model, "mmol/m2/month");
+	auto MolPerMol        = RegisterUnit(Model, "mol/mol");
+	
+	auto Compartment = GetIndexSetHandle(Model, "Compartment");
+	//NOTE: this transfers ownership of this group from the simple module to this module.
+	auto CAndN              = RegisterParameterGroup(Model, "Carbon and Nitrogen by compartment", Compartment);
+	
+	auto OrganicCInput                    = RegisterParameterDouble(Model, CAndN, "Organic C input", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	auto OrganicCLitter                   = RegisterParameterDouble(Model, CAndN, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	auto OrganicCSink                     = RegisterParameterDouble(Model, CAndN, "Organic C sink", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	auto OrganicCDecomposition            = RegisterParameterDouble(Model, CAndN, "Organic C decomposition", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	auto InitialOrganicC                  = RegisterParameterDouble(Model, CAndN, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8);
+
+	auto OrganicCNInputRatio              = RegisterParameterDouble(Model, CAndN, "Organic C/N input ratio", Dimensionless, 0.1, 0.0001, 100.0);
+	auto OrganicCNLitterRatio             = RegisterParameterDouble(Model, CAndN, "Organic C/N litter ratio", Dimensionless, 0.1, 0.0001, 100.0);
+	auto OrganicCNSinkRatio               = RegisterParameterDouble(Model, CAndN, "Organic C/N sink ratio", Dimensionless, 0.1, 0.0001, 100.0, "If 0, use the pool C/N instead");
+	auto OrganicCNDecompositionRatio      = RegisterParameterDouble(Model, CAndN, "Organic C/N decomposition ratio", Dimensionless, 0.1, 0.0001, 100.0, "If 0, use the pool C/N instead");
+	auto InitialOrganicN                  = RegisterParameterDouble(Model, CAndN, "Initial organic N", MolPerM2, 0.0, 0.0, 1e8);
+
+	auto LowerCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NO3 immobilisation", Percent, 0.5, 0.0, 5.0,
+	"C/N below this value - 0% NO3 immobilisation");
+	auto UpperCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NO3 immobilisation", Percent, 0.5, 0.0, 5.0, "C/N above this value - 100% NO3 immobilisation");
+	
+	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NH4 immobilisation", Percent, 0.5, 0.0, 5.0,
+	"C/N below this value - 0% NH4 immobilisation");
+	auto UpperCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NH4 immobilisation", Percent, 0.5, 0.0, 5.0, "C/N above this value - 100% NH4 immobilisation");
+	
+	auto NO3PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NO3 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
+	auto NH4PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NH4 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
+
+	//NOTE: Mineralisation and immobilisation is instead determined by C/N pool
+	HideParameter(Model, GetParameterHandle(Model, "Mineralisation")); 
+	HideParameter(Model, GetParameterHandle(Model, "NO3 immobilisation"));
+	HideParameter(Model, GetParameterHandle(Model, "NH4 immobilisation"));
+
+	//NOTE: Takes ownership of this one from the simple module:
+	auto MineralisationEq          = RegisterEquation(Model, "Mineralisation", MMolPerM2PerTs);
+
+	auto InitialOrganicCScaled     = RegisterEquationInitialValue(Model, "Initial organic C", MMolPerM2);
+	auto OrganicC                  = RegisterEquation(Model, "Organic C", MMolPerM2);
+	SetInitialValue(Model, OrganicC, InitialOrganicCScaled);
+	
+	auto InitialOrganicNScaled     = RegisterEquationInitialValue(Model, "Initial organic N", MMolPerM2);
+	auto OrganicN                  = RegisterEquation(Model, "Organic N", MMolPerM2);
+	SetInitialValue(Model, OrganicN, InitialOrganicNScaled);
+
+	auto NO3ImmobilisationFraction = RegisterEquation(Model, "NO3 immobilisation fraction", Dimensionless);
+	auto NO3ImmobilisationEq       = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
+	auto NH4ImmobilisationFraction = RegisterEquation(Model, "NH4 immobilisation fraction", Dimensionless);
+	auto NH4ImmobilisationEq       = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
+	auto CNRatio                   = RegisterEquation(Model, "Pool C/N ratio", Dimensionless);
+
+	auto NO3UptakeEq               = RegisterEquation(Model, "NO3 plant uptake", MMolPerM2PerTs);
+	auto NH4UptakeEq               = RegisterEquation(Model, "NH4 plant uptake", MMolPerM2PerTs);
+
+	//NOTE: The following 4 are required as an "interface" to the rest of the MAGIC model
+	// We take ownership of them from the simple model
+	auto NO3Inputs           = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
+	auto NH4Inputs           = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
+	auto NO3ProcessesLoss    = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
+	auto NH4ProcessesLoss    = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
+	
+	//NOTE: The following is provided by the driver
+	auto FractionOfYear      = GetEquationHandle(Model, "Fraction of year");
+	auto NO3BasicInputs      = GetEquationHandle(Model, "NO3 basic inputs");
+	auto NH4BasicInputs      = GetEquationHandle(Model, "NH4 basic inputs");  
+	
+	
+	EQUATION(Model, InitialOrganicCScaled,
+		return PARAMETER(InitialOrganicC)*1000.0;
+	)
+	
+	EQUATION(Model, InitialOrganicNScaled,
+		return PARAMETER(InitialOrganicN)*1000.0;
+	)
+	
+	EQUATION(Model, CNRatio,
+		return SafeDivide(LAST_RESULT(OrganicC), LAST_RESULT(OrganicN));
+	)
+	
+	EQUATION_OVERRIDE(Model, MineralisationEq,
+		double decomp_CN = PARAMETER(OrganicCNDecompositionRatio);
+		double pool_CN   = RESULT(CNRatio);
+		if(decomp_CN == 0.0) decomp_CN = pool_CN;
+		
+		return RESULT(FractionOfYear) * PARAMETER(OrganicCDecomposition) / decomp_CN;
+	)
+	
+	//TODO: Carbon fixation?
+	
+	EQUATION(Model, OrganicC,
+		return 
+		  LAST_RESULT(OrganicC)
+		+ RESULT(FractionOfYear)*(
+			  PARAMETER(OrganicCInput)
+			+ PARAMETER(OrganicCLitter)
+			- PARAMETER(OrganicCSink)
+			- PARAMETER(OrganicCDecomposition));
+	)
+	
+	
+	EQUATION(Model, OrganicN,
+		double sink_CN = PARAMETER(OrganicCNSinkRatio);
+		double pool_CN = RESULT(CNRatio);
+		if(sink_CN == 0.0) sink_CN = pool_CN;
+	
+		//TODO: Needs to be able to do uptake, immob etc in different orders.
+	
+		return
+			  LAST_RESULT(OrganicN)
+			+ RESULT(FractionOfYear)*(
+				+ PARAMETER(OrganicCInput) / PARAMETER(OrganicCNInputRatio)
+				+ PARAMETER(OrganicCLitter) / PARAMETER(OrganicCNLitterRatio)
+				- PARAMETER(OrganicCSink)  / sink_CN
+				)
+			+ RESULT(NO3ImmobilisationEq)
+			+ RESULT(NH4ImmobilisationEq)
+			- RESULT(MineralisationEq);
+	)
+	
+	EQUATION(Model, NO3UptakeEq,
+		return RESULT(FractionOfYear) * PARAMETER(NO3PlantUptake);
+	)
+	
+	EQUATION(Model, NH4UptakeEq,
+		return RESULT(FractionOfYear) * PARAMETER(NH4PlantUptake);
+	)
+	
+	EQUATION(Model, NO3ImmobilisationFraction,
+		//TODO: There should be a retention potential.
+		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNO3Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNO3Immobilisation)*0.01, 0.0, 1.0);
+	)
+	
+	EQUATION(Model, NH4ImmobilisationFraction,
+		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNH4Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNH4Immobilisation)*0.01, 0.0, 1.0);
+	)
+	
+	EQUATION_OVERRIDE(Model, NH4ImmobilisationEq,
+		return RESULT(FractionOfYear) * RESULT(NH4ImmobilisationFraction) * RESULT(NH4Inputs);
+	)
+	
+	EQUATION_OVERRIDE(Model, NO3ImmobilisationEq,
+		return RESULT(FractionOfYear) * RESULT(NO3ImmobilisationFraction) * RESULT(NO3Inputs);
+	)
+	
+	/*
+	//TODO: These seem to remain the same?
+	
+	EQUATION_OVERRIDE(Model, NO3Inputs,
+		return RESULT(NO3BasicInputs) + RESULT(NitrificationEq);
+	)
+	
+	EQUATION_OVERRIDE(Model, NH4Inputs,
+		return RESULT(NH4BasicInputs) + RESULT(MineralisationEq);
+	)
+	*/
+	
+	auto DenitrificationEq = GetEquationHandle(Model, "Denitrification");
+	auto NitrificationEq   = GetEquationHandle(Model, "Nitrification");
+	
+	EQUATION_OVERRIDE(Model, NO3ProcessesLoss,
+		return RESULT(DenitrificationEq) + RESULT(NO3ImmobilisationEq) + RESULT(NO3UptakeEq);
+	)
+	
+	EQUATION_OVERRIDE(Model, NH4ProcessesLoss,
+		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq) + RESULT(NH4UptakeEq);
 	)
 	
 	
@@ -148,7 +341,6 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	SetInitialValue(Model, PoolCN, InitialPoolCN);
 	
 	EQUATION(Model, InitialOrganicCScaled,
-		std::cout << "org c init " << PARAMETER(InitialOrganicC)*1000.0 << '\n';
 		return PARAMETER(InitialOrganicC)*1000.0;
 	)
 	
@@ -393,96 +585,3 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	EndModule(Model);
 }
-
-
-/*
-	auto OrganicCInput                    = RegisterParameterDouble(Model, CAndN, "Organic C input", MMolPerM2PerYear, 0.0, 0.0, 1e6); 
-	auto OrganicCSink                     = RegisterParameterDouble(Model, CAndN, "Organic C sink", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	auto OrganicCDecomposition            = RegisterParameterDouble(Model, CAndN, "Organic C decomposition", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	auto InitialOrganicC                  = RegisterParameterDouble(Model, CAndN, "Initial organic C", MMolPerM2, 0.0, 0.0, 1e8);
-
-	auto OrganicCNInputRatio              = RegisterParameterDouble(Model, CAndN, "Organic C/N input ratio", Dimensionless, 0.1, 0.0001, 5.0);
-	auto OrganicCNSinkRatio               = RegisterParameterDouble(Model, CAndN, "Organic C/N sink ratio", Dimensionless, 0.1, 0.0001, 5.0);
-	auto OrganicCNDecompositionRation     = RegisterParameterDouble(Model, CAndN, "Organic C/N decomposition ratio", Dimensionless, 0.1, 0.0001, 5.0);
-	auto InitialOrganicN                  = RegisterParameterDouble(Model, CAndN, "Initial organic N", MMolPerM2, 0.0, 0.0, 1e8);
-
-	auto UpperCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NO3 immobilisation", Percent, 0.5, 0.0, 5.0, "C/N above this value - 100% NO3 immobilisation");
-	auto UpperCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Upper C/N threshold for NH4 immobilisation", Percent, 0.5, 0.0, 5.0, "C/N above this value - 100% NH4 immobilisation");
-	auto LowerCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NO3 immobilisation", Percent, 0.5, 0.0, 5.0,
-	"C/N below this value - 0% NO3 immobilisation");
-	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CAndN, "Lower C/N threshold for NH4 immobilisation", Percent, 0.5, 0.0, 5.0,
-	"C/N below this value - 0% NH4 immobilisation");
-	
-	auto NO3PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NO3 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
-	auto NH4PlantUptake                       = RegisterParameterDouble(Model, CAndN, "NH4 plant uptake", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
-	auto Nitrification                        = RegisterParameterDouble(Model, CAndN, "Nitrification", MEqPerM2PerYear, 0.0, 0.0, 1000.0);
-	auto Denitrification                      = RegisterParameterDouble(Model, CAndN, "Denitrification", MEqPerM2PerYear, 0.0, 0.0, 1000.0);
-
-	auto OrganicNMineralisation    = RegisterEquation(Model, "Organic N mineralisation", MMolPerM2PerYear);
-
-	auto OrganicC                  = RegisterEquationODE(Model, "Organic C", MMolPerM2, CompartmentSolver);
-	SetInitialValue(Model, OrganicC, InitialOrganicC);
-	
-	auto OrganicN                  = RegisterEquationODE(Model, "Organic N", MMolPerM2, CompartmentSolver);
-	SetInitialValue(Model, OrganicN, InitialOrganicN);
-
-	auto NO3ImmobilisationFraction = RegisterEquation(Model, "NO3 immobilisation fraction", Dimensionless, CompartmentSolver);
-	auto NO3Immobilisation         = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerYear, CompartmentSolver);
-	auto NH4ImmobilisationFraction = RegisterEquation(Model, "NH4 immobilisation fraction", Dimensionless, CompartmentSolver);
-	auto NH4Immobilisation         = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerYear, CompartmentSolver);
-	auto CNRatio                   = RegisterEquation(Model, "C/N ratio", Dimensionless, CompartmentSolver);
-	
-	auto NO3ExternalFluxWithoutImmobilisation = RegisterEquation(Model, "NO3 flux disregarding discharge and immobilisation", MEqPerM2PerTs);
-	auto NH4ExternalFluxWithoutImmobilisation = RegisterEquation(Model, "NH4 flux disregarding discharge and immobilisation", MEqPerM2PerTs);
-	*/
-	
-	/*
-	
-	EQUATION(Model, OrganicNMineralisation,
-		return PARAMETER(OrganicCDecomposition) / PARAMETER(OrganicCNDecompositionRation);
-	)
-	
-	EQUATION(Model, OrganicC,
-		return RESULT(FractionOfYear)*(PARAMETER(OrganicCInput) - PARAMETER(OrganicCSink) - PARAMETER(OrganicCDecomposition));
-	)
-	
-	//TODO: Needs modification for uptake etc.
-	EQUATION(Model, OrganicN,
-		return
-			  RESULT(FractionOfYear)*(
-				  RESULT(NO3Immobilisation)
-				+ RESULT(NH4Immobilisation)
-				- RESULT(OrganicNMineralisation)
-				+ PARAMETER(OrganicCInput) / PARAMETER(OrganicCNInputRatio)
-				- PARAMETER(OrganicCSink)  / PARAMETER(OrganicCNSinkRatio));
-	)
-	
-	EQUATION(Model, CNRatio,
-		return SafeDivide(RESULT(OrganicC), RESULT(OrganicN));
-	)
-	
-	EQUATION(Model, NO3ImmobilisationFraction,
-		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNO3Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNO3Immobilisation)*0.01, 0.0, 1.0);
-	)
-	
-	EQUATION(Model, NH4ImmobilisationFraction,
-		return LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNH4Immobilisation)*0.01, PARAMETER(UpperCNThresholdForNH4Immobilisation)*0.01, 0.0, 1.0);
-	)
-	
-	EQUATION(Model, NO3ExternalFluxWithoutImmobilisation,
-		return RESULT(NH4Deposition) + PARAMETER(NH4Weathering)*RESULT(FractionOfYear);   // sources+sinks, uptake etc.
-	)
-	
-	EQUATION(Model, NH4ExternalFluxWithoutImmobilisation,
-		return RESULT(NO3Deposition) + PARAMETER(NO3Weathering)*RESULT(FractionOfYear);   // sources+sinks, uptake etc.
-	)
-	
-	EQUATION(Model, NO3Immobilisation,
-		return RESULT(NO3ImmobilisationFraction) * RESULT(NO3ExternalFluxWithoutImmobilisation);
-	)
-	
-	EQUATION(Model, NH4Immobilisation,
-		return RESULT(NH4ImmobilisationFraction) * RESULT(NH4ExternalFluxWithoutImmobilisation);
-	)
-
-	*/

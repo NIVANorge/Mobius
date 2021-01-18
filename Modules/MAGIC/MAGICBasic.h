@@ -328,19 +328,19 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	)	
 	
 	EQUATION(Model, NO3ExternalFlux,
-		double in = RESULT(NO3Inputs);
+		double in = RESULT(NO3Inputs) - RESULT(NO3ProcessesLoss);;
 		double sink = PARAMETER(NO3Sinks);
 		double sink2 = sink*RESULT(FractionOfYear);
 		if(sink < 0.0) sink2 = -sink*0.01*in;
-		return in - sink2 - RESULT(NO3ProcessesLoss);
+		return in - sink2;
 	)
 	
 	EQUATION(Model, NH4ExternalFlux,
-		double in = RESULT(NH4Inputs);
+		double in = RESULT(NH4Inputs) - RESULT(NH4ProcessesLoss);
 		double sink = PARAMETER(NH4Sinks);
 		double sink2 = sink*RESULT(FractionOfYear);
 		if(sink < 0.0) sink2 = -sink*0.01*in;
-		return in - sink2 - RESULT(NH4ProcessesLoss);
+		return in - sink2;
 	)
 	
 	EQUATION(Model, NO3BasicInputs,
