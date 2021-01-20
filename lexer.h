@@ -347,7 +347,7 @@ token_stream::ReadTokenInternal_()
 		}
 		else if(Token.Type == TokenType_UnquotedString)
 		{
-			if(!IsIdentifier(c))
+			if(!IsIdentifier(c) && !isdigit(c))
 			{
 				// NOTE: We assume that the latest read char was the start of another token, so go back one char to make the position correct for the next call to ReadTokenInternal_.
 				if(c == '\n')

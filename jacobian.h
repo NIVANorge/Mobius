@@ -103,7 +103,7 @@ EstimateJacobian(double *X, const mobius_matrix_insertion_function &MatrixInsert
 		RunState->CurResults[Equation.Handle] = X[Idx];
 	}
 	
-	//NOTE: Evaluation of the ODE system at base point. TODO: We should find a way to reuse the calculation we already do at the basepoint, however it is done by a separate callback, so that is tricky..
+	//NOTE: Evaluation of the ODE system at base point. TODO: We should find a way to reuse the calculation we already do at the basepoint, however it is done by a separate call, so that is tricky..
 	for(equation_h Equation : Batch->Equations)
 	{
 		double ResultValue = CallEquation(Model, RunState, Equation);

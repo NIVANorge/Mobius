@@ -94,7 +94,7 @@ template <typename handle_type, typename spec_type>
 struct entity_registry
 {
 	std::vector<spec_type> Specs;
-	string_map<handle_type> NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"]].Name == "Some name";
+	string_map<handle_type> NameToHandle;   // Entries are organized so that Specs[NameToHandle["Some name"].Handle].Name == "Some name";
 	
 	entity_registry() { Specs.push_back({}); } //NOTE: Reserving the 0 index as an invalid index. TODO: Should maybe use U32_MAX instead, but would require some rework, and 0 is safer since we can then just 0-initialize everything.
 	
@@ -130,7 +130,7 @@ union parameter_value
 {
 	double ValDouble;
 	u64 ValUInt;
-	u64 ValBool; //NOTE: Since this is a union we don't save space by making the bool smaller any way.
+	u64 ValBool;      //NOTE: Since this is a union we don't save space by making the bool smaller any way.
 	datetime ValTime; //NOTE: From datetime.h
 	
 	parameter_value() : ValTime() {}; //NOTE: 0-initializes it.
@@ -947,7 +947,10 @@ RegisterParameterEnum(mobius_model *Model, parameter_group_h Group, const char *
 	parameter_value Max_;     Max_.ValUInt = (u64)EnumNames.size();
 	
 	if(EnumNames.size() == 0)
+	{
+		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: The enum parameter \"", Name, "\" was registered with 0 possible enum values. It has to have at least 1.\n");
+	}
 	
 	parameter_h Parameter = RegisterParameter_(Model, Group, Name, {}, Default_, Min_, Max_, Description, ShortName, ParameterType_Enum);
 	parameter_spec &Spec = Model->Parameters[Parameter];
@@ -959,8 +962,11 @@ RegisterParameterEnum(mobius_model *Model, parameter_group_h Group, const char *
 		const char *C = EnumName;
 		while(*C != 0)
 		{
-			if(!isalpha(*C) && *C != '_')
-				FatalError("ERROR: The enum parameter \"", Name, "\" was given the possible value \"", EnumName, "\", which contains characters that are not alphabetical or '_'.\n");
+			if(!isalpha(*C) && *C != '_' && !(C != EnumName && isdigit(*C)))
+			{
+				PrintRegistrationErrorHeader(Model);
+				FatalError("ERROR: The enum parameter \"", Name, "\" was given the possible value \"", EnumName, "\", which contains characters that are not alphabetical, numerical, or '_'.\n");
+			}
 			++C;
 		}
 		
@@ -973,7 +979,10 @@ RegisterParameterEnum(mobius_model *Model, parameter_group_h Group, const char *
 	Spec.EnumNames = EnumNames; //NOTE: vector copy
 	
 	if(Default && (FoundDefault == -1))
+	{
+		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: The enum parameter \"", Name, "\" was given the default value \"", Default, "\" which does not appear on its list of possible values.\n");
+	}
 	
 	if(FoundDefault >= 0)
 		Spec.Default.ValUInt = (u64)FoundDefault;
@@ -1177,6 +1186,7 @@ SetInitialValue(mobius_model *Model, equation_h Equation, parameter_double_h Ini
 	
 	if(Model->Equations[Equation].Unit != Model->Parameters[InitialValue].Unit)
 	{
+		PrintRegistrationErrorHeader(Model);
 		WarningPrint("WARNING: The equation \"", GetName(Model, Equation), "\" was registered with a different unit than its initial value parameter \"", GetName(Model, InitialValue), "\".\n");
 	}
 }
@@ -1235,9 +1245,15 @@ RegisterSolver(mobius_model *Model, const char *Name, parameter_double_h hParam,
 	solver_spec &Spec = Model->Solvers[Solver];
 	SetupFunction(&Spec);
 	if(!Spec.SolverFunction)
+	{
+		PrintRegistrationErrorHeader(Model);
 		FatalError("The solver algorithm for the solver ", Name, " does not have a SolverFunction!\n");
+	}
 	if(!Spec.SpaceRequirement)
+	{
+		PrintRegistrationErrorHeader(Model);
 		FatalError("The solver algorithm for the solver ", Name, " does not specify a SpaceRequirement function to say how much storage it needs to be allocated for it.\n");
+	}
 	
 	Spec.hParam = hParam;
 	return Solver;
@@ -1264,7 +1280,10 @@ RegisterSolver(mobius_model *Model, const char *Name, double h, mobius_solver_se
 	solver_spec &Spec = Model->Solvers[Solver];
 	
 	if(!Spec.UsesErrorControl)
+	{
+		PrintRegistrationErrorHeader(Model);
 		WarningPrint("WARNING: Registered error tolerances with the solver \"", Name, "\", but the attached solver function does not support error control.\n");
+	}
 	
 	Spec.RelErr = RelErr;
 	Spec.AbsErr = AbsErr;
@@ -1313,7 +1332,10 @@ RegisterConditionalExecution(mobius_model *Model, const char *Name, parameter_en
 	
 	auto Find = SwitchSpec.EnumNameToValue.find(Value);
 	if(Find == SwitchSpec.EnumNameToValue.end())
+	{
+		PrintRegistrationErrorHeader(Model);
 		FatalError("ERROR: While registering the conditional execution \"", Name, "\", the enum parameter \"", SwitchSpec.Name, "\" was not registered with the possible the value \"", Value, "\".\n");
+	}
 	
 	Spec.Value.ValUInt = Find->second;
 	
@@ -1628,7 +1650,7 @@ inline array<index_t>&
 BranchInputs(model_run_state *RunState, index_set_h IndexSet, index_t Index)
 {
 	//TODO: This could break if you do nested branch iteration, but we don't have a use-case for that...
-	static index_t     DummyIndex;
+	static index_t        DummyIndex;
 	static array<index_t> DummyIndexes;
 	
 	if(RunState->Running)
