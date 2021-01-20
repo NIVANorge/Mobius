@@ -23,8 +23,8 @@ DllBuildModel()
 	
 	//Carbon and nitrogen
 	//AddSimpleMagicCarbonNitrogenModel(Model);
-	AddRatioMagicCarbonNitrogenModel(Model);
-	//AddMicrobialMagicCarbonNitrogenModel(Model);
+	//AddRatioMagicCarbonNitrogenModel(Model);
+	AddMicrobialMagicCarbonNitrogenModel(Model);
 
 	return Model;
 }

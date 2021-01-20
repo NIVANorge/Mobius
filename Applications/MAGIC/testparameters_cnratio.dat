@@ -279,7 +279,7 @@ true
 "Organic C litter" :     #(mmol/m2/year) [0, 1000000]
 25900
 
-"Organic C sink" :     #(mmol/m2/year) [0, 1000000]
+"Organic C output" :     #(mmol/m2/year) [0, 1000000]
 0
 
 "Organic C decomposition" :     #(mmol/m2/year) [0, 1000000]
@@ -294,7 +294,7 @@ true
 "Organic C/N litter ratio" :     #(dimensionless) [0.0001, 100]
 53.3
 
-"Organic C/N sink ratio" :     #(dimensionless) [0.0001, 100] If 0, use the pool C/N instead
+"Organic C/N output ratio" :     #(dimensionless) [0.0001, 100] If 0, use the pool C/N instead
 44
 
 "Organic C/N decomposition ratio" :     #(dimensionless) [0.0001, 100] If 0, use the pool C/N instead

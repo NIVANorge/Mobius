@@ -125,13 +125,13 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	auto OrganicCInput                    = RegisterParameterDouble(Model, CAndN, "Organic C input", MMolPerM2PerYear, 0.0, 0.0, 1e6);
 	auto OrganicCLitter                   = RegisterParameterDouble(Model, CAndN, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	auto OrganicCSink                     = RegisterParameterDouble(Model, CAndN, "Organic C sink", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	auto OrganicCOutput                   = RegisterParameterDouble(Model, CAndN, "Organic C output", MMolPerM2PerYear, 0.0, 0.0, 1e6);
 	auto OrganicCDecomposition            = RegisterParameterDouble(Model, CAndN, "Organic C decomposition", MMolPerM2PerYear, 0.0, 0.0, 1e6);
 	auto InitialOrganicC                  = RegisterParameterDouble(Model, CAndN, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8);
 
 	auto OrganicCNInputRatio              = RegisterParameterDouble(Model, CAndN, "Organic C/N input ratio", Dimensionless, 0.1, 0.0001, 100.0);
 	auto OrganicCNLitterRatio             = RegisterParameterDouble(Model, CAndN, "Organic C/N litter ratio", Dimensionless, 0.1, 0.0001, 100.0);
-	auto OrganicCNSinkRatio               = RegisterParameterDouble(Model, CAndN, "Organic C/N sink ratio", Dimensionless, 0.1, 0.0001, 100.0, "If 0, use the pool C/N instead");
+	auto OrganicCNOutputRatio               = RegisterParameterDouble(Model, CAndN, "Organic C/N output ratio", Dimensionless, 0.1, 0.0001, 100.0, "If 0, use the pool C/N instead");
 	auto OrganicCNDecompositionRatio      = RegisterParameterDouble(Model, CAndN, "Organic C/N decomposition ratio", Dimensionless, 0.1, 0.0001, 100.0, "If 0, use the pool C/N instead");
 	auto InitialOrganicN                  = RegisterParameterDouble(Model, CAndN, "Initial organic N", MolPerM2, 0.0, 0.0, 1e8);
 
@@ -225,7 +225,7 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 		double dCdt = RESULT(FractionOfYear) * (
 			  PARAMETER(OrganicCInput)
 			+ PARAMETER(OrganicCLitter)
-			- PARAMETER(OrganicCSink)
+			- PARAMETER(OrganicCOutput)
 			- PARAMETER(OrganicCDecomposition)
 			);
 		
@@ -236,16 +236,14 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, OrganicN,
-		double sink_CN = PARAMETER(OrganicCNSinkRatio);
+		double output_CN = PARAMETER(OrganicCNOutputRatio);
 		double pool_CN = RESULT(CNRatio);
-		if(sink_CN == 0.0) sink_CN = pool_CN;
-	
-		//TODO: Needs to be able to do uptake, immob etc in different orders.
+		if(output_CN == 0.0) output_CN = pool_CN;
 	
 		double dNdt = RESULT(FractionOfYear)*(
 				+ PARAMETER(OrganicCInput) / PARAMETER(OrganicCNInputRatio)
 				+ PARAMETER(OrganicCLitter) / PARAMETER(OrganicCNLitterRatio)
-				- PARAMETER(OrganicCSink)  / sink_CN
+				- PARAMETER(OrganicCOutput)  / output_CN
 				)
 			+ RESULT(NO3ImmobilisationEq)
 			+ RESULT(NH4ImmobilisationEq)
@@ -390,6 +388,8 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 static void
 AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 {
+	AddRatioMagicCarbonNitrogenModel(Model);
+	
 	BeginModule(Model, "MAGIC microbial carbon and nitrogen", "_dev");
 	
 	auto Dimensionless    = RegisterUnit(Model);
@@ -402,61 +402,14 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	auto Compartment        = GetIndexSetHandle(Model, "Compartment");
 	
+	//Take ownership of the parameter group
 	auto CAndN              = RegisterParameterGroup(Model, "Carbon and Nitrogen by compartment", Compartment);
 	
-	auto BiomassCN          = RegisterParameterDouble(Model, CAndN, "Biomass C/N", Dimensionless, 10.0, 0.0, 1000.0);
 	auto CarbEff            = RegisterParameterDouble(Model, CAndN, "Carbon efficiency", Percent, 25.0, 0.0, 100.0);
 	auto NitrEff            = RegisterParameterDouble(Model, CAndN, "Nitrogen efficiency", Percent, 50.0, 0.0, 100.0);
 	auto DecompEff          = RegisterParameterDouble(Model, CAndN, "Decomposition efficiency", Percent, 5.0, 0.0, 100.0);
 	
-	//auto PlantsAccessNitrogen    = RegisterParameterBool(Model, CAndN, "Plants have access to organic nitrogen", true);
-	//auto PlantsUseInorganicFirst = RegisterParameterBool(Model, CAndN, "Plants use inorganic nitrogen before soil", true);
-	//auto PoreWaterNAvailableForRetention
-	//auto MicrobesUtilizeSoilNH4BeforeNO3
-	auto InitialOrganicC    = RegisterParameterDouble(Model, CAndN, "Initial organic C", MolPerM2, 0.0, 0.0, 5000.0);
-	auto InitialOrganicN    = RegisterParameterDouble(Model, CAndN, "Initial organic N", MolPerM2, 0.0, 0.0, 5000.0);
-	
-	auto PlantNH4Uptake     = RegisterParameterDouble(Model, CAndN, "Plant NH4 uptake", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto PlantNO3Uptake     = RegisterParameterDouble(Model, CAndN, "Plant NO3 uptake", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto Nitrification      = RegisterParameterDouble(Model, CAndN, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto Denitrification    = RegisterParameterDouble(Model, CAndN, "Denitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	
-	auto OrganicCInput      = RegisterParameterDouble(Model, CAndN, "Organic C input", MMolPerM2PerYear, 0.0, 0.0, 50.0, "Organic C input");
-	auto InputCN            = RegisterParameterDouble(Model, CAndN, "Input C/N", MolPerMol, 25.0, 0.01, 1000.0);
-	auto OrganicCOutput     = RegisterParameterDouble(Model, CAndN, "Organic C output", MMolPerM2PerYear, 0.0, 0.0, 50.0, "Organic C output");
-	auto OutputCN           = RegisterParameterDouble(Model, CAndN, "Output C/N", MolPerMol, 25.0, 0.01, 1000.0, "If value is 0, use pool C/N");
-	auto OrganicCDecomp     = RegisterParameterDouble(Model, CAndN, "Organic C decomposition", MMolPerM2PerYear, 25e3, 0.0, 100e3);
-	auto DecompCN           = RegisterParameterDouble(Model, CAndN, "Decomp C/N", MolPerMol, 0.0, 0.01, 1000.0, "If value is 0, use pool C/N");
-	auto OrganicCLitter     = RegisterParameterDouble(Model, CAndN, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 50e3, "Organic C litter");
-	auto LitterCN           = RegisterParameterDouble(Model, CAndN, "Litter C/N", MolPerMol, 50.0, 0.01, 1000.0);
-	auto ActualNRetentionPot = RegisterParameterDouble(Model, CAndN, "Actual N retention potential", Percent, 100.0, 0.0, 100.0);
-	
-	auto CompartmentSolver = GetSolverHandle(Model, "Compartment solver");
-	
-	auto OrganicC           = RegisterEquation(Model, "Organic C", MMolPerM2);
-	auto InitialOrganicCScaled = RegisterEquationInitialValue(Model, "Initial organic C", MMolPerM2);
-	SetInitialValue(Model, OrganicC, InitialOrganicCScaled);
-	auto OrganicN           = RegisterEquation(Model, "Organic N", MMolPerM2);
-	auto InitialOrganicNScaled = RegisterEquationInitialValue(Model, "Initial organic N", MMolPerM2);
-	SetInitialValue(Model, OrganicN, InitialOrganicNScaled);
-	
-	auto PoolCN             = RegisterEquation(Model, "Pool C/N", MolPerMol);
-	auto InitialPoolCN      = RegisterEquationInitialValue(Model, "Initial pool C/N", MolPerMol);
-	SetInitialValue(Model, PoolCN, InitialPoolCN);
-	
-	EQUATION(Model, InitialOrganicCScaled,
-		return PARAMETER(InitialOrganicC)*1000.0;
-	)
-	
-	EQUATION(Model, InitialOrganicNScaled,
-		return PARAMETER(InitialOrganicN)*1000.0;
-	)
-	
-	EQUATION(Model, InitialPoolCN,
-		return SafeDivide(PARAMETER(InitialOrganicC), PARAMETER(InitialOrganicN));
-	)
-	
-	
+	auto ImmobType          = RegisterParameterEnum(Model, CAndN, "Immobilisation order", {"NO3_first", "NH4_first", "proportionally"}, "proportionally");
 	
 	auto TurnoverC          = RegisterEquation(Model, "Organic C turnover", MMolPerM2PerTs);
 	auto RetainedC          = RegisterEquation(Model, "Organic C retained as decomposer biomass", MMolPerM2PerTs);
@@ -464,228 +417,187 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	auto RespiredC          = RegisterEquation(Model, "Organic C respired as CO2", MMolPerM2PerTs);
 	auto SolubilizedC       = RegisterEquation(Model, "Organic C solubilized as DOC", MMolPerM2PerTs);
 	
-	auto DecomposerCN       = RegisterEquation(Model, "Decomposer C/N", MolPerMol);
 	auto TurnoverN          = RegisterEquation(Model, "Organic N turnover", MMolPerM2PerTs);
 	auto RetainedN          = RegisterEquation(Model, "Organic N retained as decomposer biomass", MMolPerM2PerTs);
-	auto SolubilizedN       = RegisterEquation(Model, "Organic N solubilized", MMolPerM2PerTs);
-	auto NUsedByDecomp      = RegisterEquation(Model, "Oragnic N used by decomposers", MMolPerM2PerTs);
-	auto NDeficit           = RegisterEquation(Model, "Excess organic N needed by decomposers", MMolPerM2PerTs);
-	auto MineralizedN       = RegisterEquation(Model, "Organic N mineralized as NH4", MMolPerM2PerTs);
 	auto DepletedN          = RegisterEquation(Model, "Organic N depleted", MMolPerM2PerTs);
+	auto WasteCN            = RegisterEquation(Model, "Waste C/N ratio", Dimensionless);
+	auto SolubilizedN       = RegisterEquation(Model, "Organic N solubilized", MMolPerM2PerTs);
+	auto TotalDesiredImmobilisation = RegisterEquation(Model, "Total desired N immobilisation", MMolPerM2PerTs);
+	
+	//NOTE: Take ownership of these from the previous module
+	auto DesiredNH4Immobilisation = RegisterEquation(Model, "Desired NH4 immobilisation", MMolPerM2PerTs);
+	auto DesiredNO3Immobilisation = RegisterEquation(Model, "Desired NO3 immobilisation", MMolPerM2PerTs);
+	auto OrganicC                 = RegisterEquation(Model, "Organic C", MMolPerM2PerTs);
+	auto OrganicN                 = RegisterEquation(Model, "Organic N", MMolPerM2PerTs);
+	auto MineralisationEq         = RegisterEquation(Model, "Mineralisation", MMolPerM2PerTs);
+	
+	auto DesiredNO3Uptake         = GetEquationHandle(Model, "Desired NO3 plant uptake");
+	auto DesiredNH4Uptake         = GetEquationHandle(Model, "Desired NH4 plant uptake");
+	auto NH4ImmobilisationEq      = GetEquationHandle(Model, "NH4 immobilisation");
+	auto NO3ImmobilisationEq      = GetEquationHandle(Model, "NO3 immobilisation");
+	auto FractionOfYear           = GetEquationHandle(Model, "Fraction of year");
+	auto CNRatio                  = GetEquationHandle(Model, "Pool C/N ratio");
+	auto OrganicNUptake           = GetEquationHandle(Model, "Organic N uptake");
+	auto NO3Inputs                = GetEquationHandle(Model, "NO3 inputs");
+	auto NH4Inputs                = GetEquationHandle(Model, "NH4 inputs");
+	auto NO3BasicInputs           = GetEquationHandle(Model, "NO3 basic inputs");
+	
+	auto OrganicCDecomposition    = GetParameterDoubleHandle(Model, "Organic C decomposition");
+	auto OrganicCInput            = GetParameterDoubleHandle(Model, "Organic C input");
+	auto OrganicCLitter           = GetParameterDoubleHandle(Model, "Organic C litter");
+	auto OrganicCOutput           = GetParameterDoubleHandle(Model, "Organic C output");
+	auto IsSoil                   = GetParameterBoolHandle(Model, "This is a soil compartment");
+	auto PlantsUseInorganicFirst  = GetParameterBoolHandle(Model, "Plants use inorganic nitrogen before soil");
+	
+	auto OrganicCNInputRatio      = GetParameterDoubleHandle(Model, "Organic C/N input ratio");
+	auto OrganicCNLitterRatio     = GetParameterDoubleHandle(Model, "Organic C/N litter ratio");
+	auto OrganicCNOutputRatio     = GetParameterDoubleHandle(Model, "Organic C/N output ratio");
+	auto OrganicCNDecompositionRatio = GetParameterDoubleHandle(Model, "Organic C/N decomposition ratio");
+	
+	HideParameter(Model, GetParameterDoubleHandle(Model, "Lower C/N threshold for NO3 immobilisation"));
+	HideParameter(Model, GetParameterDoubleHandle(Model, "Upper C/N threshold for NO3 immobilisation"));
+	HideParameter(Model, GetParameterDoubleHandle(Model, "Lower C/N threshold for NH4 immobilisation"));
+	HideParameter(Model, GetParameterDoubleHandle(Model, "Upper C/N threshold for NH4 immobilisation"));
 	
 	
-	auto NitrificationEq     = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
-	auto DenitrificationEq   = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
-	auto NO3ImmobilisationEq = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
-	auto NH4ImmobilisationEq = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
-	auto NO3UptakeEq         = RegisterEquation(Model, "NO3 plant uptake", MMolPerM2PerTs);
-	auto NH4UptakeEq         = RegisterEquation(Model, "NH4 plant uptake", MMolPerM2PerTs);
-	
-	
-	//NOTE: The following 4 are required as an "interface" to the rest of the MAGIC model
-	auto NO3Inputs           = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
-	auto NH4Inputs           = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
-	auto NO3ProcessesLoss    = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
-	auto NH4ProcessesLoss    = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
-	
-	
-	//NOTE! If we don't say these are 0 in initialization we get a nan computation
-	SetInitialValue(Model, NO3ImmobilisationEq, 0.0);
-	SetInitialValue(Model, NH4ImmobilisationEq, 0.0);
-	
-	
-	auto FractionOfYear = GetEquationHandle(Model, "Fraction of year");
-	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 basic inputs");
-	auto NH4BasicInputs = GetEquationHandle(Model, "NH4 basic inputs");
-	auto TotalNO3       = GetEquationHandle(Model, "Total NO3 mass");
-	auto TotalNH4       = GetEquationHandle(Model, "Total NH4 mass");
-	
-	/*
-	1) d(SOC)/dt = litter C – (FC3 + FC4)   		- SOM C mass balance
-	2) FC1 = FC2 + (FC3 + FC4)              		- decomposer turnover C balance
-	3) FC2 = (Cfrac) x FC1                      	- C retained as decomposer biomass
-	4) FC3 = (Dfrac) x (FC1 – FC2)         		    - C depleted as CO2 (respired) 
-	5) FC4 = (1-Dfrac) x (FC1 – FC2)     		    - C depleted as DOC (solubilized)
-	*/
-	
-	EQUATION(Model, PoolCN,
-		return SafeDivide(LAST_RESULT(OrganicC), LAST_RESULT(OrganicN));
-	)
-	
-	EQUATION(Model, TurnoverC,
-		return PARAMETER(OrganicCDecomp)*RESULT(FractionOfYear);     //FC1
-	)
-	
-	EQUATION(Model, RetainedC,
-		return RESULT(TurnoverC)*PARAMETER(CarbEff)*0.01;              //FC2
+	EQUATION(Model, RespiredC,
+		return PARAMETER(OrganicCDecomposition)*RESULT(FractionOfYear); // FC6
 	)
 	
 	EQUATION(Model, DepletedC,
-		return RESULT(TurnoverC)*(1.0 - PARAMETER(CarbEff)*0.01);      //FC1 - FC2
-	)
-	
-	EQUATION(Model, RespiredC,
-		return RESULT(DepletedC) * PARAMETER(DecompEff)*0.01;           //FC3
+		double Deff = PARAMETER(DecompEff) * 0.01;
+		double respired = RESULT(RespiredC);
+		if(Deff == 0.0) return respired;
+		return respired / Deff;                                        // FC4
 	)
 	
 	EQUATION(Model, SolubilizedC,
-		return RESULT(DepletedC) * (1.0 - PARAMETER(DecompEff)*0.01);   //FC4
+		return RESULT(DepletedC) * (1.0 - PARAMETER(DecompEff)*0.01);   //FC5
 	)
 	
-	EQUATION(Model, OrganicC,
+	EQUATION(Model, TurnoverC,
+		return RESULT(DepletedC) / (1.0 - PARAMETER(CarbEff)*0.01);     //FC2
+	)
+	
+	EQUATION(Model, RetainedC,
+		return RESULT(TurnoverC)*PARAMETER(CarbEff)*0.01;              //FC3
+	)
+	
+	EQUATION_OVERRIDE(Model, OrganicC,
 		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear);
 		double out    = PARAMETER(OrganicCOutput)*RESULT(FractionOfYear);
 		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear);
+	
+		double dCdt = in + litter - out - RESULT(DepletedC);
+		
+		if(!PARAMETER(IsSoil)) dCdt = 0.0; //TODO: make conditional exec instead?
 
-		return 
-			  LAST_RESULT(OrganicC)
-			+ in - out + litter - RESULT(DepletedC);
-	)
-	
-	/*
-	1) litter N = litter C / (C/N)litter  
-	2) FN1 = FC1 / (C/N)SOM                       - org N processed in turnover
-	3) FN4 = FC4 / (C/N)SOM                       - SOM org N solubilized
-	4) FN5 = (FN1 – FN4) x (Nfrac)                - org N from SOM used by decomposers
-	5) FN3 = FN1 - FN4 - FN5                      - SOM org N mineralized as NH4
-	6) FN2 = FC2 / (C/N)biomass                   - N in new decomposer biomass
-	*/
-	
-	EQUATION(Model, DecomposerCN,
-		double poolCN = RESULT(PoolCN);
-		double dcmpCN = PARAMETER(DecompCN);
-		if(dcmpCN <= 0.0) dcmpCN = poolCN;
-		return dcmpCN;
+		return LAST_RESULT(OrganicC) + dCdt;
 	)
 	
 	EQUATION(Model, TurnoverN,
-		return RESULT(TurnoverC)/RESULT(DecomposerCN);    //FN1
+		return RESULT(TurnoverC) / RESULT(CNRatio);            //FN2
 	)
 	
 	EQUATION(Model, RetainedN,
-		return RESULT(RetainedC)/RESULT(DecomposerCN);       //FN2
-	)
-	
-	EQUATION(Model, SolubilizedN,
-		return RESULT(SolubilizedC)/RESULT(DecomposerCN);    //FN4
-	)
-	
-	EQUATION(Model, NUsedByDecomp,
-		return (RESULT(TurnoverN) - RESULT(SolubilizedN))*PARAMETER(NitrEff)*0.01;  //FN5
-	)
-	
-	EQUATION(Model, NDeficit,
-		return Max(0.0, RESULT(NUsedByDecomp) - RESULT(RetainedN)); //-FN6
-	)
-	
-	EQUATION(Model, MineralizedN,
-		double retainedN = RESULT(RetainedN);
-		double Nused     = RESULT(NUsedByDecomp);
-		double mineralized = RESULT(TurnoverN) - RESULT(SolubilizedN) - RESULT(NUsedByDecomp);  //FN3
-		
-		if(Nused > retainedN)
-		{
-			//FN3 = FN3 + (FN5 – FN2)
-			mineralized += (retainedN - Nused);
-		}
-		return mineralized;
+		double poolCN = RESULT(CNRatio);
+		double dcmpCN = PARAMETER(OrganicCNDecompositionRatio);
+		if(dcmpCN <= 0.0) dcmpCN = poolCN;
+		return RESULT(RetainedC) / dcmpCN;                     //FN3
 	)
 	
 	EQUATION(Model, DepletedN,
-		return RESULT(SolubilizedN) + RESULT(MineralizedN);
+		return RESULT(TurnoverN)*PARAMETER(NitrEff)*0.01;      //FN4
 	)
 	
+	EQUATION(Model, WasteCN,
+		return RESULT(DepletedC) / RESULT(DepletedN);          // waste (C/N)
+	)
 	
-	EQUATION(Model, OrganicN,
-		double poolCN = RESULT(PoolCN);
-		double outCN  = PARAMETER(OutputCN);
-		if(outCN == 0.0)  outCN  = poolCN;
+	EQUATION(Model, SolubilizedN,
+		return RESULT(SolubilizedC) / RESULT(WasteCN);         //FN5
+	)
+	
+	EQUATION_OVERRIDE(Model, MineralisationEq,
+		return RESULT(RespiredC) / RESULT(WasteCN);            //FN6
+	)
+	
+	EQUATION(Model, TotalDesiredImmobilisation,                //FN7
+		double NDeficit = RESULT(RetainedN) + RESULT(DepletedN) - RESULT(TurnoverN);
+		return Max(0.0, NDeficit);
+	)
+	
+	EQUATION_OVERRIDE(Model, DesiredNH4Immobilisation,
+		double inNO3 = RESULT(NO3BasicInputs);        //NOTE: We can't use NO3Inputs here since that relies on Nitrification, which relies on NH4 immob.
+		double upNO3 = RESULT(DesiredNO3Uptake);
+		double inNH4 = RESULT(NH4Inputs);
+		double upNH4 = RESULT(DesiredNH4Uptake);
 		
-		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear)/PARAMETER(InputCN);
+		if(PARAMETER(PlantsUseInorganicFirst))
+		{
+			inNO3 -= upNO3;
+			inNH4 -= upNH4;
+		}
+		inNO3 = Max(inNO3, 0.0);
+		inNH4 = Max(inNH4, 0.0);
+	
+		double desired_tot = RESULT(TotalDesiredImmobilisation);
+		
+		u64 type = PARAMETER(ImmobType);
+		if(type == 0)      // NO3 first
+			return Max(0.0, desired_tot - inNO3);
+		else if(type == 1) // NH4 first
+			return desired_tot;
+		else               // proportionally
+			return desired_tot * SafeDivide(inNH4, inNH4 + inNO3);
+	)
+
+	EQUATION_OVERRIDE(Model, DesiredNO3Immobilisation,
+		double inNO3 = RESULT(NO3Inputs);
+		double upNO3 = RESULT(DesiredNO3Uptake);
+		double inNH4 = RESULT(NH4Inputs);
+		double upNH4 = RESULT(DesiredNH4Uptake);
+		
+		if(PARAMETER(PlantsUseInorganicFirst))
+		{
+			inNO3 -= upNO3;
+			inNH4 -= upNH4;
+		}
+		inNO3 = Max(inNO3, 0.0);
+		inNH4 = Max(inNH4, 0.0);
+	
+		double desired_tot = RESULT(TotalDesiredImmobilisation);
+		
+		u64 type = PARAMETER(ImmobType);
+		if(type == 0)      // NO3 first
+			return desired_tot;
+		else if(type == 1) // NH4 first
+			return Max(0.0, desired_tot - inNH4);
+		else               // proportionally
+			return desired_tot * SafeDivide(inNO3, inNH4 + inNO3);
+	)
+	
+	//Below is not done
+	
+	EQUATION_OVERRIDE(Model, OrganicN,
+		double poolCN = RESULT(CNRatio);
+		double outCN  = PARAMETER(OrganicCNOutputRatio);
+		if(outCN == 0.0) outCN  = poolCN;
+		
+		double in     = PARAMETER(OrganicCInput)*RESULT(FractionOfYear)/PARAMETER(OrganicCNInputRatio);
+		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear)/PARAMETER(OrganicCNLitterRatio);
 		double out    = PARAMETER(OrganicCOutput)*RESULT(FractionOfYear)/outCN;
-		double litter = PARAMETER(OrganicCLitter)*RESULT(FractionOfYear)/PARAMETER(LitterCN);
 		
-		return
-			  LAST_RESULT(OrganicN)
-			+ in - out + litter - RESULT(DepletedN);
-	)
-	
-	//TODO: The following has to be updated to match the new fluxes above:
-	
-	EQUATION(Model, NitrificationEq,
-		double nitr = PARAMETER(Nitrification);
-		double result = nitr * RESULT(FractionOfYear);
-		double in = RESULT(NH4Inputs);
-		if(nitr < 0.0) result = -nitr*0.01*in;
-		return result;
-	)
-	
-	EQUATION(Model, DenitrificationEq,
-		double denitr = PARAMETER(Denitrification);
-		double result = denitr * RESULT(FractionOfYear);
-		double in = RESULT(NO3Inputs);
-		if(denitr < 0.0) result = -denitr*0.01*in;
-		return result;
-	)
-	
-	EQUATION(Model, NO3ImmobilisationEq,
-		//TODO: allow toggling preferential immob.
-		//TODO: guard against going below 0
-		//std::cout << "timestep is " << CURRENT_TIMESTEP() << " last totalno3 is " << LAST_RESULT(TotalNO3) << '\n';
+		double dNdt   = 
+			  in + litter - out
+			- RESULT(DepletedN)
+			+ RESULT(NO3ImmobilisationEq)   //TODO: Is immob already counted into DepletedN implicitly??
+			+ RESULT(NH4ImmobilisationEq)
+			- RESULT(OrganicNUptake);
 		
-		double deficit = RESULT(NDeficit);
-		double frac = LAST_RESULT(TotalNO3) / (LAST_RESULT(TotalNO3) + LAST_RESULT(TotalNH4));
-		return deficit * frac;
+		if(!PARAMETER(IsSoil)) dNdt = 0.0; //TODO: make conditional exec instead?
+	
+		return LAST_RESULT(OrganicN) + dNdt;
 	)
-	
-	EQUATION(Model, NH4ImmobilisationEq,
-		//TODO: allow toggling preferential immob.
-		//TODO: guard against going below 0
-		//std::cout << "timestep is " << CURRENT_TIMESTEP() << " last totalno3 is " << LAST_RESULT(TotalNO3) << '\n';
-		
-		double deficit = RESULT(NDeficit);
-		double frac = LAST_RESULT(TotalNH4) / (LAST_RESULT(TotalNO3) + LAST_RESULT(TotalNH4));
-		return deficit * frac;
-	)
-	
-	//TODO: Plants should have access to uptake of organic N (if toggled)
-	//TODO: Budged immob and plant uptake to be restrained by each other (toggling preferentiality)
-	
-	EQUATION(Model, NO3UptakeEq,
-		double uptake = PARAMETER(PlantNO3Uptake);
-		double result = uptake * RESULT(FractionOfYear);
-		double in = RESULT(NO3Inputs);
-		double total = LAST_RESULT(TotalNO3);
-		if(uptake < 0.0) result = -uptake*0.01*in;
-		return result;
-	)
-	
-	EQUATION(Model, NH4UptakeEq,
-		double uptake = PARAMETER(PlantNH4Uptake);
-		double result = uptake * RESULT(FractionOfYear);
-		double in = RESULT(NH4Inputs);
-		if(uptake < 0.0) result = -uptake*0.01*in;
-		return result;
-	)
-	
-	
-	
-	EQUATION(Model, NO3Inputs,
-		return RESULT(NO3BasicInputs) + RESULT(NitrificationEq);
-	)
-	
-	EQUATION(Model, NH4Inputs,
-		return RESULT(NH4BasicInputs) + RESULT(MineralizedN);
-	)
-	
-	EQUATION(Model, NO3ProcessesLoss,
-		return RESULT(DenitrificationEq) + RESULT(NO3ImmobilisationEq) + RESULT(NO3UptakeEq);
-	)
-	
-	EQUATION(Model, NH4ProcessesLoss,
-		return RESULT(NitrificationEq) + RESULT(NH4ImmobilisationEq) + RESULT(NH4UptakeEq);
-	)
-	
-	
-	EndModule(Model);
 }
+
