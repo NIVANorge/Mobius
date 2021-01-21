@@ -6,7 +6,7 @@
 
 struct token_string
 {
-	token_string() : Data(0), Length(0) {};
+	token_string() : Data(nullptr), Length(0) {};
 	token_string(const char *);
 	
 	const char *Data;
@@ -24,10 +24,7 @@ token_string::token_string(const char *DataIn)
 
 std::ostream& operator<<(std::ostream& Os, const token_string& Str)
 {
-	for(size_t At = 0; At < Str.Length; ++At)
-	{
-		Os << Str.Data[At];
-	}
+	Os.write(Str.Data, Str.Length);
 	return Os;
 }
 
@@ -57,20 +54,15 @@ token_string token_string::Copy(bucket_allocator *Allocator) const
 	token_string Result;
 	char *NewData;
 	if(Allocator)
-	{
 		NewData = Allocator->Allocate<char>(Length + 1);
-	}
 	else
-	{
 		NewData = (char *)malloc(Length + 1);
-	}
 	Result.Data = NewData;
 	Result.Length = Length;
 	NewData[Length] = '\0'; //NOTE: In case people want a 0-terminated string. This is sometimes used in the current code, but it is not that clean...
-	for(size_t At = 0; At < Length; ++At)
-	{
-		NewData[At] = Data[At];
-	}
+	
+	memcpy(NewData, Data, Length);
+	
 	return Result;
 }
 

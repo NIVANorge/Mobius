@@ -293,6 +293,39 @@ ParseTimestepSize(const char *Format)
 	return Result;
 }
 
+token_string
+TimestepSizeAsUnitName(const char *Format, bucket_allocator *Alloc)
+{
+	//NOTE: This one doesn't do error checking, instead we assume that Format has already been passed to ParseTimestepSize once
+	char Type;
+	s32  Magnitude;
+	int Found = sscanf(Format, "%d%c", &Magnitude, &Type);
+
+	const char *Name;
+	if(Type == 's')
+		Name = "seconds";
+	else if(Type == 'm')
+		Name = "minutes";
+	else if(Type == 'h')
+		Name = "hours";
+	else if(Type == 'D')
+		Name = "days";
+	else if(Type == 'M')
+		Name = "months";
+	else if(Type == 'Y')
+		Name = "years";
+	
+	if(Magnitude != 1)
+	{
+		char Buffer[256];
+		sprintf(Buffer, "%d %s", Magnitude, Name);
+		Name = Buffer;
+	}
+	
+	token_string StrName(Name);
+	return StrName.Copy(Alloc);
+}
+
 struct expanded_datetime
 {
 	datetime DateTime;

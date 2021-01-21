@@ -736,12 +736,9 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 		ErrorPrintUnfilledIndexSets(DataSet);
 	}
 	
-	if(DataSet->ResultData)
-		FatalError("ERROR: Tried to allocate result storage twice.\n");
-	
 	//NOTE: We set up a storage structure for results that mirrors the equation batch group structure. This simplifies things a lot in other code.
 	
-	if(!DataSet->HasBeenRun) //If it was run once before we don't need to set up the storage structure again. //TODO: This should be a flag on the storage structure instead, and it should be the same for all AllocateXStorage functions.
+	if(!DataSet->ResultStorageStructure.HasBeenSetUp) //If it was set up once before we don't need to set up the storage structure again.
 	{
 		size_t ResultStorageUnitCount = Model->BatchGroups.Count;
 		array<storage_unit_specifier<equation_h>> &Units = DataSet->ResultStorageStructure.Units;
@@ -765,8 +762,21 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 		
 		SetupStorageStructureSpecifer(&DataSet->ResultStorageStructure, DataSet->IndexCounts, Model->Equations.Count(), &DataSet->BucketMemory);
 	}
-
-	DataSet->ResultData = AllocClearedArray(double, DataSet->ResultStorageStructure.TotalCount * (Timesteps + 1)); //NOTE: We add one to timesteps since we also need space for the initial values.
+	
+	if(DataSet->ResultData && (Timesteps != DataSet->TimestepsLastRun))
+	{
+		//NOTE: We could realloc, but we need to clear it to 0 anyway, so there is probably not that much of a gain.
+		free(DataSet->ResultData);
+		DataSet->ResultData = nullptr;
+	}
+	
+	//NOTE: We add 1 to Timesteps since we also need space for the initial values.
+	size_t AllocationSize = DataSet->ResultStorageStructure.TotalCount * (Timesteps + 1);
+	
+	if(!DataSet->ResultData)
+		DataSet->ResultData = AllocClearedArray(double, AllocationSize);
+	else
+		memset(DataSet->ResultData, 0, sizeof(double)*AllocationSize);
 }
 
 

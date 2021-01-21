@@ -21,7 +21,8 @@ BeginModelDefinition(const char *Name = "(unnamed model)", bool UseEndDate = fal
 		RegisterParameterDate(Model, System, "End date", "1970-1-1", "1000-1-1", "3000-1-1", "The end date is inclusive");
 	else
 	{
-		auto Steps 	      = RegisterUnit(Model, TimestepSize);              //TODO: It is not that nice to display the timestep size as the unit since it is on a specific format... We should convert it.
+		token_string StepUnit = TimestepSizeAsUnitName(TimestepSize, &Model->BucketMemory);
+		auto Steps 	      = RegisterUnit(Model, StepUnit.Data);
 		RegisterParameterUInt(Model, System, "Timesteps", Steps, 1);
 	}
 	
@@ -1842,16 +1843,14 @@ RunModel(mobius_data_set *DataSet)
 	if(((s64)DataSet->InputDataTimesteps - InputDataStartOffsetTimesteps) < (s64)Timesteps)
 		FatalError("ERROR: The input data provided has fewer timesteps (after the model run start date) than the number of timesteps the model is running for.\n");
 	
-	//std::cout << "Input data start offset timesteps was " << InputDataStartOffsetTimesteps << std::endl;
-	
-	if(DataSet->ResultData)
-	{
-		//NOTE: This is in case somebody wants to re-run the same dataset after e.g. changing a few parameters.
-		free(DataSet->ResultData);
-		DataSet->ResultData = nullptr;
-	}
-	
 	AllocateResultStorage(DataSet, Timesteps);
+	
+	//NOTE: The following have to be set here, because in case there is an error later, TimestepsLastRun must have been recorded correctly.
+	//TODO: Maybe we should have a separate number that denotes the size of the ResultData allocation just to be safe.
+	DataSet->HasBeenRun = true;
+	DataSet->TimestepsLastRun = Timesteps;
+	DataSet->StartDateLastRun = ModelStartTime;
+	
 	
 	model_run_state RunState(DataSet);
 	
@@ -2059,10 +2058,6 @@ RunModel(mobius_data_set *DataSet)
 #if MOBIUS_EQUATION_PROFILING
 	PrintEquationProfiles(DataSet, &RunState);
 #endif
-	
-	DataSet->HasBeenRun = true;
-	DataSet->TimestepsLastRun = Timesteps;
-	DataSet->StartDateLastRun = ModelStartTime;
 }
 
 static void
