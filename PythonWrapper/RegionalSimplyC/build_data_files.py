@@ -156,6 +156,14 @@ def get_so4_df(catch_no) :
 	df = df[['catch_%d'%catch_no]]
 	return df
 	
+def compute_flux_df(flow_df, doc_df) :
+	doc_copy = doc_df.copy()
+	doc_copy = doc_copy.resample('D').mean()
+	doc_copy.interpolate(inplace=True, limit_area='inside', limit=60)
+	combined = pd.concat([flow_df, doc_copy], axis=1)
+	combined['Observed DOC flux'] = combined['Observed DOC'].values * combined['Observed flow'].values * 86.4
+	return combined
+	
 def create_mobius_input_file(catch_no, catch_name, met_df, era5_df, flow_df, doc_df, so4_df, usevar):
 	filename = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 	
@@ -173,7 +181,7 @@ def create_mobius_input_file(catch_no, catch_name, met_df, era5_df, flow_df, doc
 	outfile.write('additional_timeseries:\n')
 	outfile.write('"Observed flow" unit "m3/s"\n')
 	outfile.write('"Observed DOC"  unit "mg/L"\n')
-	#outfile.write('"Observed DOC flux" unit "kg/day"\n')
+	outfile.write('"Observed DOC flux" unit "kg/day"\n')
 
 	outfile.write('\n')
 
@@ -209,6 +217,11 @@ def create_mobius_input_file(catch_no, catch_name, met_df, era5_df, flow_df, doc
 	outfile.write('"Observed DOC":\n')
 	for index, row in doc_df.iterrows() :
 		outfile.write('%s %g\n' % (index.date(), row['Observed DOC']))
+		
+	combined = compute_flux_df(flow_df, doc_df)
+	outfile.write('"Observed DOC flux":\n')
+	for index, row in combined.iterrows() :
+		outfile.write('%s %g\n' % (index.date(), row['Observed DOC flux']))
 			
 	outfile.close()
 

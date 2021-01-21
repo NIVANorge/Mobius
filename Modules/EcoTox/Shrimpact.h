@@ -73,6 +73,9 @@ This is a shrimp population model that can react to environmental stressors. It 
 		double badYearChance    = PARAMETER(BadYearChance);
 		
 		u64 badtype = PARAMETER(BadYearType);
+		
+		if(CURRENT_TIME().Year == 2020) return 1;
+		
 		if(badtype > 0 && Age == FIRST_INDEX(AgeClass))
 		{
 			if(badtype == 1 && CURRENT_TIME().Year == badYearNumber)

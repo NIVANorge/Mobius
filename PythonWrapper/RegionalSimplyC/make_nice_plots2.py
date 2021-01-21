@@ -81,7 +81,7 @@ def main() :
 		obsfluxname = 'Observed DOC flux'
 		
 		doc_df = df[[obsdocname]].copy()
-		doc_df.interpolate(inplace=True, limit_area='inside', limit=60)   # limit: don't fill in more than one missing month
+		doc_df.interpolate(inplace=True, limit_area='inside', limit=60)   # limit: don't fill in more than two missing months
 		
 		df[obsfluxname] = doc_df[obsdocname].values * df[obsname].values * 86.4  # flux = concentration * flow
 		
