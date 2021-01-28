@@ -80,6 +80,7 @@ def main() :
 		obsdocname = cu.combine_name(observeddoc[0], observeddoc[1])
 		obsfluxname = 'Observed DOC flux'
 		
+		#TODO: This was put in the input file, so we don't have to recompute it here.
 		doc_df = df[[obsdocname]].copy()
 		doc_df.interpolate(inplace=True, limit_area='inside', limit=60)   # limit: don't fill in more than two missing months
 		

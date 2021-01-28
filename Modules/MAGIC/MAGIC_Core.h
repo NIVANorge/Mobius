@@ -132,7 +132,7 @@ SetEquilibriumConstants(const magic_param &Param, magic_coeff &CoeffOut, bool Is
 	// calculate equilibrium coefficients, correcting for ionic strength and temperature. If coefficients are being set for soil (SCEC > 0), calculate cation exchange coefficients also
 	
 	
-	double R  = 4.5752; // Ideal gas constant (?)
+	double R  = 4.5752; // Ideal gas constant
 	double T0 = 298.15; // Reference temperature
 	
 	//Additional data for computing equilibrium constants
@@ -684,8 +684,8 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 			Result.all_DIC = Result.conc_HCO3 + 2.0*Result.conc_CO3;
 			
 			CalculateDOC(Coeff, Param.conc_DOC, Result.conc_H, Result.conc_Al,
-			// the following are outputs of the function
-			conc_H3A, Result.conc_H2AM, Result.conc_HA2M, Result.conc_A3M, conc_AlA, conc_AlHA);
+				// the following are outputs of the function
+				conc_H3A, Result.conc_H2AM, Result.conc_HA2M, Result.conc_A3M, conc_AlA, conc_AlHA);
 		
 			// Calculate anion charge (meq/m3) - from dissolved organic carbon
 			Result.all_DOC = Result.conc_H2AM + 2.0*Result.conc_HA2M + 3.0*Result.conc_A3M;

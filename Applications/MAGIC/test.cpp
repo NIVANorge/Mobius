@@ -15,7 +15,7 @@
 int main()
 {
     const char *InputFile     = "testinputs.dat";
-	const char *ParameterFile = "testparameters_cnratio2.dat";
+	const char *ParameterFile = "testparameters_microbial2.dat";
 	
 	mobius_model *Model = BeginModelDefinition("MAGIC");
 	
@@ -24,8 +24,8 @@ int main()
 	
 	//Carbon and nitrogen
 	//AddSimpleMagicCarbonNitrogenModel(Model);
-	AddRatioMagicCarbonNitrogenModel(Model);
-	//AddMicrobialMagicCarbonNitrogenModel(Model);
+	//AddRatioMagicCarbonNitrogenModel(Model);
+	AddMicrobialMagicCarbonNitrogenModel(Model);
 	
 	
 	ReadInputDependenciesFromFile(Model, InputFile);

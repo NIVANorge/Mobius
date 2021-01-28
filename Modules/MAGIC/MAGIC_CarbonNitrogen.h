@@ -511,15 +511,15 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, WasteCN,
-		return RESULT(DepletedC) / RESULT(DepletedN);          // waste (C/N)
+		return SafeDivide(RESULT(DepletedC), RESULT(DepletedN)); // waste (C/N)
 	)
 	
 	EQUATION(Model, SolubilizedN,
-		return RESULT(SolubilizedC) / RESULT(WasteCN);         //FN5
+		return SafeDivide(RESULT(SolubilizedC), RESULT(WasteCN)); //FN5
 	)
 	
 	EQUATION_OVERRIDE(Model, MineralisationEq,
-		return RESULT(RespiredC) / RESULT(WasteCN);            //FN6
+		return SafeDivide(RESULT(RespiredC), RESULT(WasteCN));    //FN6
 	)
 	
 	EQUATION(Model, TotalDesiredImmobilisation,                //FN7

@@ -1,0 +1,331 @@
+# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev, MAGIC simple carbon and nitrogen V_dev, MAGIC C/N ratio carbon and nitrogen V_dev) at 2021-01-18 13:07:11
+
+index_sets:
+"Compartment" : {"Soil1" "Stream"}
+
+parameters:
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+1850-01-01
+
+"Timesteps" :     #(1M) [0, 18446744073709551615]
+2040
+
+
+###################### MAGIC Core V_dev ######################
+
+# General parameters (no index sets) #
+
+"Convergence criterion" :     #(dimensionless) [0.01, 10] Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed
+0.1
+
+"Solver sub-step length" :     #(months) [0.001, 1] Length of intermediate step between each time the solution is rebalanced
+0.03
+
+
+# Compartment parameters ("Compartment") #
+
+"This is a soil compartment" :
+true false
+
+"Relative area" :     #(dimensionless) [0, 1] The fraction of the catchment covered by this compartment
+1 0.05
+
+"Depth" :     #(m) [0, 100]
+0.4 10
+
+"Porosity" :     #(dimensionless) [0, 1]
+0.5 0
+
+"Bulk density" :     #(kg/m3) [0, 2000]
+656 0
+
+"Cation exchange capacity" :     #(meq/kg) [0, 500]
+113.3 0
+
+"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [0, 1000]
+100 0
+
+"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1]
+0.1 0
+
+"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10]
+7.8 8.6
+
+"Al(OH)3 dissociation equation exponent" :     #(dimensionless) [1, 5]
+3 3
+
+"(-log10) pK 1st equilibrium constant for tripriotic organic acid" :     #(dimensionless) [-10, 10]
+3.04 3.04
+
+"(-log10) pK 2nd equilibrium constant for tripriotic organic acid" :     #(dimensionless) [-10, 10]
+4.51 4.51
+
+"(-log10) pK 3rd equilibrium constant for tripriotic organic acid" :     #(dimensionless) [-10, 10]
+6.46 6.46
+
+"(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]" :     #(dimensionless) [-10, 10]
+0 0
+
+"(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]" :     #(dimensionless) [-10, 10]
+0 0
+
+"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100]
+18.5 0
+
+"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100]
+13 0
+
+"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100]
+2.5 0
+
+"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100]
+3.2 0
+
+
+# Flow fractions ("Compartment" "Compartment") #
+
+"Flow fraction" :     #(dimensionless) [0, 1] How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)
+0 1
+0 0
+
+
+###################### MAGIC driver V_dev ######################
+
+# Deposition (no index sets) #
+
+"Precipitation" :     #(m/year) [0, 100] Default value for timesteps where no input series value is provided
+1
+
+"Ca wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+13
+
+"Mg wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+31.5
+
+"Na wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+137.7
+
+"K wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+2.9
+
+"NH4 wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+64.3
+
+"SO4 wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+107.6
+
+"Cl wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+160.8
+
+"NO3 wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+69.3
+
+"F wet deposition" :     #(meq/m3) [0, 500] Concentration in precipitation
+0
+
+
+# Deposition by compartment ("Compartment") #
+
+"This is a top layer" :     # Whether or not this compartment should receive deposition.
+true true
+
+"Ca dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"Mg dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"Na dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"K dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"NH4 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"SO4 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"Cl dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"NO3 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+"F dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition with to get total deposition
+1 1
+
+
+# Weathering by compartment ("Compartment") #
+
+"Ca weathering" :     #(meq/m2/year) [0, 500]
+28 0
+
+"Mg weathering" :     #(meq/m2/year) [0, 500]
+0 0
+
+"Na weathering" :     #(meq/m2/year) [0, 500]
+20 0
+
+"K weathering" :     #(meq/m2/year) [0, 500]
+2 0
+
+"NH4 weathering" :     #(meq/m2/year) [0, 500]
+0 0
+
+"SO4 weathering" :     #(meq/m2/year) [0, 500]
+20 0
+
+"Cl weathering" :     #(meq/m2/year) [0, 500]
+0 0
+
+"NO3 weathering" :     #(meq/m2/year) [0, 500]
+0 0
+
+"F weathering" :     #(meq/m2/year) [0, 500]
+0 0
+
+
+# Sources and sinks by compartment ("Compartment") #
+
+"Ca sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+4.2 0
+
+"Mg sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+1.1 0
+
+"Na sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"K sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+2.4 0
+
+"NH4 sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"SO4 sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"Cl sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"NO3 sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"F sinks" :     #(meq/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"Ca sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"Mg sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"Na sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"K sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"NH4 sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"SO4 sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"Cl sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"NO3 sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+"F sources" :     #(meq/m2/year) [0, 500]
+0 0
+
+
+# Climate by compartment ("Compartment") #
+
+"Discharge" :     #(m/year) [0, 100] Default value for timesteps where no input series value is provided
+1.15 1.15
+
+"Temperature" :     #(°C) [-20, 40] Default value for timesteps where no input series value is provided
+5 5
+
+"CO2 partial pressure" :     #(%) [0.1, 2] Default value for timesteps where no input series value is provided
+0.3 0.07
+
+"Organic acid concentration" :     #(mmol/m3) [0, 500] Default value for timesteps where no input series value is provided
+30 15
+
+
+###################### MAGIC simple carbon and nitrogen V_dev ######################
+
+###################### MAGIC C/N ratio carbon and nitrogen V_dev ######################
+
+# Carbon and Nitrogen by compartment ("Compartment") #
+
+
+"Nitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
+-100 0
+
+"Denitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
+0 0
+
+"Organic C input" :     #(mmol/m2/year) [0, 1000000]
+0 0
+
+"Organic C litter" :     #(mmol/m2/year) [0, 1000000]
+25900 0
+
+"Organic C output" :     #(mmol/m2/year) [0, 1000000]
+0 0
+
+"Organic C decomposition" :     #(mmol/m2/year) [0, 1000000]
+24050 0
+
+"Initial organic C" :     #(mol/m2) [0, 100000000]
+548 0
+
+"Organic C/N input ratio" :     #(dimensionless) [0.0001, 100]
+25 0
+
+"Organic C/N litter ratio" :     #(dimensionless) [0.0001, 100]
+53.3 0
+
+"Organic C/N output ratio" :     #(dimensionless) [0.0001, 100] If 0, use the pool C/N instead
+44 0
+
+"Organic C/N decomposition ratio" :     #(dimensionless) [0.0001, 100] If 0, use the pool C/N instead
+0 0
+
+"Initial organic N" :     #(mol/m2) [0, 100000000]
+18.8 0
+
+"Lower C/N threshold for NO3 immobilisation" :     #(%) [0, 5] C/N below this value - 0% NO3 immobilisation
+10 0
+
+"Upper C/N threshold for NO3 immobilisation" :     #(%) [0, 5] C/N above this value - 100% NO3 immobilisation
+20 0
+
+"Lower C/N threshold for NH4 immobilisation" :     #(%) [0, 5] C/N below this value - 0% NH4 immobilisation
+10 0
+
+"Upper C/N threshold for NH4 immobilisation" :     #(%) [0, 5] C/N above this value - 100% NH4 immobilisation
+20 0
+
+"NO3 plant uptake" :     #(mmol/m2/year) [0, 1000]
+496 0
+
+"NH4 plant uptake" :     #(mmol/m2/year) [0, 1000]
+0 0
+
+"Plants have access to organic nitrogen" :
+true true
+
+"Plants use inorganic nitrogen before soil" :
+true true
+

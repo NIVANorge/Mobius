@@ -1,39 +1,58 @@
-# Parameter file generated for SimplyP V0.3 at 2019-05-08 14:42:01
+# Parameter file generated for model SimplyP, containing modules (SimplyP hydrology V0.3, SimplyP Sediment V0.3, SimplyP phosphorous V0.3, SimplyP water body input V0.3) at 2021-01-27 10:59:14
 
 index_sets:
 "Reaches" : {"Coull"}
 "Landscape units" : {"Arable" "Improved grassland" "Semi-natural"}
 
 parameters:
-###################### (no index sets) ######################
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2004-01-01
+
 "Timesteps" :     #(days) [0, 18446744073709551615]
 485
-
-"Start date" :     # ["1000-01-01", "3000-12-31"]
-2004-01-01
 
 "Latitude" :     #(°) [-90, 90] Used in PET calculation if no PET timeseries was provided in the input data
 59.6
 
+"Dynamic erodibility" :     # If true, simulate the change in erodibility on arable land through the year due to cropping and harvesting practices
+true
+
+"Dynamic soil water EPC0, TDP and soil labile P" :     # Calculate a dynamic soil water EPC0 (the equilibrium P concentration of zero sorption), and therefore soilwater TDP concentration, so that it varies with labile P content? The labile P will also therefore vary
+true
+
+"Run in calibration mode" :     # Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file
+true
+
+
+###################### SimplyP hydrology V0.3 ######################
+
+# Snow (no index sets) #
+
 "Initial snow depth as water equivalent" :     #(mm) [0, 50000]
 0
 
-"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5]
+"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
 2.74
 
-"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
+
+# Hydrology (no index sets) #
+
+"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
 0.02
 
-"PET multiplication factor" :     #(dimensionless) [0, 1]
+"PET multiplication factor" :     #(dimensionless) [0, 1] 
 1
 
-"Soil field capacity" :     #(mm) [0, 5000]
+"Soil field capacity" :     #(mm) [0, 1000] 
 290
 
-"Baseflow index" :     #(dimensionless) [0, 1]
+"Baseflow index" :     #(dimensionless) [0, 1] 
 0.7
 
-"Groundwater time constant" :     #(days) [0.5, 400]
+"Groundwater time constant" :     #(days) [0.5, 400] 
 65
 
 "Minimum groundwater flow" :     #(mm/day) [0, 10]
@@ -42,13 +61,54 @@ parameters:
 "Manning's coefficient" :     #(s/(m^1/3)) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
 0.04
 
-"Dynamic erodibility" :     # If true, simulate the change in erodibility on arable land through the year due to cropping and harvesting practices
-true
+
+# General subcatchment and reach parameters ("Reaches") #
+
+"Catchment area" :     #(km^2) [0, 10000]
+51.7
+
+"Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
+10000
+
+"Reach slope" :     #(m/m) [1e-05, 3]
+0.014
+
+"Proportion of spring grown crops" :     #(dimensionless) [0, 1] Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true
+0.65
+
+
+# Hydrology subcatchment/reach ("Reaches") #
+
+"Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
+1
+
+
+# Hydrology land ("Landscape units") #
+
+"Soil water time constant" :     #(days) [0.05, 40] Note: arable and improved grassland are grouped as 'agricultural' land, and only the arable soil hydrology parameters are used
+1 1 10
+
+
+# Subcatchment characteristics by land class ("Reaches" "Landscape units") #
+
+"Land use proportions" :     #(dimensionless) [0, 1] Total proportion of land use in the sub-catchment. Include any newly-converted land in the total (any of this total that is newly-converted from another land class is accounted for later)
+0.2 0.3 0.5
+
+"Mean slope of land in the subcatchment" :     #(°) [0, 90]
+4 4 10
+
+"Land use proportions from newly-converted" :     #(dimensionless) [0, 1] Proportion of each land use class that has been newly-converted from another type. Only one of these should be >0
+0 0 0
+
+
+###################### SimplyP Sediment V0.3 ######################
+
+# Sediment (no index sets) #
 
 "Reach sediment input scaling factor" :     #(kg/m^3) [0, 1000] Calibrated parameter linking simulated sediment input from land to simulated flow from land
 16
 
-"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5]
+"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
 2
 
 "Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
@@ -56,6 +116,20 @@ true
 
 "Day of year when soil erodibility is at its max for autumn-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment
 304
+
+
+# Sediment land ("Landscape units") #
+
+"Vegetation cover factor" :     #(dimensionless) [0, 1] Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.
+0.2 0.09 0.021
+
+"Reduction of load in sediment" :     #(dimensionless) [0, 1] Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.
+0 0 0
+
+
+###################### SimplyP phosphorous V0.3 ######################
+
+# Phosphorous (no index sets) #
 
 "Soil mass per m2" :     #(kg/m^2) [0, 200]
 95
@@ -69,7 +143,7 @@ true
 "Net annual P input to newly-converted soil" :     #(kg/ha/year) [-100, 100]
 -5
 
-"Groundwater TDP concentration" :     #(mg/l) [0, 10]
+"Groundwater TDP concentration" :     #(mg/l) [0, 10] 
 0.02
 
 "Particulate P enrichment factor" :     #(dimensionless) [1, 5] P content of eroded material compared to P content of bulk soils
@@ -78,60 +152,29 @@ true
 "SRP fraction" :     #(dimensionless) [0, 1] Factor to multiply TDP by to estimate instream SRP concentration
 0.7
 
-"Newly-converted type" :     #(dimensionless) [0, 2] 0=Agricultural (from semi-natural), 2=Semi-natural (from agricultural), anything else=None
-2
+"Newly-converted type" :     # [Agricultural, Semi_natural, None]
+None
 
-"Dynamic soil water EPC0, TDP and soil labile P" :     # Calculate a dynamic soil water EPC0 (the equilibrium P concentration of zero sorption), and therefore soilwater TDP concentration, so that it varies with labile P content? The labile P will also therefore vary
-true
 
-"Run in calibration mode" :     # Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file
-true
+# Phosphorous reach ("Reaches") #
 
-###################### "Reaches" ######################
-"Catchment area" :     #(km^2) [0, 10000]
-51.7
-
-"Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
-10000
-
-"Reach slope" :     #(m/m) [1e-005, 3]
-0.014
-
-"Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
-1
-
-"Proportion of spring grown crops" :     #(dimensionless) [0, 1] Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true
-0.65
-
-"Reach effluent TDP inputs" :     #(kg/day) [0, 10]
+"Reach effluent TDP inputs" :     #(kg/day) [0, 10] 
 0.1
 
-"Is input to water body" :     # Whether or not the flow and various fluxes from this reach should be summed up in the calculation of inputs to a water body or lake
-false
 
-###################### "Reaches" "Landscape units" ######################
-"Land use proportions" :     #(dimensionless) [0, 1]
-0.2 0.3 0.5
-
-"Mean slope of land in the subcatchment" :     #(°) [0, 90]
-4 4 10
-
-"Land use proportions from newly-converted" :     #(dimensionless) [0, 1]
-0 0 0
-
-###################### "Landscape units" ######################
-"Soil water time constant" :     #(days) [0.05, 40] Note: arable and improved grassland are grouped as 'agricultural' land, and only the arable soil hydrology parameters are used
-1 1 10
-
-"Vegetation cover factor" :     #(dimensionless) [0, 1] Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.
-0.2 0.09 0.021
-
-"Reduction of load in sediment" :     #(dimensionless) [0, 1] Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.
-0 0 0
+# Phosphorous land ("Landscape units") #
 
 "Initial soil water TDP concentration and EPC0" :     #(mg/l) [0, 10] If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run. Note: arable and improved grassland are grouped as 'agricultural' and only the arable value is used; semi-natural initial EPC0 is assumed to be zero
 0.1 0.1 0
 
 "Initial total soil P content" :     #(mg/kg) [0, 10000] Note: arable and improved grassland are grouped as 'agricultural' land, so only the arable and semi-natural values are read in
 1458 1458 873
+
+
+###################### SimplyP water body input V0.3 ######################
+
+# Input to water body ("Reaches") #
+
+"Is input to water body" :     # Whether or not the flow and various fluxes from this reach should be summed up in the calculation of inputs to a water body or lake
+false
 

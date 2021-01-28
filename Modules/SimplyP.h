@@ -643,7 +643,7 @@ AddSimplyPPhosphorusModule(mobius_model *Model)
 	// Phosphorus parameters that vary by sub-catchment/reach
 	auto PhosphorousReach = RegisterParameterGroup(Model, "Phosphorous reach", Reach);
 	auto EffluentTDP                    = RegisterParameterDouble(Model, PhosphorousReach, "Reach effluent TDP inputs", KgPerDay, 0.1, 0.0, 10.0, "", "TDPeff");
-	auto NCType                         = RegisterParameterUInt(Model, Phosphorous, "Newly-converted type", Dimensionless, 2, 0, 2, "0=Agricultural (from semi-natural), 2=Semi-natural (from agricultural), anything else=None"); //TO DO: Replace this with a derived parameter, using proportion of newly-converted params
+	auto NCType                         = RegisterParameterEnum(Model, Phosphorous, "Newly-converted type", {"Agricultural", "Semi_natural", "None"}, "None"); //TO DO: Replace this with a derived parameter, using proportion of newly-converted params?
 	
 	// Phorphorus parameters that vary by land class
 	auto PhosphorousLand = RegisterParameterGroup(Model, "Phosphorous land", LandscapeUnits);

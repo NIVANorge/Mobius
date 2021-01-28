@@ -1,0 +1,62 @@
+# Parameter file generated for model MAGIC, containing modules (MAGIC Forest V_dev) at 2021-01-28 15:06:07
+
+index_sets:
+"Compartment" : {"Soil1"}
+
+parameters:
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+1850-01-01
+
+"Timesteps" :     #(months) [0, 18446744073709551615]
+2040
+
+
+###################### MAGIC Forest V_dev ######################
+
+# Compartment temperature ("Compartment") #
+
+"Minimal compartment temperature" :     #(°C) [-10, 10]
+0.4
+
+
+# Deposition (no index sets) #
+
+"Sea salt factor" :     #(dimensionless) [0.001, 5] Cl deposition is multiplied with this value
+1.48
+
+"SO4* factor" :     #(dimensionless) [0.001, 5] SO4 deposition is multiplied with this to get SO4 excess deposition
+1.43
+
+"Ca* factor" :     #(dimensionless) [0.001, 5] SO4 excess deposition is multiplied with this to get Ca excess deposition
+0.08
+
+"N factor" :     #(dimensionless) [0.001, 5] NH4 and NO3 deposition is multiplied with this value
+1.14
+
+
+# Carbon and Nitrogen ("Compartment") #
+
+"C decomposition at 0°C" :     #(mmol/m2/month) [0, 1000]
+388.89
+
+"C decomposition Q10" :     #(dimensionless) [1, 5]
+3
+
+"N uptake at 0°C" :     #(mmol/m2/month) [0, 1000]
+3.292
+
+"N uptake Q10" :     #(dimensionless) [1, 5]
+4
+
+"NO3 uptake scale" :     #(dimensionless) [0.1, 10]
+0.9
+
+"NH4 uptake scale" :     #(dimensionless) [0.1, 10]
+1.1
+
+"Litter C/N" :     #(dimensionless) [0.1, 200]
+45
+

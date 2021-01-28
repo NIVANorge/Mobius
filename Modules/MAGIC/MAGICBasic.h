@@ -68,13 +68,13 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto NO3DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "NO3 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto FDryDepositionFactor   = RegisterParameterDouble(Model, DepositionCompartment, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 
-	auto PrecipIn                  = RegisterInput(Model, "Precipitation", MPerTs);
+	auto PrecipIn                  = RegisterInput(Model, "Precipitation", MPerTs, true);
 	auto PrecipSeasonal            = RegisterInput(Model, "Precipitation seasonal distribution", Percent);
-	auto DischargeIn               = RegisterInput(Model, "Discharge", MPerTs);
+	auto DischargeIn               = RegisterInput(Model, "Discharge", MPerTs, true);
 	auto DischargeSeasonal         = RegisterInput(Model, "Discharge seasonal distribution", Percent);
-	auto TemperatureIn             = RegisterInput(Model, "Temperature", DegreesCelsius);
-	auto PartialPressureCO2In      = RegisterInput(Model, "CO2 partial pressure", Percent);
-	auto OAConcentrationIn        = RegisterInput(Model, "Organic acid concentration", MMolPerM3);
+	auto TemperatureIn             = RegisterInput(Model, "Temperature", DegreesCelsius, true);
+	auto PartialPressureCO2In      = RegisterInput(Model, "CO2 partial pressure", Percent, true);
+	auto OAConcentrationIn         = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);
 
 	auto CaWetDepositionScale      = RegisterInput(Model, "Ca wet deposition scaling factor", Dimensionless);
 	auto MgWetDepositionScale      = RegisterInput(Model, "Mg wet deposition scaling factor", Dimensionless);
@@ -86,6 +86,16 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto NO3WetDepositionScale     = RegisterInput(Model, "NO3 wet deposition scaling factor", Dimensionless);
 	auto FWetDepositionScale       = RegisterInput(Model, "F wet deposition scaling factor", Dimensionless);
 
+	// NOTE: The 'true' means that we clear these to NaN!
+	auto CaWetDepositionIn         = RegisterInput(Model, "Ca wet deposition", MEqPerM3, true);
+	auto MgWetDepositionIn         = RegisterInput(Model, "Mg wet deposition", MEqPerM3, true);
+	auto NaWetDepositionIn         = RegisterInput(Model, "Na wet deposition", MEqPerM3, true);
+	auto KWetDepositionIn          = RegisterInput(Model, "K wet deposition", MEqPerM3, true);
+	auto NH4WetDepositionIn        = RegisterInput(Model, "NH4 wet deposition", MEqPerM3, true);
+	auto SO4WetDepositionIn        = RegisterInput(Model, "SO4 wet deposition", MEqPerM3, true);
+	auto ClWetDepositionIn         = RegisterInput(Model, "Cl wet deposition", MEqPerM3, true);
+	auto NO3WetDepositionIn        = RegisterInput(Model, "NO3 wet deposition", MEqPerM3, true);
+	auto FWetDepositionIn          = RegisterInput(Model, "F wet deposition", MEqPerM3, true);
 	
 
 
@@ -171,7 +181,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 		double fraction = RESULT(FractionOfYear);
 		if(INPUT_WAS_PROVIDED(PrecipSeasonal)) fraction = INPUT(PrecipSeasonal)*0.01;
 		double par = PARAMETER(PrecipPar) * fraction;
-		if(in > 0.0) return in;
+		if(std::isfinite(in)) return in;
 		return par;
 	)
 	
@@ -180,21 +190,21 @@ This is a basic module that provides flow, temperature, and other drivers for th
 		double fraction = RESULT(FractionOfYear);
 		if(INPUT_WAS_PROVIDED(DischargeSeasonal)) fraction = INPUT(DischargeSeasonal)*0.01;
 		double par = PARAMETER(DischargePar) * fraction;
-		if(in > 0.0) return in;
+		if(std::isfinite(in)) return in;
 		return par;
 	)
 	
 	EQUATION(Model, Temperature,
-		//TODO: Hmm, it is not that good that this works differently to the others, but the problem is that 0 is a valid temperature value... Should we have an option to always clear an input series to NaN?
 		double par = PARAMETER(TemperaturePar);
-		if(INPUT_WAS_PROVIDED(TemperatureIn)) return INPUT(TemperatureIn);
+		double in  = INPUT(TemperatureIn);
+		if(std::isfinite(in)) return INPUT(TemperatureIn);
 		return par;
 	)
 	
 	EQUATION(Model, PartialPressureCO2,
 		double par = PARAMETER(PartialPressureCO2Par);
 		double in  = INPUT(PartialPressureCO2In);
-		if(in > 0.0) return in;
+		if(std::isfinite(in)) return in;
 		return par;
 	)
 	
@@ -202,7 +212,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 		//TODO: 0 is actually a legitimate value here too though...
 		double par = PARAMETER(OAConcentrationPar);
 		double in = INPUT(OAConcentrationIn);
-		if(in > 0.0) return in;
+		if(std::isfinite(in)) return in;
 		return par;
 	)
 	
@@ -210,64 +220,90 @@ This is a basic module that provides flow, temperature, and other drivers for th
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(CaWetDepositionScale)) scale = INPUT(CaWetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(CaWetDeposition)*scale*PARAMETER(CaDryDepositionFactor);
+		double conc = PARAMETER(CaWetDeposition)*scale;
+		double in = INPUT(CaWetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(CaDryDepositionFactor);
 	)
 	
 	EQUATION(Model, MgDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(MgWetDepositionScale)) scale = INPUT(MgWetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(MgWetDeposition)*scale*PARAMETER(MgDryDepositionFactor);
+		double conc = PARAMETER(MgWetDeposition)*scale;
+		double in = INPUT(MgWetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(MgDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NaDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(NaWetDepositionScale)) scale = INPUT(NaWetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(NaWetDeposition)*scale*PARAMETER(NaDryDepositionFactor);
+		double conc = PARAMETER(NaWetDeposition)*scale;
+		double in = INPUT(NaWetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(NaDryDepositionFactor);
 	)
 	
 	EQUATION(Model, KDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(KWetDepositionScale)) scale = INPUT(KWetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(KWetDeposition)*scale*PARAMETER(KDryDepositionFactor);
+		double conc = PARAMETER(KWetDeposition)*scale;
+		double in = INPUT(KWetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(KDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NH4Deposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(NH4WetDepositionScale)) scale = INPUT(NH4WetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(NH4WetDeposition)*scale*PARAMETER(NH4DryDepositionFactor);
+		double conc = PARAMETER(NH4WetDeposition)*scale;
+		double in = INPUT(NH4WetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(NH4DryDepositionFactor);
 	)
 	
 	EQUATION(Model, SO4Deposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(SO4WetDepositionScale)) scale = INPUT(SO4WetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(SO4WetDeposition)*scale*PARAMETER(SO4DryDepositionFactor);
+		double conc = PARAMETER(SO4WetDeposition)*scale;
+		double in = INPUT(SO4WetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(SO4DryDepositionFactor);
 	)
 	
 	EQUATION(Model, ClDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(ClWetDepositionScale)) scale = INPUT(ClWetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(ClWetDeposition)*scale*PARAMETER(ClDryDepositionFactor);
+		double conc = PARAMETER(ClWetDeposition)*scale;
+		double in = INPUT(ClWetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(ClDryDepositionFactor);
 	)
 	
 	EQUATION(Model, NO3Deposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(NO3WetDepositionScale)) scale = INPUT(NO3WetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		double dep = RESULT(Precipitation)*PARAMETER(NO3WetDeposition)*scale*PARAMETER(NO3DryDepositionFactor);
-		return RESULT(Precipitation)*PARAMETER(NO3WetDeposition)*scale*PARAMETER(NO3DryDepositionFactor);
+		double conc = PARAMETER(NO3WetDeposition)*scale;
+		double in = INPUT(NO3WetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(NO3DryDepositionFactor);
 	)
 	
 	EQUATION(Model, FDeposition,
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(FWetDepositionScale)) scale = INPUT(FWetDepositionScale);
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
-		return RESULT(Precipitation)*PARAMETER(FWetDeposition)*scale*PARAMETER(FDryDepositionFactor);
+		double conc = PARAMETER(FWetDeposition)*scale;
+		double in = INPUT(FWetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(FDryDepositionFactor);
 	)
 	
 	

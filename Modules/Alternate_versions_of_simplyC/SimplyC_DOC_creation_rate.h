@@ -46,6 +46,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0, "", "kSO4");
 	
+	//auto ProductionProportionalToVolume = RegisterParameterBool(Model, CarbonParamsGlobal, "DOC production is proportional to soil water volume", true, "Otherwise it is proportional to field capacity");
 
 #ifdef SIMPLYQ_GROUNDWATER
 	auto DeepSoilDOCConcentration = RegisterParameterDouble(Model, CarbonParamsGlobal, "Mineral soil/groundwater DOC concentration", MgPerL, 0.0, 0.0, 70.0, "", "DOCgw");
@@ -127,7 +128,15 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilDOCDissolution,
 		// mg/(l day) * mm = kg/(km2 day)
-		double value = RESULT(SoilWaterVolume)*PARAMETER(BaselineSoilDOCDissolutionRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
+		
+		/*
+		double volume = PARAMETER(FieldCapacity);
+		double volume = RESULT(SoilWaterVolume);
+		if(PARAMETER(ProductionProportionalToVolume)) volume = volume2;
+		*/
+		double volume = RESULT(SoilWaterVolume);
+		
+		double value = volume*PARAMETER(BaselineSoilDOCDissolutionRate)*(1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
 		return Max(0.0, value);
 	)
 	

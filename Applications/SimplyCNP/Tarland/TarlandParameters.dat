@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev, SimplyC Vtest_03, SimplyP V0.4) at 2020-10-20 13:16:22
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev, SimplyC Vtest_03, SimplyP V0.4) at 2021-01-26 12:58:47
 
 index_sets:
 "Landscape units" : {"Arable" "Improved grassland" "Semi-natural"}
@@ -19,10 +19,10 @@ parameters:
 
 # Potential evapotranspiration ("Landscape units") #
 
-"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2]
+"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
 0.18 0.18 0.18
 
-"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5]
+"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
 0 0 0
 
 
@@ -201,12 +201,12 @@ true
 # Carbon global (no index sets) #
 
 "Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 20] 
-0.15
+0.14
 
 "Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20] 
 0
 
-"Mineral soil/groundwater DOC concentration" :     #(mg/l) [0, 70]
+"Mineral soil/groundwater DOC concentration" :     #(mg/l) [0, 70] 
 2.4
 
 
