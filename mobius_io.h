@@ -518,11 +518,12 @@ LinearInterpolateInputValues(mobius_data_set *DataSet, double *Base, double Firs
 	
 	s64 Step     = FindTimestep(DataSet->InputDataStartDate, FirstDate, DataSet->Model->TimestepSize);
 	s64 LastStep = FindTimestep(DataSet->InputDataStartDate, LastDate, DataSet->Model->TimestepSize);
+	LastStep = Min(LastStep, DataSet->InputDataTimesteps);
 	
 	double *WriteTo = Base + Step*Stride;
 	while(Step <= LastStep)
 	{
-		if(Step >= 0 && Step < DataSet->InputDataTimesteps)
+		if(Step >= 0)
 		{
 			double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
 			double Value = FirstValue + XX*YRange;
@@ -635,6 +636,19 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexSets.size(), DataSet->IndexCounts, Input);
 				
 				Offsets.push_back(Offset);
+				
+				if(DataSet->InputTimeseriesWasProvided[Offset])
+				{
+					WarningPrint("WARNING: The input time series \"", InputName, "\" with indexes {");
+					size_t Idx = 0;
+					for(token_string IndexName : IndexNames)
+					{
+						WarningPrint("\"", IndexName, "\"");
+						if(Idx != IndexNames.size()-1) WarningPrint(", ");
+						++Idx;
+					}
+					WarningPrint("} was provided more than once. The last provided series will override the others.\n");
+				}
 			}
 			else
 				break;
@@ -649,9 +663,12 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			}
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
 			Offsets.push_back(Offset);
+			if(DataSet->InputTimeseriesWasProvided[Offset])
+				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The last provided series will override the others.\n");
 		}
 		
 		bool LinearInterpolate = false;
+		bool InterpInsideOnly = false;
 		bool RepeatYearly = false;
 		Token = Stream.PeekToken();
 		while(Token.Type == TokenType_UnquotedString)
@@ -659,6 +676,12 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			if(Token.StringValue.Equals("linear_interpolate"))
 			{
 				LinearInterpolate = true;
+				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
+			}
+			else if(Token.StringValue.Equals("linear_interpolate_inside"))
+			{
+				LinearInterpolate = true;
+				InterpInsideOnly  = true;
 				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
 			}
 			else if(Token.StringValue.Equals("repeat_yearly"))
@@ -679,7 +702,6 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		for(size_t Offset : Offsets)
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
 		
-		
 		//NOTE: This reads the actual data after the header.
 		
 		//NOTE: For the first timestep, try to figure out what format the data was provided in.
@@ -698,7 +720,8 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			FatalError("Inputs are to be provided either as a series of numbers or a series of dates (or date ranges) together with numbers.\n");
 		}
 		
-		if(Model->Inputs[Input].IsAdditional)
+		/*   NOTE: Clearing to NaN is now done inside AllocateInputStorage
+		if(Model->Inputs[Input].ClearToNaN)
 		{
 			//NOTE: Additional timeseries are by default cleared to NaN instead of 0.
 			//TODO: This makes us only clear the ones that are provided in the file... Whe should really also clear ones that are not provided..
@@ -708,6 +731,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				FillConstantInputValues(DataSet, Base, std::numeric_limits<double>::quiet_NaN(), 0, (s64)Timesteps-1);
 			}
 		}
+		*/
 		
 		if(!LinearInterpolate)
 		{
@@ -822,14 +846,18 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					CurDate = Stream.ExpectDateTime();
 				else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
 				{
-					//NOTE: Fill the rest of the time series with the last value read
-					for(size_t Offset : Offsets)
+					if(!InterpInsideOnly)
 					{
-						double *Base = DataSet->InputData + Offset;
-						s64 BeginTimestep = FindTimestep(DataSet->InputDataStartDate, PrevDate, Model->TimestepSize);
-						s64 EndTimestep = (s64)DataSet->InputDataTimesteps-1;
-						FillConstantInputValues(DataSet, Base, PrevValue, BeginTimestep, EndTimestep);
+						//NOTE: Fill the rest of the time series with the last value read
+						for(size_t Offset : Offsets)
+						{
+							double *Base = DataSet->InputData + Offset;
+							s64 BeginTimestep = FindTimestep(DataSet->InputDataStartDate, PrevDate, Model->TimestepSize);
+							s64 EndTimestep = (s64)DataSet->InputDataTimesteps-1;
+							FillConstantInputValues(DataSet, Base, PrevValue, BeginTimestep, EndTimestep);
+						}
 					}
+					
 					break;
 				}
 				else
@@ -858,10 +886,13 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					FatalError("in linear interpolation mode, the dates have to be sequential.\n");
 				}
 
-				for(size_t Offset : Offsets)
+				if(!AtBeginning || !InterpInsideOnly)    //If we interpolate inside given values only, we don't fill any values at the beginning
 				{
-					double *Base = DataSet->InputData + Offset;
-					LinearInterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate);
+					for(size_t Offset : Offsets)
+					{
+						double *Base = DataSet->InputData + Offset;
+						LinearInterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate);
+					}
 				}
 				
 				PrevValue = Value;
@@ -1091,7 +1122,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 							Unit = RegisterUnit(Model, UnitName.Data);
 						}
 					}
-					RegisterInput(Model, InputName.Data, Unit, true);
+					RegisterInput(Model, InputName.Data, Unit, true, true);
 				}
 				else break;
 			}

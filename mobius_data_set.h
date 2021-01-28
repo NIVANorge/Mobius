@@ -684,6 +684,9 @@ AllocateParameterStorage(mobius_data_set *DataSet)
 }
 
 static void
+ForeachInputInstance(mobius_data_set *DataSet, input_h Input, const std::function<void(index_t *Indexes, size_t IndexesCount)> &Do);
+
+static void
 AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 {
 	const mobius_model *Model = DataSet->Model;
@@ -721,6 +724,27 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 	
 	DataSet->InputData = AllocClearedArray(double, DataSet->InputStorageStructure.TotalCount * Timesteps);
 	DataSet->InputDataTimesteps = Timesteps;
+	
+	//NOTE: It would be easier if we just cleared every input series to NaN always, but that would require re-writing some models to account for it
+	//NOTE: The below way to do it is not that efficient...
+	for(input_h Input : Model->Inputs)
+	{
+		const input_spec &Spec = Model->Inputs[Input];
+		if(Spec.ClearToNaN)
+		{
+			ForeachInputInstance(DataSet, Input, [DataSet, Input](index_t *Indexes, size_t IndexesCount)
+				{
+					size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexesCount, DataSet->IndexCounts, Input);
+					double *At = DataSet->InputData + Offset;
+					for(size_t Idx = 0; Idx < DataSet->InputDataTimesteps; ++Idx)
+					{
+						*At = std::numeric_limits<double>::quiet_NaN();
+						At += DataSet->InputStorageStructure.TotalCount;
+					}
+				}
+			);
+		}
+	}
 	
 	DataSet->InputTimeseriesWasProvided = DataSet->BucketMemory.Allocate<bool>(DataSet->InputStorageStructure.TotalCount);
 }
@@ -1431,5 +1455,15 @@ ForeachParameterInstance(mobius_data_set *DataSet, parameter_h Parameter, const 
 	ForeachRecursive(DataSet, CurrentIndexes, Unit.IndexSets, Do, -1);
 }
 
+static void
+ForeachInputInstance(mobius_data_set *DataSet, input_h Input, const std::function<void(index_t *Indexes, size_t IndexesCount)> &Do)
+{
+	index_t CurrentIndexes[256];
+	
+	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
+	storage_unit_specifier<input_h> &Unit = DataSet->InputStorageStructure.Units[UnitIndex];
+	
+	ForeachRecursive(DataSet, CurrentIndexes, Unit.IndexSets, Do, -1);
+}
 
 

@@ -339,7 +339,8 @@ struct input_spec
 	
 	unit_h Unit;
 	
-	bool IsAdditional; //If it was user-specified in the input file, as opposed to being registered by a model building procedure.
+	bool IsAdditional; // If it was user-specified in the input file, as opposed to being registered by a model building procedure.
+	bool ClearToNaN;   // If it should initially be cleared to NaN. Otherwise it is cleared to 0.
 	
 	std::vector<index_set_h> IndexSetDependencies;
 };
@@ -851,12 +852,17 @@ RegisterParameterGroup(mobius_model *Model, const char *Name, T... IndexSets)
 
 
 inline input_h
-RegisterInput(mobius_model *Model, const char *Name, unit_h Unit = {0}, bool IsAdditional = false)
+RegisterInput(mobius_model *Model, const char *Name, unit_h Unit = {0}, int ClearToNaN = -1, bool IsAdditional = false)
 {
 	REGISTRATION_BLOCK(Model)
 	input_h Input = Model->Inputs.Register(Name);
 	input_spec &Spec = Model->Inputs[Input];
 	Spec.IsAdditional = IsAdditional;
+	if(ClearToNaN == -1)
+		Spec.ClearToNaN = IsAdditional;   // Unless something else is specified, additional inputs are cleared to NaN and model inputs are cleared to 0
+	else
+		Spec.ClearToNaN = (bool) ClearToNaN;
+	
 	Spec.Unit = Unit;
 	return Input;
 }
