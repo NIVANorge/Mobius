@@ -63,9 +63,9 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0, 0.0, 1.0);
 	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0, -10.0, 10.0);
 	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0, 1.0, 5.0);
-	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for tripriotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
-	auto PK2DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 2nd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
-	auto PK3DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 3rd equilibrium constant for tripriotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK2DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 2nd equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
+	auto PK3DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 3rd equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
 	auto PK1AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]", Dimensionless, 0.0, -10.0, 10.0);
 	auto PK2AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0, -10.0, 10.0);
 	

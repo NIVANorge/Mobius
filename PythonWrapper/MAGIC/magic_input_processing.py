@@ -17,7 +17,7 @@ def empty_input_df(begin_year, end_year) :
 	return pd.DataFrame(index = year_range(begin_year, end_year))
 
 
-def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean') :
+def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean', patch_ref_range = None) :
 	
 	source = source_df[source_name]
 	
@@ -58,6 +58,14 @@ def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean') :
 	
 	yearly = yearly.reindex(year_range(input_df.index[0].year, input_df.index[-1].year, False))
 	
+	if patch_ref_range is not None :
+		ref_dates = pd.to_datetime(['%s-1-1' % ref_year for ref_year in patch_ref_range])
+		ref_val = np.nanmean([yearly[ref_date] for ref_date in ref_dates])
+		
+		first_idx = yearly.first_valid_index()
+		idx = np.searchsorted(yearly.index, first_idx)
+		yearly[yearly.index[idx-1]] = ref_val
+	
 	#TODO: Provide different methods for filling in holes
 	yearly = yearly.interpolate(limit_area=None, limit_direction='both')
 	#print(yearly)
@@ -75,13 +83,13 @@ def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean') :
 				input_df.loc[index, dest_name] = m_val + yr_val - all_mean
 	
 
-def add_precip_ts(input_df, source_df, source_name) :#, source_is_mm=True) :
-	add_ts(input_df, source_df, 'Precipitation', source_name, 'sum')
+def add_precip_ts(input_df, source_df, source_name, patch_ref_range=None) :#, source_is_mm=True) :
+	add_ts(input_df, source_df, 'Precipitation', source_name, 'sum', patch_ref_range)
 	#if source_is_mm : input_df['Precipitation'] *= 1e-3     #NOTE MAGIC wants this in m/month instead of mm/month
 	
 
-def add_air_temperature_ts(input_df, source_df, source_name) :
-	add_ts(input_df, source_df, 'Air temperature', source_name, 'mean')
+def add_air_temperature_ts(input_df, source_df, source_name, patch_ref_range=None) :
+	add_ts(input_df, source_df, 'Air temperature', source_name, 'mean', patch_ref_range)
 	
 def add_deposition_ts(input_df, source_df, element_name, patch_scale=None, patch_ref_range=range(1989,1992)) :
 	
@@ -89,7 +97,6 @@ def add_deposition_ts(input_df, source_df, element_name, patch_scale=None, patch
 
 	#TODO: Currently only works if source_df is yearly and has values on january 1st for its range
 	ref_dates = pd.to_datetime(['%s-1-1' % ref_year for ref_year in patch_ref_range])
-
 	ref_val = np.nanmean([source[ref_date] for ref_date in ref_dates])
 	
 	source = source.reindex(input_df.index)

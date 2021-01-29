@@ -78,13 +78,13 @@ true
 "Al(OH)3 dissociation equation exponent" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 3
 
-"(-log10) pK 1st equilibrium constant for tripriotic organic acid" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"(-log10) pK 1st equilibrium constant for triprotic organic acid" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 3.04
 
-"(-log10) pK 2nd equilibrium constant for tripriotic organic acid" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"(-log10) pK 2nd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 4.51
 
-"(-log10) pK 3rd equilibrium constant for tripriotic organic acid" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+"(-log10) pK 3rd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
 6.46
 
 "(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
