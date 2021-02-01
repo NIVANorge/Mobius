@@ -83,18 +83,18 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	auto CompartmentSolver = RegisterSolver(Model, "Compartment solver", SolverStep, MobiusEuler);
 	
-	auto ConcCa            = RegisterEquation(Model, "Ca(2+) ionic concentration", MMolPerM3);
-	auto ConcMg            = RegisterEquation(Model, "Mg(2+) ionic concentration", MMolPerM3);
-	auto ConcNa            = RegisterEquation(Model, "Na(+) ionic concentration", MMolPerM3);
-	auto ConcK             = RegisterEquation(Model, "K(+) ionic concentration", MMolPerM3);
-	auto ConcNH4           = RegisterEquation(Model, "NH4(+) ionic concentration", MMolPerM3);
-	auto ConcSO4           = RegisterEquation(Model, "SO4(2-) ionic concentration", MMolPerM3);
-	auto ConcCl            = RegisterEquation(Model, "Cl(-) ionic concentration", MMolPerM3);
-	auto ConcNO3           = RegisterEquation(Model, "NO3(-) ionic concentration", MMolPerM3);
-	auto ConcF             = RegisterEquation(Model, "F(-) ionic concentration", MMolPerM3);
+	auto ConcCa            = RegisterEquation(Model, "Ca(2+) ionic concentration", MEqPerM3);
+	auto ConcMg            = RegisterEquation(Model, "Mg(2+) ionic concentration", MEqPerM3);
+	auto ConcNa            = RegisterEquation(Model, "Na(+) ionic concentration", MEqPerM3);
+	auto ConcK             = RegisterEquation(Model, "K(+) ionic concentration", MEqPerM3);
+	auto ConcNH4           = RegisterEquation(Model, "NH4(+) ionic concentration", MEqPerM3);
+	auto ConcSO4           = RegisterEquation(Model, "SO4(2-) ionic concentration", MEqPerM3);
+	auto ConcCl            = RegisterEquation(Model, "Cl(-) ionic concentration", MEqPerM3);
+	auto ConcNO3           = RegisterEquation(Model, "NO3(-) ionic concentration", MEqPerM3);
+	auto ConcF             = RegisterEquation(Model, "F(-) ionic concentration", MEqPerM3);
 	
-	auto ConcAllSO4        = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MMolPerM3);
-	auto ConcAllF          = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MMolPerM3);
+	auto ConcAllSO4        = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MEqPerM3);  //TODO!
+	auto ConcAllF          = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MEqPerM3);
 	
 	auto PH                = RegisterEquation(Model, "pH", Log10MolPerL);
 	auto SumBaseCationConc = RegisterEquation(Model, "Sum of base cation concentrations (Ca + Mg + Na + K)", MEqPerM3);
@@ -180,23 +180,23 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
 	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
 	
-	auto InitialConcCa       = RegisterEquationInitialValue(Model, "Initial Ca concentration", MMolPerM3);
+	auto InitialConcCa       = RegisterEquationInitialValue(Model, "Initial Ca concentration", MEqPerM3);
 	SetInitialValue(Model, ConcCa, InitialConcCa);
-	auto InitialConcMg       = RegisterEquationInitialValue(Model, "Initial Mg concentration", MMolPerM3);
+	auto InitialConcMg       = RegisterEquationInitialValue(Model, "Initial Mg concentration", MEqPerM3);
 	SetInitialValue(Model, ConcMg, InitialConcMg);
-	auto InitialConcNa       = RegisterEquationInitialValue(Model, "Initial Na concentration", MMolPerM3);
+	auto InitialConcNa       = RegisterEquationInitialValue(Model, "Initial Na concentration", MEqPerM3);
 	SetInitialValue(Model, ConcNa, InitialConcNa);
-	auto InitialConcK        = RegisterEquationInitialValue(Model, "Initial K concentration", MMolPerM3);
+	auto InitialConcK        = RegisterEquationInitialValue(Model, "Initial K concentration", MEqPerM3);
 	SetInitialValue(Model, ConcK, InitialConcK);
-	auto InitialConcNH4      = RegisterEquationInitialValue(Model, "Initial NH4 concentration", MMolPerM3);
+	auto InitialConcNH4      = RegisterEquationInitialValue(Model, "Initial NH4 concentration", MEqPerM3);
 	SetInitialValue(Model, ConcNH4, InitialConcNH4);
-	auto InitialConcAllSO4   = RegisterEquationInitialValue(Model, "Initial total sulfate in solution", MMolPerM3);
+	auto InitialConcAllSO4   = RegisterEquationInitialValue(Model, "Initial total sulfate in solution", MEqPerM3);
 	SetInitialValue(Model, ConcAllSO4, InitialConcAllSO4);
-	auto InitialConcCl       = RegisterEquationInitialValue(Model, "Initial Cl concentration", MMolPerM3);
+	auto InitialConcCl       = RegisterEquationInitialValue(Model, "Initial Cl concentration", MEqPerM3);
 	SetInitialValue(Model, ConcCl, InitialConcCl);
-	auto InitialConcNO3      = RegisterEquationInitialValue(Model, "Initial NO3 concentration", MMolPerM3);
+	auto InitialConcNO3      = RegisterEquationInitialValue(Model, "Initial NO3 concentration", MEqPerM3);
 	SetInitialValue(Model, ConcNO3, InitialConcNO3);
-	auto InitialConcAllF     = RegisterEquationInitialValue(Model, "Initial total fluoride in solution", MMolPerM3);
+	auto InitialConcAllF     = RegisterEquationInitialValue(Model, "Initial total fluoride in solution", MEqPerM3);
 	SetInitialValue(Model, ConcAllF, InitialConcAllF);
 	
 	auto InitialCa           = RegisterEquationInitialValue(Model, "Initial Ca mass", MEqPerM2);
@@ -236,11 +236,11 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 
 	EQUATION(Model, InitialConcCa,
-		return (RESULT(CaExternalFlux) + RESULT(CaInput)) / (2.0 * RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
 	)
 	
 	EQUATION(Model, InitialConcMg,
-		return (RESULT(MgExternalFlux) + RESULT(MgInput)) / (2.0 * RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return (RESULT(MgExternalFlux) + RESULT(MgInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
 	)
 	
 	EQUATION(Model, InitialConcNa,
@@ -256,7 +256,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	)
 	
 	EQUATION(Model, InitialConcAllSO4,
-		return (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / (2.0*RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
 	)
 	
 	EQUATION(Model, InitialConcCl,
@@ -272,7 +272,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	)
 	
 	EQUATION(Model, InitialCa,
-		double initconc        = RESULT(ConcCa)*2.0;  //MMol->MEq
+		double initconc        = RESULT(ConcCa);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -282,7 +282,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	)
 	
 	EQUATION(Model, InitialMg,
-		double initconc        = RESULT(ConcMg)*2.0;
+		double initconc        = RESULT(ConcMg);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -344,12 +344,12 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		Param.SO4HalfSat                 = PARAMETER(SO4HalfSat);
 		Param.SO4MaxCap                  = PARAMETER(SO4MaxCap);
 		
-		Input.conc_Ca  = RESULT(ConcCa);
-		Input.conc_Mg  = RESULT(ConcMg);
+		Input.conc_Ca  = RESULT(ConcCa) / 2.0;
+		Input.conc_Mg  = RESULT(ConcMg) / 2.0;
 		Input.conc_Na  = RESULT(ConcNa);
 		Input.conc_K   = RESULT(ConcK);
 		Input.conc_NH4 = RESULT(ConcNH4);
-		Input.all_SO4  = RESULT(ConcAllSO4);
+		Input.all_SO4  = RESULT(ConcAllSO4) / 2.0;
 		Input.conc_Cl  = RESULT(ConcCl);
 		Input.conc_NO3 = RESULT(ConcNO3);
 		Input.all_F    = RESULT(ConcAllF);
@@ -373,7 +373,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		SET_RESULT(IonicStrength, Result.IonicStrength);
 		SET_RESULT(ConcH, Result.conc_H);
 		
-		double initconc = RESULT(ConcAllSO4)*2.0; //Initial total concentration in solution.
+		double initconc = RESULT(ConcAllSO4); //Initial total concentration in solution.
 		
 		double exchangeable_SO4 = (PARAMETER(SO4MaxCap)*2.0*Result.conc_SO4/(PARAMETER(SO4HalfSat) + 2.0*Result.conc_SO4));
 		
@@ -436,11 +436,11 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	
 	EQUATION(Model, CaOutput,
-		return RESULT(Discharge)*2.0*RESULT(ConcCa) / PARAMETER(RelativeArea);
+		return RESULT(Discharge)*RESULT(ConcCa) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, MgOutput,
-		return RESULT(Discharge)*2.0*RESULT(ConcMg) / PARAMETER(RelativeArea);
+		return RESULT(Discharge)*RESULT(ConcMg) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, NaOutput,
@@ -456,7 +456,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	)
 	
 	EQUATION(Model, SO4Output,
-		return RESULT(Discharge)*2.0*RESULT(ConcAllSO4) / PARAMETER(RelativeArea);
+		return RESULT(Discharge)*RESULT(ConcAllSO4) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, ClOutput,
@@ -646,17 +646,17 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 			MagicCore(Input, Param, Result, issoil, conv, H_estimate, ionic);
 		}
 		
-		SET_RESULT(ConcCa,            Result.conc_Ca);
-		SET_RESULT(ConcMg,            Result.conc_Mg);
+		SET_RESULT(ConcCa,            2.0*Result.conc_Ca);
+		SET_RESULT(ConcMg,            2.0*Result.conc_Mg);
 		SET_RESULT(ConcNa,            Result.conc_Na);
 		SET_RESULT(ConcK,             Result.conc_K);
 		SET_RESULT(ConcNH4,           Result.conc_NH4);
-		SET_RESULT(ConcSO4,           Result.conc_SO4);
+		SET_RESULT(ConcSO4,           2.0*Result.conc_SO4);
 		SET_RESULT(ConcCl,            Result.conc_Cl);
 		SET_RESULT(ConcNO3,           Result.conc_NO3);
 		SET_RESULT(ConcF,             Result.conc_F);
 		
-		SET_RESULT(ConcAllSO4,        Result.all_SO4);
+		SET_RESULT(ConcAllSO4,        2.0*Result.all_SO4);
 		SET_RESULT(ConcAllF,          Result.all_F);
 		
 		SET_RESULT(IonicStrength,     Result.IonicStrength);
