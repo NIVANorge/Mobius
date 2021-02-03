@@ -3,13 +3,10 @@
 
 //#include "../boost_solvers.h"
 
-//NOTE: THIS MODULE IS IN DEVELOPMENT!
-
-
 static void
 AddIncaRadModule(mobius_model *Model)
 {
-	BeginModule(Model, "INCA-Rad", "_dev");
+	BeginModule(Model, "INCA-Rad", "0.1");
 	
 	SetModuleDescription(Model, R""""(
 Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it suitable to describe radionuclides.
@@ -29,6 +26,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	auto NgPerKm2PerDay   = RegisterUnit(Model, "ng/km2/day");
 	auto NgPerDay         = RegisterUnit(Model, "ng/day");
 	auto NgPerM2PerDay    = RegisterUnit(Model, "ng/m2/day");
+	auto PerM2PerDay      = RegisterUnit(Model, "1/m2/day");
 	auto NgPerM2          = RegisterUnit(Model, "ng/m2");
 	auto NgPerM3          = RegisterUnit(Model, "ng/m3");
 	auto NgPerKg          = RegisterUnit(Model, "ng/kg");
@@ -81,7 +79,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	auto HalfLife                              = RegisterParameterDouble(Model, Chemistry, "Element half life", Years, 1.0, 7.29e-31, 2.2e24);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
-	auto TransferCoefficientBetweenEasilyAndPotentiallyAccessible = RegisterParameterDouble(Model, Land, "Transfer coefficient between easily and potentially accessible fractions", MPerDay, 0.0, 0.0, 100.0);
+	auto TransferCoefficientBetweenEasilyAndPotentiallyAccessible = RegisterParameterDouble(Model, Land, "Transfer coefficient between easily and potentially accessible fractions", PerM2PerDay, 0.0, 0.0, 100.0);
 
 	
 	auto InitialSoilWaterContaminantConcentration = RegisterParameterDouble(Model, Land, "Initial soil water contaminant concentration", NgPerM3, 0.0, 0.0, 1e5);
@@ -278,7 +276,9 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, TransferFromPotentiallyToEasilyAccessible,
-		return 1e6 * PARAMETER(TransferCoefficientBetweenEasilyAndPotentiallyAccessible) * (RESULT(SoilSOCContaminantConcentrationPotentiallyAccessible) - RESULT(SoilSOCContaminantConcentration));
+		//NOTE: conc is in ng(contaminant) / kg(SOC)
+		//We give a transfer coefficient that is independent of the SOC mass so that the behaviour is not too correlated to the SOC mass.
+		return 1e6 * PARAMETER(TransferCoefficientBetweenEasilyAndPotentiallyAccessible) * PARAMETER(SoilSOCMass) * (RESULT(SoilSOCContaminantConcentrationPotentiallyAccessible) - RESULT(SoilSOCContaminantConcentration));
 	)
 	
 	EQUATION(Model, SoilSOCContaminantConcentrationPotentiallyAccessible,

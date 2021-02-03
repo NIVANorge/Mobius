@@ -158,7 +158,7 @@ parameters:
 "Organic soil water initial DIC concentration" :     #(mg/l) [0, 100]
 0
 
-"Organic soil water initial SOC mass" :     #(kg/Ha) [0, 1000000]
+"Organic soil initial SOC mass" :     #(kg/Ha) [0, 1000000]
 10000
 
 "Mineral soil water initial DOC concentration" :     #(mg/l) [0, 100]
@@ -167,7 +167,7 @@ parameters:
 "Mineral soil water initial DIC concentration" :     #(mg/l) [0, 100]
 0
 
-"Mineral soil water initial SOC mass" :     #(kg/Ha) [0, 1000000]
+"Mineral soil initial SOC mass" :     #(kg/Ha) [0, 1000000]
 10000
 
 ###################### "Landscape units" "Soils" "Soils" ######################

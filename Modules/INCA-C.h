@@ -1,11 +1,5 @@
 
 
-//NOTE: This is an implementation of the INCA-C model. This implementation is designed to have the PERSiST hydrology integrated into it instead of having the separate hydrology model originally specified for INCA-C.
-//INCA-C was originally specified in
-//M. N. Futter et. al. 2007, Modeling the mechanisms that control in-stream dissolved organic carbon dynamics in upland and forested catchments, Water Resources Research, 43.
-// This implementation also has some additional processes that were not specified in the original paper, but were introduced in INCA-C software at a later time based on a few other papers.
-
-
 static void
 AddINCACModel(mobius_model *Model)
 {
@@ -15,7 +9,7 @@ AddINCACModel(mobius_model *Model)
 This is an implementation of the INCA-C model. This implementation is designed to have the PERSiST hydrology integrated into it instead of having the separate hydrology model originally specified for INCA-C.
 
 INCA-C was originally specified in
-M. N. Futter et. al. 2007, Modeling the mechanisms that control in-stream dissolved organic carbon dynamics in upland and forested catchments, Water Resources Research, 43.
+[^ https://doi.org/10.1029/2006WR004960^ M. N. Futter et. al. 2007, Modeling the mechanisms that control in-stream dissolved organic carbon dynamics in upland and forested catchments, Water Resources Research, 43.]
 
 This implementation also has some additional processes that were not specified in the original paper, but were introduced in INCA-C software by Dan Butterfield at a later time based on a few other papers.
 )"""");
@@ -53,8 +47,8 @@ This implementation also has some additional processes that were not specified i
 	
 	//TODO: As always, find better default values, min/max, description..
 	auto MinRateDepth                 = RegisterParameterDouble(Model, Land, "Min rate depth", Mm, 50.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their lowest rate.");
-	auto MaxRateDepth                 = RegisterParameterDouble(Model, Land, "Max rate depth", Mm, 400.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their highest rate. Rates are lower both for higher and lower temperatures.");
-	auto MinimalMoistureFactor        = RegisterParameterDouble(Model, Land, "Min moisture factor", Dimensionless, 0.05, 0.0, 1.0, "The rate factor from moisture on carbon processes when soil moisture is at its minimal.");
+	auto MaxRateDepth                 = RegisterParameterDouble(Model, Land, "Max rate depth", Mm, 400.0, 0.0, 10000.0, "The water depth at which carbon processes in the soil are at their highest rate. Rates are lower both for higher and lower moistures.");
+	auto MinimalMoistureFactor        = RegisterParameterDouble(Model, Land, "Min moisture factor", Dimensionless, 0.05, 0.0, 1.0, "The rate modifier on carbon processes when soil moisture is at its minimal.");
 	
 	auto LitterFallRate                = RegisterParameterDouble(Model, Land, "Litter fall rate", KgPerHaPerDay, 1.0, 0.0, 1000.0, "The amount of organic carbon entering the soil from e.g. litter fall from trees or root breakdown. This parameter is used only if a Litterfall timeseries is not provided.");
 	auto LitterFallStartDay            = RegisterParameterUInt(  Model, Land, "Litter fall start day", JulianDay, 300, 1, 364);
@@ -111,11 +105,11 @@ This implementation also has some additional processes that were not specified i
 	
 	auto OrganicSoilInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Organic soil water initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
 	auto OrganicSoilInitialDICConcentration = RegisterParameterDouble(Model, Land, "Organic soil water initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
-	auto OrganicSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Organic soil water initial SOC mass", KgPerHa, 0.0, 0.0, 1e6);
+	auto OrganicSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Organic soil initial SOC mass", KgPerHa, 0.0, 0.0, 1e6);
 	
 	auto MineralSoilInitialDOCConcentration = RegisterParameterDouble(Model, Land, "Mineral soil water initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
 	auto MineralSoilInitialDICConcentration = RegisterParameterDouble(Model, Land, "Mineral soil water initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
-	auto MineralSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Mineral soil water initial SOC mass", KgPerHa, 0.0, 0.0, 1e6);
+	auto MineralSoilInitialSOC              = RegisterParameterDouble(Model, Land, "Mineral soil initial SOC mass", KgPerHa, 0.0, 0.0, 1e6);
 	
 	auto GroundwaterInitialDOCConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial DOC concentration", MgPerL, 0.0, 0.0, 100.0);
 	auto GroundwaterInitialDICConcentration = RegisterParameterDouble(Model, Reaches, "Groundwater initial DIC concentration", MgPerL, 0.0, 0.0, 100.0);
