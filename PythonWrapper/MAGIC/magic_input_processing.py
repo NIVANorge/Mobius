@@ -11,15 +11,14 @@ def year_range(begin_year, end_year, monthly=True) :
 	start = pd.to_datetime('%s-1-1' % begin_year, yearfirst=True)
 	end   = pd.to_datetime('%s-12-1' % end_year if monthly else '%s-1-1' % end_year, yearfirst=True)
 	
-	return np.array(pd.date_range(start = start, end = end, freq='MS' if monthly else 'AS'))
+	#return np.array(pd.date_range(start = start, end = end, freq='MS' if monthly else 'AS'))
+	return pd.date_range(start = start, end = end, freq='MS' if monthly else 'AS')
 
 def empty_input_df(begin_year, end_year) :
 	return pd.DataFrame(index = year_range(begin_year, end_year))
 
 
-def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean', patch_ref_range = None) :
-	
-	source = source_df[source_name]
+def add_ts(input_df, source, dest_name, aggr_method='mean', patch_ref_range = None) :
 	
 	if aggr_method == 'sum' :
 		monthly = source.resample('MS').sum(min_count=28)  #This min count is not ideal, we could also use mean, and multiply with length of month
@@ -29,16 +28,20 @@ def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean', patc
 	distr = np.zeros(12)
 	count = np.zeros(12)
 	
-	for index, val in monthly.iteritems() :
-		if not np.isnan(val) :
-			distr[index.month-1] += val
-			count[index.month-1] += 1
+	if patch_ref_range is not None:
+		patch_range = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
 	
-	if aggr_method == 'sum' :
-		distr /= np.nansum(monthly.values)
-		assert np.abs(np.sum(distr) - 1.0) < 1e-8
-	elif aggr_method == 'mean' :
-		distr /= count
+		for index, val in monthly.iteritems() :
+			if not np.isnan(val) :
+				if index in patch_range :
+					distr[index.month-1] += val
+					count[index.month-1] += 1
+	
+		if aggr_method == 'sum' :
+			distr /= np.nansum(monthly[patch_range].values)
+			assert np.abs(np.sum(distr) - 1.0) < 1e-8
+		elif aggr_method == 'mean' :
+			distr /= count
 	
 	#print('Monthly distribution:')
 	#print(distr)
@@ -59,16 +62,16 @@ def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean', patc
 	yearly = yearly.reindex(year_range(input_df.index[0].year, input_df.index[-1].year, False))
 	
 	if patch_ref_range is not None :
-		ref_dates = pd.to_datetime(['%s-1-1' % ref_year for ref_year in patch_ref_range])
+		ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=False)
 		ref_val = np.nanmean([yearly[ref_date] for ref_date in ref_dates])
 		
 		first_idx = yearly.first_valid_index()
 		idx = np.searchsorted(yearly.index, first_idx)
 		yearly[yearly.index[idx-1]] = ref_val
 	
-	#TODO: Provide different methods for filling in holes
-	yearly = yearly.interpolate(limit_area=None, limit_direction='both')
-	#print(yearly)
+		#TODO: Provide different methods for filling in holes
+		yearly = yearly.interpolate(limit_area=None, limit_direction='both')
+		#print(yearly)
 	
 	input_df[dest_name] = np.zeros(len(input_df.index))
 	for index, row in input_df.iterrows() :
@@ -83,21 +86,143 @@ def add_ts(input_df, source_df, dest_name, source_name, aggr_method='mean', patc
 				input_df.loc[index, dest_name] = m_val + yr_val - all_mean
 	
 
-def add_precip_ts(input_df, source_df, source_name, patch_ref_range=None) :#, source_is_mm=True) :
-	add_ts(input_df, source_df, 'Precipitation', source_name, 'sum', patch_ref_range)
+def add_precip_ts(input_df, source, patch_ref_range=None) :#, source_is_mm=True) :
+	add_ts(input_df, source, 'Precipitation', 'sum', patch_ref_range)
 	#if source_is_mm : input_df['Precipitation'] *= 1e-3     #NOTE MAGIC wants this in m/month instead of mm/month
 	
 
-def add_air_temperature_ts(input_df, source_df, source_name, patch_ref_range=None) :
-	add_ts(input_df, source_df, 'Air temperature', source_name, 'mean', patch_ref_range)
+def add_air_temperature_ts(input_df, source, patch_ref_range=None) :
+	add_ts(input_df, source, 'Air temperature', 'mean', patch_ref_range)
 	
-def add_deposition_ts(input_df, source_df, element_name, patch_scale=None, patch_ref_range=range(1989,1992)) :
+def add_runoff_ts(input_df, source) :
+	add_ts(input_df, source, 'Runoff', 'sum', patch_ref_range=None)
+	#TODO: Re-scale in case it is given in m3/s or something like that.
 	
-	source = source_df[element_name]
+	
+def add_deposition_ts(
+	input_df, source_df, runoff_df, source_is_mg_l=True, runoff_is_mg_l=True, n_dep_given_as_n=True, s_dep_given_as_s=True,
+	sea_salt_ref='Cl', sea_salt_ref_range=None, 
+	patch_scale=None, patch_ref_range=(1989,1992)) :
+	'''
+	input_df  : The dataframe you want to write the inputs to. It must already have a 'Precipitation' and a 'Runoff' column
+	source_df : A date-indexed dataframe with observed concentrations in precipitation, with columns ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F']   F is optional
+	runoff_df : A date-indexed dataframe with observed concentrations in runoff, with the same columns as source_df.
+	source_is_mg_l : True if the unit of the source_df is mg/l, False if they are meq/m3=µeq/l
+	runoff_is_mg_l : True if the unit of the runoff_df is mg/l, False if they are meq/m3=µeq/l
+	n_dep_given_as_n : Only relevant if source is mg/l: True if the mass of NO3 and NH4 deposition is given as the mass of N, False if it is given as the mass of the full molecule.
+	s_dep_given_as_s : Only relevant if source is mg/l: True if the mass of SO4 deposition is given as the mass of S, False if it is given as the mass of the full molecule.
+	sea_salt_ref : The reference deposition series for sea salt correction. Usually 'Cl', but can also use 'Mg', 'Na', or 'K'.
+	sea_salt_ref_range : pair (start_year, end_year). This is the range that is used to compute the sea_salt_factor. Also SO4*, Ca* and N factors.
+	patch_scale : A date-indexed dataframe containing some of the columns of the input_df. Should have some values of historical deposition relative to a reference year. Example : get_emep_deposition_scales()
+	patch_ref_range : pair (start_year, end_year). Range of years to compute the value for the reference year to scale the values used for patching.
+	'''
+	
+	
+	source_df = source_df.resample('MS').mean()
+	source_df = source_df.interpolate(limit_area='inside')
+	
+	runoff_df2 = runoff_df.resample('MS').mean()
+	runoff_df2 = runoff_df2.interpolate(limit_area='inside')
+	
+	if sea_salt_ref_range is not None:
+		cl_range = year_range(sea_salt_ref_range[0], sea_salt_ref_range[1], monthly=True)
+	else:
+		cl_range = source_df.index.intersection(runoff_df2.index)
+	
+	def get_converted_conc(df, element, convert) :
+		charge = {
+			'Ca' : 2.0,
+			'Mg' : 2.0,
+			'Na' : 1.0,
+			'K'  : 1.0,
+			'NH4': 1.0,
+			'SO4': 2.0,
+			'Cl' : 1.0,
+			'NO3': 1.0,
+			'F'  : 1.0,
+		}
+		atomic_mass = {
+			'Ca' : 40.0,
+			'Mg' : 24.3,
+			'Na' : 23.0,
+			'K'  : 39.0,
+			'NH4': 14.0 if n_dep_given_as_n else 18.0,
+			'SO4': 32.1 if s_dep_given_as_s else 96.0,
+			'Cl' : 35.5,
+			'NO3': 14.0 if n_dep_given_as_n else 62.0,
+			'F'  : 19.0,
+		}
+		if convert :
+			#Convert conc from [mg/l] to [meq/m3]
+			return (df[element] * charge[element] / atomic_mass[element]) * 1000.0
+		else :
+			#Assume source is in [meq/m3] = [µeq/l]
+			return df[element]
+	
+	obs_ss_conc = get_converted_conc(source_df, sea_salt_ref, source_is_mg_l)
+	
+	sea_salt_ratio = {
+		'Ca' : 0.037,
+		'Mg' : 0.196,
+		'Na' : 0.856,
+		'K'  : 0.018,
+		#'NH4':
+		'SO4': 0.103,
+		#'Cl' :
+		#'NO3':
+		#'F'  :    #TODO!!! What to do about F?
+	}
+	
+	if sea_salt_ref is 'Cl' :
+		obs_cl_conc = obs_ss_conc
+	else :
+		obs_cl_conc = obs_ss_conc / sea_salt_ratio[sea_salt_ref]	
+	
+	obs_cl_dep    = obs_cl_conc[cl_range] * input_df['Precipitation'][cl_range] * 1e-3      #TODO: 1e-3 is if precip is given in mm. Otherwise, remove that factor!
+	
+	#print(obs_cl_dep.resample('AS').sum())
+	
+	#TODO: This is probably correct, because we can't assume the sea salt ref runs straight through??
+	obs_cl_runoff_conc = get_converted_conc(runoff_df2, 'Cl', runoff_is_mg_l)
+	obs_cl_runoff = obs_cl_runoff_conc[cl_range] * input_df['Runoff'][cl_range] * 1e-3             #TODO: Measured in mm or m?
+	
+	sea_salt_factor = np.sum(obs_cl_runoff.values) / np.sum(obs_cl_dep.values)
+	
+	print('The sea salt factor was: %g' % sea_salt_factor)
+	
+	def add_single(obs, name) :
+		add_single_deposition_ts(input_df, obs, name, None if (patch_scale is None or name not in patch_scale) else patch_scale[name], patch_ref_range)
+	
+	add_single(obs_ss_conc*sea_salt_factor, sea_salt_ref)
+	if sea_salt_ref is not 'Cl' :
+		add_single(obs_cl_conc * sea_salt_factor, 'Cl')
 
-	#TODO: Currently only works if source_df is yearly and has values on january 1st for its range
-	ref_dates = pd.to_datetime(['%s-1-1' % ref_year for ref_year in patch_ref_range])
-	ref_val = np.nanmean([source[ref_date] for ref_date in ref_dates])
+	for element in ['Ca', 'Mg', 'Na', 'K'] :
+		if element is sea_salt_ref : continue
+		
+		conc = obs_cl_conc * sea_salt_factor * sea_salt_ratio[element]   #NOTE: The sea_salt_ratio is in eq/eq, so no need to use charge and molar mass here
+		add_single(conc, element)
+		
+		#TODO: Additional Ca Correction!
+	
+	
+	
+	#Adding observed values too:
+	
+	for element in runoff_df :
+		if element not in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'H+'] : continue
+		if np.isnan(runoff_df[element]).all() : continue
+		
+		input_df['Observed runoff conc %s' % element] = runoff_df[element]
+	
+	
+	
+	
+def add_single_deposition_ts(input_df, source, element_name, patch_scale=None, patch_ref_range=(1989,1992)) :
+
+	#TODO: Currently only works if source is monthly. Should only be called by the above function!
+	ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
+	ref_val = np.nanmean(source[ref_dates])
 	
 	source = source.reindex(input_df.index)
 	
@@ -158,7 +283,34 @@ def write_as_input_file(input_df, filename) :
 	
 	of.write('\n')
 	
-	#TODO: Additional time series
+	
+	accepted = ['Air temperature', 'Precipitation', 
+		'Ca conc in precip', 'Mg conc in precip', 'Na conc in precip', 'K conc in precip', 'NH4 conc in precip', 'SO4 conc in precip', 'Cl conc in precip', 'NO3 conc in precip', 'F conc in precip',
+		]
+		
+	def get_unit(name) :
+		units = {
+			'Runoff' : 'mm/month',
+			'Observed runoff conc' : 'meq/m3',
+		}
+		for key in units :
+			if name.startswith(key) :
+				return units[key]
+		return None
+	
+	additional = []
+	for col in input_df :
+		if col not in accepted : additional.append(col)
+	
+	if len(additional) > 0 :
+		of.write('additional_timeseries:\n')
+		for col in additional :
+			of.write('"%s"' % col)
+			unit = get_unit(col)
+			if unit is not None :
+				of.write(' unit "%s"' % unit)
+			of.write('\n')
+		of.write('\n')
 	
 	of.write('inputs:\n')
 	

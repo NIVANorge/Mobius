@@ -449,6 +449,8 @@ GetTimesteps(mobius_data_set *DataSet)
 		s64 Step = FindTimestep(StartDate, EndDate, DataSet->Model->TimestepSize);
 		Step += 1;    //NOTE: Because the end date is inclusive.
 		
+		//TODO: We should chech for and have a warning if the EndDate is not a whole number of steps away from the start date. Right now it just rounds down!
+		
 		if(Step <= 0)
 			FatalError("The model run start date was set to be later than the model run end date.\n");
 		

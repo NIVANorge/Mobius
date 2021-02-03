@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Rad, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1, INCA-Rad V_dev) at 2020-03-12 14:15:59
+# Parameter file generated for model INCA-Rad, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1.1, INCA-Rad V_dev) at 2021-02-02 14:33:48
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -8,14 +8,26 @@ index_sets:
 "Radionuclide" : {"U238" {"Th234" "U238"}}
 
 parameters:
-###################### (no index sets) ######################
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+1996-01-01
+
 "Timesteps" :     #(days) [0, 18446744073709551615]
 2922
 
-"Start date" :     # [1000-01-01, 3000-12-31]
-1996-01-01
 
-###################### "Landscape units" ######################
+###################### PERSiST V1.4 ######################
+
+# Solver resolution (no index sets) #
+
+"Solver resolution" :     #(dimensionless) [0.001, 0.5] Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km
+0.1
+
+
+# Hydrology by land class ("Landscape units") #
+
 "Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
 1 1
 
@@ -40,99 +52,9 @@ parameters:
 "Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
 0 0
 
-"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.12 0.12
 
-"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0.001
+# Soil characteristics by land class ("Soils" "Landscape units") #
 
-"Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.12 0.12
-
-"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.3 0.3
-
-"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 0.001
-
-"Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1 0.1
-
-"Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-1.2e-05 1.2e-05
-
-"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.029 0.029
-
-"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
-2 2
-
-"Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 1
-
-"Initial surface sediment store" :     #(kg/km^2) [0, 10]
-0 0
-
-"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
-2 2
-
-"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
-600 600
-
-"Thermal conductivity of soil" :     #(W/m/°C) [0.1, 2]
-0.7 0.7
-
-"Specific heat capacity due to freeze/thaw" :     #(MJ/m3/°C) [1, 200] Controls the energy released when water is frozen and energy consumed under melting
-6.6 6.6
-
-"Water equivalent factor" :     #(dimensionless) [0.01, 1] 1mm of snow would produce this amount of water when melted
-0.3 0.3
-
-"Snow depth / soil temperature factor" :     #(/cm) [-0.03, -0.001] Defines an empirical relationship between snow pack depth and its insulating effect on soils
--0.02 -0.02
-
-"Specific heat capacity of soil" :     #(MJ/m3/°C) [0.5, 2]
-1.1 1.1
-
-"Soil depth" :     #(m) [0, 20] Depth at which soil temperature is predicted.
-0.2 0.2
-
-"Initial soil temperature" :     #(°C) [-30, 50]
-20 20
-
-"Soil SOC mass" :     #(kg/km2) [0, 10000000]
-1000000 1000000
-
-"Soil water baseline DOC concentration" :     #(mg/l) [0, 20]
-10 10
-
-"Soil water DOC temperature response" :     #(mg/l/°C) [0, 5]
-0.3 0
-
-###################### "Landscape units" "Soils" "Soils" ######################
-"Percolation matrix" :     #(dimensionless) [0, 1]
-0.1 0.9 0
-1 0.5 0.5
-0 0 1
-
-0.1 0.9 0
-1 0.5 0.5
-0 0 1
-
-###################### "Landscape units" "Radionuclide" ######################
-"Overall air-soil mass transfer coefficient" :     #(m/day) [0, 100]
-0.5 0.5
-0.5 0.5
-
-"Initial contaminant mass in soil" :     #(ng/km2) [0, 1000]
-200000 0
-0 0
-
-###################### "Soils" ######################
-"This is a quick box" :
-true true true
-
-###################### "Soils" "Landscape units" ######################
 "Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
 10 10
 290 150
@@ -178,7 +100,15 @@ true true true
 500 500
 500 500
 
-###################### "Reaches" ######################
+
+# Soil box type ("Soils") #
+
+"This is a quick box" :
+true true true
+
+
+# Reach and subcatchment characteristics ("Reaches") #
+
 "Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
 51.7
 
@@ -215,51 +145,71 @@ true true true
 "Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
 2
 
-"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
 
-"Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+# Land use percentages ("Reaches" "Landscape units") #
 
-"Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.01
-
-"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-1e-10
-
-"Initial water temperature" :     #(°C) [0, 40]
-20
-
-"Minimum water temperature" :     #(°C) [-5, 40]
-0
-
-"Water temperature lag factor" :     #(dimensionless) [1, 10]
-3
-
-"Mineral layer DOC concentration" :     #(mg/l) [0, 20]
-5
-
-"Average height of large stones in the stream bed" :     #(m) [0, 0.5]
-0
-
-"Average bed grain diameter" :     #(m) [0, 0.1]
-0.0001
-
-"Sediment porosity" :     #(dimensionless) [0, 0.99]
-0.1
-
-###################### "Reaches" "Landscape units" ######################
 "%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
 50 50
 
-###################### "Reaches" "Radionuclide" ######################
-"Initial contaminant mass in groundwater" :     #(ng/km2) [0, 1000]
+
+# Percolation ("Landscape units" "Soils" "Soils") #
+
+"Percolation matrix" :     #(dimensionless) [0, 1] The fraction of runoff that goes from one box to another
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+0.1 0.9 0
+1 0.5 0.5
+0 0 1
+
+
+###################### INCA-Sed V0.9 ######################
+
+# Sediment mobilisation ("Landscape units") #
+
+"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.12 0.12
+
+"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0.001
+
+"Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.12 0.12
+
+"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.3 0.3
+
+"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 0.001
+
+"Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.1 0.1
+
+"Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
+1.2e-05 1.2e-05
+
+"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.029 0.029
+
+"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
+2 2
+
+"Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0 1
+
+"Initial surface sediment store" :     #(kg/km^2) [0, 10]
 0 0
 
-"Initial contaminant mass in reach" :     #(ng) [0, 1000]
-0 0
+"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
+2 2
 
-###################### "Sediment size class" ######################
+"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
+600 600
+
+
+# Sediment size class ("Sediment size class") #
+
 "Percentage of sediment in grain size class" :     #(%) [-1.79769313486232e+308, 1.79769313486232e+308]
 80 20
 
@@ -269,10 +219,9 @@ true true true
 "Largest diameter of sediment in size class" :     #(m) [0, 1]
 6e-05 0.0006
 
-"Grain SOC density" :     #(kg/kg) [0, 1]
-0.1 0.01
 
-###################### "Sediment size class" "Reaches" ######################
+# Sediment by subcatchment ("Sediment size class" "Reaches") #
+
 "Effluent sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
 0
 0
@@ -285,7 +234,95 @@ true true true
 0.001
 0.001
 
-###################### "Radionuclide" ######################
+
+# Erosion and transport by subcatchment ("Reaches") #
+
+"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+1
+
+"Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+0.01
+
+"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+1e-10
+
+
+###################### INCA Soil temperature V1.0 ######################
+
+# Soil temperature ("Landscape units") #
+
+"Thermal conductivity of soil" :     #(W/m/°C) [0.1, 2]
+0.7 0.7
+
+"Specific heat capacity due to freeze/thaw" :     #(MJ/m3/°C) [1, 200] Controls the energy released when water is frozen and energy consumed under melting
+6.6 6.6
+
+"Water equivalent factor" :     #(dimensionless) [0.01, 1] 1mm of snow would produce this amount of water when melted
+0.3 0.3
+
+"Snow depth / soil temperature factor" :     #(/cm) [-0.03, -0.001] Defines an empirical relationship between snow pack depth and its insulating effect on soils
+-0.02 -0.02
+
+"Specific heat capacity of soil" :     #(MJ/m3/°C) [0.5, 2]
+1.1 1.1
+
+"Soil depth" :     #(m) [0, 20] Depth at which soil temperature is predicted.
+0.2 0.2
+
+"Initial soil temperature" :     #(°C) [-30, 50]
+20 20
+
+
+###################### INCA water temperature V1.0 ######################
+
+# Water temperature ("Reaches") #
+
+"Initial water temperature" :     #(°C) [0, 40]
+20
+
+"Minimum water temperature" :     #(°C) [-5, 40]
+0
+
+"Water temperature lag factor" :     #(dimensionless) [1, 10]
+3
+
+
+###################### INCA-Tox Carbon V0.1.1 ######################
+
+# Carbon by land class ("Landscape units") #
+
+"Soil SOC mass" :     #(kg/m2) [0, 10000000]
+1000000 1000000
+
+"Size of easily accessible SOC fraction" :     #(dimensionless) [0, 1] Fractional size of easily accessible SOC relative to total SOC
+0.5 0.1
+
+"Soil water baseline DOC concentration" :     #(mg/l) [0, 20]
+10 10
+
+"Soil water DOC temperature response" :     #(mg/l/°C) [0, 5]
+0.3 0
+
+
+# Carbon by subcatchment ("Reaches") #
+
+"Mineral layer DOC concentration" :     #(mg/l) [0, 20]
+5
+
+
+# Carbon by grain class ("Sediment size class") #
+
+"Grain SOC density" :     #(kg/kg) [0, 1]
+0.1 0.01
+
+
+###################### INCA-Rad V_dev ######################
+
+# Physio-chemistry ("Radionuclide") #
+
 "Contaminant molar mass" :     #(g/mol) [0, 1000]
 50 50
 
@@ -299,7 +336,7 @@ true true true
 0.1 0.1
 
 "Henry's constant at 25°C" :     #(Pa m3/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
-1.1 1.1
+0 0
 
 "Organic carbon-water partitioning coefficient at 25°C" :     #(m3/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
 2000 2000
@@ -308,8 +345,48 @@ true true true
 200 200
 
 "Atmospheric contaminant concentration" :     #(ng/m3) [0, 100]
-0.01 0
+0 0
 
 "Element half life" :     #(years) [7.29e-31, 2.2e+24]
-1 200
+10 10
+
+
+# Contaminants by land class ("Landscape units" "Radionuclide") #
+
+"Overall air-soil mass transfer coefficient" :     #(m/day) [0, 100]
+0 0
+0 0
+
+"Transfer coefficient between easily and potentially accessible fractions" :     #(m/day) [0, 100]
+10 10
+10 10
+
+"Initial soil water contaminant concentration" :     #(ng/m3) [0, 100000]
+0 0
+0 0
+
+"Initial soil SOC contaminant concentration" :     #(ng/kg) [0, 100000]
+0 0
+0 0
+
+
+# Contaminants by reach ("Reaches" "Radionuclide") #
+
+"Initial contaminant mass in groundwater" :     #(ng/km2) [0, 1000]
+0 0
+
+"Initial contaminant mass in reach" :     #(ng) [0, 1000]
+0 0
+
+
+# Reach parameters ("Reaches") #
+
+"Average height of large stones in the stream bed" :     #(m) [0, 0.5]
+0
+
+"Average bed grain diameter" :     #(m) [0, 0.1]
+0.0001
+
+"Sediment porosity" :     #(dimensionless) [0, 0.99]
+0.1
 

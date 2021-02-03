@@ -62,7 +62,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	
 	auto Radionuclide = RegisterIndexSetBranched(Model, "Radionuclide");
 	
-	auto Chemistry = RegisterParameterGroup(Model, "Chemistry", Radionuclide);
+	auto Chemistry = RegisterParameterGroup(Model, "Physio-chemistry", Radionuclide);
 	auto Land      = RegisterParameterGroup(Model, "Contaminants by land class", LandscapeUnits, Radionuclide);
 
 	//TODO: As always, find better default, min, max values for parameters!
@@ -81,13 +81,15 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	auto HalfLife                              = RegisterParameterDouble(Model, Chemistry, "Element half life", Years, 1.0, 7.29e-31, 2.2e24);
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
+	auto TransferCoefficientBetweenEasilyAndPotentiallyAccessible = RegisterParameterDouble(Model, Land, "Transfer coefficient between easily and potentially accessible fractions", MPerDay, 0.0, 0.0, 100.0);
 
 	
-	
+	auto InitialSoilWaterContaminantConcentration = RegisterParameterDouble(Model, Land, "Initial soil water contaminant concentration", NgPerM3, 0.0, 0.0, 1e5);
+	auto InitialSoilSOCContaminantConcentration = RegisterParameterDouble(Model, Land, "Initial soil SOC contaminant concentration", NgPerKg, 0.0, 0.0, 1e5);
+
 	auto ContaminantReach = RegisterParameterGroup(Model, "Contaminants by reach", Reach, Radionuclide);
 	auto OtherReachParams = RegisterParameterGroup(Model, "Reach parameters", Reach);
-	
-	auto InitialContaminantMassInSoil  = RegisterParameterDouble(Model, Land, "Initial contaminant mass in soil", NgPerKm2, 0.0, 0.0, 1e3);
+
 	auto InitialContaminantMassInGroundwater = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in groundwater", NgPerKm2, 0.0, 0.0, 1e3);
 	auto InitialContaminantMassInReach = RegisterParameterDouble(Model, ContaminantReach, "Initial contaminant mass in reach", Ng, 0.0, 0.0, 1e3);
 	
@@ -138,6 +140,9 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	
 	//INCA-Tox-C.h
 	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");
+	auto SizeOfEasilyAccessibleFraction = GetParameterDoubleHandle(Model, "Size of easily accessible SOC fraction");
+	
+	#define CONST_LN_2 0.69314718056
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
 	
@@ -154,49 +159,64 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	auto AirWaterPartitioningCoefficient     = RegisterEquation(Model, "Air-water partitioning coefficient", Dimensionless);
 	auto WaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Water-SOC partitioning coefficient", M3PerKg);
 	
-	auto ContaminantDeliveryToReachByErosion = RegisterEquation(Model, "Contaminant delivery to reach by erosion", NgPerDay);
-	SetSolver(Model, ContaminantDeliveryToReachByErosion, SoilSolver);
+	auto ContaminantDeliveryToReachByErosion = RegisterEquation(Model, "Contaminant delivery to reach by erosion", NgPerDay, SoilSolver);
 	
 	auto TotalContaminantDeliveryToReach     = RegisterEquationCumulative(Model, "Contaminant delivery to reach by erosion summed over land classes", ContaminantDeliveryToReachByErosion, LandscapeUnits);
 	
-	auto SoilWaterContaminantConcentration = RegisterEquation(Model, "Soil water contaminant concentration", NgPerM3);
-	SetSolver(Model, SoilWaterContaminantConcentration, SoilSolver);
-	auto SoilSOCContaminantConcentration   = RegisterEquation(Model, "Soil SOC contaminant concentration", NgPerKg);
-	SetSolver(Model, SoilSOCContaminantConcentration, SoilSolver);
-	auto SoilDOCContaminantConcentration   = RegisterEquation(Model, "Soil DOC contaminant concentration", NgPerKg);
-	SetSolver(Model, SoilDOCContaminantConcentration, SoilSolver);
-	auto SoilAirContaminantConcentration   = RegisterEquation(Model, "Soil Air contaminant concentration", NgPerM3);
-	SetSolver(Model, SoilAirContaminantConcentration, SoilSolver);
-	auto DiffusiveAirSoilExchangeFlux      = RegisterEquation(Model, "Diffusive exchange of contaminants between soil and atmosphere", NgPerKm2PerDay);
-	SetSolver(Model, DiffusiveAirSoilExchangeFlux, SoilSolver);
-	auto SoilContaminantDegradation        = RegisterEquation(Model, "Soil contaminant degradation", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantDegradation, SoilSolver);
+	auto SoilWaterContaminantConcentration = RegisterEquation(Model, "Soil water contaminant concentration", NgPerM3, SoilSolver);
+	auto SoilSOCContaminantConcentration   = RegisterEquation(Model, "Soil SOC contaminant concentration (easily accessible fraction)", NgPerKg, SoilSolver);
+	auto SoilSOCContaminantConcentrationPotentiallyAccessible = RegisterEquation(Model, "Soil SOC contaminant concentration (potentially accessible fraction)", NgPerKg, SoilSolver);
+	auto SoilDOCContaminantConcentration   = RegisterEquation(Model, "Soil DOC contaminant concentration", NgPerKg, SoilSolver);
+	auto SoilAirContaminantConcentration   = RegisterEquation(Model, "Soil Air contaminant concentration", NgPerM3, SoilSolver);
+	auto DiffusiveAirSoilExchangeFlux      = RegisterEquation(Model, "Diffusive exchange of contaminants between soil and atmosphere", NgPerKm2PerDay, SoilSolver);
+	auto SoilContaminantDegradation        = RegisterEquation(Model, "Soil contaminant degradation (easily accessible fraction)", NgPerKm2PerDay, SoilSolver);
+	auto SoilContaminantDegradationPotentiallyAccessible = RegisterEquation(Model, "Soil contaminant degradation (potentially accessible fraction)", NgPerKm2PerDay, SoilSolver);
 	
-	auto SoilContaminantFormation          = RegisterEquation(Model, "Soil contaminant formation", NgPerKm2PerDay);
+	auto SoilContaminantFormation          = RegisterEquation(Model, "Soil contaminant formation (easily accessible fraction)", NgPerKm2PerDay);
+	auto SoilContaminantFormationPotentiallyAccessible = RegisterEquation(Model, "Soil contaminant formation (potentially accessible fraction)", NgPerKm2PerDay);
 	
 	auto SoilWaterVolume                   = RegisterEquation(Model, "Soil water volume", M3PerKm2);
 	auto SoilAirVolume                     = RegisterEquation(Model, "Soil air volume", M3PerKm2);
 	
-	auto ContaminantInputsToSoil           = RegisterEquation(Model, "Contaminant inputs to soil", NgPerKm2PerDay);
-	auto ContaminantMassInSoil             = RegisterEquationODE(Model, "Contaminant mass in soil", NgPerKm2);
-	SetSolver(Model, ContaminantMassInSoil, SoilSolver);
-	SetInitialValue(Model, ContaminantMassInSoil, InitialContaminantMassInSoil);
-	auto SoilContaminantFluxToReach        = RegisterEquation(Model, "Soil contaminant flux to reach", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantFluxToReach, SoilSolver);
-	auto SoilContaminantFluxToGroundwater  = RegisterEquation(Model, "Soil contaminant flux to groundwater", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantFluxToGroundwater, SoilSolver);
-	auto SoilContaminantFluxToDirectRunoff = RegisterEquation(Model, "Soil contaminant flux to direct runoff", NgPerKm2PerDay);
-	SetSolver(Model, SoilContaminantFluxToDirectRunoff, SoilSolver);
 	
-	auto GroundwaterContaminantDegradation = RegisterEquation(Model, "Groundwater contaminant degradation", NgPerKm2PerDay);
-	SetSolver(Model, GroundwaterContaminantDegradation, SoilSolver);
-	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay);
-	SetSolver(Model, GroundwaterContaminantFluxToReach, SoilSolver);
-	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2);
-	SetSolver(Model, ContaminantMassInGroundwater, SoilSolver);
+	auto ContaminantInputsToSoil           = RegisterEquation(Model, "Contaminant inputs to soil", NgPerKm2PerDay);
+	
+	auto InitialContaminantMassInSoil  = RegisterEquationInitialValue(Model, "Initial contaminant mass in soil (easily accessible fraction)", NgPerKm2);
+	auto InitialContaminantMassInPotentiallyAccessibleFraction = RegisterEquationInitialValue(Model, "Initial contaminant mass in soil (potentially accessible fraction)", NgPerKm2);
+	
+	auto ContaminantMassInSoil             = RegisterEquationODE(Model, "Contaminant mass in soil (easily accessible fraction)", NgPerKm2, SoilSolver);
+	SetInitialValue(Model, ContaminantMassInSoil, InitialContaminantMassInSoil);
+	
+	auto ContaminantMassInPotentiallyAccessibleFraction = RegisterEquationODE(Model, "Contaminant mass in soil (potentially accessible fraction)", NgPerKm2, SoilSolver);
+	SetInitialValue(Model, ContaminantMassInPotentiallyAccessibleFraction, InitialContaminantMassInPotentiallyAccessibleFraction);
+	auto TransferFromPotentiallyToEasilyAccessible = RegisterEquation(Model, "Contaminant transfer from potentially to easily accessible fraction", NgPerKm2PerDay, SoilSolver);
+	
+	
+	auto SoilContaminantFluxToReach        = RegisterEquation(Model, "Soil contaminant flux to reach", NgPerKm2PerDay, SoilSolver);
+	auto SoilContaminantFluxToGroundwater  = RegisterEquation(Model, "Soil contaminant flux to groundwater", NgPerKm2PerDay, SoilSolver);
+	
+	auto GroundwaterContaminantDegradation = RegisterEquation(Model, "Groundwater contaminant degradation", NgPerKm2PerDay, SoilSolver);
+	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay, SoilSolver);
+	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2, SoilSolver);
 	SetInitialValue(Model, ContaminantMassInGroundwater, InitialContaminantMassInGroundwater);
 	
 	auto GroundwaterContaminantFormation   = RegisterEquation(Model, "Groundwater contaminant formation", NgPerKm2PerDay);
+	
+	EQUATION(Model, InitialContaminantMassInSoil,
+		double concinsoc = PARAMETER(InitialSoilSOCContaminantConcentration);
+		double socmass   = PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6; //kg/m2 -> kg/km2
+		double concinwater = PARAMETER(InitialSoilWaterContaminantConcentration);
+		double watervolume = RESULT(SoilWaterVolume);
+		
+		return concinsoc*socmass + concinwater*watervolume;
+	)
+	
+	EQUATION(Model, InitialContaminantMassInPotentiallyAccessibleFraction,
+		double concinsoc = PARAMETER(InitialSoilSOCContaminantConcentration);
+		double socmass   = PARAMETER(SoilSOCMass)*(1.0 - PARAMETER(SizeOfEasilyAccessibleFraction))*1e6; //kg/m2 -> kg/km2
+		return concinsoc * socmass;
+	)
+	
 	
 	EQUATION(Model, HenrysConstant,
 		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
@@ -231,7 +251,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		return 
 			RESULT(ContaminantMassInSoil) /
 			(
-			  RESULT(WaterSOCPartitioningCoefficient) * PARAMETER(SoilSOCMass)
+			  RESULT(WaterSOCPartitioningCoefficient) * PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6
 			+ PARAMETER(WaterDOCPartitioningCoefficient) * RESULT(SoilDOCMass)
 			+ RESULT(AirWaterPartitioningCoefficient) * RESULT(SoilAirVolume)
 			+ RESULT(SoilWaterVolume)
@@ -250,6 +270,37 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		return RESULT(SoilWaterContaminantConcentration) * RESULT(AirWaterPartitioningCoefficient);
 	)
 	
+	EQUATION(Model, ContaminantMassInPotentiallyAccessibleFraction,
+		return
+			  - RESULT(TransferFromPotentiallyToEasilyAccessible)
+			  - RESULT(SoilContaminantDegradationPotentiallyAccessible)
+			  + RESULT(SoilContaminantFormationPotentiallyAccessible);
+	)
+	
+	EQUATION(Model, TransferFromPotentiallyToEasilyAccessible,
+		return 1e6 * PARAMETER(TransferCoefficientBetweenEasilyAndPotentiallyAccessible) * (RESULT(SoilSOCContaminantConcentrationPotentiallyAccessible) - RESULT(SoilSOCContaminantConcentration));
+	)
+	
+	EQUATION(Model, SoilSOCContaminantConcentrationPotentiallyAccessible,
+		double SOCmass = PARAMETER(SoilSOCMass)*(1.0 - PARAMETER(SizeOfEasilyAccessibleFraction))*1e6;
+		return SafeDivide(RESULT(ContaminantMassInPotentiallyAccessibleFraction), SOCmass);
+	)
+	
+	EQUATION(Model, SoilContaminantDegradationPotentiallyAccessible,
+		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
+	
+		return rate * RESULT(ContaminantMassInPotentiallyAccessibleFraction);
+	)
+	
+	EQUATION(Model, SoilContaminantFormationPotentiallyAccessible,
+		double formation = 0.0;
+		
+		for(index_t Input : BRANCH_INPUTS(Radionuclide))
+			formation += RESULT(SoilContaminantDegradationPotentiallyAccessible, Input);
+		
+		return formation;
+	)
+	
 	EQUATION(Model, DiffusiveAirSoilExchangeFlux,
 		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (1e-3*PARAMETER(AtmosphericContaminantConcentration) - RESULT(SoilAirContaminantConcentration));
 	)
@@ -265,8 +316,9 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, SoilContaminantFluxToReach,
+		double water_runoff = RESULT(RunoffToReach, Soilwater) + RESULT(RunoffToReach, DirectRunoff);
 		return
-			RESULT(RunoffToReach, Soilwater) * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
+			water_runoff * RESULT(SoilWaterContaminantConcentration) * 1000.0 // Convert km^2 mm/day * ng/m^3 to ng/day
 		  + RESULT(SoilDOCFluxToReach) * RESULT(SoilDOCContaminantConcentration);
 	)
 	
@@ -276,18 +328,13 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		  + RESULT(SoilDOCFluxToGroundwater) * RESULT(SoilDOCContaminantConcentration);
 	)
 	
-	EQUATION(Model, SoilContaminantFluxToDirectRunoff,
-		return 0.0; //TODO
-	)
-	
 	EQUATION(Model, SoilContaminantDegradation,
 		double degradablemass =
 		  RESULT(SoilWaterVolume) * RESULT(SoilWaterContaminantConcentration)
 		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
-		+ PARAMETER(SoilSOCMass)  * RESULT(SoilSOCContaminantConcentration);
+		+ PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6  * RESULT(SoilSOCContaminantConcentration);
 		
-		double ln2  = 0.6931471;
-		double rate = ln2 / (365.0 * PARAMETER(HalfLife));
+		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
 		
 		return rate * degradablemass;
 	)
@@ -306,10 +353,10 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		  RESULT(ContaminantInputsToSoil)
 		- RESULT(SoilContaminantFluxToReach)
 		- RESULT(SoilContaminantFluxToGroundwater)
-		- RESULT(SoilContaminantFluxToDirectRunoff)
 		+ RESULT(DiffusiveAirSoilExchangeFlux)
 		- RESULT(SoilContaminantDegradation)
 		- RESULT(ContaminantDeliveryToReachByErosion)
+		+ RESULT(TransferFromPotentiallyToEasilyAccessible);
 		+ RESULT(SoilContaminantFormation);
 	)
 	
@@ -319,8 +366,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
-		double ln2  = 0.6931471;
-		double rate = ln2 / (365.0 * PARAMETER(HalfLife));
+		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
 		return rate * degradablemass;
 	)
@@ -342,22 +388,20 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		+ RESULT(GroundwaterContaminantFormation);
 	)
 
-	
-	auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, IncaDascru); //NOTE: We can't use the reach solver from PERSiST, because we depend on the grain solver that again depends on the PERSiST reach solver.
-	//auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
+	//auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, IncaDascru); //NOTE: We can't use the reach solver from PERSiST, because we depend on the grain solver that again depends on the PERSiST reach solver.
+	auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
 	
 	auto WaterTemperatureKelvin        = RegisterEquation(Model, "Water temperature in Kelvin", K);
 	
 	auto DiffuseContaminantOutput      = RegisterEquation(Model, "Diffuse contaminant output", NgPerDay);
 	auto TotalDiffuseContaminantOutput = RegisterEquationCumulative(Model, "Total diffuse contaminant output", DiffuseContaminantOutput, LandscapeUnits);
 	auto ReachContaminantInput         = RegisterEquation(Model, "Reach contaminant input", NgPerDay);
-	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng);
-	SetSolver(Model, ContaminantMassInReach, ReachSolver);
+	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng, ReachSolver);
 	SetInitialValue(Model, ContaminantMassInReach, InitialContaminantMassInReach);
-	auto ReachContaminantFlux          = RegisterEquation(Model, "Reach contaminant flux", NgPerDay);
-	SetSolver(Model, ReachContaminantFlux, ReachSolver);
-	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay);
-	SetSolver(Model, ReachContaminantDegradation, ReachSolver);
+	auto ReachContaminantDissolvedFlux = RegisterEquation(Model, "Reach flux of dissolved contaminants", NgPerDay, ReachSolver);
+	auto ReachContaminantSolidFlux     = RegisterEquation(Model, "Reach flux of solid-bound contaminants", NgPerDay, ReachSolver);
+	auto ReachContaminantFlux          = RegisterEquation(Model, "Reach contaminant flux", NgPerDay, ReachSolver);
+	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay, ReachSolver);
 	
 	auto ReachContaminantFormation     = RegisterEquation(Model, "Reach contaminant formation", NgPerDay);
 	
@@ -379,36 +423,25 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	auto ReachAirContaminantTransferVelocity      = RegisterEquation(Model, "Reach air contamninant transfer velocity", MPerDay);
 	auto ReachWaterContaminantTransferVelocity    = RegisterEquation(Model, "Reach water contaminant transfer velocity", MPerDay);
 	auto ReachOverallAirWaterContaminantTransferVelocity = RegisterEquation(Model, "Reach overall air-water transfer velocity", MPerDay);
-	auto DiffusiveAirReachExchangeFlux            = RegisterEquation(Model, "Diffusive air reach exchange flux", NgPerDay);
-	SetSolver(Model, DiffusiveAirReachExchangeFlux, ReachSolver);
+	auto DiffusiveAirReachExchangeFlux            = RegisterEquation(Model, "Diffusive air reach exchange flux", NgPerDay, ReachSolver);
 	
-	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3);
-	SetSolver(Model, ReachWaterContaminantConcentration, ReachSolver);
-	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg);
-	SetSolver(Model, ReachDOCContaminantConcentration, ReachSolver);
-	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg);
-	SetSolver(Model, ReachSOCContaminantConcentration, ReachSolver);
+	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3, ReachSolver);
+	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg, ReachSolver);
+	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg, ReachSolver);
 	
-	auto ReachContaminantDeposition = RegisterEquation(Model, "Reach contaminant deposition", NgPerM2PerDay);
-	SetSolver(Model, ReachContaminantDeposition, ReachSolver);
-	auto ReachContaminantEntrainment = RegisterEquation(Model, "Reach contaminant entrainment", NgPerM2PerDay);
-	SetSolver(Model, ReachContaminantEntrainment, ReachSolver);
+	auto ReachContaminantDeposition = RegisterEquation(Model, "Reach contaminant deposition", NgPerM2PerDay, ReachSolver);
+	auto ReachContaminantEntrainment = RegisterEquation(Model, "Reach contaminant entrainment", NgPerM2PerDay, ReachSolver);
 	
 	auto PoreWaterVolume = RegisterEquation(Model, "Pore water volume", M3PerM2);
 	
-	auto BedContaminantDegradation        = RegisterEquation(Model, "Stream bed contaminant degradation", NgPerM2PerDay);
-	SetSolver(Model, BedContaminantDegradation, ReachSolver);
-	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2);
-	SetSolver(Model, BedContaminantMass, ReachSolver);
+	auto BedContaminantDegradation        = RegisterEquation(Model, "Stream bed contaminant degradation", NgPerM2PerDay, ReachSolver);
+	auto BedContaminantMass               = RegisterEquationODE(Model, "Stream bed contaminant mass", NgPerM2, ReachSolver);
 	//SetInitialValue
 
-	auto BedWaterContaminantConcentration = RegisterEquation(Model, "Stream bed pore water contaminant concentration", NgPerM3);
-	SetSolver(Model, BedWaterContaminantConcentration, ReachSolver);
-	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg);
-	SetSolver(Model, BedSOCContaminantConcentration, ReachSolver);
+	auto BedWaterContaminantConcentration = RegisterEquation(Model, "Stream bed pore water contaminant concentration", NgPerM3, ReachSolver);
+	auto BedSOCContaminantConcentration   = RegisterEquation(Model, "Stream bed SOC contaminant concentration", NgPerKg, ReachSolver);
 	
-	auto DiffusiveSedimentReachExchangeFlux = RegisterEquation(Model, "Diffusive sediment reach water exchange flux", NgPerDay);
-	SetSolver(Model, DiffusiveSedimentReachExchangeFlux, ReachSolver);
+	auto DiffusiveSedimentReachExchangeFlux = RegisterEquation(Model, "Diffusive sediment reach water exchange flux", NgPerDay, ReachSolver);
 	
 	auto BedContaminantFormation          = RegisterEquation(Model, "Bed contaminant formation", NgPerM2PerDay);
 	
@@ -435,16 +468,23 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	
+	EQUATION(Model, ReachContaminantDissolvedFlux,
+		return
+			  RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration) * 86400.0
+			+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration);
+	)
+	
+	EQUATION(Model, ReachContaminantSolidFlux,
+		return RESULT(TotalReachSOCFlux) * RESULT(ReachSOCContaminantConcentration);
+	)
+	
 	EQUATION(Model, ReachContaminantFlux,
 		return
-		  86400.0 * RESULT(ReachFlow) * RESULT(ReachWaterContaminantConcentration)
-		+ RESULT(ReachDOCOutput) * RESULT(ReachDOCContaminantConcentration)
-		+ RESULT(TotalReachSOCFlux) * RESULT(ReachSOCContaminantConcentration);
+		  RESULT(ReachContaminantDissolvedFlux) + RESULT(ReachContaminantSolidFlux);
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
-		double ln2  = 0.6931471;
-		double rate = ln2 / (365.0 * PARAMETER(HalfLife));
+		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
 		return RESULT(ContaminantMassInReach) * rate;
 	)
 	
@@ -613,7 +653,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, DiffusiveAirReachExchangeFlux,
-		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - PARAMETER(AtmosphericContaminantConcentration)/RESULT(ReachAirWaterPartitioningCoefficient)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
+		return RESULT(ReachOverallAirWaterContaminantTransferVelocity) * (RESULT(ReachWaterContaminantConcentration) - SafeDivide(PARAMETER(AtmosphericContaminantConcentration), RESULT(ReachAirWaterPartitioningCoefficient))) * PARAMETER(ReachLength) * PARAMETER(ReachWidth);
 	)
 	
 	
@@ -641,8 +681,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, BedContaminantDegradation,
-		double ln2  = 0.6931471;
-		double rate = ln2 / (365.0 * PARAMETER(HalfLife));
+		double rate = CONST_LN_2/ (365.0 * PARAMETER(HalfLife));
 		return RESULT(BedContaminantMass) * rate;
 	)
 	
@@ -693,6 +732,17 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		double z = 0.1; // Thickness of sediment layer that participates in diffusive exchange.
 		return RESULT(DiffusivityOfDissolvedCompoundInWater) * (RESULT(ReachWaterContaminantConcentration) - RESULT(BedWaterContaminantConcentration)) * PARAMETER(ReachLength) * PARAMETER(ReachWidth) * 86400.0 / z;
 	)
+	
+	auto GrainSOCDensity = GetParameterDoubleHandle(Model, "Grain SOC density");
+	auto ReachSPMContaminantConcentration = RegisterEquation(Model, "Reach suspended particulate matter contaminant concentration", NgPerKg);
+	
+	EQUATION(Model, ReachSPMContaminantConcentration,
+		auto conc = RESULT(ReachSOCContaminantConcentration);  //ng(contaminant) / kg(SOC)
+		auto dens = PARAMETER(GrainSOCDensity);                //kg(SOC) / kg(suspended_solid)
+		return conc * dens;
+	)
 
 	EndModule(Model);
+	
+	#undef CONST_LN_2
 }

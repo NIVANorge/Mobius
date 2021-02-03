@@ -13,6 +13,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");
 	auto MgPerL         = RegisterUnit(Model, "mg/l");
 	auto MmPerTs        = RegisterUnit(Model, "mm/month");
+	auto MEqPerM3       = RegisterUnit(Model, "meq/m3");
 	auto MEqPerM2PerTs  = RegisterUnit(Model, "meq/m2/month");
 	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	
@@ -47,10 +48,15 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto AirTemperature          = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	auto Precipitation           = RegisterInput(Model, "Precipitation", MmPerTs);
 	
-	auto MgPrecipConc            = RegisterInput(Model, "Mg conc in precip", MgPerL);
-	auto NH4PrecipConc           = RegisterInput(Model, "NH4 conc in precip", MgPerL);
-	auto NO3PrecipConc           = RegisterInput(Model, "NO3 conc in precip", MgPerL);
-	auto SO4PrecipConc           = RegisterInput(Model, "SO4 conc in precip", MgPerL);
+	auto CaPrecipConc            = RegisterInput(Model, "Ca conc in precip", MEqPerM3);
+	auto MgPrecipConc            = RegisterInput(Model, "Mg conc in precip", MEqPerM3);
+	auto NaPrecipConc            = RegisterInput(Model, "Na conc in precip", MEqPerM3);
+	auto KPrecipConc             = RegisterInput(Model, "K conc in precip", MEqPerM3);
+	auto NH4PrecipConc           = RegisterInput(Model, "NH4 conc in precip", MEqPerM3);
+	auto SO4PrecipConc           = RegisterInput(Model, "SO4 conc in precip", MEqPerM3);
+	auto ClPrecipConc            = RegisterInput(Model, "Cl conc in precip", MEqPerM3);
+	auto NO3PrecipConc           = RegisterInput(Model, "NO3 conc in precip", MEqPerM3);
+	auto FPrecipConc             = RegisterInput(Model, "F conc in precip", MEqPerM3);
 	
 	
 	
@@ -61,10 +67,6 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto DesiredNH4Uptake        = RegisterEquation(Model, "Desired NH4 uptake", MMolPerM2PerTs);
 	auto LitterC                 = RegisterEquation(Model, "Organic C litter", MMolPerM2PerTs);
 	
-	auto MarineSO4Deposition     = RegisterEquation(Model, "Marine SO4 deposition", MEqPerM2PerTs);
-	auto ExcessSO4Deposition     = RegisterEquation(Model, "Excess SO4 deposition", MEqPerM2PerTs);
-	auto MarineCaDeposition      = RegisterEquation(Model, "Marine Ca deposition", MEqPerM2PerTs);
-	auto ExcessCaDeposition      = RegisterEquation(Model, "Excess Ca deposition", MEqPerM2PerTs);
 	
 	auto MgDeposition            = RegisterEquation(Model, "Mg deposition", MEqPerM2PerTs);
 	auto NH4Deposition           = RegisterEquation(Model, "NH4 deposition", MEqPerM2PerTs);
@@ -99,81 +101,39 @@ Forest growth driver module developed as part of the CatchCAN project.
 		return (RESULT(DesiredNO3Uptake) + RESULT(DesiredNH4Uptake))*PARAMETER(LitterCN);
 	)
 	
+	
+	
+	EQUATION(Model, CaDeposition,
+		return INPUT(CaPrecipConc) * INPUT(Precipitation) * 1e-3;
+	)
+	
 	EQUATION(Model, MgDeposition,
-		double precip = INPUT(Precipitation);
-		
-		double charge = 2.0;
-		double atomic_mass = 24.3;
-		double meq_per_m2 = (INPUT(MgPrecipConc) / atomic_mass)*charge * precip;
-		
-		return meq_per_m2 * PARAMETER(SeaSaltFactor);
-	)
-	
-	EQUATION(Model, NH4Deposition,
-		double precip = INPUT(Precipitation);
-		
-		double charge = 1.0;
-		double atomic_mass = 14.0;
-		double meq_per_m2 = (INPUT(NH4PrecipConc) / atomic_mass)*charge * precip;
-		
-		return meq_per_m2 * PARAMETER(NFactor);
-	)
-	
-	EQUATION(Model, NO3Deposition,
-		double precip = INPUT(Precipitation);
-		
-		double charge = 1.0;
-		double atomic_mass = 14.0;
-		double meq_per_m2 = (INPUT(NO3PrecipConc) / atomic_mass)*charge * precip;
-		
-		return meq_per_m2 * PARAMETER(NFactor);
-	)
-	
-	//NOTE: The factors are long-term measured ratios in deposition from marine sources. TODO: put reference paper here.
-	
-	EQUATION(Model, ClDeposition,
-		return RESULT(MgDeposition) / 0.196;
+		return INPUT(MgPrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
 	EQUATION(Model, NaDeposition,
-		return RESULT(ClDeposition) * 0.856;
+		return INPUT(NaPrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
-	
+
 	EQUATION(Model, KDeposition,
-		return RESULT(ClDeposition) * 0.018;
+		return INPUT(KPrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
-	EQUATION(Model, MarineSO4Deposition,
-		return RESULT(ClDeposition) * 0.103;
-	)
-	
-	EQUATION(Model, ExcessSO4Deposition,
-		double precip = INPUT(Precipitation);
-		
-		double charge = 2.0;
-		double atomic_mass = 32.1;
-		double meq_per_m2 = (INPUT(SO4PrecipConc) / atomic_mass)*charge * precip;
-		
-		return meq_per_m2 * PARAMETER(SO4Factor);
+	EQUATION(Model, NH4Deposition,
+		return INPUT(NH4PrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
 	EQUATION(Model, SO4Deposition,
-		return RESULT(MarineSO4Deposition) + RESULT(ExcessSO4Deposition);
+		return INPUT(SO4PrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
-	EQUATION(Model, MarineCaDeposition,
-		return RESULT(ClDeposition) * 0.037;
+	EQUATION(Model, ClDeposition,
+		return INPUT(ClPrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
-	EQUATION(Model, ExcessCaDeposition,
-		return RESULT(ExcessSO4Deposition) * PARAMETER(CaFactor);
+	EQUATION(Model, FDeposition,
+		return INPUT(FPrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
-	
-	EQUATION(Model, CaDeposition,
-		return RESULT(MarineCaDeposition) + RESULT(ExcessCaDeposition);
-	)
-	
-	
 	
 	
 	EndModule(Model);

@@ -420,8 +420,8 @@ New to V0.3: Multiple contaminants at a time.
 	)
 
 	
-	auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, IncaDascru); //NOTE: We can't use the reach solver from PERSiST, because we depend on the grain solver that again depends on the PERSiST reach solver.
-	//auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
+	//auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, IncaDascru); //NOTE: We can't use the reach solver from PERSiST, because we depend on the grain solver that again depends on the PERSiST reach solver.
+	auto ReachSolver = RegisterSolver(Model, "Reach contaminant solver", 0.1, BoostRosenbrock4, 1e-3, 1e-3);
 	
 	auto WaterTemperatureKelvin        = RegisterEquation(Model, "Water temperature in Kelvin", K);
 	
@@ -769,4 +769,6 @@ New to V0.3: Multiple contaminants at a time.
 	)
 
 	EndModule(Model);
+	
+	#undef CONST_LN_2
 }

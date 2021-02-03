@@ -2,8 +2,17 @@
 start_date : 1981-01-01
 timesteps : 10957
 
+index_set_dependencies :
+"Contaminant deposition to land" : {"Radionuclide"}
+
 
 inputs :
+
+"Contaminant deposition to land" {"U238"} :
+1996-1-1 10
+1997-1-1 10
+1998-1-1 10
+
 
 "Air temperature" :
 2.91

@@ -36,7 +36,7 @@ This is a simple DOC model intended only for use with INCA-Tox. It is not suitab
 	auto Reach = RegisterParameterGroup(Model, "Carbon by subcatchment", Reaches);
 	
 	auto SoilSOCMass                       = RegisterParameterDouble(Model, Land, "Soil SOC mass", KgPerM2, 0.0, 0.0, 1e7);
-	auto SizeOfEasilyAccessibleFraction    = RegisterParameterDouble(Model, Land, "Size of easily accessible SOC fraction", Dimensionless, 0.1, 0.0, 1.0);
+	auto SizeOfEasilyAccessibleFraction    = RegisterParameterDouble(Model, Land, "Size of easily accessible SOC fraction", Dimensionless, 0.1, 0.0, 1.0, "Fractional size of easily accessible SOC relative to total SOC");
 	auto SoilWaterBaselineDOCConcentration = RegisterParameterDouble(Model, Land, "Soil water baseline DOC concentration", MgPerL, 0.0, 0.0, 20.0);
 	auto SoilWaterDOCTemperatureResponse   = RegisterParameterDouble(Model, Land, "Soil water DOC temperature response", MgPerLPerC, 0.0, 0.0, 5.0);
 	auto MineralLayerDOCConcentration      = RegisterParameterDouble(Model, Reach, "Mineral layer DOC concentration", MgPerL, 0.0, 0.0, 20.0);

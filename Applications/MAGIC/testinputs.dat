@@ -4,13 +4,14 @@ timesteps : 2040
 
 
 additional_timeseries :
-"Observed stream Ca"  unit "mmol/m3"
-"Observed stream Mg"  unit "mmol/m3"
-"Observed stream Na"  unit "mmol/m3"
-"Observed stream K"   unit "mmol/m3"
-"Observed stream SO4" unit "mmol/m3"
-"Observed stream Cl"  unit "mmol/m3"
-"Observed stream NO3" unit "mmol/m3"
+"Runoff conc Ca"  unit "meq/m3"
+"Runoff conc Mg"  unit "meq/m3"
+"Runoff conc Na"  unit "meq/m3"
+"Runoff conc K"   unit "meq/m3"
+"Runoff conc SO4" unit "meq/m3"
+"Runoff conc Cl"  unit "meq/m3"
+"Runoff conc NO3" unit "meq/m3"
+"Runoff conc H+"  unit "meq/m3"
 "Observed stream pH"  unit "log10(mol/l)"
 
 

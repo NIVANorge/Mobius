@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev, MAGIC simple carbon and nitrogen V_dev, MAGIC C/N ratio carbon and nitrogen V_dev) at 2021-01-18 13:07:11
+# Parameter file generated for model MAGIC, containing modules (MAGIC Core V_dev, MAGIC driver V_dev, MAGIC simple carbon and nitrogen V_dev, MAGIC C/N ratio carbon and nitrogen V_dev, MAGIC microbial carbon and nitrogen V_dev) at 2021-02-01 14:49:13
 
 index_sets:
 "Compartment" : {"Soil1" "Stream"}
@@ -10,8 +10,8 @@ parameters:
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
 1850-01-01
 
-"Timesteps" :     #(1M) [0, 18446744073709551615]
-2040
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2019-12-01
 
 
 ###################### MAGIC Core V_dev ######################
@@ -266,8 +266,9 @@ true true
 
 ###################### MAGIC C/N ratio carbon and nitrogen V_dev ######################
 
-# Carbon and Nitrogen by compartment ("Compartment") #
+###################### MAGIC microbial carbon and nitrogen V_dev ######################
 
+# Carbon and Nitrogen by compartment ("Compartment") #
 
 "Nitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
 -100 -100

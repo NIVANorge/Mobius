@@ -16,7 +16,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("MAGIC", false, "1M");
+	mobius_model *Model = BeginModelDefinition("MAGIC", true, "1M");
 	
 	AddMagicCoreModel(Model);
 	AddMagicModel(Model);

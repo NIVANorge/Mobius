@@ -7,8 +7,8 @@ parameters:
 
 # System (no index sets) #
 
-"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-1850-01-01
+"End date" :     #(days) [0, 18446744073709551615]
+2020-01-01
 
 "Timesteps" :     #(1M) [0, 18446744073709551615]
 2040
