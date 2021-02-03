@@ -16,7 +16,6 @@ The following model implementations are considered to be in "release quality", i
 
 The following model implementations are probably correct and have been tested on some real datasets, but not all aspects of them have been rigorously tested.
 - INCA-P
-- INCA-MP
 - INCA-Sed
 - INCA-Tox
 - INCA-Rad
