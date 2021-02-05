@@ -102,7 +102,8 @@ def add_runoff_ts(input_df, source) :
 def add_deposition_ts(
 	input_df, source_df, runoff_df, source_is_mg_l=True, runoff_is_mg_l=True, n_dep_given_as_n=True, s_dep_given_as_s=True,
 	sea_salt_ref='Cl', sea_salt_ref_range=None, 
-	patch_scale=None, patch_ref_range=(1989,1992)) :
+	patch_scale=None, patch_ref_range=(1989,1992), 
+	so4_weathering=0.0, ca_excess_weight=0.5, ca_ref_range=None, n_dry_deposition_factor=1.0) :
 	'''
 	input_df  : The dataframe you want to write the inputs to. It must already have a 'Precipitation' and a 'Runoff' column
 	source_df : A date-indexed dataframe with observed concentrations in precipitation, with columns ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F']   F is optional
@@ -115,6 +116,10 @@ def add_deposition_ts(
 	sea_salt_ref_range : pair (start_year, end_year). This is the range that is used to compute the sea_salt_factor. Also SO4*, Ca* and N factors.
 	patch_scale : A date-indexed dataframe containing some of the columns of the input_df. Should have some values of historical deposition relative to a reference year. Example : get_emep_deposition_scales()
 	patch_ref_range : pair (start_year, end_year). Range of years to compute the value for the reference year to scale the values used for patching.
+	so4_weathering : how much of the so4 runoff should be accounted for by weathering and not deposition
+	ca_ref_range : If not None, compute Ca excess deposition relative to SO4 excess deposition with reference to this range.
+	ca_excess_weight : Ca excess deposition relative to SO4 excess deposition is multiplied with this value
+	n_dry_deposition_factor : Multiply NH4 and NO3 deposition by this value
 	'''
 	
 	
@@ -159,8 +164,6 @@ def add_deposition_ts(
 			#Assume source is in [meq/m3] = [µeq/l]
 			return df[element]
 	
-	obs_ss_conc = get_converted_conc(source_df, sea_salt_ref, source_is_mg_l)
-	
 	sea_salt_ratio = {
 		'Ca' : 0.037,
 		'Mg' : 0.196,
@@ -173,25 +176,53 @@ def add_deposition_ts(
 		#'F'  :    #TODO!!! What to do about F?
 	}
 	
+	def add_single(obs, name, nonmarine=None) :
+		add_single_deposition_ts(input_df, obs, nonmarine, name, None if (patch_scale is None or name not in patch_scale) else patch_scale[name], patch_ref_range)
+	
+	obs_ss_conc = get_converted_conc(source_df, sea_salt_ref, source_is_mg_l)
+	
 	if sea_salt_ref is 'Cl' :
 		obs_cl_conc = obs_ss_conc
 	else :
 		obs_cl_conc = obs_ss_conc / sea_salt_ratio[sea_salt_ref]	
 	
-	obs_cl_dep    = obs_cl_conc[cl_range] * input_df['Precipitation'][cl_range] * 1e-3      #TODO: 1e-3 is if precip is given in mm. Otherwise, remove that factor!
+	obs_cl_dep    = obs_cl_conc * input_df['Precipitation'] * 1e-3      #TODO: 1e-3 is if precip is given in mm. Otherwise, remove that factor!
 	
 	#print(obs_cl_dep.resample('AS').sum())
 	
+	
 	#TODO: This is probably correct, because we can't assume the sea salt ref runs straight through??
 	obs_cl_runoff_conc = get_converted_conc(runoff_df2, 'Cl', runoff_is_mg_l)
-	obs_cl_runoff = obs_cl_runoff_conc[cl_range] * input_df['Runoff'][cl_range] * 1e-3             #TODO: Measured in mm or m?
+	obs_cl_runoff = obs_cl_runoff_conc * input_df['Runoff'] * 1e-3             #TODO: Measured in mm or m?
 	
-	sea_salt_factor = np.sum(obs_cl_runoff.values) / np.sum(obs_cl_dep.values)
+	sea_salt_factor = np.sum(obs_cl_runoff[cl_range].values) / np.sum(obs_cl_dep[cl_range].values)
 	
 	print('The sea salt factor was: %g' % sea_salt_factor)
 	
-	def add_single(obs, name) :
-		add_single_deposition_ts(input_df, obs, name, None if (patch_scale is None or name not in patch_scale) else patch_scale[name], patch_ref_range)
+	## SO4 computation:
+	sea_salt_so4_conc = obs_cl_conc * 0.103 * sea_salt_factor
+	sea_salt_so4_dep = obs_cl_dep * 0.103 * sea_salt_factor
+	obs_so4_conc = get_converted_conc(source_df, 'SO4', source_is_mg_l)
+	
+	obs_so4_dep = obs_so4_conc * input_df['Precipitation'] * 1e-3
+	
+	obs_so4_runoff_conc = get_converted_conc(runoff_df2, 'SO4', runoff_is_mg_l)
+	obs_so4_runoff = obs_so4_runoff_conc * input_df['Runoff'] * 1e-3
+	
+	#print(input_df['Runoff'][cl_range])
+	#print(obs_so4_runoff)
+	#print(obs_so4_dep)
+	
+	computed_excess_so4_dep = obs_so4_runoff - so4_weathering/12.0 - sea_salt_so4_dep   #TODO: instead of dividing by 12.0, that should really be sensitive to month length
+	obs_excess_so4_dep = obs_so4_dep - sea_salt_so4_dep
+	
+	so4_excess_factor = np.sum(computed_excess_so4_dep[cl_range].values) / np.sum(obs_excess_so4_dep[cl_range].values)
+	
+	print('The SO4* factor was %g' % so4_excess_factor)
+	
+	projected_so4_excess = so4_excess_factor*(obs_so4_conc - sea_salt_so4_conc)
+	add_single(sea_salt_so4_conc + projected_so4_excess, 'SO4')
+	
 	
 	add_single(obs_ss_conc*sea_salt_factor, sea_salt_ref)
 	if sea_salt_ref is not 'Cl' :
@@ -200,10 +231,43 @@ def add_deposition_ts(
 	for element in ['Ca', 'Mg', 'Na', 'K'] :
 		if element is sea_salt_ref : continue
 		
-		conc = obs_cl_conc * sea_salt_factor * sea_salt_ratio[element]   #NOTE: The sea_salt_ratio is in eq/eq, so no need to use charge and molar mass here
-		add_single(conc, element)
+		ss_conc = obs_cl_conc * sea_salt_factor * sea_salt_ratio[element]   #NOTE: The sea_salt_ratio is in eq/eq, so no need to use charge and molar mass here
 		
-		#TODO: Additional Ca Correction!
+		if (ca_ref_range is not None) and element is 'Ca' :
+			ca_range = year_range(ca_ref_range[0], ca_ref_range[1], monthly=True)
+		
+			ss_ca_dep = ss_conc * input_df['Precipitation'] * 1e-3
+			
+			#NOTE: No runoff correction for Ca deposition possible due to retention!
+			obs_ca_conc = get_converted_conc(source_df, 'Ca', source_is_mg_l)
+			obs_ca_dep = obs_ca_conc * input_df['Precipitation'] * 1e-3
+			
+			excess_ca_dep = obs_ca_dep - ss_ca_dep
+			
+			ca_excess_factor = np.nansum(excess_ca_dep[ca_range].values) / np.nansum(computed_excess_so4_dep[ca_range].values)  #TODO: ratio to computed or to obs? We scale with comp. later, so should use that?
+			#ca_excess_factor = 0.1
+			
+			print('The Ca* factor was %g' % ca_excess_factor)
+			
+			projected_ca_excess = projected_so4_excess*ca_excess_factor*ca_excess_weight
+			ca_conc = ss_conc + projected_ca_excess
+			
+			add_single(ca_conc, 'Ca', projected_ca_excess)
+		else :
+			add_single(ss_conc, element)
+		
+		#Computing NH4 and NO3:
+		
+		#TODO: NH4 and NO3 dry deposition!
+		
+		nh4_conc = get_converted_conc(source_df, 'NH4', source_is_mg_l)*n_dry_deposition_factor
+		add_single(nh4_conc, 'NH4')
+		
+		no3_conc = get_converted_conc(source_df, 'NO3', source_is_mg_l)*n_dry_deposition_factor
+		add_single(no3_conc, 'NO3')
+		
+		
+		#TODO: F !
 	
 	
 	
@@ -218,16 +282,25 @@ def add_deposition_ts(
 	
 	
 	
-def add_single_deposition_ts(input_df, source, element_name, patch_scale=None, patch_ref_range=(1989,1992)) :
+def add_single_deposition_ts(input_df, source, nonmarine=None, element_name='Cl', patch_scale=None, patch_ref_range=(1989,1992)) :
 
-	#TODO: Currently only works if source is monthly. Should only be called by the above function!
-	ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
-	ref_val = np.nanmean(source[ref_dates])
+	#NOTE: Only works if source is monthly. Should only be called by the above function!
+	#NOTE: We have a separate patch source for Ca, which is the non-marine deposition only..
 	
+	ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
+
 	source = source.reindex(input_df.index)
+	if nonmarine is not None :
+		nonmarine = nonmarine.reindex(input_df.index)
+		patch_offset = np.nanmean((source-nonmarine)[ref_dates])    #NOTE: For Ca we still want to use the marine deposition as a base.
+		scale_val    = np.nanmean(nonmarine[ref_dates])
+	else :
+		patch_offset = 0.0
+		scale_val = np.nanmean(source[ref_dates])
+	
 	
 	if patch_scale is not None :
-		patch = patch_scale * ref_val
+		patch = patch_offset + patch_scale * scale_val
 	
 		for index, val in source.iteritems() :
 			if np.isnan(val) and (index in patch.index) :
@@ -236,7 +309,7 @@ def add_single_deposition_ts(input_df, source, element_name, patch_scale=None, p
 		#NOTE: This makes everything before const. equal to this value when we later interpolate
 		first_idx = source.first_valid_index()
 		idx = np.searchsorted(source.index, first_idx)
-		source[source.index[idx-1]] = ref_val
+		source[source.index[idx-1]] = patch_offset + scale_val  #patch_scale is supposed to be constantly equal to 1
 			
 	source = source.interpolate(limit_area=None, limit_direction='both')
 	
@@ -244,12 +317,15 @@ def add_single_deposition_ts(input_df, source, element_name, patch_scale=None, p
 
 	
 def get_emep_deposition_scales() :
+	#NOTE: This is really just correct for an area around Birkenes. We should make something more general.
+
 	emep = {
-		'Date'        : pd.to_datetime(['1850-1-1', '1915-1-1', '1925-1-1', '1940-1-1', '1955-1-1', '1960-1-1', '1965-1-1', '1970-1-1', '1975-1-1', '1980-1-1', '1985-1-1', '1990-1-1'], yearfirst=True),
-		'half-SO4' : [0.5, 0.81, 0.82, 0.89, 1.1, 1.13, 1.24, 1.30, 1.20, 1.17, 1.06, 1.0],
-		'SO4'      : [0.05, 0.61, 0.64, 0.78, 1.2, 1.26, 1.48, 1.60, 1.41, 1.34, 1.13, 1.0],
-		'NH4'      : [0.0, np.nan, np.nan, np.nan, np.nan, 0.99, 1.0, 1.02, 1.12, 1.14, 1.12, 1.0],
-		'NO3'      : [0.0, np.nan, np.nan, np.nan, np.nan, 0.53, 0.63, 0.74, 0.76, 0.84, 0.84, 1.0],
+		'Date' : pd.to_datetime(['1850-1-1', '1915-1-1', '1925-1-1', '1940-1-1', '1955-1-1', '1960-1-1', '1965-1-1', '1970-1-1', '1975-1-1', '1980-1-1', '1985-1-1', '1990-1-1'], yearfirst=True),
+		#'Ca'   : [0.5, 0.81, 0.82, 0.89, 1.1, 1.13, 1.24, 1.30, 1.20, 1.17, 1.06, 1.0],
+		'Ca'   : [0.05, 0.61, 0.64, 0.78, 1.2, 1.26, 1.48, 1.60, 1.41, 1.34, 1.13, 1.0],  #Since the scaling for Ca is only applied to 0.5*(excess deposition) now, we use the same series for Ca as for SO4
+		'SO4'  : [0.05, 0.61, 0.64, 0.78, 1.2, 1.26, 1.48, 1.60, 1.41, 1.34, 1.13, 1.0],
+		'NH4'  : [0.0, np.nan, np.nan, np.nan, np.nan, 0.99, 1.0, 1.02, 1.12, 1.14, 1.12, 1.0],
+		'NO3'  : [0.0, np.nan, np.nan, np.nan, np.nan, 0.53, 0.63, 0.74, 0.76, 0.84, 0.84, 1.0],
 	}
 	
 	emep_df = pd.DataFrame(emep)
@@ -265,7 +341,10 @@ def plot_inputs(input_df) :
 	fig.set_size_inches(20, 5*num)
 	
 	for idx, col in enumerate(input_df) :
-		input_df[col].plot(ax=ax[idx], legend=col)
+		if col.startswith('Observed') :
+			input_df[col].plot(ax=ax[idx], legend=col, marker='o')
+		else :	
+			input_df[col].plot(ax=ax[idx], legend=col)
 	
 	
 def write_as_input_file(input_df, filename) :
