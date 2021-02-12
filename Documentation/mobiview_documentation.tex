@@ -351,6 +351,53 @@ This window has a toolbar with two buttons on its own
 \item Load. You can load the current plot setup from a saved file. Note that the actual time series data will be from the current model run, not the one that was active when the setup was stored. Only the actual plot setup (i.e. name of time series, indexes, plot mode etc.) is stored and loaded.
 \end{enumerate}
 
+\section{Sensitivity and optimization}
+
+\subsection{Single parameter perturbation}
+
+\begin{center}
+\includegraphics[width=\linewidth]{img/parameterperturbation}
+\captionof{figure}{Parameter perturbation analysis}
+\end{center}
+
+From the toolbar you can open a single-parameter perturbation analysis window. You must select a single result series in the main window. Optionally you can also select a single input series. You can only have one index selected per index set in the time series index selection.
+
+You must also select a parameter in the parameter view of the main window. Next, in the perturbation view window, you can select the minimum and maximum of the perturbation range, and select how many model evaluations will be done along that range. The steps along the parameter value will be equally spaced. All other parameters are held constant. This uses a copy of a the main dataset, and does not affect the value of this parameter in your main dataset. The plot will show one time series for each value of the perturbed parameter.
+
+If an index set was checked as "locked" in the main window, all values across the indexes of that index set will be treated as a single parameter, and all of them will be given the same value.
+
+You can also select a statistic to plot in the rightmost plot, with the perturbed parameter as the x axis and the statistic as the y axis. If you want to plot a goodness-of-fit statistic (these are documented in section \ref{sec:gof}, you must have an input series selected that will be used as the comparison series. The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
+
+
+\subsection{Optimization}
+
+\begin{center}
+\includegraphics[width=\linewidth]{img/mobiview_optimizer}
+\captionof{figure}{Optimization setup}
+\end{center}
+
+The optimizer, or auto-calibrator, allows you to tell MobiView to search a subset of the parameter space in order to optimize a set of selected statistics.
+
+If you select a parameter in the main window, you can click "Add parameter" in the optimization setup to add it to the list. You can also set the min and max values that you want the optimizer to search over. Note that all of these have to be valid values that don't make the model crash. It helps if you can narrow down the range as much as possible before running the optimizer.
+
+You can click "Add group" to add all the parameters that are visible in the main parameter view.
+
+If an index set was checked as "locked" in the main window at the time a parameter was added, all values across the indexes of that index set will be treated as a single parameter, and all of them will be given the same value every time the model is run.
+
+To add a target statistic, select one result series and one comparison input series in the main window, then click "Add target". You can select the target statistic from a list of all the GOF statistics (section \ref{sec:gof}). The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
+
+The statistic that is optimized is the sum of the statistics for the individual targets multiplied with their weight. The statistics MAE and RMSE will be minimized, the others maximized. You can't mix targets that should be minimized with targets that should be maximized.
+
+You can set the maximal number of times the optimizer is allowed to evaluate the model. It will typically use all of these. The higher number, the better result, but also longer run time. The total time of the optimizer is roughly equal to the time to run one model multiplied with the number of evaluations (overhead of the algorithm is small in comparison).
+
+The main parameter set (that is loaded in memory) is replaced with the new best parameter set when the optimization run is finished.
+
+Unfortunately, there is no feedback from the program during optimization. The window will freeze and appear to be not responding until the job is done.
+
+We use the dlib global optimization algorithm from \url{http://dlib.net/optimization.html}.
+
+If you need a more complex setup than the one you can make here (such as having relationships between some parameter values), we recommend that you use the Mobius python wrapper to script it instead.
+
 \section{Known issues}
 
 Windows 10 may scale the layout of your programs, and for MobiView this can make the window too large for your screen if the screen resolution is not very high. If this happens:
@@ -359,7 +406,7 @@ Windows 10 may scale the layout of your programs, and for MobiView this can make
 \end{itemize}
 If this does not work right away, you could try to
 \begin{itemize}
-\item Restart windows
+\item Restart Windows.
 \item Right click MobiView.exe, then go to Settings$\rightarrow$Compatibility, click 'Change high DPI settings', then check the first box under 'Program DPI', then change 'Use the DPI that's set for my main display when' to 'I open this program'.
 \end{itemize}
 This is not an ideal solution since it also changes the scaling of all your other programs and may make text hard to read. We will try to see if there is a better solution.
