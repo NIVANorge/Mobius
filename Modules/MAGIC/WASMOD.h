@@ -37,8 +37,11 @@ This is based on the version that was published as a part of NOPEX:
 	
 	
 	EQUATION(Model, SnowFall,
-		double rootexponent = (INPUT(AirTemperature) - PARAMETER(SnowFallsBelow)) / (PARAMETER(SnowFallsBelow) - PARAMETER(SnowMeltsAbove));
-		double fraction = 1.0 - exp(rootexponent*rootexponent);
+		double excess_temp = INPUT(AirTemperature) - PARAMETER(SnowFallsBelow);
+		excess_temp = Min(excess_temp, 0.0);
+		double rootexponent = excess_temp / (PARAMETER(SnowFallsBelow) - PARAMETER(SnowMeltsAbove));
+		double fraction = 1.0 - std::exp(-rootexponent*rootexponent);    //NOTE: The publications don't have a minus in the exponent, but the model doesn't work without it!
+		//if(CURRENT_TIME().Year == 1980) WarningPrint("rootexp ", rootexponent, " fraction ", fraction, '\n');
 		return INPUT(Precipitation)*Max(0.0, fraction); 
 	)
 	
@@ -47,8 +50,10 @@ This is based on the version that was published as a part of NOPEX:
 	)
 	
 	EQUATION(Model, SnowMelt,
-		double rootexponent = (INPUT(AirTemperature) - PARAMETER(SnowMeltsAbove)) / (PARAMETER(SnowFallsBelow) - PARAMETER(SnowMeltsAbove));
-		double fraction = 1.0 - exp(rootexponent*rootexponent);
+		double excess_temp = INPUT(AirTemperature) - PARAMETER(SnowMeltsAbove);
+		excess_temp = Max(0.0, excess_temp);
+		double rootexponent = excess_temp / (PARAMETER(SnowFallsBelow) - PARAMETER(SnowMeltsAbove));
+		double fraction = 1.0 - std::exp(-rootexponent*rootexponent);
 		return LAST_RESULT(SnowPack)*Max(0.0, fraction); 
 	)
 	
@@ -57,7 +62,7 @@ This is based on the version that was published as a part of NOPEX:
 	)
 	
 	EQUATION(Model, FlowInput,
-		return RESULT(RainFall) + RESULT(SnowMelt);
+		return RESULT(RainFall) + LAST_RESULT(SnowMelt);
 	)
 
 

@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Forest V_dev) at 2021-01-28 15:06:07
+# Parameter file generated for model MAGIC, containing modules (MAGIC Forest V_dev, WASMOD V0.1) at 2021-02-19 14:40:09
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -10,7 +10,7 @@ parameters:
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
 1850-01-01
 
-"End date" :
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
 2020-01-01
 
 
@@ -33,7 +33,7 @@ parameters:
 "Ca* factor" :     #(dimensionless) [0.001, 5] SO4 excess deposition is multiplied with this to get Ca excess deposition
 0.08
 
-"N factor" :     #(dimensionless) [0.001, 5] NH4 and NO3 deposition is multiplied with this value
+"N factor" :     #(dimensionless) [0.001, 5] NH4 and NO3 deposition are multiplied with this value
 1.14
 
 
@@ -59,4 +59,15 @@ parameters:
 
 "Litter C/N" :     #(dimensionless) [0.1, 200]
 45
+
+
+###################### WASMOD V0.1 ######################
+
+# WASMOD (no index sets) #
+
+"Snow melts above this temperature" :     #(°C) [-4, 4] 
+-2
+
+"Precipitation falls as snow below this temperature" :     #(°C) [-4, 4] Must be higher than the snow melt threshold
+1.66
 

@@ -76,6 +76,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto KDeposition             = RegisterEquation(Model, "K deposition", MEqPerM2PerTs);
 	auto SO4Deposition           = RegisterEquation(Model, "SO4 deposition", MEqPerM2PerTs);
 	auto CaDeposition            = RegisterEquation(Model, "Ca deposition", MEqPerM2PerTs);
+	auto FDeposition             = RegisterEquation(Model, "F deposition", MEqPerM2PerTs);
 	
 	EQUATION(Model, Temperature,
 		return Max(INPUT(AirTemperature), PARAMETER(MinCompartmentTemp));
@@ -125,6 +126,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, SO4Deposition,
 		return INPUT(SO4PrecipConc) * INPUT(Precipitation) * 1e-3;
+	)
+	
+	EQUATION(Model, NO3Deposition,
+		return INPUT(NO3PrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
 	EQUATION(Model, ClDeposition,

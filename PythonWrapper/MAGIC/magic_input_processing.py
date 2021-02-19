@@ -112,10 +112,10 @@ def add_deposition_ts(
 	runoff_is_mg_l : True if the unit of the runoff_df is mg/l, False if they are meq/m3=µeq/l
 	n_dep_given_as_n : Only relevant if source is mg/l: True if the mass of NO3 and NH4 deposition is given as the mass of N, False if it is given as the mass of the full molecule.
 	s_dep_given_as_s : Only relevant if source is mg/l: True if the mass of SO4 deposition is given as the mass of S, False if it is given as the mass of the full molecule.
-	sea_salt_ref : The reference deposition series for sea salt correction. Usually 'Cl', but can also use 'Mg', 'Na', or 'K'.
-	sea_salt_ref_range : pair (start_year, end_year). This is the range that is used to compute the sea_salt_factor. Also SO4*, Ca* and N factors.
+	sea_salt_ref : The reference deposition series for sea salt correction. Usually 'Cl', but can also use 'Mg'.
+	sea_salt_ref_range : pair (start_year, end_year). This is the range that is used to compute the sea_salt_factor and the SO4* factor.
 	patch_scale : A date-indexed dataframe containing some of the columns of the input_df. Should have some values of historical deposition relative to a reference year. Example : get_emep_deposition_scales()
-	patch_ref_range : pair (start_year, end_year). Range of years to compute the value for the reference year to scale the values used for patching.
+	patch_ref_range : pair (start_year, end_year). Range of years to compute the reference value that scales the values used for patching.
 	so4_weathering : how much of the so4 runoff should be accounted for by weathering and not deposition
 	ca_ref_range : If not None, compute Ca excess deposition relative to SO4 excess deposition with reference to this range.
 	ca_excess_weight : Ca excess deposition relative to SO4 excess deposition is multiplied with this value
@@ -274,7 +274,7 @@ def add_deposition_ts(
 	#Adding observed values too:
 	
 	for element in runoff_df :
-		if element not in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'H+'] : continue
+		if element not in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'H+', 'pH'] : continue
 		if np.isnan(runoff_df[element]).all() : continue
 		
 		input_df['Observed runoff conc %s' % element] = runoff_df[element]

@@ -10,6 +10,7 @@
 
 //#include "../../Modules/MAGIC/MAGIC_Core_Wrapper.h"
 #include "../../Modules/MAGIC/MAGICForest.h"
+#include "../../Modules/MAGIC/WASMOD.h"
 //#include "../../Modules/MAGIC/MAGIC_CarbonNitrogen.h"
 
 
@@ -20,6 +21,7 @@ DllBuildModel()
 	
 	//AddMagicCoreModel(Model);
 	AddMagicForestModule(Model);
+	AddWASMODModel(Model);
 	
 	//Carbon and nitrogen
 	//AddSimpleMagicCarbonNitrogenModel(Model);
