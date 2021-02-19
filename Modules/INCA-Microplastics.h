@@ -130,7 +130,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto KgPerM2PerDay = RegisterUnit(Model, "kg/m2/day");
 	auto MgPerL        = RegisterUnit(Model, "mg/L");
 	auto Metres        = RegisterUnit(Model, "m");
-	auto S2PerKg       = RegisterUnit(Model, "s2/kg");
+	auto DayM2PerN     = RegisterUnit(Model, "day m2/N");
 	auto NewtonPerM2   = RegisterUnit(Model, "N/m2");
 	auto MmPerDay      = RegisterUnit(Model, "mm/day");
 	auto PerDay        = RegisterUnit(Model, "1/day");
@@ -362,7 +362,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto ConstantGrainDepositionToReach   = RegisterParameterDouble(Model, SedimentReach, "Constant grain deposition to reach", KgPerDay, 0.0, 0.0, 1e6, "Direct deposition to the reach not depending on erosion");
 	
 	auto ShearStressCoefficient           = RegisterParameterDouble(Model, Reaches, "Shear stress coefficient", Dimensionless, 1.0, 0.01, 10.0, "Tuning parameter to account for the shear stress not being the same as in ideal conditions");
-	auto EntrainmentCoefficient           = RegisterParameterDouble(Model, Reaches, "Entrainment coefficient", S2PerKg, 1.0, 1e-8, 1.0, "Tuning parameter to determine how the entrainment flux depends on the excess shear stress");  //TODO: Need new unit
+	auto EntrainmentCoefficient           = RegisterParameterDouble(Model, Reaches, "Entrainment coefficient", DayM2PerN, 1.0, 1e-8, 1.0, "Tuning parameter to determine how the entrainment flux depends on the excess shear stress");  //TODO: Need new unit
 	auto MedianSedimentGrainSize          = RegisterParameterDouble(Model, Reaches, "Median bed sediment grain size", Metres, 0.00045, 0.0, 0.05, "The median of of the size of mineral bed sediments. Higher values shade small partices from entrainment.");
 	
 	auto ReachMassTransferRateBetweenClasses = RegisterParameterDouble(Model, TransferMatrix, "Mass transfer rate between classes in the reach", Dimensionless, 0.0, 0.0, 1.0);
