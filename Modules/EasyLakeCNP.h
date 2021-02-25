@@ -21,10 +21,12 @@ Currently in early development.
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 
-	auto EasyLakeCNP = RegisterParameterGroup(Model, "Lake Phosphorous");
+	auto EasyLakeCNP = RegisterParameterGroup(Model, "Lake Carbon Nitrogen Phosphorous");
 	
 	auto TDPSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "TDP settling velocity", MPerDay, 0.5, 0.0, 10.0);
 	auto SSSettlingVelocity  = RegisterParameterDouble(Model, EasyLakeCNP, "Suspended solid settling velocity", MPerDay, 0.5, 0.0, 10.0);
+	auto DINSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "DIN settling velocity", MPerDay, 0.5, 0.0, 10.0);
+	auto DOCSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "DOC settling velocity", MPerDay, 0.5, 0.0, 10.0);
 	
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 
@@ -62,6 +64,27 @@ Currently in early development.
 	auto EpilimnionTPConcentration   = RegisterEquation(Model, "Epilimnion TP concentration", MgPerL);
 	auto HypolimnionTPConcentration  = RegisterEquation(Model, "Hypolimnion TP concentration", MgPerL);
 	
+	auto EpilimnionDINMass           = RegisterEquationODE(Model, "Epilimnion DIN mass", Kg, LakeSolver);
+	auto EpilimnionDINConcentration  = RegisterEquation(Model, "Epilimnion DIN concentration", MgPerL, LakeSolver);
+	auto LakeDINFlux                 = RegisterEquation(Model, "Lake DIN flux", MgPerL, LakeSolver);
+	auto DailyMeanLakeDINFlux        = RegisterEquationODE(Model, "Daily mean lake DIN flux", KgPerDay, LakeSolver);
+	ResetEveryTimestep(Model, DailyMeanLakeDINFlux);
+	auto EpilimnionHypolimnionDINFlux= RegisterEquation(Model, "Epilimnion-hypolimnion DIN flux", KgPerDay, LakeSolver);
+	auto HypolimnionDINMass          = RegisterEquationODE(Model, "Hypolimnion DIN mass", Kg, LakeSolver);
+	auto HypolimnionDINConcentration = RegisterEquation(Model, "Hypolimnion DIN concentration", MgPerL, LakeSolver);
+	auto HypolimnionDINSettling      = RegisterEquation(Model, "Hypolimnion DIN settling", KgPerDay, LakeSolver);
+	
+	auto EpilimnionDOCMass           = RegisterEquationODE(Model, "Epilimnion DOC mass", Kg, LakeSolver);
+	auto EpilimnionDOCConcentration  = RegisterEquation(Model, "Epilimnion DOC concentration", MgPerL, LakeSolver);
+	auto LakeDOCFlux                 = RegisterEquation(Model, "Lake DOC flux", MgPerL, LakeSolver);
+	auto DailyMeanLakeDOCFlux        = RegisterEquationODE(Model, "Daily mean lake DOC flux", KgPerDay, LakeSolver);
+	ResetEveryTimestep(Model, DailyMeanLakeDOCFlux);
+	auto EpilimnionHypolimnionDOCFlux= RegisterEquation(Model, "Epilimnion-hypolimnion DOC flux", KgPerDay, LakeSolver);
+	auto HypolimnionDOCMass          = RegisterEquationODE(Model, "Hypolimnion DOC mass", Kg, LakeSolver);
+	auto HypolimnionDOCConcentration = RegisterEquation(Model, "Hypolimnion DOC concentration", MgPerL, LakeSolver);
+	auto HypolimnionDOCSettling      = RegisterEquation(Model, "Hypolimnion DOC settling", KgPerDay, LakeSolver);
+	
+	
 	auto ThisIsALake = GetConditionalHandle(Model, "This is a lake");
 	SetConditional(Model, EpilimnionTPConcentration, ThisIsALake);
 	SetConditional(Model, HypolimnionTPConcentration, ThisIsALake);
@@ -72,13 +95,23 @@ Currently in early development.
 	auto DailyMeanReachSSFlux  = GetEquationHandle(Model, "Reach daily mean suspended sediment flux");
 	auto SedimentInputFromLand = GetEquationHandle(Model, "Reach sediment input (erosion and entrainment)");
 	auto SedimentInputUpstream = GetEquationHandle(Model, "Reach sediment input (upstream flux)");
+	
 	auto DailyMeanReachTDPFlux = GetEquationHandle(Model, "Reach daily mean TDP flux");
+	auto ReachTDPInputFromCatchment = GetEquationHandle(Model, "Reach TDP input from catchment");
 	auto TDPInputFromUpstream  = GetEquationHandle(Model, "Reach TDP input from upstream");
+	
 	auto PPInputFromErosion    = GetEquationHandle(Model, "Reach PP input from erosion and entrainment");
 	auto PPInputFromUpstream   = GetEquationHandle(Model, "Reach PP input from upstream");
 	auto ReachDailyMeanPPFlux  = GetEquationHandle(Model, "Reach daily mean PP flux");
 	
-	auto ReachTDPInputFromCatchment = GetEquationHandle(Model, "Reach TDP input from catchment");
+	auto ReachDailyMeanDINFlux = GetEquationHandle(Model, "Daily mean reach DIN flux");
+	auto DINInputFromCatchment = GetEquationHandle(Model, "DIN input from catchment");
+	auto DINInputFromUpstream  = GetEquationHandle(Model, "DIN input from upstream");
+	
+	auto ReachDailyMeanDOCFlux = GetEquationHandle(Model, "DOC flux from reach, daily mean");
+	auto DOCInputFromCatchment = GetEquationHandle(Model, "DOC input from catchment");
+	auto DOCInputFromUpstream  = GetEquationHandle(Model, "DOC input from upstream");
+	
 	auto LakeVolume            = GetEquationHandle(Model, "Lake volume");
 	auto HypolimnionVolume     = GetEquationHandle(Model, "Hypolimnion volume");
 	auto EpilimnionVolume      = GetEquationHandle(Model, "Epilimnion volume");
@@ -128,6 +161,36 @@ Currently in early development.
 		
 		return upstreamflux;
 	)
+	
+	EQUATION_OVERRIDE(Model, DINInputFromUpstream,
+		double upstreamflux = 0.0;
+		
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			if(PARAMETER(IsLake, Input))
+				upstreamflux += RESULT(DailyMeanLakeDINFlux, Input);
+			else
+				upstreamflux += RESULT(ReachDailyMeanDINFlux, Input);
+		}
+		
+		return  upstreamflux;
+	)
+	
+	EQUATION_OVERRIDE(Model, DOCInputFromUpstream,
+		double upstreamflux = 0.0;
+		
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			if(PARAMETER(IsLake, Input))
+				upstreamflux += RESULT(DailyMeanLakeDOCFlux, Input);
+			else
+				upstreamflux += RESULT(ReachDailyMeanDOCFlux, Input);
+		}
+		
+		return upstreamflux;
+	)
+	
+	
 	
 	EQUATION(Model, EpilimnionSSMass,
 		return
@@ -261,6 +324,90 @@ Currently in early development.
 	
 	EQUATION(Model, HypolimnionTPConcentration,
 		return RESULT(HypolimnionPPConcentration) + RESULT(HypolimnionTDPConcentration);
+	)
+	
+	
+	
+	EQUATION(Model, EpilimnionDINMass,
+		return
+			  RESULT(DINInputFromCatchment)   // + effluents?
+			+ RESULT(DINInputFromUpstream)
+			- RESULT(LakeDINFlux)
+			- RESULT(EpilimnionHypolimnionDINFlux);
+	)
+	
+	EQUATION(Model, EpilimnionDINConcentration,
+		return SafeDivide(RESULT(EpilimnionDINMass), RESULT(EpilimnionVolume)) * 1000.0;   // kg/m3 -> mg/l
+	)
+	
+	EQUATION(Model, LakeDINFlux,
+		return RESULT(LakeOutflow) * RESULT(EpilimnionDINConcentration) * 86.4;
+	)
+	
+	EQUATION(Model, DailyMeanLakeDINFlux,
+		return RESULT(LakeDINFlux);
+	)
+	
+	EQUATION(Model, EpilimnionHypolimnionDINFlux,
+		double settling = PARAMETER(DINSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionDINConcentration)*1e-3;
+		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionDINConcentration) - RESULT(HypolimnionDINConcentration))*1e-3;
+		return settling + mixing;
+	)
+	
+	EQUATION(Model, HypolimnionDINMass,
+		return
+			  RESULT(EpilimnionHypolimnionDINFlux)
+			- RESULT(HypolimnionDINSettling);
+	)
+	
+	EQUATION(Model, HypolimnionDINConcentration,
+		return SafeDivide(RESULT(HypolimnionDINMass), RESULT(HypolimnionVolume)) * 1000.0;   // kg/m3 -> mg/l
+	)
+	
+	EQUATION(Model, HypolimnionDINSettling,
+		return PARAMETER(DINSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(HypolimnionDINConcentration) * 1e-3;
+	)
+	
+	
+	
+	EQUATION(Model, EpilimnionDOCMass,
+		return
+			  RESULT(DOCInputFromCatchment)
+			+ RESULT(DOCInputFromUpstream)
+			- RESULT(LakeDOCFlux)
+			- RESULT(EpilimnionHypolimnionDOCFlux);
+	)
+	
+	EQUATION(Model, EpilimnionDOCConcentration,
+		return SafeDivide(RESULT(EpilimnionDOCMass), RESULT(EpilimnionVolume)) * 1000.0;   // kg/m3 -> mg/l
+	)
+	
+	EQUATION(Model, LakeDOCFlux,
+		return RESULT(LakeOutflow) * RESULT(EpilimnionDOCConcentration) * 86.4;
+	)
+	
+	EQUATION(Model, DailyMeanLakeDOCFlux,
+		return RESULT(LakeDOCFlux);
+	)
+	
+	EQUATION(Model, EpilimnionHypolimnionDOCFlux,
+		double settling = PARAMETER(DOCSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionDOCConcentration)*1e-3;
+		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionDOCConcentration) - RESULT(HypolimnionDOCConcentration))*1e-3;
+		return settling + mixing;
+	)
+	
+	EQUATION(Model, HypolimnionDOCMass,
+		return
+			  RESULT(EpilimnionHypolimnionDOCFlux)
+			- RESULT(HypolimnionDOCSettling);
+	)
+	
+	EQUATION(Model, HypolimnionDOCConcentration,
+		return SafeDivide(RESULT(HypolimnionDOCMass), RESULT(HypolimnionVolume)) * 1000.0;   // kg/m3 -> mg/l
+	)
+	
+	EQUATION(Model, HypolimnionDOCSettling,
+		return PARAMETER(DOCSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(HypolimnionDOCConcentration) * 1e-3;
 	)
 	
 

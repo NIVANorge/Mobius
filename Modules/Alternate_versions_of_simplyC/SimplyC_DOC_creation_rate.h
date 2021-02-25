@@ -180,7 +180,8 @@ AddSimplyCModel(mobius_model *Model)
 	
 	auto TotalQuickFlowCarbonFlux = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", QuickFlowCarbonFluxToReach, LandscapeUnits, LandUseProportions);
 
-	auto StreamDOCInputFromUpstream = RegisterEquation(Model, "Reach DOC input from upstream", KgPerDay);
+	auto StreamDOCInputFromUpstream = RegisterEquation(Model, "DOC input from upstream", KgPerDay);
+	auto DOCInputFromCatchment      = RegisterEquation(Model, "DOC input from catchment", KgPerDay, ReachSolver);
 
 #ifdef SIMPLYQ_GROUNDWATER	
 	auto GroundwaterFluxToReach = RegisterEquation(Model, "Groundwater carbon flux to reach", KgPerKm2PerDay, ReachSolver);
@@ -212,13 +213,18 @@ AddSimplyCModel(mobius_model *Model)
 		return upstreamflux;
 	)
 	
+	EQUATION(Model, DOCInputFromCatchment,
+		double docin = (RESULT(TotalQuickFlowCarbonFlux) + RESULT(TotalSoilwaterCarbonFluxToReach)) * PARAMETER(CatchmentArea);
+#ifdef SIMPLYQ_GROUNDWATER
+			docin += RESULT(GroundwaterFluxToReach) * PARAMETER(CatchmentArea);
+#endif
+		return docin;
+	)
+	
 	EQUATION(Model, StreamDOCMass,
 		return
 			  RESULT(StreamDOCInputFromUpstream)
-			+ (RESULT(TotalQuickFlowCarbonFlux) + RESULT(TotalSoilwaterCarbonFluxToReach)) * PARAMETER(CatchmentArea)
-#ifdef SIMPLYQ_GROUNDWATER
-			+ RESULT(GroundwaterFluxToReach) * PARAMETER(CatchmentArea)
-#endif
+			+ RESULT(DOCInputFromCatchment)
 			- RESULT(StreamDOCFluxOut);		
 	)
 		

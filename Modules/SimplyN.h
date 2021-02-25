@@ -119,7 +119,8 @@ This module is in early development.
 	
 	auto InitialReachDINMass        = RegisterEquationInitialValue(Model, "Initial reach DIN mass", Kg);
 	
-	auto ReachDINInputFromUpstream  = RegisterEquation(Model, "Reach DIN inputs from upstream", KgPerDay);
+	auto ReachDINInputFromCatchment = RegisterEquation(Model, "DIN input from catchment", KgPerDay, ReachSolver);
+	auto ReachDINInputFromUpstream  = RegisterEquation(Model, "DIN input from upstream", KgPerDay);
 	auto ReachDINMass               = RegisterEquationODE(Model, "Reach DIN mass", Kg, ReachSolver);
 	SetInitialValue(Model, ReachDINMass, InitialReachDINMass);
 	auto ReachDINFlux               = RegisterEquation(Model, "Reach DIN flux", KgPerDay, ReachSolver);
@@ -243,11 +244,15 @@ This module is in early development.
 		return conc * PARAMETER(ReachDenitrificationRate) * tempfactor;
 	)
 	
+	EQUATION(Model, ReachDINInputFromCatchment,
+		return (RESULT(TotalQuickFlowDINFluxToReach) + RESULT(TotalSoilWaterDINFluxToReach) + RESULT(GroundwaterDINFluxToReach))*PARAMETER(CatchmentArea);
+	)
+	
 	EQUATION(Model, ReachDINMass,
 		return
 		  PARAMETER(EffluentDIN)
 		+ RESULT(ReachDINInputFromUpstream)
-		+ (RESULT(TotalQuickFlowDINFluxToReach) + RESULT(TotalSoilWaterDINFluxToReach) + RESULT(GroundwaterDINFluxToReach))*PARAMETER(CatchmentArea)
+		+ RESULT(ReachDINInputFromCatchment)
 		- RESULT(ReachDINFlux)
 		- RESULT(ReachDenitrification);
 	)
