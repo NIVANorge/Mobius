@@ -41,6 +41,176 @@ AddIncaToxLakeModule(mobius_model *Model)
 {
 	BeginModule(Model, "INCA-Tox Lake", "_dev");
 	
+	
+	
+	auto Reach = GetIndexSetHandle(Model, "Reaches");
+	
+	auto LakeParams = RegisterParameterGroup(Model, "Lake Tox");
+	
+	auto OpticalCrossection     = RegisterParameterDouble(Model, LakeParams, "Optical cross-section", Dimensionless, 255.0, 0.0, 1000.0, "For photodegradation"); //TODO: Other unit
+	auto SecchiDepth            = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
+	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0);
+	
+	
+	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
+	
+	auto EpilimnionDegradationTemperatureModifier  = RegisterEquation(Model, "Temperature modifier for degradation in epilimnion", Dimensionless, LakeSolver);
+	auto HypolimnionDegradationTemperatureModifier = RegisterEquation(Model, "Temperature modifier for degradation in hypolimnion", Dimensionless, LakeSolver);
+	
+	auto EpilimnionContaminantDegradation          = RegisterEquation(Model, "Epilimnion contaminant degradation", NgPerDay, LakeSolver);
+	auto HypolimnionContaminantDegradation         = RegisterEquation(Model, "Hypolimnion contaminant degradation", NgPerDay, LakeSolver);
+	
+	auto EpilimnionContaminantMass                 = RegisterEquationODE(Model, "Epilimnion contaminant mass", Ng, LakeSolver);
+	auto EpilimnionContaminantConc                 = RegisterEquation(Model, "Epilimnion contaminant concentration", NgPerM3, LakeSolver);
+	
+	auto HypolimnionContaminantMass                = RegisterEquationODE(Model, "Hypolimnion contaminant mass", Ng, LakeSolver);
+	auto HypolimnionContaminantConc                = RegisterEquation(Model, "Hypolimnion contaminant concentration", NgPerM3, LakeSolver);
+	
+	auto LayerExchange                             = RegisterEquation(Model, "Lake layer contaminant exchange", NgPerDay, LakeSolver);
+	auto EpilimnionAttn                            = RegisterEquation(Model, "Epilimnion attenuation fraction", Dimensionless, LakeSolver);
+	auto PhotoDegradation                          = RegisterEquation(Model, "Photo-degradation", NgPerDay, LakeSolver);
+	
+	auto DiffusiveAirLakeExchangeFlux              = RegisterEquation(Model, "Diffusive air-lake exchange flux", NgPerDay, LakeSolver);
+	auto LakeContaminantFlux                       = RegisterEquation(Model, "Lake contaminant flux", NgPerDay, LakeSolver);
+	
+	//PERSiST:
+	auto ReachFlow                          = GetEquationHandle(Model, "Reach flow"); // m3/s
+	
+	//INCA-Tox
+	auto ReachContaminantFlux               = GetEquationHandle(Model, "Reach contaminant flux");                // ng/day
+	auto ContaminantInputFromLand           = GetEquationHandle(Model, "Reach contaminant input from land");     // ng/day
+	auto ContaminantInputFromUpstream       = GetEquationHandle(Model, "Reach contaminant input from upstream"); // ng/day
+	//NOTE: We reuse these instead of computing them for the lake. This is ONLY OK because we have a slow-flowing river in our particular case!!
+	auto AirWaterTransferVelocity           = GetEquationHandle(Model, "Reach overall air-water transfer velocity");
+	auto AirWaterPartitioningCoefficient    = GetEquationHandle(Model, "Reach air-water partitioning coefficient");
+	
+	//EasyLake
+	auto EpilimnionTemperature              = GetEquationHandle(Model, "Epilimnion temperature");
+	auto HypolimnionTemperature             = GetEquationHandle(Model, "Mean hypolimnion temperature");
+	auto LakeOutflow                        = GetEquationHandle(Model, "Lake outflow");
+	auto EpilimnionVolume                   = GetEquationHandle(Model, "Epilimnion volume");
+	auto HypolimnionVolume                  = GetEquationHandle(Model, "Hypolimnion volume");
+	auto MixingVelocity                     = GetEquationHandle(Model, "Mixing velocity");
+	auto LakeSurfaceArea                    = GetEquationHandle(Model, "Lake surface area");
+	auto EpilimnionShortwave                = GetEquationHandle(Model, "Epilimnion incoming shortwave radiation");
+	
+	
+	auto AtmosphericContaminantConcentration           = GetParameterDoubleHandle(Model, "Atmospheric contaminant concentration");
+	auto ReachContaminantDegradationRateConstant       = GetParameterDoubleHandle(Model, "Contaminant degradation rate constant in the stream");
+	auto DegradationResponseToTemperature              = GetParameterDoubleHandle(Model, "Degradation rate response to one degree change in temperature");
+	auto TemperatureAtWhichDegradationRatesAreMeasured = GetParameterDoubleHandle(Model, "Temperature at which degradation rates are measured");
+	auto IsLake                                        = GetParameterBoolHandle(Model, "This section is a lake");
+	
+	auto AtmosphericContaminantConcentrationIn  = GetInputHandle(Model, "Atmospheric contaminant concentration");
+	auto DepositionToLand                       = GetInputHandle(Model, "Contaminant deposition to land");
+
+	
+	EQUATION_OVERRIDE(Model, ContaminantInputFromUpstream,
+		double upstreamflux = 0.0;
+		
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			if(PARAMETER(IsLake, Input))
+				upstreamflux += RESULT(LakeContaminantFlux, Input);
+			else
+				upstreamflux += RESULT(ReachContaminantFlux, Input);
+		}
+		
+		return upstreamflux;
+	)
+	
+	
+	
+	EQUATION(Model, HypolimnionDegradationTemperatureModifier,
+		return pow(PARAMETER(DegradationResponseToTemperature), RESULT(HypolimnionTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured));
+	)
+	
+	EQUATION(Model, EpilimnionDegradationTemperatureModifier,
+		return pow(PARAMETER(DegradationResponseToTemperature), RESULT(EpilimnionTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured));
+	)
+	
+	EQUATION(Model, EpilimnionContaminantDegradation,
+		//TODO: Using the reach value here makes it compute this for each reach!
+		return PARAMETER(ReachContaminantDegradationRateConstant)*RESULT(EpilimnionContaminantMass)*RESULT(EpilimnionDegradationTemperatureModifier);
+	)
+	
+	EQUATION(Model, HypolimnionContaminantDegradation,
+		return PARAMETER(ReachContaminantDegradationRateConstant)*RESULT(HypolimnionContaminantMass)*RESULT(HypolimnionDegradationTemperatureModifier);
+	)
+	
+	EQUATION(Model, EpilimnionContaminantMass,
+		
+		return
+			  RESULT(ContaminantInputFromLand)
+			+ RESULT(ContaminantInputFromUpstream)
+			- RESULT(LayerExchange)
+			- RESULT(LakeContaminantFlux)
+			- RESULT(DiffusiveAirLakeExchangeFlux)
+			- RESULT(PhotoDegradation)
+			- RESULT(EpilimnionContaminantDegradation);
+	)
+	
+	EQUATION(Model, EpilimnionContaminantConc,
+		return SafeDivide(RESULT(EpilimnionContaminantMass), RESULT(EpilimnionVolume));
+	)
+	
+	EQUATION(Model, HypolimnionContaminantMass,
+		return RESULT(LayerExchange) - RESULT(HypolimnionContaminantDegradation);
+	)
+	
+	EQUATION(Model, HypolimnionContaminantConc,
+		return SafeDivide(RESULT(HypolimnionContaminantMass), RESULT(HypolimnionVolume);
+	)
+	
+	EQUATION(Model, LayerExchange,
+		return RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionContaminantConc) - RESULT(HypolimnionContaminantConc));
+	)
+	
+	EQUATION(Model, PhotoDegradation,
+		double oc_Nitro = PARAMETER(OpticalCrossection); // m2/mol Nitro            Optical cross-section of DOM
+		double qy_Nitro = 0.45;  // mol Nitro /mol quanta   Quantum yield
+		
+		double f_uv = 0.06; //Fract.                of PAR in incoming solar radiation
+		double e_uv = 351843.0; // J/mol              Average energy of Par photons
+		
+		//‒oc_Nitro * qy_Nitro f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * [Nitrosamines]" in mg N m-3 d-1
+		double shortwave = RESULT(EpilimnionShortwave)*RESULT(EpilimnionAttn);
+		return oc_Nitro * qy_Nitro * (f_uv / e_uv) * 86400.0 * shortwave * RESULT(EpilimnionContaminantMass);
+	)
+	
+	
+	EQUATION(Model, EpilimnionAttn,
+		double a = 2.7/PARAMETER(SecchiDepth);
+		double D = PARAMETER(LakeDepth);
+		double d = PARAMETER(EpiliminionThickness);
+		
+		double top = AttnIndefiniteIntegral(0.0, a, D);
+		double bot = AttnIndefiniteIntegral(d, a, D);
+		
+		double vv = (D - (1.0 - d/D)*(D-d));
+		
+		//return (bot - top);
+		return 3.0*(bot - top)/vv;
+	)
+	
+	EQUATION(Model, DiffusiveAirLakeExchangeFlux,
+		double atmospheric = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		double flux = RESULT(AirWaterTransferVelocity) * (RESULT(EpilimnionContaminantConc) - atmospheric/RESULT(AirWaterPartitioningCoefficient)) * RESULT(LakeSurfaceArea);
+		if(RESULT(IsIce) > 0.0) flux = 0.0;
+		return PARAMETER(DiffusiveExchangeScale)*flux;
+	)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+#if 0
 	auto Dimensionless  = RegisterUnit(Model);
 	auto Metres         = RegisterUnit(Model, "m");
 	auto M2             = RegisterUnit(Model, "m2");
@@ -473,6 +643,8 @@ AddIncaToxLakeModule(mobius_model *Model)
 		
 		return (longwave + sensible + latent + shortwave)*86400.0 / (Cw * epilimnionvolume);
 	)
+	
+#endif
 	
 	EndModule(Model);
 }
