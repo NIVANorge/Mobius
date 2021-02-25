@@ -272,7 +272,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
 	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2, LakeSolver);
 	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2, LakeSolver);
-	
+	auto EpilimnionShortwave                  = RegisterEquation(Model, "Epilimnion incoming shortwave radiation", WPerM2, LakeSolver);
 	
 
 	
@@ -287,6 +287,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	auto EpilimnionTemperature = RegisterEquation(Model, "Epilimnion temperature", DegreesCelsius, LakeSolver);
 	SetInitialValue(Model, EpilimnionTemperature, InitialEpilimnionTemperature);
+	
+	auto MeanHypolimnionTemperature = RegisterEquation(Model, "Mean hypolimnion temperature", DegreesCelsius, LakeSolver);
 	
 	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
 	SetInitialValue(Model, EpilimnionThickness, InitialEpilimnionThickness);
@@ -674,6 +676,10 @@ The implementation is informed by the implementation in [^https://github.com/got
 		return ice_attn;
 	)
 	
+	EQUATION(Model, EpilimnionShortwave,
+		return RESULT(ShortwaveRadiation) * (1.0 - RESULT(IceAttenuationCoefficient));
+	)
+	
 	EQUATION(Model, IceEnergy,
 		//double cw = 4.18e+6;   //volumetric heat capacity of water (J K-1 m-3)
 		double Kw = PARAMETER(FreezingSpeed); //Heat transfer coefficent
@@ -724,7 +730,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
 		
 		// NOTE: The amount of shortwave that penetrates the ice and contributes to heating the water below. Currently this assumes that no shortwave reaches the lake bottom and is absorbed there instead.
-		double surfaceshortwave = RESULT(ShortwaveRadiation)*(1.0 - RESULT(IceAttenuationCoefficient));
+		double surfaceshortwave = RESULT(EpilimnionShortwave);
 		
 		//if(RESULT(IsIce)) surfaceheatflux = 0.0;
 		
@@ -757,6 +763,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 		// s/day * J/s / (J/(K*kg) * kg) = K/day = oC/day
 	)
 	
+	//TODO: We recompute volumes a lot in these equations when we could just use RESULT(EpilimnionVolume) etc...
+	
 	EQUATION(Model, InitialMeanLakeTemperature,
 		double T_e = RESULT(EpilimnionTemperature);
 		double T_b = RESULT(BottomTemperature);
@@ -784,6 +792,22 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double V_e = V - V_h;
 		
 		return (T_m*V - 0.5*T_b*V_h) / (V_e + 0.5*V_h);
+	)
+	
+	EQUATION(Model, MeanHypolimnionTemperature,
+		double T_m = RESULT(MeanLakeTemperature);
+		double T_e = RESULT(EpilimnionTemperature);
+		
+		double z_e = RESULT(EpilimnionThickness);
+		double z_b = RESULT(WaterLevel);
+		double a   = RESULT(LakeSurfaceArea);
+	
+		double V   = RESULT(LakeVolume); // = 0.5*a*z_b;
+		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
+		double V_e = V - V_h;
+		
+		// V_h*T_h + V_e*T_e = T_m*V
+		return (T_m*V - T_e*V_e) / V_h;
 	)
 	
 	EQUATION(Model, TemperatureAtDepth,

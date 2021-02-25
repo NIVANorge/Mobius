@@ -74,6 +74,8 @@ Currently in early development.
 	auto HypolimnionDINConcentration = RegisterEquation(Model, "Hypolimnion DIN concentration", MgPerL, LakeSolver);
 	auto HypolimnionDINSettling      = RegisterEquation(Model, "Hypolimnion DIN settling", KgPerDay, LakeSolver);
 	
+	
+	auto EpilimnionDOCPhotoMineralization = RegisterEquation(Model, "Epilimnion DOC photomineralization", KgPerDay, LakeSolver);
 	auto EpilimnionDOCMass           = RegisterEquationODE(Model, "Epilimnion DOC mass", Kg, LakeSolver);
 	auto EpilimnionDOCConcentration  = RegisterEquation(Model, "Epilimnion DOC concentration", MgPerL, LakeSolver);
 	auto LakeDOCFlux                 = RegisterEquation(Model, "Lake DOC flux", MgPerL, LakeSolver);
@@ -118,6 +120,7 @@ Currently in early development.
 	auto LakeSurfaceArea       = GetEquationHandle(Model, "Lake surface area");
 	auto LakeOutflow           = GetEquationHandle(Model, "Lake outflow");
 	auto MixingVelocity        = GetEquationHandle(Model, "Mixing velocity");
+	auto EpilimnionShortwave   = GetEquationHandle(Model, "Epilimnion incoming shortwave radiation");
 	
 	
 	EQUATION_OVERRIDE(Model, TDPInputFromUpstream,
@@ -370,12 +373,31 @@ Currently in early development.
 	
 	
 	
+	
+	EQUATION(Model, EpilimnionDOCPhotoMineralization,
+	
+		//TODO: Some of these could be parameters
+		double oc_DOC = 0.01;   // Optical cross-section of DOM
+		double qy_DOC = 0.5;    // mol DOC /mol quanta   Quantum yield
+		
+		double f_par = 0.45;     //Fract.   of PAR in incoming solar radiation
+		double e_par = 240800.0; // J/mol   Average energy of PAR photons
+		
+		//‒oc_DOC * qy_DOC f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * [Nitrosamines]" in mg N m-3 d-1
+		double shortwave = RESULT(EpilimnionShortwave);
+		
+		double epilimnionattn = 1.0;  //TODO: This should be computed, and actually depends on the DOC conc. Moreover, the excess should go into the hypolimnion and cause photomineralization there.
+		
+		return oc_DOC * qy_DOC * (f_par / e_par) * 86400.0 * shortwave * epilimnionattn * RESULT(EpilimnionDOCMass);
+	)
+	
 	EQUATION(Model, EpilimnionDOCMass,
 		return
 			  RESULT(DOCInputFromCatchment)
 			+ RESULT(DOCInputFromUpstream)
 			- RESULT(LakeDOCFlux)
-			- RESULT(EpilimnionHypolimnionDOCFlux);
+			- RESULT(EpilimnionHypolimnionDOCFlux)
+			- RESULT(EpilimnionDOCPhotoMineralization);
 	)
 	
 	EQUATION(Model, EpilimnionDOCConcentration,
