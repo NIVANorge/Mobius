@@ -244,6 +244,14 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto InitialBottomTemperature     = RegisterParameterDouble(Model, PhysParams, "Initial bottom temperature", DegreesCelsius, 4.0, 0.0, 50.0);
 	auto InitialEpilimnionThickness   = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion thickness", M, 5.0, 0.0, 20.0);
 	
+	auto FreezingSpeed = RegisterParameterDouble(Model, PhysParams, "Freezing thermal conductivity", Dimensionless, 2000.0, 0.0, 20000.0); 
+	auto IceFormationTemperature = RegisterParameterDouble(Model, PhysParams, "Ice formation temperature", DegreesCelsius, 0.0, -2.0, 2.0, "Calibration parameter to allow for differences in surface temperature and mean epilimnion temperature");
+	auto FrazilThreshold = RegisterParameterDouble(Model, PhysParams, "Frazil threshold", M, 0.05, 0.0, 0.1, "Thickness of ice before it changes surface properties of the lake");
+	auto SnowAccumulates = RegisterParameterBool(Model, PhysParams, "Snow contributes to ice thickness", true);
+	auto IceAlbedoOn     = RegisterParameterBool(Model, PhysParams, "Ice has its own albedo", true);
+	auto IceAlbedo       = RegisterParameterDouble(Model, PhysParams, "Ice albedo", Dimensionless, 0.4, 0.001, 1.0);
+	
+	
 	
 	auto SaturationSpecificHumidity           = RegisterEquation(Model, "Saturation specific humidity", KgPerKg, LakeSolver);
 	auto ActualVaporPressure                  = RegisterEquation(Model, "Actual vapor pressure", HPa);
@@ -265,10 +273,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto LongwaveRadiation                    = RegisterEquation(Model, "Net longwave radiation", WPerM2, LakeSolver);
 	auto ShortwaveRadiation                   = RegisterEquation(Model, "Net shortwave radiation", WPerM2, LakeSolver);
 	
-	//SetInitialValue;
-	//TODO: Visibility should eventually depend on DOC concentration
-	//TODO: Absorbance may not be a technically correct name? Though is related..
-	auto FreezingSpeed = RegisterParameterDouble(Model, PhysParams, "Freezing thermal conductivity", Dimensionless, 2000.0, 0.0, 20000.0); 
+	
 
 	
 	//Stuff below here is loosely based on FLake (Mironov 05)
@@ -609,15 +614,17 @@ The implementation is informed by the implementation in [^https://github.com/got
 	)
 	
 	EQUATION(Model, LongwaveRadiation,
-		//NOTE: have different albedo for longwave and shortwave?
+		//NOTE: should we have different albedo for longwave and shortwave?
 		double albedo = 0.045;
 		return (1.0 - albedo) * RESULT(DownwellingLongwaveRadation) - RESULT(EmittedLongwaveRadiation);
 	)
 	
 
 	EQUATION(Model, ShortwaveRadiation,
-		double albedo = 0.045; //TODO: Needs snow/ice-correction. Maybe also correction for solar angle!
-		//if(RESULT(IsIce)) albedo = 0.4; //NOTE: This screws things up. Weird.
+		double albedo = 0.045; //TODO: Maybe needs correction for solar angle!
+		bool icealbedoon = PARAMETER(IceAlbedoOn);
+		double icealbedo = PARAMETER(IceAlbedo);
+		if(RESULT(IsIce) && icealbedoon) albedo = icealbedo;
 		return (1.0 - albedo) * INPUT(GlobalRadiation);
 	)
 	
@@ -662,8 +669,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	EQUATION(Model, IceAttenuationCoefficient,
 		double lambda_ice = 5.0;
-		double ice_attn = std::exp(-lambda_ice * RESULT(IceThickness));
-		if(!RESULT(IsIce)) ice_attn = 1.0;
+		double ice_attn = 1.0 - std::exp(-lambda_ice * RESULT(IceThickness));
+		if(!RESULT(IsIce)) ice_attn = 0.0;
 		return ice_attn;
 	)
 	
@@ -671,7 +678,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		//double cw = 4.18e+6;   //volumetric heat capacity of water (J K-1 m-3)
 		double Kw = PARAMETER(FreezingSpeed); //Heat transfer coefficent
 		double surfaceLayerThickness = 1.0; //NOTE: Thickness of layer that ice formation can draw energy from.
-		double iceformationtemp = 0.0;      //TODO: parameter?
+		double iceformationtemp = PARAMETER(IceFormationTemperature);
 		
 		double energy = (iceformationtemp - RESULT(EpilimnionTemperature)) * Kw * surfaceLayerThickness;
 		if(RESULT(IceThickness)<1e-6 && energy < 0.0)
@@ -684,23 +691,22 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double iceDensity = 917.0;              // kg m-3
 		double latentHeatOfFreezing = 333500.0; // J kg-1
 		double iceenergy = RESULT(IceEnergy);   // W/m2
-		double icethickness = RESULT(IceThickness);
 		double airT = INPUT(AirTemperature);
 		double precip = INPUT(Precipitation);
 		
-		//double surfaceheatflux = RESULT(SensibleHeatFlux) + RESULT(LatentHeatFlux) + RESULT(LongwaveRadiation);
-		double shortwavein     = RESULT(ShortwaveRadiation)*(1.0 - RESULT(IceAttenuationCoefficient));
+		//NOTE: The amount of shortwave radiation that is absorbed by the ice and contributes to melting
+		double shortwavein     = RESULT(ShortwaveRadiation)*RESULT(IceAttenuationCoefficient);
 		
 		double dIcedT = 86400.0 * (iceenergy - shortwavein) / (iceDensity * latentHeatOfFreezing);
 		
-		if(RESULT(IsIce) && airT <= 0.0) dIcedT += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
+		bool snowaccum = PARAMETER(SnowAccumulates);
+		if(RESULT(IsIce) && snowaccum && airT <= 0.0) dIcedT += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
 		
 		return dIcedT;
 	)
 	
 	EQUATION(Model, IsIce,
-		double frazil_threshold = 0.05;  // NOTE: Let there be this much "frazil" ice before the ice layer is fully formed and changes the various surface properties of the lake.
-		return (RESULT(IceThickness) > frazil_threshold);
+		return (RESULT(IceThickness) > PARAMETER(FrazilThreshold));
 	)
 
 	
@@ -716,7 +722,9 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double area   = RESULT(LakeSurfaceArea);
 		
 		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
-		double surfaceshortwave = RESULT(ShortwaveRadiation)*RESULT(IceAttenuationCoefficient);		//Assuming no shortwave energy reaches the bottom of the lake
+		
+		// NOTE: The amount of shortwave that penetrates the ice and contributes to heating the water below. Currently this assumes that no shortwave reaches the lake bottom and is absorbed there instead.
+		double surfaceshortwave = RESULT(ShortwaveRadiation)*(1.0 - RESULT(IceAttenuationCoefficient));
 		
 		//if(RESULT(IsIce)) surfaceheatflux = 0.0;
 		
@@ -725,7 +733,6 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double iceEnergy = RESULT(IceEnergy) * area;
 		
 		//Correction from flow temperature and rainfall
-		//TODO: The Max(0.0, INPUT(AirTemperature) actually causes quite a bit of heating from precip in winter. It is maybe not that realistic.
 		double inflowT = Max(0.0, INPUT(AirTemperature));     //TODO: could plug in WaterTemperature model for rivers
 		double rainT   = Max(0.0, INPUT(AirTemperature));
 		double outflowT = RESULT(EpilimnionTemperature);
@@ -743,6 +750,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		
 		double inflow_dT = (inflowT  - meanT)*inflowQ/volume;
 		double rain_dT   = (rainT    - meanT)*rainQ/volume;
+		if(rainT == 0.0 && meanT <= 0.0) rain_dT = 0.0; //NOTE: We don't want falling snow that just adds to the ice to heat the lake.
 		double outflow_dT= (outflowT - meanT)*outflowQ/volume;
 		
 		return 86400.0*(heat + iceEnergy) / (specificHeatCapacityOfWater * mass) + inflow_dT + rain_dT + outflow_dT;

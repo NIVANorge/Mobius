@@ -22,8 +22,8 @@ index_set_dependencies :
 
 inputs :
 
-include_file "met_persist.dat"
-#include_file "met_simplyq.dat"
+#include_file "met_persist.dat"
+include_file "met_simplyq.dat"
 
 "Lake inflow" :
 2014-08-12	0.024400538

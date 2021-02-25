@@ -23,14 +23,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto CompartmentTemp         = RegisterParameterGroup(Model, "Compartment temperature", Compartment);
 	
 	auto MinCompartmentTemp      = RegisterParameterDouble(Model, CompartmentTemp, "Minimal compartment temperature", DegreesCelsius, 0.0, -10.0, 10.0);
-	
-	
-	auto Deposition              = RegisterParameterGroup(Model, "Deposition");
-	
-	auto SeaSaltFactor           = RegisterParameterDouble(Model, Deposition, "Sea salt factor", Dimensionless, 1.0, 0.001, 5.0, "Cl deposition is multiplied with this value");
-	auto SO4Factor               = RegisterParameterDouble(Model, Deposition, "SO4* factor", Dimensionless, 1.0, 0.001, 5.0, "SO4 deposition is multiplied with this to get SO4 excess deposition");
-	auto CaFactor                = RegisterParameterDouble(Model, Deposition, "Ca* factor", Dimensionless, 1.0, 0.001, 5.0, "SO4 excess deposition is multiplied with this to get Ca excess deposition");
-	auto NFactor                 = RegisterParameterDouble(Model, Deposition, "N factor", Dimensionless, 1.0, 0.001, 5.0, "NH4 and NO3 deposition are multiplied with this value");
+
 	
 	
 	auto CAndN                   = RegisterParameterGroup(Model, "Carbon and Nitrogen", Compartment);

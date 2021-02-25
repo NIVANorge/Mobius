@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2020-09-21 18:50:06
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-02-24 12:16:35
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -16,7 +16,7 @@ parameters:
 
 ###################### Easy-Lake physical V_dev ######################
 
-# Lake physical parameters (no index sets) #
+# Lake physical (no index sets) #
 
 "Initial lake surface area" :     #(m2) [0, 371000000000]
 107183
@@ -50,6 +50,9 @@ parameters:
 
 "Freezing thermal conductivity" :     #(dimensionless) [0, 20000]
 200
+
+"Frazil threshold" :     #(m) [0, 0.1] Thickness of ice before it changes surface properties of the lake
+0
 
 
 # Temperature calibration depths ("Temperature calibration depth") #

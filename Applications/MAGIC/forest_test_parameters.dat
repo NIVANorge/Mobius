@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC, containing modules (MAGIC Forest V_dev, WASMOD V0.1) at 2021-02-19 16:03:59
+# Parameter file generated for model MAGIC Forest, containing modules (MAGIC Forest V_dev, WASMOD V0.1) at 2021-02-24 10:40:28
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -20,21 +20,6 @@ parameters:
 
 "Minimal compartment temperature" :     #(°C) [-10, 10]
 0.4
-
-
-# Deposition (no index sets) #
-
-"Sea salt factor" :     #(dimensionless) [0.001, 5] Cl deposition is multiplied with this value
-1.48
-
-"SO4* factor" :     #(dimensionless) [0.001, 5] SO4 deposition is multiplied with this to get SO4 excess deposition
-1.43
-
-"Ca* factor" :     #(dimensionless) [0.001, 5] SO4 excess deposition is multiplied with this to get Ca excess deposition
-0.08
-
-"N factor" :     #(dimensionless) [0.001, 5] NH4 and NO3 deposition are multiplied with this value
-1.14
 
 
 # Carbon and Nitrogen ("Compartment") #
@@ -66,22 +51,22 @@ parameters:
 # WASMOD (no index sets) #
 
 "Snow melts above this temperature" :     #(°C) [-4, 4] 
--2
+-3.4771372012485
 
-"Precipitation falls as snow below this temperature" :     #(°C) [-4, 4] Must be higher than the snow melt threshold
-1.66
+"Precipitation falls as snow below this temperature" :     #(°C) [0.001, 10] This is an offset from the snow melt temperature
+5.43793732820899
 
 "Evapotranspiration sensitivity to dryness" :     #(month/mm) [0, 1000]
 0.1
 
-"Slow flow linear scaling factor" :     #(1/month) [0.5, 4]
-0.1
+"Slow flow linear scaling factor" :     #(1/month) [0.0001, 5]
+0.148913461184827
 
 "Slow flow exponent" :     #(dimensionless) [0, 2] Arid: 0 or 0.5. Otherwise 1 or 2. Not to be adjusted freely in calibration
 1
 
-"Fast flow linear scaling factor" :     #(1/month) [0.5, 4]
-0.01
+"Fast flow linear scaling factor" :     #(1/month) [0.0001, 5]
+0.00286822313441313
 
 "Fast flow exponent" :     #(dimensionless) [0, 2] 1 or 2. Not to be adjusted freely in calibration
 1

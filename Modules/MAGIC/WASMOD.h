@@ -8,7 +8,7 @@ AddWASMODModel(mobius_model *Model)
 	BeginModule(Model, "WASMOD", "0.1");
 	
 	SetModuleDescription(Model, R""""(
-This is (going to be) an implementation of the WASMOD model ("the Water And Snow balance MODeling system"). It is a simple monthly-timestep hydrology model.
+This is an implementation of the WASMOD model ("the Water And Snow balance MODeling system"). It is a simple monthly-timestep hydrology model.
 
 This is based on the version that was published as a part of NOPEX:
 [^https://doi.org/10.2166/nh.1998.19^ C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.
@@ -26,11 +26,11 @@ This is based on the version that was published as a part of NOPEX:
 	auto WASMODPars     = RegisterParameterGroup(Model, "WASMOD");
 	
 	auto SnowMeltsAbove = RegisterParameterDouble(Model, WASMODPars, "Snow melts above this temperature", DegreesCelsius, 0.0, -4.0, 4.0, "", "a2");
-	auto SnowFallsBelow = RegisterParameterDouble(Model, WASMODPars, "Precipitation falls as snow below this temperature", DegreesCelsius, 0.0, -4.0, 4.0, "Must be higher than the snow melt threshold", "a1");
+	auto SnowFallOffset = RegisterParameterDouble(Model, WASMODPars, "Precipitation falls as snow below this temperature", DegreesCelsius, 0.1, 0.001, 10.0, "This is an offset from the snow melt temperature", "a1");
 	auto ETDrynessAdjustment = RegisterParameterDouble(Model, WASMODPars, "Evapotranspiration sensitivity to dryness", TsPerMm, 0.1, 0.0, 1000.0);
-	auto SlowFlowLinear = RegisterParameterDouble(Model, WASMODPars, "Slow flow linear scaling factor", PerTs, 1.0, 0.5, 4.0);
+	auto SlowFlowLinear = RegisterParameterDouble(Model, WASMODPars, "Slow flow linear scaling factor", PerTs, 1.0, 0.0001, 5.0);
 	auto SlowFlowExp    = RegisterParameterDouble(Model, WASMODPars, "Slow flow exponent", Dimensionless, 1.0, 0.0, 2.0, "Arid: 0 or 0.5. Otherwise 1 or 2. Not to be adjusted freely in calibration");
-	auto FastFlowLinear = RegisterParameterDouble(Model, WASMODPars, "Fast flow linear scaling factor", PerTs, 1.0, 0.5, 4.0);
+	auto FastFlowLinear = RegisterParameterDouble(Model, WASMODPars, "Fast flow linear scaling factor", PerTs, 1.0, 0.0001, 5.0);
 	auto FastFlowExp    = RegisterParameterDouble(Model, WASMODPars, "Fast flow exponent", Dimensionless, 1.0, 0.0, 2.0, "1 or 2. Not to be adjusted freely in calibration");
 	auto InitialSnowPack = RegisterParameterDouble(Model, WASMODPars, "Initial snow pack", Mm, 0.0, 0.0, 10000.0);
 	auto InitialSoilMoisture = RegisterParameterDouble(Model, WASMODPars, "Initial soil moisture", Mm, 0.0, 0.0, 10000.0);
@@ -46,7 +46,7 @@ This is based on the version that was published as a part of NOPEX:
 	
 	auto AvailableWater = RegisterEquation(Model, "Available water for evapotranspiration", Mm);
 	auto AdjustedPET    = RegisterEquation(Model, "Adjusted potential evapotranspiration", MmPerTs);
-	auto EvapoTranspiration = RegisterEquation(Model, "EvapoTranspiration", MmPerTs);
+	auto EvapoTranspiration = RegisterEquation(Model, "Evapotranspiration", MmPerTs);
 	auto SlowFlow       = RegisterEquation(Model, "Slow flow", MmPerTs);
 	auto ActiveRainfall = RegisterEquation(Model, "Active rainfall", MmPerTs);
 	auto FastFlow       = RegisterEquation(Model, "Fast flow", MmPerTs);
@@ -58,9 +58,9 @@ This is based on the version that was published as a part of NOPEX:
 	
 	
 	EQUATION(Model, SnowFall,
-		double excess_temp = INPUT(AirTemperature) - PARAMETER(SnowFallsBelow);
+		double excess_temp = INPUT(AirTemperature) - (PARAMETER(SnowMeltsAbove) + PARAMETER(SnowFallOffset));
 		excess_temp = std::min(excess_temp, 0.0);
-		double rootexponent = excess_temp / (PARAMETER(SnowFallsBelow) - PARAMETER(SnowMeltsAbove));
+		double rootexponent = excess_temp / PARAMETER(SnowFallOffset);
 		double fraction = 1.0 - std::exp(-rootexponent*rootexponent);    //NOTE: The publications don't have a minus in the exponent, but the model doesn't work without it!
 		//if(CURRENT_TIME().Year == 1980) WarningPrint("rootexp ", rootexponent, " fraction ", fraction, '\n');
 		return INPUT(Precipitation)*Max(0.0, fraction); 
@@ -73,7 +73,7 @@ This is based on the version that was published as a part of NOPEX:
 	EQUATION(Model, SnowMelt,
 		double excess_temp = INPUT(AirTemperature) - PARAMETER(SnowMeltsAbove);
 		excess_temp = std::max(0.0, excess_temp);
-		double rootexponent = excess_temp / (PARAMETER(SnowFallsBelow) - PARAMETER(SnowMeltsAbove));
+		double rootexponent = excess_temp / PARAMETER(SnowFallOffset);
 		double fraction = 1.0 - std::exp(-rootexponent*rootexponent);
 		return LAST_RESULT(SnowPack)*std::max(0.0, fraction); 
 	)
