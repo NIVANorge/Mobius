@@ -55,7 +55,7 @@ Documentation can be found in the [Documentation](https://github.com/NIVANorge/M
 
 ## Use existing compiled Mobius models (e.g. INCA and Simply models)
 
-Stable releases of compiled models are available for download from ftp://mobiserver.niva.no/ (downloadable binaries are Windows only at the moment). See the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for for further instructions on setting up and running individual models. We also recommend downloading [MobiView]((https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)), a graphical user interface for interacting with Mobius models. A compiled version of MobiView is also available from ftp://mobiserver.niva.no/ (downloadable binary is Windows only).
+Stable releases of compiled models are available for download from ftp://mobiserver.niva.no/ (downloadable binaries are Windows only at the moment; you should open the address in a file explorer rather than in a browser). See the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for for further instructions on setting up and running individual models. We also recommend downloading [MobiView]((https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)), a graphical user interface for interacting with Mobius models. A compiled version of MobiView is also available from ftp://mobiserver.niva.no/ (downloadable binary is Windows only).
 
 ## Download the repository
 
