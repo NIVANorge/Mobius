@@ -31,7 +31,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	// PARAMS
 	
-	// Params defined in hydrol model
+	// Params defined in SimplyQ
 	auto CatchmentArea               = GetParameterDoubleHandle(Model, "Catchment area");
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex               = GetParameterDoubleHandle(Model, "Baseflow index");

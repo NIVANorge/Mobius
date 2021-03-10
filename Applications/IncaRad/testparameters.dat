@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Rad, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1.1, INCA-Rad V_dev) at 2021-02-02 14:33:48
+# Parameter file generated for model INCA-Rad, containing modules (PERSiST V1.4, INCA-Sed V0.9, INCA Soil temperature V1.0, INCA water temperature V1.0, INCA-Tox Carbon V0.1.1, INCA-Rad V0.1) at 2021-03-01 09:09:40
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -295,7 +295,7 @@ true true true
 # Carbon by land class ("Landscape units") #
 
 "Soil SOC mass" :     #(kg/m2) [0, 10000000]
-1000000 1000000
+1000 1000000
 
 "Size of easily accessible SOC fraction" :     #(dimensionless) [0, 1] Fractional size of easily accessible SOC relative to total SOC
 0.5 0.1
@@ -319,7 +319,7 @@ true true true
 0.1 0.01
 
 
-###################### INCA-Rad V_dev ######################
+###################### INCA-Rad V0.1 ######################
 
 # Physio-chemistry ("Radionuclide") #
 
@@ -357,7 +357,7 @@ true true true
 0 0
 0 0
 
-"Transfer coefficient between easily and potentially accessible fractions" :     #(m/day) [0, 100]
+"Transfer coefficient between easily and potentially accessible fractions" :     #(1/m2/day) [0, 100]
 10 10
 10 10
 

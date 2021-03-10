@@ -427,6 +427,7 @@ New to V0.3: Multiple contaminants at a time.
 	
 	auto DiffuseContaminantOutput      = RegisterEquation(Model, "Diffuse contaminant output", NgPerDay);
 	auto TotalDiffuseContaminantOutput = RegisterEquationCumulative(Model, "Total diffuse contaminant output", DiffuseContaminantOutput, LandscapeUnits);
+	auto ReachContaminantInputFromUpstream = RegisterEquation(Model, "Reach contaminant input from upstream", NgPerDay);
 	auto ReachContaminantInput         = RegisterEquation(Model, "Reach contaminant input", NgPerDay);
 	auto ContaminantMassInReach        = RegisterEquationODE(Model, "Contaminant mass in reach", Ng, ReachSolver);
 	SetInitialValue(Model, ContaminantMassInReach, InitialContaminantMassInReach);
@@ -486,13 +487,18 @@ New to V0.3: Multiple contaminants at a time.
 		* PARAMETER(CatchmentArea) * PARAMETER(Percent)*0.01;
 	)
 	
-	EQUATION(Model, ReachContaminantInput,
+	EQUATION(Model, ReachContaminantInputFromUpstream,
 		double upstreamflux = 0.0;
 		for(index_t Input : BRANCH_INPUTS(Reach))
 			upstreamflux += RESULT(ReachContaminantFlux, Input);
+			
+		return upstreamflux;
+	)
 	
+	EQUATION(Model, ReachContaminantInput,
+
 		return
-			upstreamflux
+			  RESULT(ReachContaminantInputFromUpstream)
 			+ RESULT(TotalDiffuseContaminantOutput)
 			+ RESULT(TotalContaminantDeliveryToReach)
 			+ INPUT(DepositionToReach)

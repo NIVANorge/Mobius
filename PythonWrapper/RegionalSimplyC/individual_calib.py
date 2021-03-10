@@ -45,6 +45,8 @@ def resid(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 
 def main() :
 
+	reduced_only = True      # Some catchments with large lakes or bad flow data are removed
+
 	start_date = '1985-1-1'
 	timesteps  = 12052       #NOTE: Some catchments have only late data. Could alternatively have individual periods per catchment
 	
@@ -52,7 +54,7 @@ def main() :
 	
 	comparisons = [
                 ('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
-                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.3),
+                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.4),
                ]
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -61,14 +63,18 @@ def main() :
 		catch_no = row['met_index']
 		catch_name = row['name']
 		
+		if reduced_only and row['reduced_set']=='n' : continue
+		
 		#if catch_name != 'Birkenes' : continue
 		
 		print('********** Processing location %s ***********' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/template_params_1lu_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 		
@@ -77,7 +83,7 @@ def main() :
 		
 		dataset.run_model()
 		
-		params = setup_calibration_params(dataset, do_hydro=True, do_doc=True)
+		params = setup_calibration_params(dataset, do_hydro=True, do_doc=True, num_lu=1)
 		
 		print('Initial GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
@@ -91,7 +97,10 @@ def main() :
 		print('\n\n\n')
 		
 		#dataset.write_parameters_to_file('MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name))
-		dataset.write_parameters_to_file('MobiusFiles/norm3_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
+		#dataset.write_parameters_to_file('MobiusFiles/norm4_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
+		
+		dataset.write_parameters_to_file('MobiusFiles/optim_DOC_1lu_%d_%s.dat' % (catch_no, catch_name))
+		#dataset.write_parameters_to_file('MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name))
 		
 		dataset.delete()
 		

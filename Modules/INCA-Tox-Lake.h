@@ -1,33 +1,5 @@
 
 //NOTE: This is an extremely simple lake module that was made for just one specific project. It may not be widely applicable
-//TODO: Couple this to EasyLake instead of having all this code duplication!!!
-
-
-inline double
-SaturationVaporPressure(double Temperature)
-{
-	//NOTE: Saturation vapor pressure routine based on 
-	// P. R. Lowe, 1977, "An approximating polynomial for the computation of saturation vapor pressure, J. Appl. Meteor., 16, 100-103.
-
-	//TODO: Could some of this be unified with code in PET.h ?
-	
-	//TODO: There should be a separate formula for Temperature < 0.0
-	
-	// Takes temperature in celsius
-	// Returns saturation vapor pressure in millibar=hectopascal.
-	
-	double a0 = 6.107799961;
-	double a1 = 4.436518521e-1;
-	double a2 = 1.428945805e-2;
-	double a3 = 2.650648471e-4;
-	double a4 = 3.031240396e-6;
-	double a5 = 2.034080948e-8;
-	double a6 = 6.136820929e-11;
-	double t = Temperature;
-	
-	return (a0 + t*(a1 + t*(a2 + t*(a3 + t*(a4 + t*(a5 + t*a6))))));
-}
-
 
 inline double
 AttnIndefiniteIntegral(double z, double a, double D)
@@ -41,6 +13,25 @@ AddIncaToxLakeModule(mobius_model *Model)
 {
 	BeginModule(Model, "INCA-Tox Lake", "_dev");
 	
+	SetModuleDescription(Model, R""""(
+This is an extremely simple lake module for INCA-Tox that was made for just one specific project. It may not be widely applicable. Specifically, it does not work well with hydrophobic contaminants.
+
+It is not complete yet.
+)"""");
+	
+	auto Dimensionless  = RegisterUnit(Model);
+	auto Metres         = RegisterUnit(Model, "m");
+	auto M2             = RegisterUnit(Model, "m2");
+	auto Ng             = RegisterUnit(Model, "ng");
+	auto NgPerM3        = RegisterUnit(Model, "ng/m3");
+	auto NgPerDay       = RegisterUnit(Model, "ng/day");
+	auto Days           = RegisterUnit(Model, "day");
+	auto DegreesCelsius = RegisterUnit(Model, "°C");
+	auto WPerM2         = RegisterUnit(Model, "W/m^2");
+	auto HPa            = RegisterUnit(Model, "HPa");
+	auto Percent        = RegisterUnit(Model, "%");
+	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
+	
 	
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
@@ -51,7 +42,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto SecchiDepth            = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
 	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0);
 	
-	
+	//TODO: We should have a separate solver, because otherwise this forces the whole lake to be solver per contaminant...
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 	
 	auto EpilimnionDegradationTemperatureModifier  = RegisterEquation(Model, "Temperature modifier for degradation in epilimnion", Dimensionless, LakeSolver);
@@ -77,8 +68,10 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto ReachFlow                          = GetEquationHandle(Model, "Reach flow"); // m3/s
 	
 	//INCA-Tox
-	auto ReachContaminantFlux               = GetEquationHandle(Model, "Reach contaminant flux");                // ng/day
-	auto ContaminantInputFromLand           = GetEquationHandle(Model, "Reach contaminant input from land");     // ng/day
+	
+	//NOTE: This does not take account of any sediment-bound particles. Currently only appropriate for highly dissolvable contaminants.
+	auto ReachContaminantFlux               = GetEquationHandle(Model, "Total reach contaminant flux");          // ng/day
+	auto ContaminantInputFromLand           = GetEquationHandle(Model, "Total diffuse contaminant output");     // ng/day
 	auto ContaminantInputFromUpstream       = GetEquationHandle(Model, "Reach contaminant input from upstream"); // ng/day
 	//NOTE: We reuse these instead of computing them for the lake. This is ONLY OK because we have a slow-flowing river in our particular case!!
 	auto AirWaterTransferVelocity           = GetEquationHandle(Model, "Reach overall air-water transfer velocity");
@@ -92,8 +85,10 @@ AddIncaToxLakeModule(mobius_model *Model)
 	auto HypolimnionVolume                  = GetEquationHandle(Model, "Hypolimnion volume");
 	auto MixingVelocity                     = GetEquationHandle(Model, "Mixing velocity");
 	auto LakeSurfaceArea                    = GetEquationHandle(Model, "Lake surface area");
+	auto LakeDepth                          = GetEquationHandle(Model, "Lake depth");
+	auto EpilimnionThickness                = GetEquationHandle(Model, "Epilimnion thickness");
 	auto EpilimnionShortwave                = GetEquationHandle(Model, "Epilimnion incoming shortwave radiation");
-	
+	auto IsIce                              = GetEquationHandle(Model, "There is ice");
 	
 	auto AtmosphericContaminantConcentration           = GetParameterDoubleHandle(Model, "Atmospheric contaminant concentration");
 	auto ReachContaminantDegradationRateConstant       = GetParameterDoubleHandle(Model, "Contaminant degradation rate constant in the stream");
@@ -130,7 +125,6 @@ AddIncaToxLakeModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, EpilimnionContaminantDegradation,
-		//TODO: Using the reach value here makes it compute this for each reach!
 		return PARAMETER(ReachContaminantDegradationRateConstant)*RESULT(EpilimnionContaminantMass)*RESULT(EpilimnionDegradationTemperatureModifier);
 	)
 	
@@ -159,7 +153,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	)
 	
 	EQUATION(Model, HypolimnionContaminantConc,
-		return SafeDivide(RESULT(HypolimnionContaminantMass), RESULT(HypolimnionVolume);
+		return SafeDivide(RESULT(HypolimnionContaminantMass), RESULT(HypolimnionVolume));
 	)
 	
 	EQUATION(Model, LayerExchange,
@@ -170,8 +164,8 @@ AddIncaToxLakeModule(mobius_model *Model)
 		double oc_Nitro = PARAMETER(OpticalCrossection); // m2/mol Nitro            Optical cross-section of DOM
 		double qy_Nitro = 0.45;  // mol Nitro /mol quanta   Quantum yield
 		
-		double f_uv = 0.06; //Fract.                of PAR in incoming solar radiation
-		double e_uv = 351843.0; // J/mol              Average energy of Par photons
+		double f_uv = 0.06;      // Fract.              of PAR in incoming solar radiation
+		double e_uv = 351843.0;  // J/mol               Average energy of Par photons
 		
 		//‒oc_Nitro * qy_Nitro f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * [Nitrosamines]" in mg N m-3 d-1
 		double shortwave = RESULT(EpilimnionShortwave)*RESULT(EpilimnionAttn);
@@ -181,9 +175,9 @@ AddIncaToxLakeModule(mobius_model *Model)
 	
 	EQUATION(Model, EpilimnionAttn,
 		double a = 2.7/PARAMETER(SecchiDepth);
-		double D = PARAMETER(LakeDepth);
-		double d = PARAMETER(EpiliminionThickness);
-		
+		double D = RESULT(LakeDepth);
+		double d = RESULT(EpilimnionThickness);
+
 		double top = AttnIndefiniteIntegral(0.0, a, D);
 		double bot = AttnIndefiniteIntegral(d, a, D);
 		
@@ -211,18 +205,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	
 	
 #if 0
-	auto Dimensionless  = RegisterUnit(Model);
-	auto Metres         = RegisterUnit(Model, "m");
-	auto M2             = RegisterUnit(Model, "m2");
-	auto Ng             = RegisterUnit(Model, "ng");
-	auto NgPerM3        = RegisterUnit(Model, "ng/m3");
-	auto NgPerDay       = RegisterUnit(Model, "ng/day");
-	auto Days           = RegisterUnit(Model, "day");
-	auto DegreesCelsius = RegisterUnit(Model, "°C");
-	auto WPerM2         = RegisterUnit(Model, "W/m^2");
-	auto HPa            = RegisterUnit(Model, "HPa");
-	auto Percent        = RegisterUnit(Model, "%");
-	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
+	
 	
 	auto LakeParams = RegisterParameterGroup(Model, "Lake");
 	

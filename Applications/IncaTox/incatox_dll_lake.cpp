@@ -15,6 +15,9 @@
 #include "../../Modules/SolarRadiation.h"
 #include "../../Modules/INCA-Tox-C.h"
 #include "../../Modules/INCA-Tox.h"
+
+#define EASYLAKE_PERSIST
+#include "../../Modules/EasyLake.h"
 #include "../../Modules/INCA-Tox-Lake.h"
 
 
@@ -30,6 +33,7 @@ DllBuildModel()
 	AddMaxSolarRadiationModule(Model);
 	AddIncaToxDOCModule(Model);
 	AddIncaToxModule(Model);
+	AddEasyLakePhysicalModule(Model);
 	AddIncaToxLakeModule(Model);
 	
 	return Model;

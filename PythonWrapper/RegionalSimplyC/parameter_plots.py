@@ -22,7 +22,7 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
-def collect_parameter_distributions(non_validation_only=False) :
+def collect_parameter_distributions(non_validation_only=False, reduced_only=True) :
 	param_values = {}
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -32,6 +32,9 @@ def collect_parameter_distributions(non_validation_only=False) :
 		catch_name = row['name']
 		
 		if non_validation_only and row['validation_set']=='y' :
+			continue
+			
+		if reduced_only and row['reduced_set']=='n' :
 			continue
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
@@ -290,8 +293,8 @@ def make_plots() :
 	plt.close()
 
 def main() :
-	#make_plots()
-	extrapolate_test()
+	make_plots()
+	#extrapolate_test()
 	
 
 if __name__ == "__main__":

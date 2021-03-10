@@ -9,11 +9,17 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 
 wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
-parfile = 'template_pars.dat'
-inputfile = 'template_inputs.dat'
 
+def main(num_lu=3) :
 
-def main() :
+	if num_lu == 1 :
+		parfile = 'template_pars_1lu.dat'
+	elif num_lu == 2 :
+		parfile = 'template_pars_2lu.dat'
+	elif num_lu == 3 :
+		parfile = 'template_pars.dat'
+		
+	inputfile = 'template_inputs.dat'
 	#template dataset:
 	dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, inputfile)
 	
@@ -33,20 +39,28 @@ def main() :
 		lu = [float(a)*0.01 for a in row['lu_FSPLO'].strip('[]').split(',')]   #Percent to fraction
 		
 		lu_forest = lu[0]
-		lu_shrubs = lu[1] + lu[4]     #NOTE: classify 'other' as low-productive shrubs
+		lu_shrubs = lu[1] + lu[4] + lu[3]    #NOTE: classify 'other' AND 'lakes' as low-productive (only ok when few lakes)
 		lu_peat   = lu[2]
 		
-		dataset.set_parameter_double('Land use proportions', ['R0', 'Forest'], lu_forest)
-		dataset.set_parameter_double('Land use proportions', ['R0', 'Shrubs'], lu_shrubs)
-		dataset.set_parameter_double('Land use proportions', ['R0', 'Peat'], lu_peat)
+		if num_lu == 1 :
+			dataset.set_parameter_double('Land use proportions', ['R0', 'All'], 1.0)
+		elif num_lu == 2 :
+			dataset.set_parameter_double('Land use proportions', ['R0', 'LowC'], lu_forest + lu_shrubs)
+			dataset.set_parameter_double('Land use proportions', ['R0', 'HighC'], lu_peat)
+		elif num_lu == 3 :
+			dataset.set_parameter_double('Land use proportions', ['R0', 'Forest'], lu_forest)
+			dataset.set_parameter_double('Land use proportions', ['R0', 'Shrubs'], lu_shrubs)
+			dataset.set_parameter_double('Land use proportions', ['R0', 'Peat'], lu_peat)
 		
 		catch_no = row['met_index']
 		catch_name = row['name']
 		
-		dataset.write_parameters_to_file('MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name))
-	
-	
-	
+		if num_lu == 1 :
+			dataset.write_parameters_to_file('MobiusFiles/template_params_1lu_%d_%s.dat' % (catch_no, catch_name))
+		elif num_lu == 2 :
+			dataset.write_parameters_to_file('MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name))
+		elif num_lu == 3 :
+			dataset.write_parameters_to_file('MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name))
 	
 if __name__ == "__main__":
-	main()
+	main(num_lu=1)
