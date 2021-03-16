@@ -333,17 +333,13 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 		int Mode = -1;
 
 		if(Section.Equals("index_sets"))
-		{
 			Mode = 0;
-		}
 		else if(Section.Equals("parameters"))
-		{
 			Mode = 1;
-		}
 		else
 		{
 			Stream.PrintErrorHeader();
-			FatalError("Parameter file parser does not recognize section type: ", Section, ".\n");
+			FatalError("The parameter file parser does not recognize section type: ", Section, ". Accepted sections are index_sets and parameters\n");
 		}
 		
 		if(Mode == 0)
@@ -647,7 +643,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 						if(Idx != IndexNames.size()-1) WarningPrint(", ");
 						++Idx;
 					}
-					WarningPrint("} was provided more than once. The last provided series will override the others.\n");
+					WarningPrint("} was provided more than once. The last provided series will overwrite the earlier ones.\n");
 				}
 			}
 			else
@@ -664,7 +660,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
 			Offsets.push_back(Offset);
 			if(DataSet->InputTimeseriesWasProvided[Offset])
-				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The last provided series will override the others.\n");
+				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The last provided series will overwrite the earlier ones.\n");
 		}
 		
 		bool LinearInterpolate = false;

@@ -77,6 +77,7 @@ struct token_stream
 			size_t ReadSize = fread(FileData, 1, FileDataLength, File);
 			if(ReadSize != FileDataLength)
 			{
+				fclose(File);
 				FatalError("ERROR: Was unable to read the entire file ", Filename);
 			}
 			FileData[FileDataLength] = '\0';
@@ -96,9 +97,7 @@ struct token_stream
 				&& FileData[1] == (char) 0xBB
 				&& FileData[2] == (char) 0xBF
 			)
-			{
 				AtChar = 2;
-			}
 		}
 		
 		StartLine = 0; StartColumn = 0; Line = 0; Column = 0; PreviousColumn = 0;
@@ -116,10 +115,10 @@ struct token_stream
 	token PeekToken(size_t PeekAhead = 1);
 	token ExpectToken(token_type);
 	
-	double   ExpectDouble();
-	u64      ExpectUInt();
-	bool     ExpectBool();
-	datetime ExpectDateTime();
+	double       ExpectDouble();
+	u64          ExpectUInt();
+	bool         ExpectBool();
+	datetime     ExpectDateTime();
 	token_string ExpectQuotedString();
 	token_string ExpectUnquotedString();
 	
@@ -165,9 +164,7 @@ token_stream::ReadToken()
 {
 	AtToken++;
 	if(AtToken >= (s64)Tokens.size())
-	{
 		ReadTokenInternal_();
-	}
 
 	return Tokens[AtToken];
 }
@@ -176,9 +173,7 @@ token
 token_stream::PeekToken(size_t PeekAhead)
 {
 	while(AtToken + PeekAhead >= Tokens.size())
-	{
 		ReadTokenInternal_();
-	}
 	return Tokens[AtToken + PeekAhead];
 }
 
@@ -197,13 +192,13 @@ token_stream::ExpectToken(token_type Type)
 	return Token;
 }
 
-static bool
+inline bool
 IsIdentifier(char c)
 {
 	return isalpha(c) || c == '_';
 }
 
-static bool
+inline bool
 MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
 {
 	u64 MaxU64 = 0xffffffffffffffff;
@@ -212,7 +207,7 @@ MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
 	return true;
 }
 
-static bool
+inline bool
 MultiplyByTenAndAdd(s32 *Number, s32 Addendand)
 {
 	s32 MaxS32 = 2147483647;
@@ -406,13 +401,9 @@ token_stream::ReadTokenInternal_()
 				else
 				{
 					if(HasExponent)
-					{
 						ExponentIsNegative = true;
-					}
 					else
-					{
 						IsNegative = true;
-					}
 					NumericPos = 0;
 				}
 			}
@@ -552,9 +543,7 @@ token_stream::ReadTokenInternal_()
 	if(Token.Type == TokenType_Numeric)
 	{
 		if(!HasComma && !HasExponent && !IsNegative)
-		{
 			Token.IsUInt = true;
-		}
 		
 		Token.UIntValue = BeforeComma;
 		
@@ -568,9 +557,7 @@ token_stream::ReadTokenInternal_()
 		{
 			double Multiplier = ExponentIsNegative ? 0.1 : 10.0;
 			for(u64 Ex = 0; Ex < Exponent; ++Ex)
-			{
 				Token.DoubleValue *= Multiplier;
-			}
 		}
 	}
 	
@@ -583,14 +570,13 @@ token_stream::ReadTokenInternal_()
 		}
 		bool Success;
 		if(Token.Type == TokenType_Date)
-		{
 			Token.DateValue = datetime(Date[0], Date[1], Date[2], &Success);
-		}
 		else
 		{
 			Token.DateValue = datetime();
 			Success = Token.DateValue.AddHourMinuteSecond(Date[0], Date[1], Date[2]);
 		}
+		
 		if(!Success)
 		{
 			PrintErrorHeader();
@@ -657,13 +643,9 @@ token_stream::ReadQuotedStringList(std::vector<token_string> &ListOut)
 		token Token = ReadToken();
 		
 		if(Token.Type == TokenType_QuotedString)
-		{
 			ListOut.push_back(Token.StringValue);
-		}
 		else if(Token.Type == TokenType_CloseBrace)
-		{
 			break;
-		}
 		else if(Token.Type == TokenType_EOF)
 		{
 			PrintErrorHeader();
