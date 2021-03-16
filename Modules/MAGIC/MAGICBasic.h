@@ -209,7 +209,6 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	)
 	
 	EQUATION(Model, OAConcentration,
-		//TODO: 0 is actually a legitimate value here too though...
 		double par = PARAMETER(OAConcentrationPar);
 		double in = INPUT(OAConcentrationIn);
 		if(std::isfinite(in)) return in;

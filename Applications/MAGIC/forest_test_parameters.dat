@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC Forest, containing modules (MAGIC Forest V_dev, WASMOD V0.1) at 2021-02-24 10:40:28
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V_dev, MAGIC Forest V_dev) at 2021-03-12 15:44:37
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -14,66 +14,149 @@ parameters:
 2020-01-01
 
 
+###################### ABCD V0.1 ######################
+
+# ABCD hydrology (no index sets) #
+
+"a (propensity for runoff below saturation)" :     #(dimensionless) [0.5, 1] A value of 1 means no runoff when soil moisture is below field capacity
+0.572734086518272
+
+"b (field capacity)" :     #(mm) [0, 500]
+150
+
+"c (baseflow index)" :     #(dimensionless) [0, 1]
+0.166456755084096
+
+"d (groundwater flow rate)" :     #(1/month) [0, 1]
+0.60349985459218
+
+"Snow melts above this temperature" :     #(°C) [-4, 4]
+-3.06796126500025
+
+"Precipitation falls as snow below this temperature" :     #(°C) [0.001, 10] This is an offset from the snow melt temperature. Must be nonzero
+4.81066155467841
+
+"Initial snow pack (water equivalents)" :     #(mm) [0, 5000]
+0
+
+
+###################### MAGIC Core V_dev ######################
+
+# General parameters (no index sets) #
+
+"Convergence criterion" :     #(dimensionless) [0.01, 10] Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed
+0.1
+
+"Solver sub-step length" :     #(months) [0.001, 1] Length of intermediate step between each time the solution is rebalanced
+0.03
+
+
+# Compartment parameters ("Compartment") #
+
+"This is a soil compartment" :
+true
+
+"Relative area" :     #(dimensionless) [0, 1] The fraction of the catchment covered by this compartment
+1
+
+"Depth" :     #(m) [0, 100]
+0.4
+
+"Porosity" :     #(dimensionless) [0, 1]
+0.5
+
+"Bulk density" :     #(kg/m3) [0, 2000]
+656
+
+"Cation exchange capacity" :     #(meq/kg) [0, 500]
+113.3
+
+"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [0, 1000]
+100
+
+"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1]
+0.1
+
+"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10]
+7.8
+
+"Al(OH)3 dissociation equation exponent" :     #(dimensionless) [1, 5]
+3
+
+"(-log10) pK 1st equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+3.04
+
+"(-log10) pK 2nd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+4.51
+
+"(-log10) pK 3rd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+6.46
+
+"(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]" :     #(dimensionless) [-10, 10]
+0
+
+"(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]" :     #(dimensionless) [-10, 10]
+0
+
+"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100]
+18.5
+
+"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100]
+13
+
+"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100]
+2.5
+
+"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100]
+3.2
+
+
+# Flow fractions ("Compartment" "Compartment") #
+
+"Flow fraction" :     #(dimensionless) [0, 1] How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)
+0
+
+
 ###################### MAGIC Forest V_dev ######################
 
-# Compartment temperature ("Compartment") #
+# Climate ("Compartment") #
+
+"CO2 partial pressure" :     #(%) [0.1, 2] Default value for timesteps where no input series value is provided
+0.3
+
+"Organic acid concentration" :     #(mmol/m3) [0, 200] Default value for timesteps where no input series value is provided
+0
 
 "Minimal compartment temperature" :     #(°C) [-10, 10]
 0.4
 
 
-# Carbon and Nitrogen ("Compartment") #
+# Weathering ("Compartment") #
 
-"C decomposition at 0°C" :     #(mmol/m2/month) [0, 1000]
-388.89
+"Ca weathering" :     #(meq/m2/year) [0, 200]
+28
 
-"C decomposition Q10" :     #(dimensionless) [1, 5]
-3
-
-"N uptake at 0°C" :     #(mmol/m2/month) [0, 1000]
-3.292
-
-"N uptake Q10" :     #(dimensionless) [1, 5]
-4
-
-"NO3 uptake scale" :     #(dimensionless) [0.1, 10]
-0.9
-
-"NH4 uptake scale" :     #(dimensionless) [0.1, 10]
-1.1
-
-"Litter C/N" :     #(dimensionless) [0.1, 200]
-45
-
-
-###################### WASMOD V0.1 ######################
-
-# WASMOD (no index sets) #
-
-"Snow melts above this temperature" :     #(°C) [-4, 4] 
--3.4771372012485
-
-"Precipitation falls as snow below this temperature" :     #(°C) [0.001, 10] This is an offset from the snow melt temperature
-5.43793732820899
-
-"Evapotranspiration sensitivity to dryness" :     #(month/mm) [0, 1000]
-0.1
-
-"Slow flow linear scaling factor" :     #(1/month) [0.0001, 5]
-0.148913461184827
-
-"Slow flow exponent" :     #(dimensionless) [0, 2] Arid: 0 or 0.5. Otherwise 1 or 2. Not to be adjusted freely in calibration
-1
-
-"Fast flow linear scaling factor" :     #(1/month) [0.0001, 5]
-0.00286822313441313
-
-"Fast flow exponent" :     #(dimensionless) [0, 2] 1 or 2. Not to be adjusted freely in calibration
-1
-
-"Initial snow pack" :     #(mm) [0, 10000]
+"Mg weathering" :     #(meq/m2/year) [0, 200]
 0
 
-"Initial soil moisture" :     #(mm) [0, 10000]
+"Na weathering" :     #(meq/m2/year) [0, 200]
+20
+
+"K weathering" :     #(meq/m2/year) [0, 200]
+2
+
+"NH4 weathering" :     #(meq/m2/year) [0, 200]
+0
+
+"SO4 weathering" :     #(meq/m2/year) [0, 200]
+20
+
+"Cl weathering" :     #(meq/m2/year) [0, 200]
+0
+
+"NO3 weathering" :     #(meq/m2/year) [0, 200]
+0
+
+"F weathering" :     #(meq/m2/year) [0, 200]
 0
 

@@ -11,7 +11,7 @@ AddWASMODModel(mobius_model *Model)
 This is an implementation of the WASMOD model ("the Water And Snow balance MODeling system"). It is a simple monthly-timestep hydrology model.
 
 This is based on the version that was published as a part of NOPEX:
-[^https://doi.org/10.2166/nh.1998.19^ C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.
+[^https://doi.org/10.2166/nh.1998.19^ C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.]
 )"""");
 
 	
@@ -33,7 +33,7 @@ This is based on the version that was published as a part of NOPEX:
 	auto FastFlowLinear = RegisterParameterDouble(Model, WASMODPars, "Fast flow linear scaling factor", PerTs, 1.0, 0.0001, 5.0);
 	auto FastFlowExp    = RegisterParameterDouble(Model, WASMODPars, "Fast flow exponent", Dimensionless, 1.0, 0.0, 2.0, "1 or 2. Not to be adjusted freely in calibration");
 	auto InitialSnowPack = RegisterParameterDouble(Model, WASMODPars, "Initial snow pack", Mm, 0.0, 0.0, 10000.0);
-	auto InitialSoilMoisture = RegisterParameterDouble(Model, WASMODPars, "Initial soil moisture", Mm, 0.0, 0.0, 10000.0);
+	auto InitialSoilMoisture = RegisterParameterDouble(Model, WASMODPars, "Initial soil moisture", Mm, 10.0, 0.0, 10000.0);
 	
 	
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerTs);

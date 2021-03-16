@@ -22,7 +22,7 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
-def collect_parameter_distributions(non_validation_only=False, reduced_only=True) :
+def collect_parameter_distributions(non_validation_only=False, reduced_only=True, num_lu=3) :
 	param_values = {}
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -38,20 +38,30 @@ def collect_parameter_distributions(non_validation_only=False, reduced_only=True
 			continue
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/norm3_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+		
+		if num_lu == 1 :
+			parfile = 'MobiusFiles/optim_DOC_1lu_%d_%s.dat' % (catch_no, catch_name)
+			lu = {'F' : 'All'}
+		elif num_lu == 2 :
+			parfile = 'MobiusFiles/optim_DOC_2lu_%d_%s.dat' % (catch_no, catch_name)
+			lu = {'F' : 'LowC', 'P' : 'HighC'}
+		elif num_lu == 3 :
+			parfile = 'MobiusFiles/norm4_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
+			lu = {'F' : 'Forest', 'S' : 'Shrubs', 'P' : 'Peat'}
+			
 		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 		
-		params = setup_calibration_params(dataset, do_doc=True)
+		params = setup_calibration_params(dataset, do_doc=True, num_lu=num_lu)
 		
-		lu = {'F' : 'Forest', 'S' : 'Shrubs', 'P' : 'Peat'}
+		
 		
 		for parname in params :
 			if params[parname].expr is None :
 				if not parname in param_values :
 					param_values[parname] = {}
-				if parname[-2]=='_' :
+				if num_lu > 1 and parname[-2]=='_' :
 					proportion = dataset.get_parameter_double('Land use proportions', ['R0', lu[parname[-1]]])
 					if proportion < 0.01 : continue
 				param_values[parname][catch_name] = params[parname].value
@@ -249,8 +259,8 @@ def extrapolate_test() :
 	plt.close()
 
 	
-def make_plots() :
-	param_values = collect_parameter_distributions()
+def make_plots(num_lu=3) :
+	param_values = collect_parameter_distributions(num_lu=num_lu)
 	
 	#print(param_values)
 	fig, ax = plt.subplots(5, 4)
@@ -272,7 +282,7 @@ def make_plots() :
 		
 		
 	fig.tight_layout()
-	plt.savefig('Figures/parameters.png')
+	plt.savefig('Figures/parameters_%dlu.png' % num_lu)
 	plt.close()
 	
 	
@@ -289,11 +299,11 @@ def make_plots() :
 		ax[idx].legend()
 
 	fig.tight_layout()
-	plt.savefig('Figures/parameter_distributions.png')
+	plt.savefig('Figures/parameter_distributions_%dlu.png' % num_lu)
 	plt.close()
 
 def main() :
-	make_plots()
+	make_plots(num_lu=1)
 	#extrapolate_test()
 	
 

@@ -236,6 +236,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 
 	EQUATION(Model, InitialConcCa,
+		//double val = (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		//WarningPrint("Initial conc Ca ", val);
+		//WarningPrint("Initial discharge ", RESULT(Discharge));
+		//return val;
 		return (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
 	)
 	

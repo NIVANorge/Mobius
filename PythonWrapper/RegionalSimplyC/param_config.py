@@ -45,19 +45,20 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 		if do_hydro :
 			
 			params['alphaPET_F'].min = 0.3
-			params['alphaPET_F'].max = 2.0
+			params['alphaPET_F'].max = 2.3
 			#TODO: Should this be different per land type or not?
 			params['alphaPET_P'].set(expr='alphaPET_F')
 			
 			params['fquick'].min = 0.0
-			params['fquick'].max = 0.01
+			params['fquick'].max = 0.02
 			
 			params['Ts_F'].min = 1
-			params['Ts_F'].max = 10
+			params['Ts_F'].max = 6
 			
-			params['Ts_P'].min = 1
-			#params['Ts_P'].max = 20
-			params['Ts_P'].max = 7
+			#params['Ts_P'].min = 1
+			params['Ts_P'].min = 5
+			params['Ts_P'].max = 20
+			#params['Ts_P'].max = 7
 
 		if do_doc :
 			
@@ -82,7 +83,7 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 			
 			params['baseDOC_F'].min = 1
 			#params['baseDOC_F'].max = 25
-			params['baseDOC_F'].max = 10
+			params['baseDOC_F'].max = 9
 			
 			
 			#params['baseDOC_P'].min = 4
@@ -96,7 +97,7 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 		if do_hydro :
 			
 			params['alphaPET_F'].min = 0.5
-			params['alphaPET_F'].max = 2.0
+			params['alphaPET_F'].max = 2.3
 			#TODO: Should this be different per land type or not?
 			for lu in ['S', 'P']:
 				params['alphaPET_%s' % lu].set(expr='alphaPET_F')
@@ -106,10 +107,10 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 			
 			params['Ts_F'].min = 1
 			params['Ts_S'].min = 1
-			params['Ts_P'].min = 2
+			params['Ts_P'].min = 5
 			
-			params['Ts_F'].max = 5
-			params['Ts_S'].max = 5
+			params['Ts_F'].max = 6
+			params['Ts_S'].max = 6
 			params['Ts_P'].max = 20
 
 		if do_doc :
@@ -138,7 +139,7 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 			
 			params['baseDOC_F'].min = 3
 			params['baseDOC_S'].min = 1
-			params['baseDOC_P'].min = 6
+			params['baseDOC_P'].min = 8
 			
 			params['baseDOC_F'].max = 9
 			params['baseDOC_S'].max = 4
