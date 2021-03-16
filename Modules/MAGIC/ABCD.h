@@ -63,7 +63,7 @@ This is the ABCD hydrological model, with snow sub-model taken from WASMOD.
 		excess_temp = std::min(excess_temp, 0.0);
 		double rootexponent = excess_temp / PARAMETER(SnowFallOffset);
 		double fraction = 1.0 - std::exp(-rootexponent*rootexponent);    //NOTE: The publications don't have a minus in the exponent, but the model doesn't work without it!
-		return INPUT(Precipitation)*Max(0.0, fraction); 
+		return INPUT(Precipitation)*std::max(0.0, fraction); 
 	)
 	
 	EQUATION(Model, RainFall,

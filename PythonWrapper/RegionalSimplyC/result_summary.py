@@ -31,16 +31,17 @@ def main() :
 	
 	setups = ['optim_DOC_1lu', 'optim_DOC_2lu', 'optim_DOC_2lu_fast_highC', 'norm2_optim_params_DOC', 'norm4_optim_params_DOC']
 	
-	print('%25s\t%25s\tNS(Q)  NS(DOC conc)  NS(DOC conc month)  NS(DOC flux)  NS(DOC flux month)  ts_F  ts_P  ts_S  DOC_F  DOC_P  DOC_S' % ('Catchment', 'Setup'))
+	print('%25s\t%25s\tNS(Q)  NS(DOC conc)  NS(DOC conc month)  NS(DOC flux)  NS(DOC flux month)  | ts_F  ts_P  ts_S  | DOC_F  DOC_P  DOC_S' % ('Catchment', 'Setup'))
 	
 	for index, row in catch_setup.iterrows():
-		for setup in setups :
 		
-			catch_no = row['met_index']
-			catch_name = row['name']
-			fullname = row['fullname']
-			
-			if reduced_only and row['reduced_set']=='n' : continue
+		catch_no = row['met_index']
+		catch_name = row['name']
+		fullname = row['fullname']
+		
+		if reduced_only and row['reduced_set']=='n' : continue
+		
+		for setup in setups :
 			
 			infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 			parfile = 'MobiusFiles/%s_%d_%s.dat' % (setup, catch_no, catch_name)
@@ -118,7 +119,7 @@ def main() :
 				
 			dataset.delete()
 			
-			print('%25s\t%25s\t%2.2f\t%2.2f\t%2.2f\t%2.2f\t%2.2f\t* %2.2f\t%2.2f\t%2.2f\t* %2.2f\t%2.2f\t%2.2f' % (fullname, setup, NS_Q, NS_DOC_conc, NS_DOC_conc_month, NS_DOC_flux, NS_DOC_flux_month, ts_F, ts_P, ts_S, DOC_F, DOC_P, DOC_S))
+			print('%25s\t%25s\t%2.2f\t%2.2f\t%2.2f\t%2.2f\t%2.2f\t| %2.2f\t%2.2f\t%2.2f\t| %2.2f\t%2.2f\t%2.2f' % (fullname, setup, NS_Q, NS_DOC_conc, NS_DOC_conc_month, NS_DOC_flux, NS_DOC_flux_month, ts_F, ts_P, ts_S, DOC_F, DOC_P, DOC_S))
 		print('')
 		
 

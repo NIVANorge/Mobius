@@ -13,6 +13,7 @@
 //#include "../../Modules/MAGIC/WASMOD.h"
 #include "../../Modules/MAGIC/ABCD.h"
 //#include "../../Modules/MAGIC/MAGIC_CarbonNitrogen.h"
+#include "../../Modules/MAGIC/MagicForestCNP.h"
 
 
 mobius_model *
@@ -24,12 +25,8 @@ DllBuildModel()
 	AddABCDModel(Model);
 	AddMagicCoreModel(Model);
 	AddMagicForestModule(Model);
+	AddSimpleMagicForestCNPModel(Model);
 	
-	
-	//Carbon and nitrogen
-	//AddSimpleMagicCarbonNitrogenModel(Model);
-	//AddRatioMagicCarbonNitrogenModel(Model);
-	//AddMicrobialMagicCarbonNitrogenModel(Model);
 
 	return Model;
 }

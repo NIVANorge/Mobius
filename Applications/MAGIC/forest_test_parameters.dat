@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V_dev, MAGIC Forest V_dev) at 2021-03-12 15:44:37
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V_dev, MAGIC Forest V_dev, MAGIC Forest CNP V_dev) at 2021-03-16 16:20:18
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -159,4 +159,63 @@ true
 
 "F weathering" :     #(meq/m2/year) [0, 200]
 0
+
+
+###################### MAGIC Forest CNP V_dev ######################
+
+# C, N, and P ("Compartment") #
+
+"Organic C litter" :     #(mmol/m2/year) [0, 1000000]
+1000
+
+"Organic C decomposition" :     #(mmol/m2/year) [0, 1000000]
+1000
+
+"Solubilization" :     #(dimensionless) [0, 1] Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.
+0.3
+
+"C use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic C that becomes biomass and is returned to the organic C pool. The rest is mineralized/respired as CO2.
+0.9
+
+"N use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic N that becomes biomass and is returned to the organic N pool. The rest is mineralized as NH4.
+0.7
+
+"P use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic P that becomes biomass and is returned to the organic P pool. The rest is mineralized as PO4.
+0.7
+
+"C/N ratio of litter" :     #(dimensionless) [0.0001, 10]
+50
+
+"C/N ratio of soil microbial community" :     #(dimensionless) [0.0001, 10]
+30
+
+"C/P ratio of litter" :     #(dimensionless) [0.0001, 10]
+20
+
+"C/P ratio of soil microbial community" :     #(dimensionless) [0.0001, 10]
+30
+
+"Initial organic C" :     #(mol/m2) [0, 100000000]
+500
+
+"Initial organic N" :     #(mol/m2) [0, 100000000]
+20
+
+"Initial organic P" :     #(mol/m2) [0, 100000000]
+20
+
+"Nitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
+-30
+
+"Denitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
+-10
+
+"N uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
+1
+
+"N uptake Q10" :     #(dimensionless) [1, 5]
+3
+
+"NH4 uptake scale" :     #(dimensionless) [0, 10] amount of NH4 uptake relative to amount of NO3 uptake
+1
 

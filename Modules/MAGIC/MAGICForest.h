@@ -49,18 +49,6 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 
 	
-	/*
-	auto CAndN                   = RegisterParameterGroup(Model, "Carbon and Nitrogen", Compartment);
-	
-	auto DecompR0                = RegisterParameterDouble(Model, CAndN, "C decomposition at 0°C", MMolPerM2PerTs, 0.0, 0.0, 1000.0);
-	auto DecompQ10               = RegisterParameterDouble(Model, CAndN, "C decomposition Q10", Dimensionless, 1.0, 1.0, 5.0);
-	auto UptakeR0                = RegisterParameterDouble(Model, CAndN, "N uptake at 0°C", MMolPerM2PerTs, 0.0, 0.0, 1000.0);
-	auto UptakeQ10               = RegisterParameterDouble(Model, CAndN, "N uptake Q10", Dimensionless, 1.0, 1.0, 5.0);
-	auto NO3UptakeScale          = RegisterParameterDouble(Model, CAndN, "NO3 uptake scale", Dimensionless, 1.0, 0.1, 10.0);
-	auto NH4UptakeScale          = RegisterParameterDouble(Model, CAndN, "NH4 uptake scale", Dimensionless, 1.0, 0.1, 10.0);
-	auto LitterCN                = RegisterParameterDouble(Model, CAndN, "Litter C/N", Dimensionless, 50.0, 0.1, 200.0);
-	*/
-	
 	auto AirTemperature          = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	auto Precipitation           = RegisterInput(Model, "Precipitation", MmPerTs);
 	
@@ -83,13 +71,6 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	auto FractionOfYear          = RegisterEquation(Model, "Fraction of year", YearPerTs);
 	
-	/*
-	auto Decomposition           = RegisterEquation(Model, "Organic C decomposition", MMolPerM2PerTs);
-	auto UptakeBaseline          = RegisterEquation(Model, "N uptake baseline", MMolPerM2PerTs);
-	auto DesiredNO3Uptake        = RegisterEquation(Model, "Desired NO3 uptake", MMolPerM2PerTs);
-	auto DesiredNH4Uptake        = RegisterEquation(Model, "Desired NH4 uptake", MMolPerM2PerTs);
-	auto LitterC                 = RegisterEquation(Model, "Organic C litter", MMolPerM2PerTs);
-	*/
 	
 	auto MgDeposition            = RegisterEquation(Model, "Mg deposition", MEqPerM2PerTs);
 	auto NH4Deposition           = RegisterEquation(Model, "NH4 deposition", MEqPerM2PerTs);
@@ -117,6 +98,17 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto ClExternalFlux          = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
 	auto NO3ExternalFlux         = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
 	auto FExternalFlux           = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
+	
+	
+	//The following four are re-registered and defined in the Carbon Nitrogen module
+	auto NO3Inputs               = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
+	auto NH4Inputs               = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
+	auto NO3ProcessesLoss        = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
+	auto NH4ProcessesLoss        = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
+	
+	auto NO3BasicInputs          = RegisterEquation(Model, "NO3 basic inputs", MMolPerM2PerTs);
+	auto NH4BasicInputs          = RegisterEquation(Model, "NH4 basic inputs", MMolPerM2PerTs);
+	
 	
 	
 	// From WASMOD:
@@ -151,29 +143,6 @@ Forest growth driver module developed as part of the CatchCAN project.
 	EQUATION(Model, Temperature,
 		return Max(INPUT(AirTemperature), PARAMETER(MinCompartmentTemp));
 	)
-	
-	
-	/*
-	EQUATION(Model, Decomposition,
-		return PARAMETER(DecompR0) * std::pow(PARAMETER(DecompQ10), RESULT(Temperature) * 0.1);
-	)
-	
-	EQUATION(Model, UptakeBaseline,
-		return PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
-	)
-	
-	EQUATION(Model, DesiredNO3Uptake,
-		return RESULT(UptakeBaseline) * PARAMETER(NO3UptakeScale);
-	)
-	
-	EQUATION(Model, DesiredNH4Uptake,
-		return RESULT(UptakeBaseline) * PARAMETER(NH4UptakeScale);
-	)
-	
-	EQUATION(Model, LitterC,
-		return (RESULT(DesiredNO3Uptake) + RESULT(DesiredNH4Uptake))*PARAMETER(LitterCN);
-	)
-	*/
 	
 	
 	EQUATION(Model, CaDeposition,
@@ -213,6 +182,18 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	
+	
+	
+	EQUATION(Model, NO3BasicInputs,
+		return RESULT(NO3Deposition) + PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
+	)
+	
+	EQUATION(Model, NH4BasicInputs,
+		return RESULT(NH4Deposition) + PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
+	)
+	
+	
+	
 	EQUATION(Model, CaExternalFlux,
 		return RESULT(CaDeposition) + RESULT(FractionOfYear)*PARAMETER(CaWeathering);
 	)
@@ -230,7 +211,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, NH4ExternalFlux,
-		return RESULT(NH4Deposition) + RESULT(FractionOfYear)*PARAMETER(NH4Weathering);
+		return RESULT(NH4Inputs) - RESULT(NH4ProcessesLoss);
 	)
 	
 	EQUATION(Model, SO4ExternalFlux,
@@ -238,7 +219,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, NO3ExternalFlux,
-		return RESULT(NO3Deposition) + RESULT(FractionOfYear)*PARAMETER(NO3Weathering);
+		return RESULT(NO3Inputs) - RESULT(NO3ProcessesLoss);
 	)
 	
 	EQUATION(Model, ClExternalFlux,

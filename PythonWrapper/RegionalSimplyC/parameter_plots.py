@@ -22,7 +22,7 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
-def collect_parameter_distributions(non_validation_only=False, reduced_only=True, num_lu=3) :
+def collect_parameter_distributions(non_validation_only=False, reduced_only=True, num_lu=3, fast_high_c=False) :
 	param_values = {}
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
@@ -43,7 +43,10 @@ def collect_parameter_distributions(non_validation_only=False, reduced_only=True
 			parfile = 'MobiusFiles/optim_DOC_1lu_%d_%s.dat' % (catch_no, catch_name)
 			lu = {'F' : 'All'}
 		elif num_lu == 2 :
-			parfile = 'MobiusFiles/optim_DOC_2lu_%d_%s.dat' % (catch_no, catch_name)
+			if fast_high_c :
+				parfile = 'MobiusFiles/optim_DOC_2lu_fast_highC_%d_%s.dat' % (catch_no, catch_name)
+			else :
+				parfile = 'MobiusFiles/optim_DOC_2lu_%d_%s.dat' % (catch_no, catch_name)
 			lu = {'F' : 'LowC', 'P' : 'HighC'}
 		elif num_lu == 3 :
 			parfile = 'MobiusFiles/norm4_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
@@ -259,8 +262,8 @@ def extrapolate_test() :
 	plt.close()
 
 	
-def make_plots(num_lu=3) :
-	param_values = collect_parameter_distributions(num_lu=num_lu)
+def make_plots(num_lu=3, fast_high_c=False) :
+	param_values = collect_parameter_distributions(num_lu=num_lu, fast_high_c=fast_high_c)
 	
 	#print(param_values)
 	fig, ax = plt.subplots(5, 4)
@@ -280,9 +283,11 @@ def make_plots(num_lu=3) :
 		
 		plt.setp(ax[idx].get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
 		
-		
+	
+	suffix = '%dlu%s' % (num_lu, 'fast_highC' if fast_high_c else '')
+	
 	fig.tight_layout()
-	plt.savefig('Figures/parameters_%dlu.png' % num_lu)
+	plt.savefig('Figures/parameters_%s.png' % suffix)
 	plt.close()
 	
 	
@@ -299,11 +304,11 @@ def make_plots(num_lu=3) :
 		ax[idx].legend()
 
 	fig.tight_layout()
-	plt.savefig('Figures/parameter_distributions_%dlu.png' % num_lu)
+	plt.savefig('Figures/parameter_distributions_%s.png' % suffix)
 	plt.close()
 
 def main() :
-	make_plots(num_lu=1)
+	make_plots(num_lu=2, fast_high_c=True)
 	#extrapolate_test()
 	
 
