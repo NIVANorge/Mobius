@@ -43,7 +43,7 @@ The following models are already implemented using the Mobius framework (see the
  * [MAGIC](https://github.com/NIVANorge/Mobius/tree/master/Applications/MAGIC)
  * HBV
  
-Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA . INCA models are re-implementations (and sometimes slight modifications) of models developed by many other people and for most of them there exist other non-Mobius implementations by Dan Butterfield. Model/module version numbers refer to their Mobius implementations only and are not comparable with version numbers from other implementations. MAGIC is an adaptation of a model that has an earlier implementation by B.J. Cosby.
+Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); the implementations of PERSiST, INCA-N and INCA-N-Classic were translated from https://github.com/biogeochemistry/INCA . INCA models are re-implementations (and sometimes slight modifications) of models developed by many other people and for most of them there exist other non-Mobius implementations by Dan Butterfield. See [incamodels.org](https://incamodels.org/) for info about these. Model/module version numbers refer to their Mobius implementations only and are not comparable with version numbers from other implementations. MAGIC is an adaptation of a model that has an earlier implementation by B.J. Cosby.
 
 ## Documentation
 
