@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V_dev, MAGIC Forest V_dev, MAGIC Forest CNP V_dev) at 2021-03-16 16:20:18
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V_dev, MAGIC Forest V_dev, MAGIC Forest CNP V_dev) at 2021-03-17 14:12:50
 
 index_sets:
 "Compartment" : {"Soil1"}
@@ -11,7 +11,7 @@ parameters:
 1850-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2020-01-01
+2020-12-01
 
 
 ###################### ABCD V0.1 ######################
@@ -125,7 +125,7 @@ true
 0.3
 
 "Organic acid concentration" :     #(mmol/m3) [0, 200] Default value for timesteps where no input series value is provided
-0
+30
 
 "Minimal compartment temperature" :     #(°C) [-10, 10]
 0.4
@@ -168,8 +168,14 @@ true
 "Organic C litter" :     #(mmol/m2/year) [0, 1000000]
 1000
 
-"Organic C decomposition" :     #(mmol/m2/year) [0, 1000000]
+"Compute C litter using" :     # [input, steady_state, scale_to_uptake]
+input
+
+"Organic C decomposition at 0°C" :     #(mmol/m2/year) [0, 1000000]
 1000
+
+"Decomposition Q10" :     #(dimensionless) [1, 5]
+3
 
 "Solubilization" :     #(dimensionless) [0, 1] Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.
 0.3
@@ -184,13 +190,13 @@ true
 0.7
 
 "C/N ratio of litter" :     #(dimensionless) [0.0001, 10]
-50
+40
 
 "C/N ratio of soil microbial community" :     #(dimensionless) [0.0001, 10]
-30
+10
 
 "C/P ratio of litter" :     #(dimensionless) [0.0001, 10]
-20
+30
 
 "C/P ratio of soil microbial community" :     #(dimensionless) [0.0001, 10]
 30
@@ -204,18 +210,30 @@ true
 "Initial organic P" :     #(mol/m2) [0, 100000000]
 20
 
-"Nitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
--30
+"Nitrification" :     #(mmol/m2/year) [0, 500] NH4->NO3. Negative rate sets value as % of inputs
+-100
 
-"Denitrification" :     #(mmol/m2/year) [0, 500] Negative rate sets value as % of inputs
--10
+"Denitrification" :     #(mmol/m2/year) [0, 500] NO3->N2. Negative rate sets value as % of inputs
+0
 
 "N uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
-1
+10
 
-"N uptake Q10" :     #(dimensionless) [1, 5]
+"P uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
+20
+
+"Uptake Q10" :     #(dimensionless) [1, 5]
 3
 
 "NH4 uptake scale" :     #(dimensionless) [0, 10] amount of NH4 uptake relative to amount of NO3 uptake
-1
+0.5
+
+"Microbes immobilize inorganic N and P if necessary" :
+true
+
+"Plants use inorganic N and P before soil microbes" :
+true
+
+"Plants have access to organic N and P" :
+true
 

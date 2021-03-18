@@ -1,0 +1,45 @@
+# Parameter file generated for model Yasso, containing modules (YASSO V_dev) at 2021-03-18 11:05:33
+
+index_sets:
+"Compartment" : {"(A) Acid-hydrolyzable" "(W) Water-soluble" "(E) Ethanol-soluble" "(N) Non-soluble" "(H) Humus"}
+
+parameters:
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2000-01-01
+
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2020-12-01
+
+
+###################### YASSO V_dev ######################
+
+# Compartment parameters ("Compartment") #
+
+"Decomposition rate" :     #(1/month) [0, 20]
+0.1 0.2 0.05 0.14 0.01
+
+"Decomposition rate linear temperature dependence" :     #(1/°C) [0, 0.2]
+0.1 0.1 0.1 0.05 0
+
+"Decomposition rate quadratic temperature dependence" :     #(1/°C2) [-0.05, 0]
+-0.05 -0.05 -0.05 -0.05 -0.05
+
+"Decomposition rate linear precipitation dependence" :     #(1/mm) [-20, 0]
+-1 -1 -1 -1 -1
+
+"Litter fraction" :     #(dimensionless) [0, 1]
+0.3 0.2 0.25 0.25 0
+
+
+# Transfer matrix ("Compartment" "Compartment") #
+
+"Relative mass flow" :     #(1/month) [0, 1]
+0 0 0 0 0
+0.2 0 0 0 0
+0.3 0.2 0 0 0
+0 0.3 0.1 0 0
+0.4 0.4 0.4 0.4 0
+

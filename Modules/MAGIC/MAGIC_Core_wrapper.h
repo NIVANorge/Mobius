@@ -14,7 +14,7 @@
 static void
 AddMagicCoreModel(mobius_model *Model)
 {
-	BeginModule(Model, "MAGIC Core", "_dev");
+	BeginModule(Model, "MAGIC Core", "0.1");
 	
 	SetModuleDescription(Model, R""""(
 MAGIC is the Model of Acidification of Groundwater In Catchments.
