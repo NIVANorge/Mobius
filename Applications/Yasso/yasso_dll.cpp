@@ -14,7 +14,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("Yasso", true, "1M");
+	mobius_model *Model = BeginModelDefinition("Yasso", true, "1Y");
 	
 	AddYassoModel(Model);
 
