@@ -78,6 +78,17 @@ This is an un-official implementation of the Yasso model
 	auto FineWoodDecomp = RegisterEquation(Model, "Fine wood decomposition", GPerM2PerYear, SoilSolver);
 	auto CoarseWoodDecomp=RegisterEquation(Model, "Coarse wood decomposition", GPerM2PerYear, SoilSolver);
 	
+	auto ADecayRate     = RegisterEquation(Model, "(A) decay rate", PerYear, SoilSolver);
+	auto WDecayRate     = RegisterEquation(Model, "(W) decay rate", PerYear, SoilSolver);
+	auto EDecayRate     = RegisterEquation(Model, "(E) decay rate", PerYear, SoilSolver);
+	auto NDecayRate     = RegisterEquation(Model, "(N) decay rate", PerYear, SoilSolver);
+	auto HDecayRate     = RegisterEquation(Model, "(H) decay rate", PerYear, SoilSolver);
+	
+	auto AInputFromLitter = RegisterEquation(Model, "(A) input from litter", GPerM2PerYear, SoilSolver);
+	auto WInputFromLitter = RegisterEquation(Model, "(W) input from litter", GPerM2PerYear, SoilSolver);
+	auto EInputFromLitter = RegisterEquation(Model, "(E) input from litter", GPerM2PerYear, SoilSolver);
+	auto NInputFromLitter = RegisterEquation(Model, "(N) input from litter", GPerM2PerYear, SoilSolver);
+	
 	auto ADecay         = RegisterEquation(Model, "(A) decay", GPerM2PerYear, SoilSolver);
 	auto WDecay         = RegisterEquation(Model, "(W) decay", GPerM2PerYear, SoilSolver);
 	auto EDecay         = RegisterEquation(Model, "(E) decay", GPerM2PerYear, SoilSolver);
@@ -96,8 +107,19 @@ This is an un-official implementation of the Yasso model
 	auto InitialFineWood   = RegisterEquationInitialValue(Model, "Initial fine wood mass", GPerM2);
 	auto InitialCoarseWood = RegisterEquationInitialValue(Model, "Initial coarse wood mass", GPerM2);
 	
+	auto InitialAMass      = RegisterEquationInitialValue(Model, "Initial (A) mass", GPerM2);
+	auto InitialWMass      = RegisterEquationInitialValue(Model, "Initial (W) mass", GPerM2);
+	auto InitialEMass      = RegisterEquationInitialValue(Model, "Initial (E) mass", GPerM2);
+	auto InitialNMass      = RegisterEquationInitialValue(Model, "Initial (N) mass", GPerM2);
+	auto InitialHMass      = RegisterEquationInitialValue(Model, "Initial (H) mass", GPerM2);
+	
 	SetInitialValue(Model, FineWoodMass, InitialFineWood);
 	SetInitialValue(Model, CoarseWoodMass, InitialCoarseWood);
+	SetInitialValue(Model, AMass, InitialAMass);
+	SetInitialValue(Model, WMass, InitialWMass);
+	SetInitialValue(Model, EMass, InitialEMass);
+	SetInitialValue(Model, NMass, InitialNMass);
+	SetInitialValue(Model, HMass, InitialHMass);
 	
 	
 	
@@ -107,6 +129,56 @@ This is an un-official implementation of the Yasso model
 	
 	EQUATION(Model, InitialCoarseWood,
 		return INPUT(CoarseWoodLitter) / PARAMETER(CoarseWoodDecompR);
+	)
+	
+	
+	//NOTE: These can only use decay from "above" in the steady-state, otherwise we would have to solve a matrix equation here..
+	
+	EQUATION(Model, InitialAMass,
+		double fromlitter = RESULT(AInputFromLitter);
+
+		return SafeDivide(fromlitter, RESULT(ADecayRate));
+	)
+	
+	EQUATION(Model, InitialWMass,
+		double fromlitter = RESULT(WInputFromLitter);
+	
+		double fromothers = 
+			  PARAMETER(RelativeMassFlow, WCompartment, ACompartment) * RESULT(ADecay);
+		
+		return SafeDivide(fromlitter + fromothers, RESULT(WDecayRate));
+	)
+	
+	EQUATION(Model, InitialEMass,
+		double fromlitter = RESULT(EInputFromLitter);
+	
+		double fromothers = 
+			  PARAMETER(RelativeMassFlow, ECompartment, ACompartment) * RESULT(ADecay)
+			+ PARAMETER(RelativeMassFlow, ECompartment, WCompartment) * RESULT(WDecay);
+		
+		return SafeDivide(fromlitter + fromothers, RESULT(EDecayRate));
+	)
+	
+	EQUATION(Model, InitialNMass,
+		double fromlitter = RESULT(NInputFromLitter);
+	
+		double fromothers = 
+			  PARAMETER(RelativeMassFlow, NCompartment, ACompartment) * RESULT(ADecay)
+			+ PARAMETER(RelativeMassFlow, NCompartment, WCompartment) * RESULT(WDecay)
+			+ PARAMETER(RelativeMassFlow, NCompartment, ECompartment) * RESULT(EDecay);
+		
+		return SafeDivide(fromlitter + fromothers, RESULT(NDecayRate));
+	)
+	
+	EQUATION(Model, InitialHMass,
+
+		double fromothers = 
+			  PARAMETER(RelativeMassFlow, HCompartment, ACompartment) * RESULT(ADecay)
+			+ PARAMETER(RelativeMassFlow, HCompartment, WCompartment) * RESULT(WDecay)
+			+ PARAMETER(RelativeMassFlow, HCompartment, ECompartment) * RESULT(EDecay)
+			+ PARAMETER(RelativeMassFlow, HCompartment, NCompartment) * RESULT(NDecay);
+		
+		return SafeDivide(fromothers, RESULT(HDecayRate));
 	)
 	
 	
@@ -128,36 +200,84 @@ This is an un-official implementation of the Yasso model
 	)
 
 	
-	EQUATION(Model, ADecay,
+	EQUATION(Model, ADecayRate,
 		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, ACompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, ACompartment), PARAMETER(DecompPrecipLinear, ACompartment));
-		return RESULT(AMass) * rate;
+		return rate;
+	)
+	
+	EQUATION(Model, WDecayRate,
+		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, WCompartment), PARAMETER(DecompTempLinear, WCompartment), PARAMETER(DecompTempQuad, WCompartment), PARAMETER(DecompPrecipLinear, WCompartment));
+		return rate;
+	)
+	
+	EQUATION(Model, EDecayRate,
+		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, ECompartment), PARAMETER(DecompTempLinear, ECompartment), PARAMETER(DecompTempQuad, ECompartment), PARAMETER(DecompPrecipLinear, ECompartment));
+		return rate;
+	)
+	
+	EQUATION(Model, NDecayRate,
+		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, NCompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, NCompartment), PARAMETER(DecompPrecipLinear, NCompartment));
+		return rate;
+	)
+	
+	EQUATION(Model, HDecayRate,
+		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, HCompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, HCompartment), PARAMETER(DecompPrecipLinear, HCompartment));
+		return rate;
+	)
+
+	
+	EQUATION(Model, ADecay,
+		return RESULT(AMass) * RESULT(ADecayRate);
 	)
 	
 	EQUATION(Model, WDecay,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, WCompartment), PARAMETER(DecompTempLinear, WCompartment), PARAMETER(DecompTempQuad, WCompartment), PARAMETER(DecompPrecipLinear, WCompartment));
-		return RESULT(WMass) * rate;
+		return RESULT(WMass) * RESULT(WDecayRate);
 	)
 	
 	EQUATION(Model, EDecay,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, ECompartment), PARAMETER(DecompTempLinear, ECompartment), PARAMETER(DecompTempQuad, ECompartment), PARAMETER(DecompPrecipLinear, ECompartment));
-		return RESULT(EMass) * rate;
+		return RESULT(EMass) * RESULT(EDecayRate);
 	)
 	
 	EQUATION(Model, NDecay,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, NCompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, NCompartment), PARAMETER(DecompPrecipLinear, NCompartment));
-		return RESULT(NMass) * rate;
+		return RESULT(NMass) * RESULT(NDecayRate);
 	)
 	
 	EQUATION(Model, HDecay,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, HCompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, HCompartment), PARAMETER(DecompPrecipLinear, HCompartment));
-		return RESULT(HMass) * rate;
+		return RESULT(HMass) * RESULT(HDecayRate);
 	)
 	
-	EQUATION(Model, AMass,
-		double fromlitter =
+	
+	EQUATION(Model, AInputFromLitter,
+		return
 			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, ACompartment)
 			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, ACompartment)
 			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, ACompartment);
+	)
+	
+	EQUATION(Model, WInputFromLitter,
+		return
+			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, WCompartment)
+			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, WCompartment)
+			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, WCompartment);
+	)
+	
+	EQUATION(Model, EInputFromLitter,
+		return
+			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, ECompartment)
+			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, ECompartment)
+			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, ECompartment);
+	)
+	
+	EQUATION(Model, NInputFromLitter,
+		return
+			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, NCompartment)
+			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, NCompartment)
+			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, NCompartment);
+	)
+	
+	
+	EQUATION(Model, AMass,
+		double fromlitter = RESULT(AInputFromLitter);
 	
 		double fromothers = 
 			  PARAMETER(RelativeMassFlow, ACompartment, WCompartment) * RESULT(WDecay)
@@ -168,10 +288,7 @@ This is an un-official implementation of the Yasso model
 	)
 	
 	EQUATION(Model, WMass,
-		double fromlitter =
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, WCompartment)
-			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, WCompartment)
-			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, WCompartment);
+		double fromlitter = RESULT(WInputFromLitter);
 	
 		double fromothers = 
 			  PARAMETER(RelativeMassFlow, WCompartment, ACompartment) * RESULT(ADecay)
@@ -182,10 +299,7 @@ This is an un-official implementation of the Yasso model
 	)
 	
 	EQUATION(Model, EMass,
-		double fromlitter =
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, ECompartment)
-			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, ECompartment)
-			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, ECompartment);
+		double fromlitter = RESULT(EInputFromLitter);
 	
 		double fromothers = 
 			  PARAMETER(RelativeMassFlow, ECompartment, ACompartment) * RESULT(ADecay)
@@ -196,10 +310,7 @@ This is an un-official implementation of the Yasso model
 	)
 	
 	EQUATION(Model, NMass,
-		double fromlitter =
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, NCompartment)
-			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, NCompartment)
-			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, NCompartment);
+		double fromlitter = RESULT(NInputFromLitter);
 	
 		double fromothers = 
 			  PARAMETER(RelativeMassFlow, NCompartment, ACompartment) * RESULT(ADecay)

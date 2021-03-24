@@ -63,4 +63,4 @@ def main(num_lu=3) :
 			dataset.write_parameters_to_file('MobiusFiles/template_params_%d_%s.dat' % (catch_no, catch_name))
 	
 if __name__ == "__main__":
-	main(num_lu=1)
+	main(num_lu=3)

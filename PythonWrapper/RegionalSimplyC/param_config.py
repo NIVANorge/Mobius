@@ -1,11 +1,12 @@
 
 from importlib.machinery import SourceFileLoader
+import lmfit
 
 # Initialise wrapper
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
 
-def configure_params(params, do_doc, do_hydro, num_lu=3):
+def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 	
 	
 	if num_lu == 1 :
@@ -55,10 +56,10 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 			params['Ts_F'].min = 1
 			params['Ts_F'].max = 6
 			
-			#params['Ts_P'].min = 1
-			params['Ts_P'].min = 5
-			params['Ts_P'].max = 20
-			#params['Ts_P'].max = 7
+			params['Ts_P'].min = 1
+			#params['Ts_P'].min = 5
+			#params['Ts_P'].max = 20
+			params['Ts_P'].max = 7
 
 		if do_doc :
 			
@@ -87,8 +88,13 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 			
 			
 			#params['baseDOC_P'].min = 4
-			params['baseDOC_P'].min = 8
-			params['baseDOC_P'].max = 50
+			if relative_conc :
+				params['aux_baseDOC_P'].min = 1.0
+				params['aux_baseDOC_P'].max = 5.0
+			else :
+				params['baseDOC_P'].min = 8
+				params['baseDOC_P'].max = 50
+			
 			
 			params['cDOC_F'].max = 3
 			params['cDOC_P'].set(expr='cDOC_F')
@@ -150,7 +156,7 @@ def configure_params(params, do_doc, do_hydro, num_lu=3):
 			params['cDOC_P'].set(expr='cDOC_F')
 	
 	
-def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3) :
+def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3, relative_conc=False) :
 	
 	if num_lu == 1 :
 		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'All':'A', 'R0':'r0'})
@@ -167,8 +173,12 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3) :
 	]
 	wantparams2 = [
 			'fc', 'depthST', 'STC',
-			'kT', 'kSO4', 'cDOC', 'baseDOC',
+			'kT', 'kSO4', 'cDOC',
 	]
+	if relative_conc :
+		wantparams2 += ['baseDOC_F']
+	else :
+		wantparams2 += ['baseDOC']
 	
 	if do_hydro :
 		wantparams += wantparams1
@@ -179,7 +189,9 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3) :
 	calib_df = param_df[[any([sn.startswith(n) for n in wantparams]) for sn in param_df['short_name']]]
 	
 	params = cu.parameter_df_to_lmfit(calib_df)
+	if relative_conc :
+		params.add(lmfit.Parameter('aux_baseDOC_P', value=1.0, min=1.0, max=5.0, user_data={'parameter_type':'model_parameter'}))
 	
-	configure_params(params, do_doc, do_hydro, num_lu)
+	configure_params(params, do_doc, do_hydro, num_lu, relative_conc)
 	
 	return params
