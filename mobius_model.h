@@ -113,7 +113,8 @@ struct entity_registry
 		}
 	}
 	
-	bool Has(const char *Name) const { return NameToHandle.find(Name) != NameToHandle.end(); }
+	bool Has(const char *Name) const { return NameToHandle.find(Name) != NameToHandle.end(); } //TODO: Check to see if this one is necessary
+	bool Has(token_string Name) const { return NameToHandle.find(Name) != NameToHandle.end(); }
 	
 	      spec_type& operator[](handle_type Handle)       { return Specs[Handle.Handle]; }
 	const spec_type& operator[](handle_type Handle) const { return Specs[Handle.Handle]; }

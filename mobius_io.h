@@ -61,10 +61,12 @@ WriteParameterValue(FILE *File, parameter_value Value, const parameter_spec &Spe
 }
 
 static void
-WriteParameterValues(FILE *File, parameter_h Parameter, const parameter_spec &Spec, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level)
+WriteParameterValues(FILE *File, parameter_h Parameter, const parameter_spec &Spec, mobius_data_set *DataSet, const index_set_h *IndexSets, index_t *Indexes, size_t IndexSetCount, size_t Level, const char *Indent)
 {
+	
 	if(IndexSetCount == 0)
 	{
+		fprintf(File, "%s", Indent);
 		size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Parameter);
 		parameter_value Value = DataSet->ParameterData[Offset];
 		WriteParameterValue(File, Value, Spec);
@@ -79,6 +81,7 @@ WriteParameterValues(FILE *File, parameter_h Parameter, const parameter_spec &Sp
 		Indexes[Level] = Index;
 		if(Level + 1 == IndexSetCount)
 		{
+			if(Index == 0) fprintf(File, "%s", Indent);
 			size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, Indexes, IndexSetCount, DataSet->IndexCounts, Parameter);
 			parameter_value Value = DataSet->ParameterData[Offset];
 			WriteParameterValue(File, Value, Spec);
@@ -86,11 +89,11 @@ WriteParameterValues(FILE *File, parameter_h Parameter, const parameter_spec &Sp
 		}
 		else
 		{
-			WriteParameterValues(File, Parameter, Spec, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1);
+			WriteParameterValues(File, Parameter, Spec, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1, Indent);
 			if(Index + 1 != IndexCount)
 			{
-				if(Level + 2 == IndexSetCount) fprintf(File, "\n");
-				else fprintf(File, "\n\n");
+				if(Level + 2 == IndexSetCount) fprintf(File, "\n", Indent);
+				else fprintf(File, "\n\n", Indent);
 			}
 		}
 	}
@@ -173,11 +176,15 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 
 	for(entity_handle ModuleHandle = 0; ModuleHandle < Model->Modules.Count(); ++ModuleHandle)
 	{
+		const char *Indent = "";
+		
 		if(ModuleHandle != 0)
 		{
-			//NOTE: For module-less parameters
 			const module_spec &Module = Model->Modules.Specs[ModuleHandle];
-			fprintf(File, "\n###################### %s V%s ######################\n", Module.Name, Module.Version);
+			//fprintf(File, "\n###################### %s V%s ######################\n", Module.Name, Module.Version);
+			fprintf(File, "\n{ module \"%s\" version \"%s\"\n", Module.Name, Module.Version);
+			
+			Indent = "\t";
 		}
 		
 		for(parameter_group_h ParameterGroup : Model->ParameterGroups)
@@ -185,7 +192,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 			const parameter_group_spec &Group = Model->ParameterGroups[ParameterGroup];
 			if(Group.Module.Handle == ModuleHandle)
 			{
-				fprintf(File, "\n# %s (", Group.Name);
+				fprintf(File, "\n%s# %s (", Indent, Group.Name);
 				if(Group.IndexSets.size() == 0) fprintf(File, "no index sets");
 				int Count = 0;
 				for(index_set_h IndexSet : Group.IndexSets)
@@ -202,7 +209,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 					
 					if(Spec.ShouldNotBeExposed) continue;
 					
-					fprintf(File, "\"%s\" :", Spec.Name);
+					fprintf(File, "%s\"%s\" :", Indent, Spec.Name);
 					bool PrintedPnd = false;
 					if(IsValid(Spec.Unit))
 					{
@@ -244,7 +251,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 					size_t IndexSetCount = Group.IndexSets.size();
 					index_t *CurrentIndexes = AllocClearedArray(index_t, IndexSetCount);
 					
-					WriteParameterValues(File, Parameter, Spec, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0);
+					WriteParameterValues(File, Parameter, Spec, DataSet, Group.IndexSets.data(), CurrentIndexes, IndexSetCount, 0, Indent);
 					
 					fprintf(File, "\n\n");
 					free(CurrentIndexes);
@@ -252,59 +259,14 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 			}
 		}
 		
-	}
-/*
-	for(storage_unit_specifier &Unit : DataSet->ParameterStorageStructure.Units)
-	{
-		array<index_set_h> &IndexSets = Unit.IndexSets;
-		fprintf(File, "######################");
-		if(IndexSets.Count == 0) fprintf(File, " (no index sets)");
-		for(index_set_h IndexSet : IndexSets)
+		if(ModuleHandle != 0)
 		{
-			fprintf(File, " \"%s\"", GetName(Model, IndexSet));
+			const module_spec &Module = Model->Modules.Specs[ModuleHandle];
+			fprintf(File, "\n} # end of module \"%s\"\n", Module.Name);
 		}
-		fprintf(File, " ######################\n");
 		
-		for(entity_handle ParameterHandle : Unit.Handles)
-		{
-			const parameter_spec &Spec = Model->Parameters.Specs[ParameterHandle];
-			
-			if(Spec.ShouldNotBeExposed) continue;
-			
-			fprintf(File, "\"%s\" :", Spec.Name);
-			bool PrintedPnd = false;
-			if(IsValid(Spec.Unit))
-			{
-				fprintf(File, "     #(%s)", GetName(Model, Spec.Unit));
-				PrintedPnd = true;
-			}
-			if(Spec.Type != ParameterType_Bool)
-			{
-				if(!PrintedPnd) fprintf(File, "     #");
-				PrintedPnd = true;
-				fprintf(File, " [");
-				WriteParameterValue(File, Spec.Min, Spec.Type);
-				fprintf(File, ", ");
-				WriteParameterValue(File, Spec.Max, Spec.Type);
-				fprintf(File, "]");
-			}
-			if(Spec.Description)
-			{
-				if(!PrintedPnd) fprintf(File, "     #");
-				fprintf(File, " %s", Spec.Description);
-			}
-			fprintf(File, "\n");
-			
-			size_t IndexSetCount = IndexSets.Count;
-			index_t *CurrentIndexes = AllocClearedArray(index_t, IndexSetCount);
-			
-			WriteParameterValues(File, ParameterHandle, Spec.Type, DataSet, IndexSets.Data, CurrentIndexes, IndexSetCount, 0);
-			
-			fprintf(File, "\n\n");
-			free(CurrentIndexes);
-		}
 	}
-*/
+
 	fclose(File);
 }
 
@@ -328,7 +290,6 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 			break;
 		
 		token_string Section = Stream.ExpectUnquotedString();
-		Stream.ExpectToken(TokenType_Colon);
 		
 		int Mode = -1;
 
@@ -341,6 +302,8 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 			Stream.PrintErrorHeader();
 			FatalError("The parameter file parser does not recognize section type: ", Section, ". Accepted sections are index_sets and parameters\n");
 		}
+		
+		Stream.ExpectToken(TokenType_Colon);
 		
 		if(Mode == 0)
 		{
@@ -428,10 +391,62 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 			if(!DataSet->ParameterData) //TODO: This is probably not necessary anymore..
 				AllocateParameterStorage(DataSet);
 			
+			module_h CurrentModule = {};
+			bool ValidModule = true;
+			bool ValidVersion = true;
+			token_string ModuleName;
+			token_string ModuleVersion;
+			
 			while(true)
 			{
 				Token = Stream.PeekToken();
-				if(Token.Type != TokenType_QuotedString) break;
+				
+				if(Token.Type == TokenType_OpenBrace)
+				{
+					Stream.ReadToken(); // Consume the open brace
+					token_string ModuleDecl = Stream.ExpectUnquotedString();
+					if(!ModuleDecl.Equals("module"))
+					{
+						Stream.PrintErrorHeader();
+						FatalError("Expected an unquoted string saying \"module\".\n");
+					}
+					ModuleName = Stream.ExpectQuotedString();
+					if(Model->Modules.Has(ModuleName))
+					{
+						CurrentModule = GetModuleHandle(Model, ModuleName);
+						ValidModule = true;
+					}
+					else
+					{
+						// Issue warning?
+						ValidModule = false;
+						ValidVersion = true; //Just to not confuse error checking below
+					}
+					token_string VersionDecl = Stream.ExpectUnquotedString();
+					if(!VersionDecl.Equals("version"))
+					{
+						Stream.PrintErrorHeader();
+						FatalError("Expected an unquoted string saying \"version\".\n");
+					}
+					ModuleVersion = Stream.ExpectQuotedString();
+					if(ValidModule)
+					{
+						const module_spec &ModuleSpec = Model->Modules[CurrentModule];
+						if (ModuleVersion.Equals(ModuleSpec.Version))
+							ValidVersion = true;
+						else
+							ValidVersion = false;
+					}
+				}
+				else if(Token.Type == TokenType_CloseBrace)
+				{
+					Stream.ReadToken(); // Consume the close brace
+					CurrentModule = {};
+					ValidModule = true;
+					ValidVersion = true;
+					continue;
+				}
+				else if(Token.Type != TokenType_QuotedString) break;
 					
 				token_string ParameterName = Stream.ExpectQuotedString();
 				Stream.ExpectToken(TokenType_Colon);
@@ -440,12 +455,16 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				parameter_h Parameter = GetParameterHandle(Model, ParameterName, Found);
 				if(!Found)
 				{
-					if(!IgnoreUnknown)
+					//TODO: Is this the best way to do warnings. What if a valid parameter name belongs to an invalid module?
+					if(!ValidModule)
+						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to the module \"", ModuleName, "\", which is not currently loaded. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n");
+					else if(!ValidVersion)
 					{
-						Stream.PrintErrorHeader();
-						FatalError("The parameter \"", ParameterName, "\" was not registered with the model.\n");
+						const module_spec &ModuleSpec = Model->Modules[CurrentModule];
+						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to version \"", ModuleVersion, "\" of module \"", GetName(Model, CurrentModule), "\". The version of this module in the current loaded model is \"", ModuleSpec.Version, "\", and does not have this parameter. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n");
 					}
-					else
+					
+					if(IgnoreUnknown || !ValidModule || !ValidVersion)
 					{
 						while(true) // Just skip through
 						{
@@ -453,6 +472,11 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 							if(Token.Type == TokenType_QuotedString) break;
 							Stream.ReadToken();
 						}
+					}
+					else
+					{
+						Stream.PrintErrorHeader();
+						FatalError("The parameter \"", ParameterName, "\" was not registered with the model.\n");
 					}
 				}
 				else
