@@ -97,8 +97,8 @@ def main() :
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/template_params_1lu_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
@@ -125,7 +125,7 @@ def main() :
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		print('\n\n\n')
 		
-		#dataset.write_parameters_to_file('MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name))
+		#dataset.write_parameters_to_file('MobiusFiles/optim_hydro_2lu_%d_%s' % (catch_no, catch_name))
 		#dataset.write_parameters_to_file('MobiusFiles/norm4_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
 		#dataset.write_parameters_to_file('MobiusFiles/optim_DOC_1lu_%d_%s.dat' % (catch_no, catch_name))
 		#dataset.write_parameters_to_file('MobiusFiles/optim_DOC_2lu_%d_%s.dat' % (catch_no, catch_name))

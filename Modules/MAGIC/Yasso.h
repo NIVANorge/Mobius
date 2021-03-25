@@ -20,7 +20,6 @@ This is an un-official implementation of the Yasso model
 )"""");
 
 
-	
 	auto Dimensionless     = RegisterUnit(Model);
 	auto PerYear           = RegisterUnit(Model, "1/year");
 	auto MmPerYear         = RegisterUnit(Model, "mm/year");

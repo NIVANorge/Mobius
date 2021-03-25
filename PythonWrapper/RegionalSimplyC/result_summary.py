@@ -29,7 +29,7 @@ def main() :
 	
 	reduced_only = True
 	
-	setups = ['optim_DOC_1lu', 'optim_DOC_2lu', 'optim_DOC_2lu_fast_highC', 'norm2_optim_params_DOC', 'norm4_optim_params_DOC']
+	setups = ['optim_DOC_1lu', 'optim_DOC_2lu', 'optim_DOC_2lu_fast_highC', 'optim_DOC_2lu_rel_conc', 'norm2_optim_params_DOC', 'norm4_optim_params_DOC']
 	
 	print('%25s\t%25s\tNS(Q)  NS(DOC conc)  NS(DOC conc month)  NS(DOC flux)  NS(DOC flux month)  | ts_F  ts_P  ts_S  | DOC_F  DOC_P  DOC_S' % ('Catchment', 'Setup'))
 	
