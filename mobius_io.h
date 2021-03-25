@@ -455,7 +455,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				parameter_h Parameter = GetParameterHandle(Model, ParameterName, Found);
 				if(!Found)
 				{
-					//TODO: Is this the best way to do warnings. What if a valid parameter name belongs to an invalid module?
+					//TODO: Is this the best way to do warnings. What if a valid parameter name is grouped in the file under an invalid module?
 					if(!ValidModule)
 						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to the module \"", ModuleName, "\", which is not currently loaded. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n");
 					else if(!ValidVersion)
@@ -538,7 +538,7 @@ LinearInterpolateInputValues(mobius_data_set *DataSet, double *Base, double Firs
 	
 	s64 Step     = FindTimestep(DataSet->InputDataStartDate, FirstDate, DataSet->Model->TimestepSize);
 	s64 LastStep = FindTimestep(DataSet->InputDataStartDate, LastDate, DataSet->Model->TimestepSize);
-	LastStep = Min(LastStep, DataSet->InputDataTimesteps);
+	LastStep = Min(LastStep, DataSet->InputDataTimesteps-1);
 	
 	double *WriteTo = Base + Step*Stride;
 	while(Step <= LastStep)
