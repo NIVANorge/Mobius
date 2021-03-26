@@ -31,7 +31,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto PartialPressureCO2Par   = RegisterParameterDouble(Model, Climate, "CO2 partial pressure", Percent, 0.3, 0.1, 2.0, "Default value for timesteps where no input series value is provided");
 	auto OAConcentrationPar      = RegisterParameterDouble(Model, Climate, "Organic acid concentration", MMolPerM3, 0.0, 0.0, 200.0, "Default value for timesteps where no input series value is provided");
 	auto MinCompartmentTemp      = RegisterParameterDouble(Model, Climate, "Minimal compartment temperature", DegreesCelsius, 0.0, -10.0, 10.0);
-
+	auto UseMeasuredRunoff       = RegisterParameterBool(Model, Climate, "Use measured runoff when available", false, "If this is off, it will always use the value computed by the hydrology module.");
 	
 	auto Weathering              = RegisterParameterGroup(Model, "Weathering", Compartment);
 	
@@ -52,8 +52,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto AirTemperature          = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	auto Precipitation           = RegisterInput(Model, "Precipitation", MmPerTs);
 	
-	auto PartialPressureCO2In    = RegisterInput(Model, "CO2 partial pressure", Percent, true);           //NOTE: These are auto-cleared to NaN for missing values
-	auto OAConcentrationIn       = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);   // ^
+	//NOTE: These are auto-cleared to NaN for missing values
+	auto RunoffIn                = RegisterInput(Model, "Runoff", MmPerTs, true);
+	auto PartialPressureCO2In    = RegisterInput(Model, "CO2 partial pressure", Percent, true);           
+	auto OAConcentrationIn       = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);
 	
 	auto CaPrecipConc            = RegisterInput(Model, "Ca conc in precip", MEqPerM3);
 	auto MgPrecipConc            = RegisterInput(Model, "Mg conc in precip", MEqPerM3);
@@ -135,8 +137,13 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	
 	EQUATION(Model, Discharge,
-		//TODO: We need to do something more sophisticated in how we do routing between multiple compartments, and how we handle water bodies!
-		return RESULT(Runoff) * 1e-3;
+		//TODO: We need to do something more sophisticated in how we do routing between multiple compartments, and how we handle lakes!
+		
+		double invalue  = INPUT(RunoffIn);
+		double computed = RESULT(Runoff) * 1e-3;
+		
+		if(PARAMETER(UseMeasuredRunoff) && std::isfinite(invalue)) return invalue * 1e-3;
+		return computed;
 	)
 	
 	

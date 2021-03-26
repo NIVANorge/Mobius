@@ -2,7 +2,6 @@ start_date: 1850-01-01
 end_date: 2020-12-01
 
 additional_timeseries:
-"Runoff" unit "mm/month"
 "Observed runoff conc Ca" unit "meq/m3"
 "Observed runoff conc Mg" unit "meq/m3"
 "Observed runoff conc Na" unit "meq/m3"

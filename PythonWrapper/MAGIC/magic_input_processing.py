@@ -363,7 +363,7 @@ def write_as_input_file(input_df, filename) :
 	of.write('\n')
 	
 	
-	accepted = ['Air temperature', 'Precipitation', 
+	accepted = ['Air temperature', 'Precipitation', 'Runoff',
 		'Ca conc in precip', 'Mg conc in precip', 'Na conc in precip', 'K conc in precip', 'NH4 conc in precip', 'SO4 conc in precip', 'Cl conc in precip', 'NO3 conc in precip', 'F conc in precip',
 		]
 		
