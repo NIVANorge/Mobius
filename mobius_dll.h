@@ -295,7 +295,7 @@ DllGetStartDate(void *DataSetPtr, char *WriteTo)
 	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	char *TimeStr = DataSet->StartDateLastRun.ToString();
+	const char *TimeStr = DataSet->StartDateLastRun.ToString();
 	strcpy(WriteTo, TimeStr);
 	
 	CHECK_ERROR_END
@@ -332,7 +332,7 @@ DllGetInputStartDate(void *DataSetPtr, char *WriteTo)
 	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	char *TimeStr = GetInputStartDate(DataSet).ToString();
+	const char *TimeStr = GetInputStartDate(DataSet).ToString();
 	strcpy(WriteTo, TimeStr);
 	
 	CHECK_ERROR_END
@@ -492,7 +492,7 @@ DllGetParameterTime(void *DataSetPtr, const char *Name, char **IndexNames, u64 I
 	CHECK_ERROR_BEGIN
 	
 	datetime DateTime = GetParameterValue((mobius_data_set *)DataSetPtr, Name, IndexNames, (size_t)IndexCount, ParameterType_Time).ValTime;
-	char *TimeStr = DateTime.ToString();
+	const char *TimeStr = DateTime.ToString();
 	strcpy(WriteTo, TimeStr);
 	
 	CHECK_ERROR_END

@@ -1327,7 +1327,7 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 {
 	if(!std::isfinite(ResultValue))
 	{
-		ErrorPrint("ERROR: Got a NaN or Inf value as the result of the equation \"", GetName(Model, Equation), "\" at timestep ", RunState->Timestep, ".\n");
+		ErrorPrint("ERROR: Got a NaN or Inf value as the result of the equation \"", GetName(Model, Equation), "\" at timestep ", RunState->Timestep, ", model time ", RunState->CurrentTime, " .\n");
 		const equation_spec &Spec = Model->Equations[Equation];
 		ErrorPrint("Indexes:\n");
 		for(index_set_h IndexSet : Spec.IndexSetDependencies)

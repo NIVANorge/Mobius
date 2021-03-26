@@ -117,7 +117,7 @@ public:
 	}
 	
 	inline void
-	DayOfYear(s32 *DayOut, s32 *YearOut)
+	DayOfYear(s32 *DayOut, s32 *YearOut) const
 	{
 		//Computes the day of year (Starting at january 1st = day 1)
 		
@@ -164,7 +164,7 @@ public:
 	}
 	
 	inline void
-	YearMonthDay(s32 *YearOut, s32 *MonthOut, s32 *DayOut)
+	YearMonthDay(s32 *YearOut, s32 *MonthOut, s32 *DayOut) const
 	{
 		//Computes the year, month and day (of month) for a seconds since epoch timestamp.
 	
@@ -190,7 +190,7 @@ public:
 	}
 	
 	inline s64
-	SecondOfDay()
+	SecondOfDay() const
 	{
 		if(SecondsSinceEpoch >= 0)
 		{
@@ -203,8 +203,8 @@ public:
 		return 0;
 	}
 	
-	inline char *
-	ToString()
+	inline const char *
+	ToString() const
 	{
 		//Important: note that this one is overwritten whenever you call it. So you should make a copy of the string if you want to keep it.
 		s32 Year, Month, Day, Hour, Minute, Second;
@@ -440,6 +440,12 @@ struct expanded_datetime
 	}
 	
 };
+
+std::ostream& operator<<(std::ostream& Os, const expanded_datetime &Dt)
+{
+	Os << Dt.DateTime.ToString();
+	return Os;
+}
 
 
 static s64
