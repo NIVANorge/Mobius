@@ -48,24 +48,18 @@ private:
 	SetFromYearMonthDay(s32 Year, s32 Month, s32 Day)
 	{
 		if(Day < 1 || Day > MonthLength(Year, Month) || Month < 1 || Month > 12)
-		{
 			return false; 
-		}
 		
 		s64 Result = 0;
 		if(Year > 1970)
 		{
 			for(s32 Y = 1970; Y < Year; ++Y)
-			{
 				Result += YearLength(Y)*24*60*60;
-			}
 		}
 		else if(Year < 1970)
 		{
 			for(s32 Y = 1969; Y >= Year; --Y)
-			{
 				Result -= YearLength(Y)*24*60*60;
-			}
 		}
 		
 		Result += MonthOffset(Year, Month)*24*60*60;
@@ -98,9 +92,7 @@ public:
 		
 		*Success = SetFromYearMonthDay(Year, Month, Day);
 		if(Found == 6)
-		{
 			*Success = *Success && AddHourMinuteSecond(Hour, Minute, Second);
-		}
 	}
 	
 	datetime(s32 Year, s32 Month, s32 Day, bool *Success)
@@ -193,13 +185,9 @@ public:
 	SecondOfDay() const
 	{
 		if(SecondsSinceEpoch >= 0)
-		{
 			return SecondsSinceEpoch % 86400;
-		}
 		else
-		{
 			return (SecondsSinceEpoch % 86400 + 86400) % 86400;
-		}
 		return 0;
 	}
 	
@@ -211,9 +199,7 @@ public:
 		YearMonthDay(&Year, &Month, &Day);
 		static char Buf[64];
 		if(SecondsSinceEpoch % 86400 == 0)
-		{
 			sprintf(Buf, "%04d-%02d-%02d", Year, Month, Day);
-		}
 		else
 		{
 			s64 SOD = SecondOfDay();
@@ -449,7 +435,8 @@ std::ostream& operator<<(std::ostream& Os, const expanded_datetime &Dt)
 
 
 static s64
-DivideDown(s64 a, s64 b){
+DivideDown(s64 a, s64 b)
+{
     s64 r = a/b;
     if(r < 0 && r*b != a)
         return r - 1;

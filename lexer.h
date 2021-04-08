@@ -297,7 +297,7 @@ token_stream::ReadTokenInternal_()
 			else
 			{
 				PrintErrorHeader(true);
-				FatalError("Found a token of unknown type.\n");
+				FatalError("Found a token of unknown type: ", c, "\n");
 			}
 			TokenHasStarted = true;
 			StartLine = Line;
