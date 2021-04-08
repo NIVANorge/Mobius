@@ -92,6 +92,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto ConcCl            = RegisterEquation(Model, "Cl(-) ionic concentration", MEqPerM3);
 	auto ConcNO3           = RegisterEquation(Model, "NO3(-) ionic concentration", MEqPerM3);
 	auto ConcF             = RegisterEquation(Model, "F(-) ionic concentration", MEqPerM3);
+	auto ConcPO4           = RegisterEquation(Model, "PO4(3-) ionic concentration", MEqPerM3);
 	
 	auto ConcAllSO4        = RegisterEquation(Model, "Total Sulfate in solution (ionic + Al complexes)", MEqPerM3);  //TODO!
 	auto ConcAllF          = RegisterEquation(Model, "Total Fluoride in solution (ionic + Al complexes)", MEqPerM3);
@@ -141,6 +142,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto ClInput       = RegisterEquation(Model, "Cl input from other compartments", MEqPerM2PerTs);
 	auto NO3Input      = RegisterEquation(Model, "NO3 input from other compartments", MEqPerM2PerTs);
 	auto FInput        = RegisterEquation(Model, "F input from other compartments", MEqPerM2PerTs);
+	auto PO4Input      = RegisterEquation(Model, "PO4 input from other compartments", MEqPerM2PerTs);
 	
 	
 	auto CaOutput      = RegisterEquation(Model, "Ca output via discharge", MEqPerM2PerTs, CompartmentSolver);
@@ -152,6 +154,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto ClOutput      = RegisterEquation(Model, "Cl output via discharge", MEqPerM2PerTs, CompartmentSolver);
 	auto NO3Output     = RegisterEquation(Model, "NO3 output via discharge", MEqPerM2PerTs, CompartmentSolver);
 	auto FOutput       = RegisterEquation(Model, "F output via discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto PO4Output     = RegisterEquation(Model, "PO4 output via discharge", MEqPerM2PerTs, CompartmentSolver);
 	
 	auto TotalCa       = RegisterEquationODE(Model, "Total Ca mass", MEqPerM2, CompartmentSolver);
 	auto TotalMg       = RegisterEquationODE(Model, "Total Mg mass", MEqPerM2, CompartmentSolver);
@@ -162,6 +165,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto TotalCl       = RegisterEquationODE(Model, "Total Cl mass", MEqPerM2, CompartmentSolver);
 	auto TotalNO3      = RegisterEquationODE(Model, "Total NO3 mass", MEqPerM2, CompartmentSolver);
 	auto TotalF        = RegisterEquationODE(Model, "Total F mass", MEqPerM2, CompartmentSolver);
+	auto TotalPO4      = RegisterEquationODE(Model, "Total PO4 mass", MEqPerM2, CompartmentSolver);
 	
 	
 	// Equations that have to be defined by an outside "driver", and are not provided in the core, but which the core has to read the values of:
@@ -179,6 +183,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
 	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
 	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
+	auto PO4ExternalFlux    = RegisterEquation(Model, "Sum of PO4 fluxes not related to discharge", MEqPerM2PerTs);
 	
 	auto InitialConcCa       = RegisterEquationInitialValue(Model, "Initial Ca concentration", MEqPerM3);
 	SetInitialValue(Model, ConcCa, InitialConcCa);
@@ -198,6 +203,8 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	SetInitialValue(Model, ConcNO3, InitialConcNO3);
 	auto InitialConcAllF     = RegisterEquationInitialValue(Model, "Initial total fluoride in solution", MEqPerM3);
 	SetInitialValue(Model, ConcAllF, InitialConcAllF);
+	auto InitialConcPO4      = RegisterEquationInitialValue(Model, "Initial PO4 concentration", MEqPerM3);
+	SetInitialValue(Model, ConcPO4, InitialConcPO4);
 	
 	auto InitialCa           = RegisterEquationInitialValue(Model, "Initial Ca mass", MEqPerM2);
 	SetInitialValue(Model, TotalCa, InitialCa);
@@ -217,6 +224,8 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	SetInitialValue(Model, TotalNO3, InitialNO3);
 	auto InitialF            = RegisterEquationInitialValue(Model, "Initial F mass", MEqPerM2);
 	SetInitialValue(Model, TotalF, InitialF);
+	auto InitialPO4          = RegisterEquationInitialValue(Model, "Initial PO4 mass", MEqPerM2);
+	SetInitialValue(Model, TotalPO4, InitialPO4);
 	
 	//NOTE: We need to force this equation to have itself as its initial value computation, otherwise it doesn't get evaluated and just has a 0 initial value, causing initial input fluxes to other compartments to be wrong.
 	SetInitialValue(Model, CaOutput, CaOutput);
@@ -228,6 +237,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	SetInitialValue(Model, ClOutput, ClOutput);
 	SetInitialValue(Model, NO3Output, NO3Output);
 	SetInitialValue(Model, FOutput, FOutput);
+	SetInitialValue(Model, PO4Output, PO4Output);
 	
 	auto Log10CaAlSelectCoeff      = RegisterEquation(Model, "(log10) Ca/Al exchange selectivity coefficient", Dimensionless);
 	auto Log10MgAlSelectCoeff      = RegisterEquation(Model, "(log10) Mg/Al exchange selectivity coefficient", Dimensionless);
@@ -273,6 +283,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	EQUATION(Model, InitialConcAllF,
 		return (RESULT(FExternalFlux) + RESULT(FInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+	)
+	
+	EQUATION(Model, InitialConcPO4,
+		return (RESULT(PO4ExternalFlux) + RESULT(PO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
 	)
 	
 	EQUATION(Model, InitialCa,
@@ -357,6 +371,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		Input.conc_Cl  = RESULT(ConcCl);
 		Input.conc_NO3 = RESULT(ConcNO3);
 		Input.all_F    = RESULT(ConcAllF);
+		Input.conc_PO4 = RESULT(ConcPO4) / 3.0;   //TODO: Check if 3.0 is correct
 		
 		Input.exchangeable_Ca = PARAMETER(InitialECa)*0.01;
 		Input.exchangeable_Mg = PARAMETER(InitialEMg)*0.01;
@@ -410,6 +425,14 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	EQUATION(Model, InitialF,
 		double initconc        = RESULT(ConcF);
+		double porosity        = PARAMETER(Porosity);
+		double WaterVolume     = PARAMETER(Depth);
+		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
+		return initconc * WaterVolume;
+	)
+	
+	EQUATION(Model, InitialPO4,
+		double initconc        = RESULT(ConcPO4);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -473,6 +496,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	EQUATION(Model, FOutput,
 		return RESULT(Discharge)*RESULT(ConcAllF) / PARAMETER(RelativeArea);
+	)
+	
+	EQUATION(Model, PO4Output,
+		return RESULT(Discharge)*RESULT(ConcPO4) / PARAMETER(RelativeArea);
 	)
 	
 	EQUATION(Model, CaInput,
@@ -565,6 +592,16 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		return input / PARAMETER(RelativeArea);
 	)
 	
+	EQUATION(Model, PO4Input,
+		double input = 0.0;
+		index_t ThisCompartment = CURRENT_INDEX(Compartment);
+		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
+		{
+			input += RESULT(PO4Output, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
+		}
+		return input / PARAMETER(RelativeArea);
+	)
+	
 	EQUATION(Model, TotalCa,
 		return RESULT(CaExternalFlux) - RESULT(CaOutput) + RESULT(CaInput);
 	)
@@ -601,6 +638,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		return RESULT(FExternalFlux) - RESULT(FOutput) + RESULT(FInput);
 	)
 	
+	EQUATION(Model, TotalPO4,
+		return RESULT(PO4ExternalFlux) - RESULT(PO4Output) + RESULT(PO4Input);
+	)
+	
 	EQUATION(Model, ConcH,
 		magic_input Input;
 		magic_param Param;
@@ -615,6 +656,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		Input.total_Cl    = RESULT(TotalCl);
 		Input.total_NO3   = RESULT(TotalNO3);
 		Input.total_F     = RESULT(TotalF);
+		Input.total_PO4   = RESULT(TotalPO4);
 		
 		Param.Depth       = PARAMETER(Depth);
 		Param.Temperature = RESULT(Temperature);
@@ -659,6 +701,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		SET_RESULT(ConcCl,            Result.conc_Cl);
 		SET_RESULT(ConcNO3,           Result.conc_NO3);
 		SET_RESULT(ConcF,             Result.conc_F);
+		SET_RESULT(ConcPO4,           3.0*Result.conc_PO4);    //TODO: Check if the 3.0 is correct!
 		
 		SET_RESULT(ConcAllSO4,        2.0*Result.all_SO4);
 		SET_RESULT(ConcAllF,          Result.all_F);
@@ -750,9 +793,15 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		// Dummy, this is set in the ConcH equation
 		return RESULT(ConcF, CURRENT_INDEX(Compartment));
 	)
+	
 	EQUATION(Model, ConcAllF,
 		// Dummy, this is set in the ConcH equation
 		return RESULT(ConcAllF, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, ConcPO4,
+		// Dummy, this is set in the ConcH equation
+		return RESULT(ConcPO4, CURRENT_INDEX(Compartment));
 	)
 	
 	EQUATION(Model, PH,

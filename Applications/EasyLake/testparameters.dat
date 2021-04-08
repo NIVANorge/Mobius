@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-02-24 12:16:35
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-03-31 13:30:12
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -14,49 +14,63 @@ parameters:
 2018-09-30
 
 
-###################### Easy-Lake physical V_dev ######################
+{ module "Easy-Lake physical" version "_dev"
 
-# Lake physical (no index sets) #
+	# Lake physical (no index sets) #
 
-"Initial lake surface area" :     #(m2) [0, 371000000000]
-107183
+	"Initial lake surface area" :     #(m2) [0, 371000000000]
+	107183
 
-"Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
-0.4
+	"Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
+	0.4
 
-"Initial water level" :     #(m) [0, 1642]
-10
+	"Initial water level" :     #(m) [0, 1642]
+	10
 
-"Water level at which outflow is 0" :     #(m) [0, 1642]
-10
+	"Water level at which outflow is 0" :     #(m) [0, 1642]
+	10
 
-"Outflow rating curve shape" :     #(dimensionless) [0, 1] 0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.
-0.8
+	"Outflow rating curve shape" :     #(dimensionless) [0, 1] 0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.
+	0.8
 
-"Outflow rating curve magnitude" :     #(dimensionless) [0.01, 100] Outflow is proportional to 10^(magnitude)
--0.4
+	"Outflow rating curve magnitude" :     #(dimensionless) [0.01, 100] Outflow is proportional to 10^(magnitude)
+	-0.4
 
-"Latitude" :     #(°) [-90, 90]
-60
+	"Latitude" :     #(°) [-90, 90]
+	60
 
-"Initial epilimnion temperature" :     #(°C) [0, 50]
-15
+	"Initial epilimnion temperature" :     #(°C) [0, 50]
+	15
 
-"Initial bottom temperature" :     #(°C) [0, 50]
-4
+	"Initial bottom temperature" :     #(°C) [0, 50]
+	4
 
-"Initial epilimnion thickness" :     #(m) [0, 20]
-2
+	"Initial epilimnion thickness" :     #(m) [0, 20]
+	2
 
-"Freezing thermal conductivity" :     #(dimensionless) [0, 20000]
-200
+	"Freezing thermal conductivity" :     #(dimensionless) [0, 20000]
+	200
 
-"Frazil threshold" :     #(m) [0, 0.1] Thickness of ice before it changes surface properties of the lake
-0
+	"Ice formation temperature" :     #(°C) [-2, 2] Calibration parameter to allow for differences in surface temperature and mean epilimnion temperature
+	0
+
+	"Frazil threshold" :     #(m) [0, 0.1] Thickness of ice before it changes surface properties of the lake
+	0.01
+
+	"Snow contributes to ice thickness" :
+	true
+
+	"Ice has its own albedo" :
+	false
+
+	"Ice albedo" :     #(dimensionless) [0.001, 1]
+	0.4
 
 
-# Temperature calibration depths ("Temperature calibration depth") #
+	# Temperature calibration depths ("Temperature calibration depth") #
 
-"Calibration depth" :     #(m) [0, 1642]
-0.5 1.5 2 3 4 6 8
+	"Calibration depth" :     #(m) [0, 1642]
+	0.5 1.5 2 3 4 6 8
 
+
+} # end of module "Easy-Lake physical"

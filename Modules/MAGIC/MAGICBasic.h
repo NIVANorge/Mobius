@@ -49,6 +49,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Cl wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
 	auto NO3WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NO3 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
 	auto FWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "F wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto PO4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "PO4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
 	
 	
 	auto DischargePar          = RegisterParameterDouble(Model, ClimateParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
@@ -67,6 +68,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClDryDepositionFactor  = RegisterParameterDouble(Model, DepositionCompartment, "Cl dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto NO3DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "NO3 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 	auto FDryDepositionFactor   = RegisterParameterDouble(Model, DepositionCompartment, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
+	auto PO4DryDepositionFactor = RegisterParameterDouble(Model, DepositionCompartment, "PO4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition with to get total deposition");
 
 	auto PrecipIn                  = RegisterInput(Model, "Precipitation", MPerTs, true);
 	auto PrecipSeasonal            = RegisterInput(Model, "Precipitation seasonal distribution", Percent);
@@ -85,6 +87,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClWetDepositionScale      = RegisterInput(Model, "Cl wet deposition scaling factor", Dimensionless);
 	auto NO3WetDepositionScale     = RegisterInput(Model, "NO3 wet deposition scaling factor", Dimensionless);
 	auto FWetDepositionScale       = RegisterInput(Model, "F wet deposition scaling factor", Dimensionless);
+	auto PO4WetDepositionScale     = RegisterInput(Model, "PO4 wet deposition scaling factor", Dimensionless);
 
 	// NOTE: The 'true' means that we clear these to NaN!
 	auto CaWetDepositionIn         = RegisterInput(Model, "Ca wet deposition", MEqPerM3, true);
@@ -96,6 +99,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClWetDepositionIn         = RegisterInput(Model, "Cl wet deposition", MEqPerM3, true);
 	auto NO3WetDepositionIn        = RegisterInput(Model, "NO3 wet deposition", MEqPerM3, true);
 	auto FWetDepositionIn          = RegisterInput(Model, "F wet deposition", MEqPerM3, true);
+	auto PO4WetDepositionIn        = RegisterInput(Model, "PO4 wet deposition", MEqPerM3, true);
 	
 
 
@@ -108,6 +112,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Cl weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto NO3Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto FWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
+	auto PO4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	
 	auto CaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	auto MgSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
@@ -118,6 +123,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Cl sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	auto NO3Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NO3 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	auto FSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "F sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto PO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "PO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
 	
 	auto CaSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto MgSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
@@ -128,6 +134,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Cl sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto NO3Sources             = RegisterParameterDouble(Model, SourcesSinksCompartment, "NO3 sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto FSources               = RegisterParameterDouble(Model, SourcesSinksCompartment, "F sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
+	auto PO4Sources             = RegisterParameterDouble(Model, SourcesSinksCompartment, "PO4 sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	
 	
 	auto FractionOfYear     = RegisterEquation(Model, "Fraction of year", YearPerTs);
@@ -158,6 +165,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClExternalFlux     = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
 	auto NO3ExternalFlux    = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);//, CompartmentSolver);
 	auto FExternalFlux      = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
+	auto PO4ExternalFlux    = RegisterEquation(Model, "Sum of PO4 fluxes not related to discharge", MEqPerM2PerTs);
 	
 	
 	auto CaDeposition       = RegisterEquation(Model, "Ca deposition", MEqPerM2PerTs);
@@ -169,6 +177,7 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClDeposition       = RegisterEquation(Model, "Cl deposition", MEqPerM2PerTs);
 	auto NO3Deposition      = RegisterEquation(Model, "NO3 deposition", MEqPerM2PerTs);
 	auto FDeposition        = RegisterEquation(Model, "F deposition", MEqPerM2PerTs);
+	auto PO4Deposition      = RegisterEquation(Model, "PO4 deposition", MEqPerM2PerTs);
 
 	
 	
@@ -305,6 +314,16 @@ This is a basic module that provides flow, temperature, and other drivers for th
 		return RESULT(Precipitation)*conc*PARAMETER(FDryDepositionFactor);
 	)
 	
+	EQUATION(Model, PO4Deposition,
+		double scale = 1.0;
+		if(INPUT_WAS_PROVIDED(PO4WetDepositionScale)) scale = INPUT(PO4WetDepositionScale);
+		if(!PARAMETER(IsTopLayer)) scale = 0.0;
+		double conc = PARAMETER(PO4WetDeposition)*scale;
+		double in = INPUT(PO4WetDepositionIn);
+		if(std::isfinite(in)) conc = in;
+		return RESULT(Precipitation)*conc*PARAMETER(PO4DryDepositionFactor);
+	)
+	
 	
 	EQUATION(Model, CaExternalFlux,
 		double in = RESULT(CaDeposition) + (PARAMETER(CaWeathering) + PARAMETER(CaSources))*RESULT(FractionOfYear);
@@ -357,6 +376,14 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	EQUATION(Model, FExternalFlux,
 		double in = RESULT(FDeposition) + (PARAMETER(FWeathering) + PARAMETER(FSources))*RESULT(FractionOfYear);
 		double sink = PARAMETER(FSinks);
+		double sink2 = sink*RESULT(FractionOfYear);
+		if(sink < 0.0) sink2 = -sink*0.01*in;
+		return in - sink2;
+	)
+
+	EQUATION(Model, PO4ExternalFlux,
+		double in = RESULT(PO4Deposition) + (PARAMETER(PO4Weathering) + PARAMETER(PO4Sources))*RESULT(FractionOfYear);
+		double sink = PARAMETER(PO4Sinks);
 		double sink2 = sink*RESULT(FractionOfYear);
 		if(sink < 0.0) sink2 = -sink*0.01*in;
 		return in - sink2;

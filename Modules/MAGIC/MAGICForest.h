@@ -44,7 +44,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto ClWeathering            = RegisterParameterDouble(Model, Weathering, "Cl weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
 	auto NO3Weathering           = RegisterParameterDouble(Model, Weathering, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
 	auto FWeathering             = RegisterParameterDouble(Model, Weathering, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	
+	auto PO4Weathering           = RegisterParameterDouble(Model, Weathering, "PO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
 	
 	
 
@@ -52,7 +52,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto AirTemperature          = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	auto Precipitation           = RegisterInput(Model, "Precipitation", MmPerTs);
 	
-	//NOTE: These are auto-cleared to NaN for missing values
+	//NOTE: These three are auto-cleared to NaN for missing values
 	auto RunoffIn                = RegisterInput(Model, "Runoff", MmPerTs, true);
 	auto PartialPressureCO2In    = RegisterInput(Model, "CO2 partial pressure", Percent, true);           
 	auto OAConcentrationIn       = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);
@@ -66,6 +66,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto ClPrecipConc            = RegisterInput(Model, "Cl conc in precip", MEqPerM3);
 	auto NO3PrecipConc           = RegisterInput(Model, "NO3 conc in precip", MEqPerM3);
 	auto FPrecipConc             = RegisterInput(Model, "F conc in precip", MEqPerM3);
+	auto PO4PrecipConc           = RegisterInput(Model, "PO4 conc in precip", MEqPerM3);
 	
 	
 	
@@ -83,6 +84,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto SO4Deposition           = RegisterEquation(Model, "SO4 deposition", MEqPerM2PerTs);
 	auto CaDeposition            = RegisterEquation(Model, "Ca deposition", MEqPerM2PerTs);
 	auto FDeposition             = RegisterEquation(Model, "F deposition", MEqPerM2PerTs);
+	auto PO4Deposition           = RegisterEquation(Model, "PO4 deposition", MEqPerM2PerTs);
 	
 	
 	// These are required by the MAGIC Core:
@@ -100,16 +102,20 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto ClExternalFlux          = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
 	auto NO3ExternalFlux         = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
 	auto FExternalFlux           = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
+	auto PO4ExternalFlux         = RegisterEquation(Model, "Sum of PO4 fluxes not related to discharge", MEqPerM2PerTs);
 	
 	
-	//The following four are re-registered and defined in the Carbon Nitrogen module
+	//The following four are re-registered and defined in the CNP module
 	auto NO3Inputs               = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
 	auto NH4Inputs               = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
+	auto PO4Inputs               = RegisterEquation(Model, "PO4 inputs", MMolPerM2PerTs);
 	auto NO3ProcessesLoss        = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
 	auto NH4ProcessesLoss        = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
+	auto PO4ProcessesLoss        = RegisterEquation(Model, "PO4 processes loss", MMolPerM2PerTs);
 	
 	auto NO3BasicInputs          = RegisterEquation(Model, "NO3 basic inputs", MMolPerM2PerTs);
 	auto NH4BasicInputs          = RegisterEquation(Model, "NH4 basic inputs", MMolPerM2PerTs);
+	auto PO4BasicInputs          = RegisterEquation(Model, "PO4 basic inputs", MMolPerM2PerTs);
 	
 	
 	
@@ -188,6 +194,9 @@ Forest growth driver module developed as part of the CatchCAN project.
 		return INPUT(FPrecipConc) * INPUT(Precipitation) * 1e-3;
 	)
 	
+	EQUATION(Model, PO4Deposition,
+		return INPUT(PO4PrecipConc) * INPUT(Precipitation) * 1e-3;
+	)
 	
 	
 	
@@ -197,6 +206,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, NH4BasicInputs,
 		return RESULT(NH4Deposition) + PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
+	)
+	
+	EQUATION(Model, PO4BasicInputs,
+		return RESULT(PO4Deposition) + PARAMETER(PO4Weathering)*RESULT(FractionOfYear);
 	)
 	
 	
@@ -235,6 +248,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, FExternalFlux,
 		return RESULT(FDeposition) + RESULT(FractionOfYear)*PARAMETER(FWeathering);
+	)
+	
+	EQUATION(Model, PO4ExternalFlux,
+		return RESULT(PO4Inputs) - RESULT(PO4ProcessesLoss);
 	)
 	
 	

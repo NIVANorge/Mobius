@@ -112,11 +112,13 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	auto OrganicPUptake           = RegisterEquation(Model, "Organic P uptake", MMolPerM2PerTs);
 	
 	
-	//NOTE: The following 4 are required as an "interface" to the rest of the MAGIC model
+	//NOTE: The following 6 are required as an "interface" to the rest of the MAGICForest model
 	auto NO3Inputs                = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
 	auto NH4Inputs                = RegisterEquation(Model, "NH4 inputs", MMolPerM2PerTs);
+	auto PO4Inputs                = RegisterEquation(Model, "PO4 inputs", MMolPerM2PerTs);
 	auto NO3ProcessesLoss         = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
 	auto NH4ProcessesLoss         = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);	
+	auto PO4ProcessesLoss         = RegisterEquation(Model, "PO4 processes loss", MMolPerM2PerTs);
 	
 	
 	auto OrganicCLitterIn          = RegisterInput(Model, "Organic C litter", MMolPerM2PerYear);
@@ -129,6 +131,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	auto Temperature               = GetEquationHandle(Model, "Temperature");
 	auto NO3BasicInputs            = GetEquationHandle(Model, "NO3 basic inputs");
 	auto NH4BasicInputs            = GetEquationHandle(Model, "NH4 basic inputs");
+	auto PO4BasicInputs            = GetEquationHandle(Model, "PO4 basic inputs");
 	
 	
 	
@@ -316,6 +319,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 		double potential = 
 			  RESULT(DesiredNO3Uptake) - RESULT(NO3Uptake)
 			+ RESULT(DesiredNH4Uptake) - RESULT(NH4Uptake);
+		potential = std::max(0.0, potential);
 		
 		if(!PARAMETER(PlantsUseOrganic))
 			potential = 0.0;
@@ -378,15 +382,25 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, PO4Uptake,
-		return 0.0; //TODO!
+		double in             = RESULT(PO4Inputs);
+		double desired_uptake = RESULT(DesiredPUptake);
+		double desired_immob  = std::min(in, RESULT(DesiredPImmobilisation));
+		if(!PARAMETER(PlantsUseInorganicFirst))
+			in -= desired_immob;
+		return std::min(in, desired_uptake);
 	)
 	
 	EQUATION(Model, PO4Immobilisation,
-		return 0.0; //TODO!
+		double in             = RESULT(PO4Inputs);
+		double desired_immob  = RESULT(DesiredPImmobilisation);
+		double desired_uptake = std::min(in, RESULT(DesiredPUptake));
+		if(PARAMETER(PlantsUseInorganicFirst))
+			in -= desired_uptake;
+		return std::min(in, desired_immob);
 	)
 	
 	EQUATION(Model, OrganicPUptake,
-		double potential = RESULT(DesiredPUptake) - RESULT(PO4Uptake);
+		double potential = std::max(0.0, RESULT(DesiredPUptake) - RESULT(PO4Uptake));
 		
 		if(!PARAMETER(PlantsUseOrganic))
 			potential = 0.0;
@@ -405,5 +419,14 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 		if(!PARAMETER(IsSoil)) dPdt = 0.0; //TODO: make conditional exec instead?
 			
 		return LAST_RESULT(OrganicP) + dPdt;
+	)
+	
+	
+	EQUATION(Model, PO4Inputs,
+		return RESULT(PO4BasicInputs) + RESULT(OrganicPMineralized);
+	)
+	
+	EQUATION(Model, PO4ProcessesLoss,
+		return RESULT(PO4Immobilisation) + RESULT(PO4Uptake);
 	)
 }

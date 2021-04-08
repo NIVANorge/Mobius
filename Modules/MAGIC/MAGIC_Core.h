@@ -20,6 +20,7 @@ struct magic_input
 	double total_Cl;   // Total mass of Chloride  (meq/m2)
 	double total_NO3;  // Total mass of Nitrate   (meq/m2)
 	double total_F;    // Total mass of Fluoride  (meq/m2)
+	double total_PO4;  // Total mass of Phosphate (meq/m2)
 };
 
 struct magic_output
@@ -33,6 +34,7 @@ struct magic_output
 	double conc_Cl;            // Nitrate ion concentration        (mmol/m3)
 	double conc_NO3;           // Nitrate ion concentration        (mmol/m3)
 	double conc_F;             // Fluoride ion concentration       (mmol/m3)
+	double conc_PO4;           // Phosphate ion concentration      (mmol/m3)
 	
 	double all_SO4;            // Total Sulfate in solution (ionic + Al complexes)  (mmol/m3)
 	double all_F;              // Total Fluoride in solution (ionic + Al complexes) (mmol/m3)
@@ -556,6 +558,9 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 	// Calculate free Chloride ion concen (mmol/m3) - from total Chloride amount (meq/m2) and pore volume (m)  (convert meq to mmol)
 	Result.conc_Cl  = Input.total_Cl  / WaterVolume;
 	
+	// Calculate free Phosphate ion concen (mmol/m3) - from total Phosphate amount (meq/m2) and pore volume (m) (convert meq to mmol)
+	Result.conc_PO4 = Input.total_PO4 / (3.0 * WaterVolume);   //TODO: Check if the 3.0 is correct
+	
 	// Calculate aqueous Flouride concen (free + Al-complexed) (mmol/m3) - from total Fluoride amount (meq/m2) and pore volume (m)  (convert meq to mmol)
 	Result.all_F    = Input.total_F   / WaterVolume;
 	
@@ -825,6 +830,7 @@ struct magic_init_input
 	double conc_Cl;
 	double conc_NO3;
 	double all_F;
+	double conc_PO4;
 	
 	double exchangeable_Ca;    // Exchangeable Calcium on soil as % of cation exchange capacity (meq - ECa/meq - CEC)    (%)
 	double exchangeable_Mg;    // Exchangeable Magnesium on soil as % of cation exchange capacity (meq - EMg/meq - CEC)  (%)

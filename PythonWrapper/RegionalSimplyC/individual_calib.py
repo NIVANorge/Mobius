@@ -90,15 +90,15 @@ def main() :
 		
 		if reduced_only and row['reduced_set']=='n' : continue
 		
-		#if catch_name != 'Langtjern03' : continue
+		if catch_name != 'Langtjern03' : continue
 		
 		print('********** Processing location %s ***********' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name)
+		parfile = 'MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name)
+		#parfile = 'MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name)
 		#parfile = 'MobiusFiles/template_params_1lu_%d_%s.dat' % (catch_no, catch_name)
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
