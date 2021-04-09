@@ -206,6 +206,6 @@ For general questions and feedback, please contact (magnus.norling@niva.no)
 
 Mobius is (C) NIVA, but you are free to use it or modify it as long as you follow the license (LICENSE.md). See also NOTICES.md.
 
-A paper is currently in review. We would be grateful if this paper is cited in publications involving the use of Mobius or a model built in Mobius.
+We would be grateful if the following paper is cited in publications involving the use of Mobius or a model built in Mobius.
 
-Norling, M. D., Jackson-Blake, L. A., Calidonio, J.-L. G., and Sample, J. E.: Rapid development of fast and flexible environmental models: The Mobius framework v1.0, Geosci. Model Dev. Discuss., https://doi.org/10.5194/gmd-2020-26, in review, 2020.
+Norling, M. D., Jackson-Blake, L. A., Calidonio, J.-L. G., and Sample, J. E.: Rapid development of fast and flexible environmental models: The Mobius framework v1.0, Geosci. Model Dev. Discuss., https://doi.org/10.5194/gmd-14-1885-2021, 2021.
