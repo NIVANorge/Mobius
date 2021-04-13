@@ -9,6 +9,7 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/MAGIC/MAGIC_Core_Wrapper.h"
+#include "../../Modules/MAGIC/MagicForestDecompUptake.h"
 #include "../../Modules/MAGIC/MAGICForest.h"
 //#include "../../Modules/MAGIC/WASMOD.h"
 #include "../../Modules/MAGIC/ABCD.h"
@@ -25,6 +26,7 @@ DllBuildModel()
 	AddABCDModel(Model);
 	AddMagicCoreModel(Model);
 	AddMagicForestModule(Model);
+	AddMAGICForestDecompUptakeModel(Model);
 	AddSimpleMagicForestCNPModel(Model);
 	
 

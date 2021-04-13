@@ -117,11 +117,17 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto NH4BasicInputs          = RegisterEquation(Model, "NH4 basic inputs", MMolPerM2PerTs);
 	auto PO4BasicInputs          = RegisterEquation(Model, "PO4 basic inputs", MMolPerM2PerTs);
 	
+	// The following are re-registered and defined in the CNP module:
+	auto TotalTreeDecompCaSource = RegisterEquation(Model, "Total Ca source from tree decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompMgSource = RegisterEquation(Model, "Total Mg source from tree decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompNaSource = RegisterEquation(Model, "Total Na source from tree decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompKSource  = RegisterEquation(Model, "Total K source from tree decomposition", MEqPerM2PerTs);
 	
 	
 	// From WASMOD:
 	auto Runoff                  = GetEquationHandle(Model, "Runoff");
 	
+
 	
 	EQUATION(Model, FractionOfYear,
 		return (double)CURRENT_TIME().StepLengthInSeconds / (86400.0*(double)CURRENT_TIME().DaysThisYear);
@@ -215,19 +221,19 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	
 	EQUATION(Model, CaExternalFlux,
-		return RESULT(CaDeposition) + RESULT(FractionOfYear)*PARAMETER(CaWeathering);
+		return RESULT(CaDeposition) + RESULT(TotalTreeDecompCaSource) + RESULT(FractionOfYear)*PARAMETER(CaWeathering);
 	)
 	
 	EQUATION(Model, MgExternalFlux,
-		return RESULT(MgDeposition) + RESULT(FractionOfYear)*PARAMETER(MgWeathering);
+		return RESULT(MgDeposition) + RESULT(TotalTreeDecompMgSource) + RESULT(FractionOfYear)*PARAMETER(MgWeathering);
 	)
 	
 	EQUATION(Model, NaExternalFlux,
-		return RESULT(NaDeposition) + RESULT(FractionOfYear)*PARAMETER(NaWeathering);
+		return RESULT(NaDeposition) + RESULT(TotalTreeDecompNaSource) + RESULT(FractionOfYear)*PARAMETER(NaWeathering);
 	)
 	
 	EQUATION(Model, KExternalFlux,
-		return RESULT(KDeposition) + RESULT(FractionOfYear)*PARAMETER(KWeathering);
+		return RESULT(KDeposition) + RESULT(TotalTreeDecompKSource) + RESULT(FractionOfYear)*PARAMETER(KWeathering);
 	)
 	
 	EQUATION(Model, NH4ExternalFlux,

@@ -4,6 +4,7 @@ index_sets:
 
 "Reaches" : {"Inlet" {"Lake" "Inlet"}}
 "Landscape units" : {"Forest"}
+"Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
 
 parameters:
 
@@ -26,9 +27,6 @@ false true
 "Initial lake surface area" :     #(m2) [0, 371000000000]
 0 107183
 
-"Lake length" :     #(m) [0, 1030000] This parameter should be adjusted when calibrating lake outflow
-0 600
-
 "Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
 0 0.4
 
@@ -44,12 +42,6 @@ false true
 "Initial water level" :     #(m) [0, 1642]
 0 15
 
-"Reference air density" :     #(kg/m3) [1000, 1100]
-0 1025
-
-"Emissivity" :     #(dimensionless) [0, 1]
-0 0.97
-
 "Latitude" :     #(°) [-90, 90]
 0 60
 
@@ -62,6 +54,6 @@ false true
 "Initial epilimnion thickness" :     #(m) [0, 20]
 0 5
 
-"Shortwave absorbance" :     #(1/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-0 1.5
 
+"Calibration depth" :     #(m) [0, 1642]
+0.5 1.5 2 3 4 6 8

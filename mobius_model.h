@@ -674,7 +674,6 @@ CallEquation(const mobius_model *Model, model_run_state *RunState, equation_h Eq
 }
 
 
-
 #define GET_ENTITY_NAME(Type, NType) \
 inline const char * GetName(const mobius_model *Model, Type H) \
 { \
@@ -694,6 +693,14 @@ GET_ENTITY_NAME(module_h, Modules)
 #undef GET_ENTITY_NAME
 
 
+inline void
+PrintRegistrationErrorHeader(const mobius_model *Model)
+{
+	if(!Model->Finalized && IsValid(Model->CurrentModule))
+		ErrorPrint("While building module ", GetName(Model, Model->CurrentModule), "\" :\n");
+}
+
+
 #define GET_ENTITY_HANDLE(Type, Registry, Typename) \
 inline Type Get##Typename##Handle(const mobius_model *Model, const token_string &Name) \
 { \
@@ -703,10 +710,7 @@ inline Type Get##Typename##Handle(const mobius_model *Model, const token_string 
 		Handle = Find->second; \
 	else \
 	{ \
-		if(!Model->Finalized && IsValid(Model->CurrentModule)) \
-		{ \
-			ErrorPrint("While building module \"", GetName(Model, Model->CurrentModule), ":\n"); \
-		} \
+		PrintRegistrationErrorHeader(Model); \
 		FatalError("ERROR: Tried to look up the handle of the ", #Typename, " \"", Name, "\", but it was not registered with the model.\n"); \
 	} \
 	return Handle; \
@@ -808,13 +812,6 @@ RegisterIndexSetBranched(mobius_model *Model, const char *Name)
 {
 	REGISTRATION_BLOCK(Model)
 	return RegisterIndexSet(Model, Name, IndexSetType_Branched);
-}
-
-inline void
-PrintRegistrationErrorHeader(mobius_model *Model)
-{
-	if(IsValid(Model->CurrentModule))
-		ErrorPrint("While building module ", GetName(Model, Model->CurrentModule), ":\n");
 }
 
 inline index_t

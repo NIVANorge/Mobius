@@ -35,17 +35,19 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto ShareOfYoung         = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in young trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
-	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MEqPerKg);
-	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MEqPerKg);
-	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MEqPerKg);
-	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg);
-	auto TreeMgConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Mg concentration", MEqPerKg);
-	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg);
-	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg);
+	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreeMgConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Mg concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg, 0.0, 0.0, 100.0);
 	
 	
 	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree mass", TPerHa);
 	auto DeadTreeDecomp       = RegisterEquation(Model, "Dead tree decomposition", TPerHaPerTs);
+	
+	SetInitialValue(Model, DeadTreeMass, 0.0); //So that it does not try to compute it using the equation. Mabe replace with a parameter later.
 	
 	auto TreeDecompCSource    = RegisterEquation(Model, "C source from tree decomposition", MMolPerM2PerTs);
 	auto TreeDecompNSource    = RegisterEquation(Model, "N source from tree decomposition", MMolPerM2PerTs);

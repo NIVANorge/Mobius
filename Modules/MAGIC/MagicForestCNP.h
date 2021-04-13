@@ -133,6 +133,11 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	auto NH4BasicInputs            = GetEquationHandle(Model, "NH4 basic inputs");
 	auto PO4BasicInputs            = GetEquationHandle(Model, "PO4 basic inputs");
 	
+	// From the forest decomp-uptake module
+	auto TotalTreeDecompCSource = GetEquationHandle(Model, "Total C source from tree decomposition");
+	auto TotalTreeDecompNSource = GetEquationHandle(Model, "Total N source from tree decomposition");
+	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from tree decomposition");
+	
 	
 	
 	EQUATION(Model, InitialOrganicCScaled,
@@ -167,10 +172,12 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 		double steady = RESULT(OrganicCDecompositionEq) - RESULT(OrganicCInBiomass);
 		double uptake = (RESULT(DesiredNO3Uptake) + RESULT(DesiredNH4Uptake))*PARAMETER(LitterCNRatio);
 		
+		double fromtrees = RESULT(TotalTreeDecompCSource);
+		
 		double result = input;
 		if(type == 1) result = steady;
 		if(type == 2) result = uptake;
-		return result;
+		return result + fromtrees;
 	)
 	
 	EQUATION(Model, OrganicCDecompositionEq,
@@ -201,7 +208,8 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicNLitter,
-		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio);
+		double fromtrees = RESULT(TotalTreeDecompNSource);
+		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio)  + fromtrees;
 	)
 	
 	EQUATION(Model, OrganicNDecomposition,
@@ -351,7 +359,8 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicPLitter,
-		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio);
+		double fromtrees = RESULT(TotalTreeDecompPSource);
+		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio) + fromtrees;
 	)
 	
 	EQUATION(Model, OrganicPDecomposition,

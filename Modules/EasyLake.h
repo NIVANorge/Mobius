@@ -296,14 +296,26 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
 	SetInitialValue(Model, BottomTemperature, InitialBottomTemperature);
 	
+	auto SurfaceHeatFlux     = RegisterEquation(Model, "Surface heat flux", WPerM2, LakeSolver);
+	
 	auto IceAttenuationCoefficient = RegisterEquation(Model, "Ice attenuation coefficient", Dimensionless, LakeSolver);
 	auto IsIce               = RegisterEquation(Model, "There is ice", Dimensionless, LakeSolver);
 	auto IceEnergy           = RegisterEquation(Model, "Ice energy", WPerM2, LakeSolver);
 	auto IceThickness        = RegisterEquationODE(Model, "Ice thickness", M, LakeSolver);
 	
 	auto TemperatureAtDepth  = RegisterEquation(Model, "Temperature at depth", DegreesCelsius);
-	
+
+#ifdef EASYLAKE_SIMPLYQ
+	auto DailyMeanReachFlow    = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
+#endif
+#ifdef EASYLAKE_PERSIST
+	auto DailyMeanReachFlow    = GetEquationHandle(Model, "Reach flow (daily mean)");
+#endif
+
 #ifndef EASYLAKE_STANDALONE
+	auto InflowTemperature   = RegisterEquation(Model, "Inflow temperature", DegreesCelsius);
+	auto ReachTemperature    = RegisterEquation(Model, "Reach temperature", DegreesCelsius);   //Ideally this should not go in this module.
+
 	auto ThisIsALake = RegisterConditionalExecution(Model, "This is a lake", IsLake, true);
 	auto ThisIsARiver = RegisterConditionalExecution(Model, "This is a river", IsLake, false);
 	
@@ -316,11 +328,9 @@ The implementation is informed by the implementation in [^https://github.com/got
 	SetConditional(Model, EpilimnionThickness, ThisIsALake);
 	SetConditional(Model, BottomTemperature, ThisIsALake);
 	SetConditional(Model, TemperatureAtDepth, ThisIsALake);
-#endif
 	
+	SetConditional(Model, ReachTemperature, ThisIsARiver);
 	
-#ifdef EASYLAKE_SIMPLYQ
-	auto DailyMeanReachFlow    = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
 	
 	EQUATION_OVERRIDE(Model, FlowInputFromUpstream,
 		double upstreamflow = 0.0;
@@ -335,8 +345,41 @@ The implementation is informed by the implementation in [^https://github.com/got
 		return upstreamflow;
 	)
 	
+	EQUATION(Model, ReachTemperature,
+		//TODO: Ideally this should depend on inflow temperature too, in case of rivers running out of large lakes and into smaller ones.
+	
+		double lagfactor = 3.0; //TODO: parameterize!
+		double mintemp   = 4.0;
+		
+		return ((lagfactor - 1.0) / lagfactor) * LAST_RESULT(ReachTemperature)
+		+ (1.0 / lagfactor) * std::max(mintemp, INPUT(AirTemperature));
+		
+	)
+	
+	EQUATION(Model, InflowTemperature,
+		double upstreamflow = 0.0;
+		double upstreamtempvol = 0.0;
+
+		for(index_t Input : BRANCH_INPUTS(Reach))
+		{
+			if(PARAMETER(IsLake, Input))
+			{
+				upstreamflow += RESULT(DailyMeanLakeOutflow, Input);
+				upstreamtempvol += upstreamflow * RESULT(EpilimnionTemperature, Input);
+			}	
+			else
+			{
+				upstreamflow += RESULT(DailyMeanReachFlow, Input);
+				upstreamtempvol += upstreamflow * RESULT(ReachTemperature, Input);
+			}
+		}
+		return SafeDivide(upstreamtempvol, upstreamflow);
+	)
+	
+#endif
 	
 	
+#ifdef EASYLAKE_SIMPLYQ
 	//NOTE: If we do the following, we exclude groundwater computations from lake subcatchments, and we have to have a separate computation of flow input from land. Instead we just run the river computations, and ignore their values. It could be confusing for users though, so we have to see if we have to add something for the UI for this.
 	/*
 	auto ThisIsARiver = RegisterConditionalExecution(Model, "This is a river", IsLake, false);
@@ -352,20 +395,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 #endif
 
 #ifdef EASYLAKE_PERSIST
-	auto DailyMeanReachFlow = GetEquationHandle(Model, "Reach flow (daily mean)");
 	
-	EQUATION_OVERRIDE(Model, FlowInputFromUpstream,
-		double upstreamflow = 0.0;
-
-		for(index_t Input : BRANCH_INPUTS(Reach))
-		{
-			if(PARAMETER(IsLake, Input))
-				upstreamflow += RESULT(DailyMeanLakeOutflow, Input);
-			else
-				upstreamflow += RESULT(DailyMeanReachFlow, Input);
-		}
-		return upstreamflow;
-	)
 	
 	auto ReachSolver = GetSolverHandle(Model, "Reach solver");
 	SetConditional(Model, ReachSolver, ThisIsARiver);
@@ -692,7 +722,13 @@ The implementation is informed by the implementation in [^https://github.com/got
 		return energy;
 	)
 	
-	//TODO: When IsIce, heat fluxes should be between ice and air and contribute to melting/freezing directly.
+	EQUATION(Model, SurfaceHeatFlux,
+		double surfaceheat = RESULT(LongwaveRadiation);
+		double latentsensible = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux);
+		if(!RESULT(IsIce)) surfaceheat += latentsensible;
+		return surfaceheat;
+	)
+
 	EQUATION(Model, IceThickness,
 		double iceDensity = 917.0;              // kg m-3
 		double latentHeatOfFreezing = 333500.0; // J kg-1
@@ -700,10 +736,16 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double airT = INPUT(AirTemperature);
 		double precip = INPUT(Precipitation);
 		
+		//double surfaceheatflux = 0.0;
+		double surfaceheatflux = RESULT(SurfaceHeatFlux);
+		if(!RESULT(IsIce)) surfaceheatflux = 0.0;
+		
 		//NOTE: The amount of shortwave radiation that is absorbed by the ice and contributes to melting
+		
+		//double shortwavein = 0.0;
 		double shortwavein     = RESULT(ShortwaveRadiation)*RESULT(IceAttenuationCoefficient);
 		
-		double dIcedT = 86400.0 * (iceenergy - shortwavein) / (iceDensity * latentHeatOfFreezing);
+		double dIcedT = 86400.0 * (iceenergy - shortwavein - surfaceheatflux) / (iceDensity * latentHeatOfFreezing);
 		
 		bool snowaccum = PARAMETER(SnowAccumulates);
 		if(RESULT(IsIce) && snowaccum && airT <= 0.0) dIcedT += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
@@ -727,29 +769,31 @@ The implementation is informed by the implementation in [^https://github.com/got
 		
 		double area   = RESULT(LakeSurfaceArea);
 		
-		double surfaceheatflux = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux) + RESULT(LongwaveRadiation);
+		double surfaceheatflux = RESULT(SurfaceHeatFlux);
+		if(RESULT(IsIce)) surfaceheatflux = 0.0;
+		
 		
 		// NOTE: The amount of shortwave that penetrates the ice and contributes to heating the water below. Currently this assumes that no shortwave reaches the lake bottom and is absorbed there instead.
-		double surfaceshortwave = RESULT(EpilimnionShortwave);
+		double surfaceshortwave = /*RESULT(ShortwaveRadiation);*/RESULT(EpilimnionShortwave);
 		
-		//if(RESULT(IsIce)) surfaceheatflux = 0.0;
 		
 		double heat = area * (surfaceheatflux + surfaceshortwave); // W/m2 * m2 = W = J/s
 		
 		double iceEnergy = RESULT(IceEnergy) * area;
 		
 		//Correction from flow temperature and rainfall
-		double inflowT = Max(0.0, INPUT(AirTemperature));     //TODO: could plug in WaterTemperature model for rivers
+#ifdef EASYLAKE_STANDALONE
+		double inflowT = Max(0.0, INPUT(AirTemperature));     //TODO: should take it as an input time series?
+#else
+		double inflowT = RESULT(InflowTemperature);
+#endif
 		double rainT   = Max(0.0, INPUT(AirTemperature));
 		double outflowT = RESULT(EpilimnionTemperature);
+		
 #ifdef EASYLAKE_STANDALONE
 		double inflowQ = 86400.0*INPUT(LakeInflow);
-#endif
-#ifdef EASYLAKE_SIMPLYQ
-		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand));
-#endif
-#ifdef EASYLAKE_PERSIST
-		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand)); //TODO: effluents? But what is their temperature?
+#else
+		double inflowQ = 86400.0*(RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand)); //TODO: effluents in PERSiST? But what is their temperature?
 #endif
 		double rainQ   = INPUT(Precipitation)*area*1e-3;
 		double outflowQ = -RESULT(LakeOutflow)*86400.0;

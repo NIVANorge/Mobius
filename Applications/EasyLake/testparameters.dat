@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-03-31 13:30:12
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-04-12 13:26:23
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -58,7 +58,7 @@ parameters:
 	0.01
 
 	"Snow contributes to ice thickness" :
-	true
+	false
 
 	"Ice has its own albedo" :
 	false
