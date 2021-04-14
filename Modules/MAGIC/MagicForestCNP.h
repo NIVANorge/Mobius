@@ -134,6 +134,8 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	auto PO4BasicInputs            = GetEquationHandle(Model, "PO4 basic inputs");
 	
 	// From the forest decomp-uptake module
+	auto TotalTreeNUptake       = GetEquationHandle(Model, "Total tree N uptake");
+	auto TotalTreePUptake       = GetEquationHandle(Model, "Total tree P uptake");
 	auto TotalTreeDecompCSource = GetEquationHandle(Model, "Total C source from tree decomposition");
 	auto TotalTreeDecompNSource = GetEquationHandle(Model, "Total N source from tree decomposition");
 	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from tree decomposition");
@@ -258,7 +260,9 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, DesiredNO3Uptake,
-		return RESULT(FractionOfYear) * (PARAMETER(UptakeR0) / (1.0 + PARAMETER(NH4UptakeScale))) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
+		//TODO: we should unify plant and tree uptake somehow?
+		double plantuptake = RESULT(FractionOfYear) * PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
+		return (plantuptake + RESULT(TotalTreeNUptake)) / (1.0 + PARAMETER(NH4UptakeScale));
 	)
 	
 	EQUATION(Model, DesiredNH4Uptake,
@@ -359,7 +363,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicPLitter,
-		double fromtrees = RESULT(TotalTreeDecompPSource);
+		double fromtrees = RESULT(TotalTreeDecompPSource);  //TODO: Coupling with tree module should only be for soil compartments.
 		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio) + fromtrees;
 	)
 	
@@ -387,7 +391,8 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, DesiredPUptake,
-		return RESULT(FractionOfYear) * PARAMETER(PUptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
+		double plantuptake = RESULT(FractionOfYear) * PARAMETER(PUptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
+		return plantuptake + RESULT(TotalTreePUptake);
 	)
 	
 	EQUATION(Model, PO4Uptake,

@@ -122,6 +122,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto TotalTreeDecompMgSource = RegisterEquation(Model, "Total Mg source from tree decomposition", MEqPerM2PerTs);
 	auto TotalTreeDecompNaSource = RegisterEquation(Model, "Total Na source from tree decomposition", MEqPerM2PerTs);
 	auto TotalTreeDecompKSource  = RegisterEquation(Model, "Total K source from tree decomposition", MEqPerM2PerTs);
+	auto TotalTreeCaUptake       = RegisterEquation(Model, "Total tree Ca uptake", MEqPerM2PerTs);
+	auto TotalTreeMgUptake       = RegisterEquation(Model, "Total tree Mg uptake", MEqPerM2PerTs);
+	auto TotalTreeNaUptake       = RegisterEquation(Model, "Total tree Na uptake", MEqPerM2PerTs);
+	auto TotalTreeKUptake        = RegisterEquation(Model, "Total tree K uptake", MEqPerM2PerTs);
 	
 	
 	// From WASMOD:
@@ -219,21 +223,26 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	
-	
+	//TODO: The uptake should maybe be limited so that the mass never goes in the negative, but it may not be a problem
+	//TODO: Coupling with the tree module should only be for soil (top?) compartments.
 	EQUATION(Model, CaExternalFlux,
-		return RESULT(CaDeposition) + RESULT(TotalTreeDecompCaSource) + RESULT(FractionOfYear)*PARAMETER(CaWeathering);
+		return RESULT(CaDeposition) + RESULT(FractionOfYear)*PARAMETER(CaWeathering)
+			+ RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
 	)
 	
 	EQUATION(Model, MgExternalFlux,
-		return RESULT(MgDeposition) + RESULT(TotalTreeDecompMgSource) + RESULT(FractionOfYear)*PARAMETER(MgWeathering);
+		return RESULT(MgDeposition) + RESULT(FractionOfYear)*PARAMETER(MgWeathering)
+			+ RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
 	)
 	
 	EQUATION(Model, NaExternalFlux,
-		return RESULT(NaDeposition) + RESULT(TotalTreeDecompNaSource) + RESULT(FractionOfYear)*PARAMETER(NaWeathering);
+		return RESULT(NaDeposition) + RESULT(FractionOfYear)*PARAMETER(NaWeathering)
+			+ RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeMgUptake);
 	)
 	
 	EQUATION(Model, KExternalFlux,
-		return RESULT(KDeposition) + RESULT(TotalTreeDecompKSource) + RESULT(FractionOfYear)*PARAMETER(KWeathering);
+		return RESULT(KDeposition) + RESULT(FractionOfYear)*PARAMETER(KWeathering)
+			+ RESULT(TotalTreeDecompKSource) - RESULT(TotalTreeKUptake);
 	)
 	
 	EQUATION(Model, NH4ExternalFlux,

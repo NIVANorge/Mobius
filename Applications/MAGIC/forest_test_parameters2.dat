@@ -1,0 +1,292 @@
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-14 14:42:19
+
+index_sets:
+"Compartment" : {"Soil1" "Stream"}
+"Tree compartment" : {"Needles" "Bark" "Branches+roots" "Wood"}
+
+parameters:
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+1850-01-01
+
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2020-12-01
+
+
+{ module "ABCD" version "0.1"
+
+	# ABCD hydrology (no index sets) #
+
+	"a (propensity for runoff below saturation)" :     #(dimensionless) [0.5, 1] A value of 1 means no runoff when soil moisture is below field capacity
+	0.572734086518272
+
+	"b (field capacity)" :     #(mm) [0, 500]
+	150
+
+	"c (baseflow index)" :     #(dimensionless) [0, 1]
+	0.166456755084096
+
+	"d (groundwater flow rate)" :     #(1/month) [0, 1]
+	0.60349985459218
+
+	"Snow melts above this temperature" :     #(°C) [-4, 4]
+	-3.06796126500025
+
+	"Precipitation falls as snow below this temperature" :     #(°C) [0.001, 10] This is an offset from the snow melt temperature. Must be nonzero
+	4.81066155467841
+
+	"Initial snow pack (water equivalents)" :     #(mm) [0, 5000]
+	0
+
+
+} # end of module "ABCD"
+
+{ module "MAGIC Core" version "0.1"
+
+	# General parameters (no index sets) #
+
+	"Convergence criterion" :     #(dimensionless) [0.01, 10] Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed
+	1
+
+	"Solver sub-step length" :     #(months) [0.001, 1] Length of intermediate step between each time the solution is rebalanced
+	0.3
+
+
+	# Compartment parameters ("Compartment") #
+
+	"This is a soil compartment" :
+	true false
+
+	"Relative area" :     #(dimensionless) [0, 1] The fraction of the catchment covered by this compartment
+	0.95 0.05
+
+	"Depth" :     #(m) [0, 100]
+	0.4 10
+
+	"Porosity" :     #(dimensionless) [0, 1]
+	0.5 0
+
+	"Bulk density" :     #(kg/m3) [0, 2000]
+	656 0
+
+	"Cation exchange capacity" :     #(meq/kg) [0, 500]
+	113.3 0
+
+	"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [0, 1000]
+	100 0
+
+	"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1]
+	0.1 0
+
+	"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10]
+	7.8 8.6
+
+	"Al(OH)3 dissociation equation exponent" :     #(dimensionless) [1, 5]
+	3 3
+
+	"(-log10) pK 1st equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+	3.04 3.04
+
+	"(-log10) pK 2nd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+	4.51 4.51
+
+	"(-log10) pK 3rd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+	6.46 6.46
+
+	"(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]" :     #(dimensionless) [-10, 10]
+	0 0
+
+	"(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]" :     #(dimensionless) [-10, 10]
+	0 0
+
+	"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100]
+	18.5 0
+
+	"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100]
+	13 0
+
+	"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100]
+	2.5 0
+
+	"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100]
+	3.2 0
+
+
+	# Flow fractions ("Compartment" "Compartment") #
+
+	"Flow fraction" :     #(dimensionless) [0, 1] How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)
+	0 1
+	0 0
+
+
+} # end of module "MAGIC Core"
+
+{ module "MAGIC Forest" version "_dev"
+
+	# Climate ("Compartment") #
+
+	"CO2 partial pressure" :     #(%) [0.1, 2] Default value for timesteps where no input series value is provided
+	0.33 0.07
+
+	"Organic acid concentration" :     #(mmol/m3) [0, 200] Default value for timesteps where no input series value is provided
+	30 15
+
+	"Minimal compartment temperature" :     #(°C) [-10, 10]
+	0.4 0.4
+
+	"Use measured runoff when available" :     # If this is off, it will always use the value computed by the hydrology module.
+	true false
+
+
+	# Weathering ("Compartment") #
+
+	"Ca weathering" :     #(meq/m2/year) [0, 200]
+	28 0
+
+	"Mg weathering" :     #(meq/m2/year) [0, 200]
+	0 0
+
+	"Na weathering" :     #(meq/m2/year) [0, 200]
+	20 0
+
+	"K weathering" :     #(meq/m2/year) [0, 200]
+	2 0
+
+	"NH4 weathering" :     #(meq/m2/year) [0, 200]
+	0 0
+
+	"SO4 weathering" :     #(meq/m2/year) [0, 200]
+	20 0
+
+	"Cl weathering" :     #(meq/m2/year) [0, 200]
+	0 0
+
+	"NO3 weathering" :     #(meq/m2/year) [0, 200]
+	0 0
+
+	"F weathering" :     #(meq/m2/year) [0, 200]
+	0 0
+
+	"PO4 weathering" :     #(meq/m2/year) [0, 200]
+	0 0
+
+
+} # end of module "MAGIC Forest"
+
+{ module "MAGIC Forest decomposition and uptake" version "0.0"
+
+	# Tree (de)composition ("Tree compartment") #
+
+	"Share of compartment in young trees" :     #(dimensionless) [0, 1]
+	0.3 0.018 0.39 0.292
+
+	"Share of compartment in old trees" :     #(dimensionless) [0, 1]
+	0.04 0.035 0.2 0.415
+
+	"Tree decomposition rate" :     #(1/year) [0, 1]
+	0.35 0.069 0.046 0.023
+
+	"Tree C concentration" :     #(mmol/kg) [0, 100]
+	0 0 0 0
+
+	"Tree N concentration" :     #(mmol/kg) [0, 100]
+	0 0 0 0
+
+	"Tree P concentration" :     #(mmol/kg) [0, 100]
+	0 0 0 0
+
+	"Tree Ca concentration" :     #(meq/kg) [0, 100]
+	0 0 0 0
+
+	"Tree Mg concentration" :     #(meq/kg) [0, 100]
+	0 0 0 0
+
+	"Tree Na concentration" :     #(meq/kg) [0, 100]
+	0 0 0 0
+
+	"Tree K concentration" :     #(meq/kg) [0, 100]
+	0 0 0 0
+
+
+} # end of module "MAGIC Forest decomposition and uptake"
+
+{ module "MAGIC Forest CNP" version "_dev"
+
+	# C, N, and P ("Compartment") #
+
+	"Organic C litter" :     #(mmol/m2/year) [0, 1000000]
+	25900 0
+
+	"Compute C litter using" :     # [input, steady_state, scale_to_uptake]
+	input input
+
+	"Organic C decomposition at 0°C" :     #(mmol/m2/year) [0, 1000000]
+	28000 0
+
+	"Decomposition Q10" :     #(dimensionless) [1, 5]
+	3 1
+
+	"Solubilization" :     #(dimensionless) [0, 1] Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.
+	0.3 0
+
+	"C use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic C that becomes biomass and is returned to the organic C pool. The rest is mineralized/respired as CO2.
+	0.9 0
+
+	"N use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic N that becomes biomass and is returned to the organic N pool. The rest is mineralized as NH4.
+	0.7 0
+
+	"P use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic P that becomes biomass and is returned to the organic P pool. The rest is mineralized as PO4.
+	0.7 0
+
+	"C/N ratio of litter" :     #(dimensionless) [0.0001, 10]
+	53.3 0.1
+
+	"C/N ratio of soil microbial community" :     #(dimensionless) [0.0001, 10]
+	10 0.1
+
+	"C/P ratio of litter" :     #(dimensionless) [0.0001, 10]
+	53.3 0.1
+
+	"C/P ratio of soil microbial community" :     #(dimensionless) [0.0001, 10]
+	10 0.1
+
+	"Initial organic C" :     #(mol/m2) [0, 100000000]
+	548 0
+
+	"Initial organic N" :     #(mol/m2) [0, 100000000]
+	18.8 0
+
+	"Initial organic P" :     #(mol/m2) [0, 100000000]
+	20 0
+
+	"Nitrification" :     #(mmol/m2/year) [0, 500] NH4->NO3. Negative rate sets value as % of inputs
+	-100 -100
+
+	"Denitrification" :     #(mmol/m2/year) [0, 500] NO3->N2. Negative rate sets value as % of inputs
+	0 0
+
+	"N uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
+	50 0
+
+	"P uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
+	50 0
+
+	"Uptake Q10" :     #(dimensionless) [1, 5]
+	3 1
+
+	"NH4 uptake scale" :     #(dimensionless) [0, 10] amount of NH4 uptake relative to amount of NO3 uptake
+	0.5 1
+
+	"Microbes immobilize inorganic N and P if necessary" :
+	true true
+
+	"Plants use inorganic N and P before soil microbes" :
+	true true
+
+	"Plants have access to organic N and P" :
+	true true
+
+
+} # end of module "MAGIC Forest CNP"

@@ -762,7 +762,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double meanT = RESULT(MeanLakeTemperature);
 		//NOTE: Simplification: assume uniform lake density for this purpose... Actually we should maybe keep this constant, because we don't contract the volume with changes in temperature.
 		double waterDensity = WaterDensity(meanT);
-		double specificHeatCapacityOfWater = 4186.0;
+		double specificHeatCapacityOfWater = 4186.0; // J/kg/K
 		
 		double volume = RESULT(LakeVolume);
 		double mass   = volume * waterDensity;
