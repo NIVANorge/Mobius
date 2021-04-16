@@ -13,6 +13,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TPerHa          = RegisterUnit(Model, "tonnes/Ha");
 	auto PerYear         = RegisterUnit(Model, "1/year");
 	auto TPerHaPerTs     = RegisterUnit(Model, "tonnes/Ha/month");
+	auto TPerHaPerYear   = RegisterUnit(Model, "tonnes/Ha/year");
 	auto MMolPerKg       = RegisterUnit(Model, "mmol/kg");
 	auto MEqPerKg        = RegisterUnit(Model, "meq/kg");
 	auto MMolPerM2PerTs  = RegisterUnit(Model, "mmol/m2/month");
@@ -20,23 +21,26 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	
 	auto TreeCompartment = RegisterIndexSet(Model, "Tree compartment");
-	
-	//NOTE: We should probably just allow dynamic indexing here?
-	//auto Needles         = RequireIndex(Model, TreeCompartment, "Needles");
-	//auto Bark            = RequireIndex(Model, TreeCompartment, "Bark");
-	//auto Branches        = RequireIndex(Model, TreeCompartment, "Branches+roots");
-	//auto Wood            = RequireIndex(Model, TreeCompartment, "Wood");
+
 	
 	
-	auto TreeGrowth           = RegisterInput(Model, "Tree growth", TPerHaPerTs);
+	auto TreeGrowth           = RegisterInput(Model, "Forest growth", TPerHaPerTs, true);
+	auto TreeHarvesting       = RegisterInput(Model, "Forest harvesting", TPerHaPerTs);
+	auto LeftByHarvesting     = RegisterInput(Model, "Biomass left by harvesting", TPerHaPerTs);
 	auto TreeAgeInterp        = RegisterInput(Model, "Compartment share interpolation variable", Dimensionless);  //Should go between 1 and 100
-	auto TreeToDecomp         = RegisterInput(Model, "New dead tree biomass", TPerHaPerTs);
 	
+	
+	auto TreeGrowthPars       = RegisterParameterGroup(Model, "Tree growth");
+	
+	auto MaxGrowthRate        = RegisterParameterDouble(Model, TreeGrowthPars, "Max tree growth rate", PerYear, 0.0, 0.0, 1000.0);
+	auto CarryingCapacity     = RegisterParameterDouble(Model, TreeGrowthPars, "Forest carrying capacity", TPerHa, 0.0, 0.0, 10000.0);
+	auto InitialTreeMass      = RegisterParameterDouble(Model, TreeGrowthPars, "Initial live tree mass", TPerHa, 0.0, 0.0, 10000.0);
 	
 	auto TreeDecomp           = RegisterParameterGroup(Model, "Tree (de)composition", TreeCompartment);
 	
 	auto ShareOfYoung         = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in young trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
+	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
 	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100.0);
 	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100.0);
@@ -46,6 +50,12 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg, 0.0, 0.0, 100.0);
 	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg, 0.0, 0.0, 100.0);
 	
+	
+	auto ForestNetGrowth      = RegisterEquation(Model, "Forest net growth", TPerHaPerTs);
+	auto LiveTreeMass         = RegisterEquation(Model, "Live tree mass", TPerHa);
+	auto CompartmentTurnover  = RegisterEquation(Model, "Compartment turnover", TPerHaPerTs);
+	
+	SetInitialValue(Model, LiveTreeMass, InitialTreeMass);
 	
 	auto CompartmentShare     = RegisterEquation(Model, "Compartment share", Dimensionless);
 	auto CompartmentGrowth    = RegisterEquation(Model, "Compartment growth", TPerHaPerTs);
@@ -88,6 +98,24 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto FractionOfYear       = GetEquationHandle(Model, "Fraction of year");
 	
 	
+	EQUATION(Model, ForestNetGrowth,
+		double in = INPUT(TreeGrowth);
+		double r = PARAMETER(MaxGrowthRate)*RESULT(FractionOfYear);
+		double K = PARAMETER(CarryingCapacity);
+		double V = LAST_RESULT(LiveTreeMass);
+		
+		if(std::isfinite(in)) return in;
+		
+		double computed = K/(1.0 + (K-V)*std::exp(-r)/V) - V;   //NOTE: logistic growth
+		if(!std::isfinite(computed)) computed = 0.0;
+		
+		return computed;
+	)
+	
+	EQUATION(Model, LiveTreeMass,
+		return std::max(0.0, LAST_RESULT(LiveTreeMass) + RESULT(ForestNetGrowth) - INPUT(TreeHarvesting));
+	)
+
 	EQUATION(Model, CompartmentShare,
 		double ln100  = 4.60517018599;
 		double interp = INPUT(TreeAgeInterp);
@@ -97,32 +125,37 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		return LinearInterpolate(std::log(interp), 0.0, ln100, young, old);
 	)
 	
+	EQUATION(Model, CompartmentTurnover,
+		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), 1.0/12.0);  //NOTE: Turn 1/year to 1/month
+		return r * RESULT(CompartmentShare) * RESULT(LiveTreeMass); //NOTE: Is based on current-timestep so that trees that are harvested are not counted for turnover. But does that mean that it is counted doubly in compartmentgrowth below?
+	)
+	
 	EQUATION(Model, CompartmentGrowth,
-		return INPUT(TreeGrowth) * RESULT(CompartmentShare);
+		return RESULT(ForestNetGrowth) * RESULT(CompartmentShare) + RESULT(CompartmentTurnover);  //Have to add turnover here since that is not taken into account in the net growth.
 	)
 	
 	EQUATION(Model, TreeNUptake,
-		return RESULT(CompartmentGrowth) * PARAMETER(TreeNConc);
+		return RESULT(CompartmentGrowth) * PARAMETER(TreeNConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
 	EQUATION(Model, TreePUptake,
-		return RESULT(CompartmentGrowth) * PARAMETER(TreePConc);
+		return RESULT(CompartmentGrowth) * PARAMETER(TreePConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
 	EQUATION(Model, TreeCaUptake,
-		return RESULT(CompartmentGrowth) * PARAMETER(TreeCaConc);
+		return RESULT(CompartmentGrowth) * PARAMETER(TreeCaConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
 	EQUATION(Model, TreeMgUptake,
-		return RESULT(CompartmentGrowth) * PARAMETER(TreeMgConc);
+		return RESULT(CompartmentGrowth) * PARAMETER(TreeMgConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
 	EQUATION(Model, TreeNaUptake,
-		return RESULT(CompartmentGrowth) * PARAMETER(TreeNaConc);
+		return RESULT(CompartmentGrowth) * PARAMETER(TreeNaConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
 	EQUATION(Model, TreeKUptake,
-		return RESULT(CompartmentGrowth) * PARAMETER(TreeKConc);
+		return RESULT(CompartmentGrowth) * PARAMETER(TreeKConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
 	
@@ -131,7 +164,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DeadTreeMass,
-		return LAST_RESULT(DeadTreeMass) * std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)) + INPUT(TreeToDecomp)*PARAMETER(ShareOfOld);
+		return LAST_RESULT(DeadTreeMass) * std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)) + INPUT(LeftByHarvesting) + RESULT(CompartmentTurnover);
 	)
 	
 	EQUATION(Model, TreeDecompCSource,      
