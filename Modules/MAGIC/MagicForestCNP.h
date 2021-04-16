@@ -125,7 +125,8 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	
 	
 
-	auto IsSoil                    = GetParameterDoubleHandle(Model, "This is a soil compartment");
+	auto IsSoil                    = GetParameterBoolHandle(Model, "This is a soil compartment");
+	auto IsTop                     = GetParameterBoolHandle(Model, "This is a top compartment");
 	
 	auto FractionOfYear            = GetEquationHandle(Model, "Fraction of year");
 	auto Temperature               = GetEquationHandle(Model, "Temperature");
@@ -175,6 +176,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 		double uptake = (RESULT(DesiredNO3Uptake) + RESULT(DesiredNH4Uptake))*PARAMETER(LitterCNRatio);
 		
 		double fromtrees = RESULT(TotalTreeDecompCSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) fromtrees = 0.0;
 		
 		double result = input;
 		if(type == 1) result = steady;
@@ -211,6 +213,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	
 	EQUATION(Model, OrganicNLitter,
 		double fromtrees = RESULT(TotalTreeDecompNSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) fromtrees = 0.0;
 		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio)  + fromtrees;
 	)
 	
@@ -260,9 +263,10 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, DesiredNO3Uptake,
-		//TODO: we should unify plant and tree uptake somehow?
+		double treeuptake = RESULT(TotalTreeNUptake);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) treeuptake = 0.0;        //Hmm, plantuptake should maybe also be 0. But trees could have deep roots ideally
 		double plantuptake = RESULT(FractionOfYear) * PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
-		return (plantuptake + RESULT(TotalTreeNUptake)) / (1.0 + PARAMETER(NH4UptakeScale));
+		return (plantuptake + treeuptake) / (1.0 + PARAMETER(NH4UptakeScale));
 	)
 	
 	EQUATION(Model, DesiredNH4Uptake,
@@ -363,7 +367,8 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicPLitter,
-		double fromtrees = RESULT(TotalTreeDecompPSource);  //TODO: Coupling with tree module should only be for soil compartments.
+		double fromtrees = RESULT(TotalTreeDecompPSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) fromtrees = 0.0;
 		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio) + fromtrees;
 	)
 	
@@ -391,8 +396,10 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, DesiredPUptake,
+		double treeuptake  = RESULT(TotalTreePUptake);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) treeuptake = 0.0;
 		double plantuptake = RESULT(FractionOfYear) * PARAMETER(PUptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
-		return plantuptake + RESULT(TotalTreePUptake);
+		return plantuptake + treeuptake;
 	)
 	
 	EQUATION(Model, PO4Uptake,

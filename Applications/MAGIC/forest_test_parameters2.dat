@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-14 14:42:19
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-16 11:14:10
 
 index_sets:
 "Compartment" : {"Soil1" "Stream"}
@@ -139,6 +139,9 @@ parameters:
 	"Use measured runoff when available" :     # If this is off, it will always use the value computed by the hydrology module.
 	true false
 
+	"This is a top compartment" :     # True if it receives deposition. Also, if it interacts with the forest module
+	true true
+
 
 	# Weathering ("Compartment") #
 
@@ -220,13 +223,13 @@ parameters:
 	25900 0
 
 	"Compute C litter using" :     # [input, steady_state, scale_to_uptake]
-	input input
+	scale_to_uptake input
 
 	"Organic C decomposition at 0°C" :     #(mmol/m2/year) [0, 1000000]
-	28000 0
+	2900 0
 
 	"Decomposition Q10" :     #(dimensionless) [1, 5]
-	3 1
+	2 1
 
 	"Solubilization" :     #(dimensionless) [0, 1] Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.
 	0.3 0
@@ -268,7 +271,7 @@ parameters:
 	0 0
 
 	"N uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
-	50 0
+	20 0
 
 	"P uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
 	50 0

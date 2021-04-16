@@ -32,6 +32,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto OAConcentrationPar      = RegisterParameterDouble(Model, Climate, "Organic acid concentration", MMolPerM3, 0.0, 0.0, 200.0, "Default value for timesteps where no input series value is provided");
 	auto MinCompartmentTemp      = RegisterParameterDouble(Model, Climate, "Minimal compartment temperature", DegreesCelsius, 0.0, -10.0, 10.0);
 	auto UseMeasuredRunoff       = RegisterParameterBool(Model, Climate, "Use measured runoff when available", false, "If this is off, it will always use the value computed by the hydrology module.");
+	auto ThisIsATopCompartment   = RegisterParameterBool(Model, Climate, "This is a top compartment", true, "True if it receives deposition. Also, if it interacts with the forest module");
 	
 	auto Weathering              = RegisterParameterGroup(Model, "Weathering", Compartment);
 	
@@ -131,6 +132,9 @@ Forest growth driver module developed as part of the CatchCAN project.
 	// From WASMOD:
 	auto Runoff                  = GetEquationHandle(Model, "Runoff");
 	
+	// From the core wrapper:
+	auto IsSoil                  = GetParameterBoolHandle(Model, "This is a soil compartment");
+	
 
 	
 	EQUATION(Model, FractionOfYear,
@@ -211,38 +215,62 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	
 	EQUATION(Model, NO3BasicInputs,
-		return RESULT(NO3Deposition) + PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
+		double deposition = RESULT(NO3Deposition);
+		double weathering = PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
+		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
+		return deposition + weathering;
 	)
 	
 	EQUATION(Model, NH4BasicInputs,
-		return RESULT(NH4Deposition) + PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
+		double deposition = RESULT(NH4Deposition);
+		double weathering = PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
+		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
+		return deposition + weathering;
 	)
 	
 	EQUATION(Model, PO4BasicInputs,
-		return RESULT(PO4Deposition) + PARAMETER(PO4Weathering)*RESULT(FractionOfYear);
+		double deposition = RESULT(PO4Deposition);
+		double weathering = PARAMETER(PO4Weathering)*RESULT(FractionOfYear);
+		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
+		return deposition + weathering;
 	)
 	
 	
 	//TODO: The uptake should maybe be limited so that the mass never goes in the negative, but it may not be a problem
-	//TODO: Coupling with the tree module should only be for soil (top?) compartments.
 	EQUATION(Model, CaExternalFlux,
-		return RESULT(CaDeposition) + RESULT(FractionOfYear)*PARAMETER(CaWeathering)
-			+ RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
+		double deposition = RESULT(CaDeposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(CaWeathering);
+		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
+		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
+		if(!PARAMETER(IsSoil)) forest = 0.0;
+		return deposition + weathering + forest;
 	)
 	
 	EQUATION(Model, MgExternalFlux,
-		return RESULT(MgDeposition) + RESULT(FractionOfYear)*PARAMETER(MgWeathering)
-			+ RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
+		double deposition = RESULT(MgDeposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(MgWeathering);
+		double forest     = RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
+		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
+		if(!PARAMETER(IsSoil)) forest = 0.0;
+		return deposition + weathering + forest;
 	)
 	
 	EQUATION(Model, NaExternalFlux,
-		return RESULT(NaDeposition) + RESULT(FractionOfYear)*PARAMETER(NaWeathering)
-			+ RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeMgUptake);
+		double deposition = RESULT(NaDeposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(NaWeathering);
+		double forest     = RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeNaUptake);
+		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
+		if(!PARAMETER(IsSoil)) forest = 0.0;
+		return deposition + weathering + forest;
 	)
 	
 	EQUATION(Model, KExternalFlux,
-		return RESULT(KDeposition) + RESULT(FractionOfYear)*PARAMETER(KWeathering)
-			+ RESULT(TotalTreeDecompKSource) - RESULT(TotalTreeKUptake);
+		double deposition = RESULT(KDeposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering);
+		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeKUptake);
+		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
+		if(!PARAMETER(IsSoil)) forest = 0.0;
+		return deposition + weathering + forest;
 	)
 	
 	EQUATION(Model, NH4ExternalFlux,
@@ -250,7 +278,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, SO4ExternalFlux,
-		return RESULT(SO4Deposition) + RESULT(FractionOfYear)*PARAMETER(SO4Weathering);
+		double deposition = RESULT(SO4Deposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(SO4Weathering);
+		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
+		return deposition + weathering;
 	)
 	
 	EQUATION(Model, NO3ExternalFlux,
@@ -258,11 +289,17 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, ClExternalFlux,
-		return RESULT(ClDeposition) + RESULT(FractionOfYear)*PARAMETER(ClWeathering);
+		double deposition = RESULT(ClDeposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(ClWeathering);
+		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
+		return deposition + weathering;
 	)
 	
 	EQUATION(Model, FExternalFlux,
-		return RESULT(FDeposition) + RESULT(FractionOfYear)*PARAMETER(FWeathering);
+		double deposition = RESULT(FDeposition);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(FWeathering);
+		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
+		return deposition + weathering;
 	)
 	
 	EQUATION(Model, PO4ExternalFlux,
