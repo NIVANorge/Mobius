@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, SimplySed V0.4, SimplyP V0.4) at 2021-03-24 14:47:49
+# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.1, SimplySed V0.4, SimplyP V0.4) at 2021-04-19 12:35:13
 
 index_sets:
 "Reaches" : {"Coull"}
@@ -149,7 +149,7 @@ parameters:
 	95
 
 	"Phosphorous sorption coefficient" :     #(l/mg) [0, 0.1] Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model
-	0.00704819277108435
+	0.00704819277108436
 
 	"Groundwater TDP concentration" :     #(mg/l) [0, 10] 
 	0.0138

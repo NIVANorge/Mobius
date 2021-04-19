@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-16 14:55:45
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-19 10:48:56
 
 index_sets:
 "Compartment" : {"Soil1" "Stream"}
@@ -241,10 +241,10 @@ parameters:
 	scale_to_uptake input
 
 	"Organic C decomposition at 0°C" :     #(mmol/m2/year) [0, 1000000]
-	2900 0
+	26000 0
 
 	"Decomposition Q10" :     #(dimensionless) [1, 5]
-	2 1
+	3 1
 
 	"Solubilization" :     #(dimensionless) [0, 1] Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.
 	0.3 0
@@ -286,7 +286,7 @@ parameters:
 	0 0
 
 	"N uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
-	20 0
+	200 0
 
 	"P uptake at 0°C" :     #(mmol/m2/year) [0, 1000]
 	50 0
