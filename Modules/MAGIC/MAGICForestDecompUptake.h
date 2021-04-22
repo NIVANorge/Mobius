@@ -42,6 +42,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
+	auto InitialDeadTreeMass  = RegisterParameterDouble(Model, TreeDecomp, "Initial dead tree mass", TPerHa, 0.0, 0.0, 10000.0);
 	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100.0);
 	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100.0);
 	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MMolPerKg, 0.0, 0.0, 100.0);
@@ -77,7 +78,8 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree mass", TPerHa);
 	auto DeadTreeDecomp       = RegisterEquation(Model, "Dead tree decomposition", TPerHaPerTs);
 	
-	SetInitialValue(Model, DeadTreeMass, 0.0); //So that it does not try to compute it using the equation. Mabe replace with a parameter later.
+	//TODO: Should maybe just steady-state this instead?
+	SetInitialValue(Model, DeadTreeMass, InitialDeadTreeMass);
 	
 	auto TreeDecompCSource    = RegisterEquation(Model, "C source from tree decomposition", MMolPerM2PerTs);
 	auto TreeDecompNSource    = RegisterEquation(Model, "N source from tree decomposition", MMolPerM2PerTs);

@@ -29,8 +29,8 @@ inputs:
 
 
 "Biomass left by harvesting" {"Needles"}:             # tonnes/Ha
-1970-6-1    3
-2010-6-1    3
+1970-6-1    10
+2010-6-1    10
 
 
 "Precipitation" :
