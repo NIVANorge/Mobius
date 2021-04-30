@@ -44,23 +44,22 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto DegreesCelsius	= RegisterUnit(Model, "°C");
 	auto Percent        = RegisterUnit(Model, "%");
 	
-	auto GeneralParams             = RegisterParameterGroup(Model, "General parameters");
-	auto ConvergenceCriterion      = RegisterParameterDouble(Model, GeneralParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
-	auto SolverStep                = RegisterParameterDouble(Model, GeneralParams, "Solver sub-step length", Ts, 0.1, 1e-3, 1.0, "Length of intermediate step between each time the solution is rebalanced");
+	auto ConvergenceParams         = RegisterParameterGroup(Model, "Convergence parameters");
+	auto ConvergenceCriterion      = RegisterParameterDouble(Model, ConvergenceParams, "Convergence criterion", Dimensionless, 1.0, 0.01, 10.0, "Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed");
+	auto SolverStep                = RegisterParameterDouble(Model, ConvergenceParams, "Solver sub-step length", Ts, 0.1, 1e-3, 1.0, "Length of intermediate step between each time the solution is rebalanced");
 	
-	//auto CatchmentArea             = RegisterParameterDouble(Model, GeneralParams, "Catchment area", Km2, 1.0, 0.0, 100000.0);
-	
+
 	auto Compartment = RegisterIndexSet(Model, "Compartment");
 	auto CompartmentParams = RegisterParameterGroup(Model, "Compartment parameters", Compartment);
 	
 	auto IsSoil                    = RegisterParameterBool(Model, CompartmentParams, "This is a soil compartment", true);
 	auto RelativeArea              = RegisterParameterDouble(Model, CompartmentParams, "Relative area", Dimensionless, 1.0, 0.0, 1.0, "The fraction of the catchment covered by this compartment");
-	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0);
-	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0);
-	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 600.0, 0.0, 2000.0);
-	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 100.0, 0.0, 500.0);
-	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerM3, 0.0, 0.0, 1000.0);
-	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0, 0.0, 1.0);
+	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0, "", "D");
+	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0, "", "P");
+	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 600.0, 0.0, 2000.0, "", "BD");
+	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 100.0, 0.0, 500.0, "", "CEC");
+	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerM3, 0.0, 0.0, 1000.0, "", "SO4half");
+	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0, 0.0, 1.0, "", "SO4max");
 	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0, -10.0, 10.0);
 	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0, 1.0, 5.0);
 	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
@@ -70,10 +69,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto PK2AlDOC                  = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]", Dimensionless, 0.0, -10.0, 10.0);
 	
 	
-	auto InitialECa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Ca on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
-	auto InitialEMg            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Mg on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
-	auto InitialENa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Na on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
-	auto InitialEK             = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable K on soil as % of CEC", Percent, 0.0, 0.0, 100.0);
+	auto InitialECa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Ca on soil as % of CEC", Percent, 0.0, 0.0, 100.0, "", "ECa");
+	auto InitialEMg            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Mg on soil as % of CEC", Percent, 0.0, 0.0, 100.0, "", "EMg");
+	auto InitialENa            = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable Na on soil as % of CEC", Percent, 0.0, 0.0, 100.0, "", "ENa");
+	auto InitialEK             = RegisterParameterDouble(Model, CompartmentParams, "Initial exchangeable K on soil as % of CEC", Percent, 0.0, 0.0, 100.0, "", "EK");
 	
 	
 	auto FlowFractions = RegisterParameterGroup(Model, "Flow fractions", Compartment, Compartment);
@@ -507,7 +506,8 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		index_t ThisCompartment = CURRENT_INDEX(Compartment);
 		for(index_t OtherCompartment = FIRST_INDEX(Compartment); OtherCompartment < ThisCompartment; ++OtherCompartment)
 		{
-			input += RESULT(CaOutput, OtherCompartment) * PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
+			input += RESULT(CaOutput, OtherCompartment)
+			* PARAMETER(FlowFraction, OtherCompartment, ThisCompartment) * PARAMETER(RelativeArea, OtherCompartment);
 		}
 		return input / PARAMETER(RelativeArea);
 	)

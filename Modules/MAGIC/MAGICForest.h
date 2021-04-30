@@ -25,27 +25,30 @@ Forest growth driver module developed as part of the CatchCAN project.
 	//auto Compartment             = GetIndexSetHandle(Model, "Compartment");
 	auto Compartment             = RegisterIndexSet(Model, "Compartment");
 	
+	
+	auto General                 = RegisterParameterGroup(Model, "General");
+	
+	auto UseMeasuredRunoff       = RegisterParameterBool(Model, General, "Use measured runoff when available", false, "If this is off, it will always use the value computed by the hydrology module.");
+	
 	auto Climate                 = RegisterParameterGroup(Model, "Climate", Compartment);
 	
-	
 	auto PartialPressureCO2Par   = RegisterParameterDouble(Model, Climate, "CO2 partial pressure", Percent, 0.3, 0.1, 2.0, "Default value for timesteps where no input series value is provided");
-	auto OAConcentrationPar      = RegisterParameterDouble(Model, Climate, "Organic acid concentration", MMolPerM3, 0.0, 0.0, 200.0, "Default value for timesteps where no input series value is provided");
+	auto OAConcentrationPar      = RegisterParameterDouble(Model, Climate, "Organic acid concentration", MMolPerM3, 0.0, 0.0, 200.0, "Default value for timesteps where no input series value is provided", "OA");
 	auto MinCompartmentTemp      = RegisterParameterDouble(Model, Climate, "Minimal compartment temperature", DegreesCelsius, 0.0, -10.0, 10.0);
-	auto UseMeasuredRunoff       = RegisterParameterBool(Model, Climate, "Use measured runoff when available", false, "If this is off, it will always use the value computed by the hydrology module.");
 	auto ThisIsATopCompartment   = RegisterParameterBool(Model, Climate, "This is a top compartment", true, "True if it receives deposition. Also, if it interacts with the forest module");
 	
 	auto Weathering              = RegisterParameterGroup(Model, "Weathering", Compartment);
 	
-	auto CaWeathering            = RegisterParameterDouble(Model, Weathering, "Ca weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto MgWeathering            = RegisterParameterDouble(Model, Weathering, "Mg weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto NaWeathering            = RegisterParameterDouble(Model, Weathering, "Na weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto KWeathering             = RegisterParameterDouble(Model, Weathering, "K weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto NH4Weathering           = RegisterParameterDouble(Model, Weathering, "NH4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto SO4Weathering           = RegisterParameterDouble(Model, Weathering, "SO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto ClWeathering            = RegisterParameterDouble(Model, Weathering, "Cl weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto NO3Weathering           = RegisterParameterDouble(Model, Weathering, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto FWeathering             = RegisterParameterDouble(Model, Weathering, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
-	auto PO4Weathering           = RegisterParameterDouble(Model, Weathering, "PO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0);
+	auto CaWeathering            = RegisterParameterDouble(Model, Weathering, "Ca weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WCa");
+	auto MgWeathering            = RegisterParameterDouble(Model, Weathering, "Mg weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WMg");
+	auto NaWeathering            = RegisterParameterDouble(Model, Weathering, "Na weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WNa");
+	auto KWeathering             = RegisterParameterDouble(Model, Weathering, "K weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WK");
+	auto NH4Weathering           = RegisterParameterDouble(Model, Weathering, "NH4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WNH4");
+	auto SO4Weathering           = RegisterParameterDouble(Model, Weathering, "SO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WSO4");
+	auto ClWeathering            = RegisterParameterDouble(Model, Weathering, "Cl weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WCl");
+	auto NO3Weathering           = RegisterParameterDouble(Model, Weathering, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WNO3");
+	auto FWeathering             = RegisterParameterDouble(Model, Weathering, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WF");
+	auto PO4Weathering           = RegisterParameterDouble(Model, Weathering, "PO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WPO4");
 	
 	
 

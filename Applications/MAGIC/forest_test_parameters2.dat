@@ -1,4 +1,4 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-21 14:43:26
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-30 11:18:31
 
 index_sets:
 "Compartment" : {"Soil1" "Stream"}
@@ -45,7 +45,7 @@ parameters:
 
 { module "MAGIC Core" version "0.1"
 
-	# General parameters (no index sets) #
+	# Convergence parameters (no index sets) #
 
 	"Convergence criterion" :     #(dimensionless) [0.01, 10] Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed
 	1
@@ -60,24 +60,24 @@ parameters:
 	true false
 
 	"Relative area" :     #(dimensionless) [0, 1] The fraction of the catchment covered by this compartment
-	0.95 0.05
+	1 0.05
 
-	"Depth" :     #(m) [0, 100]
-	0.4 10
+	"Depth" :     #(m) [0, 100] 
+	0.4 30
 
-	"Porosity" :     #(dimensionless) [0, 1]
+	"Porosity" :     #(dimensionless) [0, 1] 
 	0.5 0
 
-	"Bulk density" :     #(kg/m3) [0, 2000]
+	"Bulk density" :     #(kg/m3) [0, 2000] 
 	656 0
 
-	"Cation exchange capacity" :     #(meq/kg) [0, 500]
+	"Cation exchange capacity" :     #(meq/kg) [0, 500] 
 	113.3 0
 
-	"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [0, 1000]
+	"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [0, 1000] 
 	100 0
 
-	"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1]
+	"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1] 
 	0.1 0
 
 	"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10]
@@ -101,16 +101,16 @@ parameters:
 	"(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]" :     #(dimensionless) [-10, 10]
 	0 0
 
-	"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100]
+	"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100] 
 	18.5 0
 
-	"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100]
+	"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100] 
 	13 0
 
-	"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100]
+	"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100] 
 	2.5 0
 
-	"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100]
+	"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100] 
 	3.2 0
 
 
@@ -125,19 +125,22 @@ parameters:
 
 { module "MAGIC Forest" version "_dev"
 
+	# General (no index sets) #
+
+	"Use measured runoff when available" :     # If this is off, it will always use the value computed by the hydrology module.
+	true
+
+
 	# Climate ("Compartment") #
 
 	"CO2 partial pressure" :     #(%) [0.1, 2] Default value for timesteps where no input series value is provided
 	0.33 0.07
 
 	"Organic acid concentration" :     #(mmol/m3) [0, 200] Default value for timesteps where no input series value is provided
-	30 15
+	30 25
 
 	"Minimal compartment temperature" :     #(°C) [-10, 10]
 	0.4 0.4
-
-	"Use measured runoff when available" :     # If this is off, it will always use the value computed by the hydrology module.
-	true false
 
 	"This is a top compartment" :     # True if it receives deposition. Also, if it interacts with the forest module
 	true true
@@ -145,34 +148,34 @@ parameters:
 
 	# Weathering ("Compartment") #
 
-	"Ca weathering" :     #(meq/m2/year) [0, 200]
+	"Ca weathering" :     #(meq/m2/year) [0, 200] 
 	28 0
 
-	"Mg weathering" :     #(meq/m2/year) [0, 200]
+	"Mg weathering" :     #(meq/m2/year) [0, 200] 
 	0 0
 
-	"Na weathering" :     #(meq/m2/year) [0, 200]
+	"Na weathering" :     #(meq/m2/year) [0, 200] 
 	20 0
 
-	"K weathering" :     #(meq/m2/year) [0, 200]
+	"K weathering" :     #(meq/m2/year) [0, 200] 
 	2 0
 
-	"NH4 weathering" :     #(meq/m2/year) [0, 200]
+	"NH4 weathering" :     #(meq/m2/year) [0, 200] 
 	0 0
 
-	"SO4 weathering" :     #(meq/m2/year) [0, 200]
+	"SO4 weathering" :     #(meq/m2/year) [0, 200] 
 	20 0
 
-	"Cl weathering" :     #(meq/m2/year) [0, 200]
+	"Cl weathering" :     #(meq/m2/year) [0, 200] 
 	0 0
 
-	"NO3 weathering" :     #(meq/m2/year) [0, 200]
+	"NO3 weathering" :     #(meq/m2/year) [0, 200] 
 	0 0
 
-	"F weathering" :     #(meq/m2/year) [0, 200]
+	"F weathering" :     #(meq/m2/year) [0, 200] 
 	0 0
 
-	"PO4 weathering" :     #(meq/m2/year) [0, 200]
+	"PO4 weathering" :     #(meq/m2/year) [0, 200] 
 	0 0
 
 
