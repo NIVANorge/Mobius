@@ -54,14 +54,14 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	auto IsSoil                    = RegisterParameterBool(Model, CompartmentParams, "This is a soil compartment", true);
 	auto RelativeArea              = RegisterParameterDouble(Model, CompartmentParams, "Relative area", Dimensionless, 1.0, 0.0, 1.0, "The fraction of the catchment covered by this compartment");
-	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0, "", "D");
-	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0, "", "P");
+	auto Depth                     = RegisterParameterDouble(Model, CompartmentParams, "Depth", M, 1.0, 0.0, 100.0, "", "DEP");
+	auto Porosity                  = RegisterParameterDouble(Model, CompartmentParams, "Porosity", Dimensionless, 0.5, 0.0, 1.0, "", "PV");
 	auto BulkDensity               = RegisterParameterDouble(Model, CompartmentParams, "Bulk density", KgPerM3, 600.0, 0.0, 2000.0, "", "BD");
 	auto CationExchangeCapacity    = RegisterParameterDouble(Model, CompartmentParams, "Cation exchange capacity", MEqPerKg, 100.0, 0.0, 500.0, "", "CEC");
 	auto SO4HalfSat                = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption capacity, half saturation", MEqPerM3, 0.0, 0.0, 1000.0, "", "SO4half");
 	auto SO4MaxCap                 = RegisterParameterDouble(Model, CompartmentParams, "Soil sulfate adsorption max capacity", MEqPerKg, 0.0, 0.0, 1.0, "", "SO4max");
-	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0, -10.0, 10.0);
-	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0, 1.0, 5.0);
+	auto Log10AlOH3EquilibriumConst= RegisterParameterDouble(Model, CompartmentParams, "(log10) Al(OH)3 dissociation equilibrium constant", Dimensionless, 0.0, -10.0, 10.0, "", "KAl");
+	auto HAlOH3Exponent            = RegisterParameterDouble(Model, CompartmentParams, "Al(OH)3 dissociation equation exponent", Dimensionless, 3.0, 1.0, 5.0, "", "SAl");
 	auto PK1DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 1st equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
 	auto PK2DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 2nd equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
 	auto PK3DOC                    = RegisterParameterDouble(Model, CompartmentParams, "(-log10) pK 3rd equilibrium constant for triprotic organic acid", Dimensionless, 0.0, -10.0, 10.0);
