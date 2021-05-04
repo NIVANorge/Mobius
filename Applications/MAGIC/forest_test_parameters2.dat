@@ -1,7 +1,8 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-04-30 11:18:31
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-05-04 11:18:45
 
 index_sets:
 "Compartment" : {"Soil1" "Stream"}
+"Tree species" : {"Coniferous"}
 "Tree compartment" : {"Needles" "Bark" "Branches+roots" "Wood"}
 
 parameters:
@@ -80,10 +81,10 @@ parameters:
 	"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1] 
 	0.1 0
 
-	"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10]
+	"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10] 
 	7.8 8.6
 
-	"Al(OH)3 dissociation equation exponent" :     #(dimensionless) [1, 5]
+	"Al(OH)3 dissociation equation exponent" :     #(dimensionless) [1, 5] 
 	3 3
 
 	"(-log10) pK 1st equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
@@ -183,19 +184,22 @@ parameters:
 
 { module "MAGIC Forest decomposition and uptake" version "0.0"
 
-	# Tree growth (no index sets) #
-
-	"Max tree growth rate" :     #(1/year) [0, 1000]
-	0.1
+	# Forest parameters (no index sets) #
 
 	"Forest carrying capacity" :     #(tonnes/Ha) [0, 10000]
 	100
+
+
+	# Tree growth ("Tree species") #
+
+	"Max tree growth rate" :     #(1/year) [0, 1000]
+	0.1
 
 	"Initial live tree mass" :     #(tonnes/Ha) [0, 10000]
 	100
 
 
-	# Tree (de)composition ("Tree compartment") #
+	# Tree (de)composition ("Tree species" "Tree compartment") #
 
 	"Share of compartment in young trees" :     #(dimensionless) [0, 1]
 	0.3 0.018 0.39 0.292

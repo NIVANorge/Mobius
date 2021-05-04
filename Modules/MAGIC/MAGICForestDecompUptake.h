@@ -20,23 +20,30 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto MEqPerM2PerTs   = RegisterUnit(Model, "meq/m2/month");
 	
 	
+	auto TreeClass       = RegisterIndexSet(Model, "Tree species");
 	auto TreeCompartment = RegisterIndexSet(Model, "Tree compartment");
-
+	
 	
 	
 	auto TreeGrowth           = RegisterInput(Model, "Forest growth", TPerHaPerTs, true);
+	auto TreeTurnover         = RegisterInput(Model, "Forest turnover", TPerHaPerTs, true);
 	auto TreeHarvesting       = RegisterInput(Model, "Forest harvesting", TPerHaPerTs);
 	auto LeftByHarvesting     = RegisterInput(Model, "Biomass left by harvesting", TPerHaPerTs);
 	auto TreeAgeInterp        = RegisterInput(Model, "Compartment share interpolation variable", Dimensionless);  //Should go between 1 and 100
 	
 	
-	auto TreeGrowthPars       = RegisterParameterGroup(Model, "Tree growth");
+	auto ForestPars           = RegisterParameterGroup(Model, "Forest parameters");
+	
+	auto CarryingCapacity     = RegisterParameterDouble(Model, ForestPars, "Forest carrying capacity", TPerHa, 0.0, 0.0, 10000.0);
+	
+	
+	auto TreeGrowthPars       = RegisterParameterGroup(Model, "Tree growth", TreeClass);
 	
 	auto MaxGrowthRate        = RegisterParameterDouble(Model, TreeGrowthPars, "Max tree growth rate", PerYear, 0.0, 0.0, 1000.0);
-	auto CarryingCapacity     = RegisterParameterDouble(Model, TreeGrowthPars, "Forest carrying capacity", TPerHa, 0.0, 0.0, 10000.0);
 	auto InitialTreeMass      = RegisterParameterDouble(Model, TreeGrowthPars, "Initial live tree mass", TPerHa, 0.0, 0.0, 10000.0);
 	
-	auto TreeDecomp           = RegisterParameterGroup(Model, "Tree (de)composition", TreeCompartment);
+	
+	auto TreeDecomp           = RegisterParameterGroup(Model, "Tree (de)composition", TreeClass, TreeCompartment);
 	
 	auto ShareOfYoung         = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in young trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
@@ -52,8 +59,9 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg, 0.0, 0.0, 100.0);
 	
 	
-	auto ForestNetGrowth      = RegisterEquation(Model, "Forest net growth", TPerHaPerTs);
-	auto LiveTreeMass         = RegisterEquation(Model, "Live tree mass", TPerHa);
+	auto ForestNetGrowth      = RegisterEquation(Model, "Tree net growth", TPerHaPerTs);
+	auto LiveTreeMass         = RegisterEquation(Model, "Live tree mass per species", TPerHa);
+	auto TotalLiveTreeMass    = RegisterEquationCumulative(Model, "Total live tree mass", LiveTreeMass, TreeClass);
 	auto CompartmentTurnover  = RegisterEquation(Model, "Compartment turnover", TPerHaPerTs);
 	
 	SetInitialValue(Model, LiveTreeMass, InitialTreeMass);
@@ -67,12 +75,19 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TreeNaUptake         = RegisterEquation(Model, "Tree Na uptake", MEqPerM2PerTs);
 	auto TreeKUptake          = RegisterEquation(Model, "Tree K uptake", MEqPerM2PerTs);
 	
-	auto TotalTreeNUptake     = RegisterEquationCumulative(Model, "Total tree N uptake", TreeNUptake, TreeCompartment);
-	auto TotalTreePUptake     = RegisterEquationCumulative(Model, "Total tree P uptake", TreePUptake, TreeCompartment);
-	auto TotalTreeCaUptake    = RegisterEquationCumulative(Model, "Total tree Ca uptake", TreeCaUptake, TreeCompartment);
-	auto TotalTreeMgUptake    = RegisterEquationCumulative(Model, "Total tree Mg uptake", TreeMgUptake, TreeCompartment);
-	auto TotalTreeNaUptake    = RegisterEquationCumulative(Model, "Total tree Na uptake", TreeNaUptake, TreeCompartment);
-	auto TotalTreeKUptake     = RegisterEquationCumulative(Model, "Total tree K uptake", TreeKUptake, TreeCompartment);
+	auto TotalTreeNUptakeSpecies  = RegisterEquationCumulative(Model, "Total tree N uptake per species", TreeNUptake, TreeCompartment);
+	auto TotalTreePUptakeSpecies  = RegisterEquationCumulative(Model, "Total tree P uptake per species", TreePUptake, TreeCompartment);
+	auto TotalTreeCaUptakeSpecies = RegisterEquationCumulative(Model, "Total tree Ca uptake per species", TreeCaUptake, TreeCompartment);
+	auto TotalTreeMgUptakeSpecies = RegisterEquationCumulative(Model, "Total tree Mg uptake per species", TreeMgUptake, TreeCompartment);
+	auto TotalTreeNaUptakeSpecies = RegisterEquationCumulative(Model, "Total tree Na uptake per species", TreeNaUptake, TreeCompartment);
+	auto TotalTreeKUptakeSpecies  = RegisterEquationCumulative(Model, "Total tree K uptake per species", TreeKUptake, TreeCompartment);
+	
+	auto TotalTreeNUptake     = RegisterEquationCumulative(Model, "Total tree N uptake", TotalTreeNUptakeSpecies, TreeClass);
+	auto TotalTreePUptake     = RegisterEquationCumulative(Model, "Total tree P uptake", TotalTreePUptakeSpecies, TreeClass);
+	auto TotalTreeCaUptake    = RegisterEquationCumulative(Model, "Total tree Ca uptake", TotalTreeCaUptakeSpecies, TreeClass);
+	auto TotalTreeMgUptake    = RegisterEquationCumulative(Model, "Total tree Mg uptake", TotalTreeMgUptakeSpecies, TreeClass);
+	auto TotalTreeNaUptake    = RegisterEquationCumulative(Model, "Total tree Na uptake", TotalTreeNaUptakeSpecies, TreeClass);
+	auto TotalTreeKUptake     = RegisterEquationCumulative(Model, "Total tree K uptake", TotalTreeKUptakeSpecies, TreeClass);
 	
 	
 	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree mass", TPerHa);
@@ -89,16 +104,23 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TreeDecompNaSource   = RegisterEquation(Model, "Na source from tree decomposition", MEqPerM2PerTs);
 	auto TreeDecompKSource    = RegisterEquation(Model, "K source from tree decomposition", MEqPerM2PerTs);
 	
-	auto TotalTreeDecompCSource  = RegisterEquationCumulative(Model, "Total C source from tree decomposition", TreeDecompCSource, TreeCompartment);
-	auto TotalTreeDecompNSource  = RegisterEquationCumulative(Model, "Total N source from tree decomposition", TreeDecompNSource, TreeCompartment);
-	auto TotalTreeDecompPSource  = RegisterEquationCumulative(Model, "Total P source from tree decomposition", TreeDecompPSource, TreeCompartment);
-	auto TotalTreeDecompCaSource = RegisterEquationCumulative(Model, "Total Ca source from tree decomposition", TreeDecompCaSource, TreeCompartment);
-	auto TotalTreeDecompMgSource = RegisterEquationCumulative(Model, "Total Mg source from tree decomposition", TreeDecompMgSource, TreeCompartment);
-	auto TotalTreeDecompNaSource = RegisterEquationCumulative(Model, "Total Na source from tree decomposition", TreeDecompNaSource, TreeCompartment);
-	auto TotalTreeDecompKSource  = RegisterEquationCumulative(Model, "Total K source from tree decomposition", TreeDecompKSource, TreeCompartment);
+	auto TotalTreeDecompCSourceSpecies  = RegisterEquationCumulative(Model, "Total C source from tree decomposition per species", TreeDecompCSource, TreeCompartment);
+	auto TotalTreeDecompNSourceSpecies  = RegisterEquationCumulative(Model, "Total N source from tree decomposition per species", TreeDecompNSource, TreeCompartment);
+	auto TotalTreeDecompPSourceSpecies  = RegisterEquationCumulative(Model, "Total P source from tree decomposition per species", TreeDecompPSource, TreeCompartment);
+	auto TotalTreeDecompCaSourceSpecies = RegisterEquationCumulative(Model, "Total Ca source from tree decomposition per species", TreeDecompCaSource, TreeCompartment);
+	auto TotalTreeDecompMgSourceSpecies = RegisterEquationCumulative(Model, "Total Mg source from tree decomposition per species", TreeDecompMgSource, TreeCompartment);
+	auto TotalTreeDecompNaSourceSpecies = RegisterEquationCumulative(Model, "Total Na source from tree decomposition per species", TreeDecompNaSource, TreeCompartment);
+	auto TotalTreeDecompKSourceSpecies  = RegisterEquationCumulative(Model, "Total K source from tree decomposition per species", TreeDecompKSource, TreeCompartment);
+	
+	auto TotalTreeDecompCSource  = RegisterEquationCumulative(Model, "Total C source from tree decomposition", TotalTreeDecompCSourceSpecies, TreeClass);
+	auto TotalTreeDecompNSource  = RegisterEquationCumulative(Model, "Total N source from tree decomposition", TotalTreeDecompNSourceSpecies, TreeClass);
+	auto TotalTreeDecompPSource  = RegisterEquationCumulative(Model, "Total P source from tree decomposition", TotalTreeDecompPSourceSpecies, TreeClass);
+	auto TotalTreeDecompCaSource = RegisterEquationCumulative(Model, "Total Ca source from tree decomposition", TotalTreeDecompCaSourceSpecies, TreeClass);
+	auto TotalTreeDecompMgSource = RegisterEquationCumulative(Model, "Total Mg source from tree decomposition", TotalTreeDecompMgSourceSpecies, TreeClass);
+	auto TotalTreeDecompNaSource = RegisterEquationCumulative(Model, "Total Na source from tree decomposition", TotalTreeDecompNaSourceSpecies, TreeClass);
+	auto TotalTreeDecompKSource  = RegisterEquationCumulative(Model, "Total K source from tree decomposition", TotalTreeDecompKSourceSpecies, TreeClass);
 	
 	auto FractionOfYear       = GetEquationHandle(Model, "Fraction of year");
-	
 	
 	EQUATION(Model, ForestNetGrowth,
 		double in = INPUT(TreeGrowth);
@@ -106,9 +128,18 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		double K = PARAMETER(CarryingCapacity);
 		double V = LAST_RESULT(LiveTreeMass);
 		
+		//NOTE: LAST_RESULT(TotalLiveTreeMass) fails for some obscure reason. Why????
+		double Vtot = 0.0;
+		for(index_t Species = FIRST_INDEX(TreeClass); Species != INDEX_COUNT(TreeClass); ++Species)
+		{
+			Vtot += LAST_RESULT(LiveTreeMass, Species);
+		}
+		
 		if(std::isfinite(in)) return in;
 		
-		double computed = K/(1.0 + (K-V)*std::exp(-r)/V) - V;   //NOTE: logistic growth
+		//NOTE: Logistic growth. The way it is formulated here is technically unstable, but the growth rate should be so slow that it shouldn't matter.
+		double computed = r*V*(1.0 - Vtot/K);
+		
 		if(!std::isfinite(computed)) computed = 0.0;
 		
 		return computed;
@@ -128,8 +159,13 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, CompartmentTurnover,
+		double in = INPUT(TreeTurnover);
+	
 		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), 1.0/12.0);  //NOTE: Turn 1/year to 1/month
-		return r * RESULT(CompartmentShare) * RESULT(LiveTreeMass); //NOTE: Is based on current-timestep so that trees that are harvested are not counted for turnover. But does that mean that it is counted doubly in compartmentgrowth below?
+		double computed = r * RESULT(CompartmentShare) * RESULT(LiveTreeMass); //NOTE: Is based on current-timestep so that trees that are harvested are not counted for turnover. But does that mean that it is counted doubly in compartmentgrowth below?
+		
+		if(std::isfinite(in)) return in;
+		return computed;
 	)
 	
 	EQUATION(Model, CompartmentGrowth,
