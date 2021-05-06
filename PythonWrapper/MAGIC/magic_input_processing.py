@@ -313,7 +313,7 @@ def add_single_deposition_ts(input_df, source, nonmarine=None, element_name='Cl'
 			
 	source = source.interpolate(limit_area=None, limit_direction='both')
 	
-	input_df['%s conc in precip' % element_name] = source
+	input_df['Total %s deposition' % element_name] = source * input_df['Precipitation'] * 1e-3
 
 	
 def get_emep_deposition_scales() :
@@ -364,7 +364,7 @@ def write_as_input_file(input_df, filename) :
 	
 	
 	accepted = ['Air temperature', 'Precipitation', 'Runoff',
-		'Ca conc in precip', 'Mg conc in precip', 'Na conc in precip', 'K conc in precip', 'NH4 conc in precip', 'SO4 conc in precip', 'Cl conc in precip', 'NO3 conc in precip', 'F conc in precip',
+		'Total Ca deposition', 'Total Mg deposition', 'Total Na deposition', 'Total K deposition', 'Total NH4 deposition', 'Total SO4 deposition', 'Total Cl deposition', 'Total NO3 deposition', 'Total F deposition',
 		]
 		
 	def get_unit(name) :

@@ -61,35 +61,20 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto PartialPressureCO2In    = RegisterInput(Model, "CO2 partial pressure", Percent, true);           
 	auto OAConcentrationIn       = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);
 	
-	auto CaPrecipConc            = RegisterInput(Model, "Ca conc in precip", MEqPerM3);
-	auto MgPrecipConc            = RegisterInput(Model, "Mg conc in precip", MEqPerM3);
-	auto NaPrecipConc            = RegisterInput(Model, "Na conc in precip", MEqPerM3);
-	auto KPrecipConc             = RegisterInput(Model, "K conc in precip", MEqPerM3);
-	auto NH4PrecipConc           = RegisterInput(Model, "NH4 conc in precip", MEqPerM3);
-	auto SO4PrecipConc           = RegisterInput(Model, "SO4 conc in precip", MEqPerM3);
-	auto ClPrecipConc            = RegisterInput(Model, "Cl conc in precip", MEqPerM3);
-	auto NO3PrecipConc           = RegisterInput(Model, "NO3 conc in precip", MEqPerM3);
-	auto FPrecipConc             = RegisterInput(Model, "F conc in precip", MEqPerM3);
-	auto PO4PrecipConc           = RegisterInput(Model, "PO4 conc in precip", MEqPerM3);
 	
-	
-	
+	auto MgDeposition            = RegisterInput(Model, "Total Mg deposition", MEqPerM2PerTs);
+	auto NH4Deposition           = RegisterInput(Model, "Total NH4 deposition", MEqPerM2PerTs);
+	auto NO3Deposition           = RegisterInput(Model, "Total NO3 deposition", MEqPerM2PerTs);
+	auto ClDeposition            = RegisterInput(Model, "Total Cl deposition", MEqPerM2PerTs);
+	auto NaDeposition            = RegisterInput(Model, "Total Na deposition", MEqPerM2PerTs);
+	auto KDeposition             = RegisterInput(Model, "Total K deposition", MEqPerM2PerTs);
+	auto SO4Deposition           = RegisterInput(Model, "Total SO4 deposition", MEqPerM2PerTs);
+	auto CaDeposition            = RegisterInput(Model, "Total Ca deposition", MEqPerM2PerTs);
+	auto FDeposition             = RegisterInput(Model, "Total F deposition", MEqPerM2PerTs);
+	auto PO4Deposition           = RegisterInput(Model, "Total PO4 deposition", MEqPerM2PerTs);
 	
 	
 	auto FractionOfYear          = RegisterEquation(Model, "Fraction of year", YearPerTs);
-	
-	
-	auto MgDeposition            = RegisterEquation(Model, "Mg deposition", MEqPerM2PerTs);
-	auto NH4Deposition           = RegisterEquation(Model, "NH4 deposition", MEqPerM2PerTs);
-	auto NO3Deposition           = RegisterEquation(Model, "NO3 deposition", MEqPerM2PerTs);
-	auto ClDeposition            = RegisterEquation(Model, "Cl deposition", MEqPerM2PerTs);
-	auto NaDeposition            = RegisterEquation(Model, "Na deposition", MEqPerM2PerTs);
-	auto KDeposition             = RegisterEquation(Model, "K deposition", MEqPerM2PerTs);
-	auto SO4Deposition           = RegisterEquation(Model, "SO4 deposition", MEqPerM2PerTs);
-	auto CaDeposition            = RegisterEquation(Model, "Ca deposition", MEqPerM2PerTs);
-	auto FDeposition             = RegisterEquation(Model, "F deposition", MEqPerM2PerTs);
-	auto PO4Deposition           = RegisterEquation(Model, "PO4 deposition", MEqPerM2PerTs);
-	
 	
 	// These are required by the MAGIC Core:
 	auto Discharge               = RegisterEquation(Model, "Discharge", MPerTs);
@@ -117,9 +102,9 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto NH4ProcessesLoss        = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
 	auto PO4ProcessesLoss        = RegisterEquation(Model, "PO4 processes loss", MMolPerM2PerTs);
 	
-	auto NO3BasicInputs          = RegisterEquation(Model, "NO3 basic inputs", MMolPerM2PerTs);
-	auto NH4BasicInputs          = RegisterEquation(Model, "NH4 basic inputs", MMolPerM2PerTs);
-	auto PO4BasicInputs          = RegisterEquation(Model, "PO4 basic inputs", MMolPerM2PerTs);
+	auto NO3BasicInputs          = RegisterEquation(Model, "NO3 non-process inputs", MMolPerM2PerTs);
+	auto NH4BasicInputs          = RegisterEquation(Model, "NH4 non-process inputs", MMolPerM2PerTs);
+	auto PO4BasicInputs          = RegisterEquation(Model, "PO4 non-process inputs", MMolPerM2PerTs);
 	
 	// The following are re-registered and defined in the CNP module:
 	auto TotalTreeDecompCaSource = RegisterEquation(Model, "Total Ca source from tree decomposition", MEqPerM2PerTs);
@@ -175,64 +160,22 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	
-	EQUATION(Model, CaDeposition,
-		return INPUT(CaPrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, MgDeposition,
-		return INPUT(MgPrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, NaDeposition,
-		return INPUT(NaPrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-
-	EQUATION(Model, KDeposition,
-		return INPUT(KPrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, NH4Deposition,
-		return INPUT(NH4PrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, SO4Deposition,
-		return INPUT(SO4PrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, NO3Deposition,
-		return INPUT(NO3PrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, ClDeposition,
-		return INPUT(ClPrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, FDeposition,
-		return INPUT(FPrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	EQUATION(Model, PO4Deposition,
-		return INPUT(PO4PrecipConc) * INPUT(Precipitation) * 1e-3;
-	)
-	
-	
-	
 	EQUATION(Model, NO3BasicInputs,
-		double deposition = RESULT(NO3Deposition);
+		double deposition = INPUT(NO3Deposition);
 		double weathering = PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, NH4BasicInputs,
-		double deposition = RESULT(NH4Deposition);
+		double deposition = INPUT(NH4Deposition);
 		double weathering = PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, PO4BasicInputs,
-		double deposition = RESULT(PO4Deposition);
+		double deposition = INPUT(PO4Deposition);
 		double weathering = PARAMETER(PO4Weathering)*RESULT(FractionOfYear);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
@@ -241,7 +184,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	//TODO: The uptake should maybe be limited so that the mass never goes in the negative, but it may not be a problem
 	EQUATION(Model, CaExternalFlux,
-		double deposition = RESULT(CaDeposition);
+		double deposition = INPUT(CaDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(CaWeathering);
 		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -250,7 +193,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, MgExternalFlux,
-		double deposition = RESULT(MgDeposition);
+		double deposition = INPUT(MgDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(MgWeathering);
 		double forest     = RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -259,7 +202,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, NaExternalFlux,
-		double deposition = RESULT(NaDeposition);
+		double deposition = INPUT(NaDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(NaWeathering);
 		double forest     = RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeNaUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -268,7 +211,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, KExternalFlux,
-		double deposition = RESULT(KDeposition);
+		double deposition = INPUT(KDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering);
 		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeKUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -281,7 +224,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, SO4ExternalFlux,
-		double deposition = RESULT(SO4Deposition);
+		double deposition = INPUT(SO4Deposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(SO4Weathering);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
@@ -292,14 +235,14 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, ClExternalFlux,
-		double deposition = RESULT(ClDeposition);
+		double deposition = INPUT(ClDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(ClWeathering);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, FExternalFlux,
-		double deposition = RESULT(FDeposition);
+		double deposition = INPUT(FDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(FWeathering);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;

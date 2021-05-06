@@ -130,9 +130,9 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	
 	auto FractionOfYear            = GetEquationHandle(Model, "Fraction of year");
 	auto Temperature               = GetEquationHandle(Model, "Temperature");
-	auto NO3BasicInputs            = GetEquationHandle(Model, "NO3 basic inputs");
-	auto NH4BasicInputs            = GetEquationHandle(Model, "NH4 basic inputs");
-	auto PO4BasicInputs            = GetEquationHandle(Model, "PO4 basic inputs");
+	auto NO3BasicInputs            = GetEquationHandle(Model, "NO3 non-process inputs");
+	auto NH4BasicInputs            = GetEquationHandle(Model, "NH4 non-process inputs");
+	auto PO4BasicInputs            = GetEquationHandle(Model, "PO4 non-process inputs");
 	
 	// From the forest decomp-uptake module
 	auto TotalTreeNUptake       = GetEquationHandle(Model, "Total tree N uptake");

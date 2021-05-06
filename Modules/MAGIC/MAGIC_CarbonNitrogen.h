@@ -39,8 +39,8 @@ This is a basic module that provides Carbon and Nitrogen dynamics as drivers for
 	auto MineralisationEq    = RegisterEquation(Model, "Mineralisation", MMolPerM2PerTs);
 	
 	auto FractionOfYear = GetEquationHandle(Model, "Fraction of year");
-	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 basic inputs");
-	auto NH4BasicInputs = GetEquationHandle(Model, "NH4 basic inputs");
+	auto NO3BasicInputs = GetEquationHandle(Model, "NO3 non-process inputs");
+	auto NH4BasicInputs = GetEquationHandle(Model, "NH4 non-process inputs");
 	
 	EQUATION(Model, NO3Inputs,
 		return RESULT(NO3BasicInputs) + RESULT(NitrificationEq);

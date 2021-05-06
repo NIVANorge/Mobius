@@ -164,9 +164,7 @@ def monte_carlo_run(dataset, mc_params, idx, num=10) :
 		dataset_copy = dataset.copy()
 		
 		set_mc_val(dataset_copy, mc_params, vals[:, idx])
-		
 		opt_bc_pars = calib(dataset_copy, bc_pars, bc_comp)
-		
 		result_datasets.append(dataset_copy)
 		
 	

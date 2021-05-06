@@ -153,8 +153,8 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto NO3ProcessesLoss   = RegisterEquation(Model, "NO3 processes loss", MMolPerM2PerTs);
 	auto NH4ProcessesLoss   = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);
 	
-	auto NO3BasicInputs     = RegisterEquation(Model, "NO3 basic inputs", MMolPerM2PerTs);
-	auto NH4BasicInputs     = RegisterEquation(Model, "NH4 basic inputs", MMolPerM2PerTs);
+	auto NO3BasicInputs     = RegisterEquation(Model, "NO3 non-process inputs", MMolPerM2PerTs);
+	auto NH4BasicInputs     = RegisterEquation(Model, "NH4 non-process inputs", MMolPerM2PerTs);
 	
 	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
 	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);

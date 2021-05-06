@@ -131,9 +131,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		//NOTE: LAST_RESULT(TotalLiveTreeMass) fails for some obscure reason. Why????
 		double Vtot = 0.0;
 		for(index_t Species = FIRST_INDEX(TreeClass); Species != INDEX_COUNT(TreeClass); ++Species)
-		{
 			Vtot += LAST_RESULT(LiveTreeMass, Species);
-		}
 		
 		if(std::isfinite(in)) return in;
 		
@@ -150,7 +148,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 
 	EQUATION(Model, CompartmentShare,
-		double ln100  = 4.60517018599;
+		const double ln100  = 4.60517018599;
 		double interp = INPUT(TreeAgeInterp);
 		double young  = PARAMETER(ShareOfYoung);
 		double old    = PARAMETER(ShareOfOld);
@@ -160,11 +158,12 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	EQUATION(Model, CompartmentTurnover,
 		double in = INPUT(TreeTurnover);
+		double share = RESULT(CompartmentShare);
 	
 		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), 1.0/12.0);  //NOTE: Turn 1/year to 1/month
-		double computed = r * RESULT(CompartmentShare) * RESULT(LiveTreeMass); //NOTE: Is based on current-timestep so that trees that are harvested are not counted for turnover. But does that mean that it is counted doubly in compartmentgrowth below?
+		double computed = r * share * RESULT(LiveTreeMass); //NOTE: Is based on current-timestep so that trees that are harvested are not counted for turnover. But does that mean that it is counted doubly in compartmentgrowth below?
 		
-		if(std::isfinite(in)) return in;
+		if(std::isfinite(in)) return in * share;
 		return computed;
 	)
 	
