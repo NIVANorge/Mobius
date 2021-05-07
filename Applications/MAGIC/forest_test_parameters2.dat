@@ -1,7 +1,8 @@
-# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-05-04 11:18:45
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0, MAGIC Forest CNP V_dev) at 2021-05-06 15:49:51
 
 index_sets:
 "Compartment" : {"Soil1" "Stream"}
+"Forest patch" : {"Patch1"}
 "Tree species" : {"Coniferous"}
 "Tree compartment" : {"Needles" "Bark" "Branches+roots" "Wood"}
 
@@ -184,9 +185,18 @@ parameters:
 
 { module "MAGIC Forest decomposition and uptake" version "0.0"
 
-	# Forest parameters (no index sets) #
+	# Forest patches ("Forest patch") #
 
-	"Forest carrying capacity" :     #(tonnes/Ha) [0, 10000]
+	"Patch relative area" :     #(dimensionless) [0, 1]
+	1
+
+	"Patch carrying capacity" :     #(tonnes/Ha) [0, 10000]
+	100
+
+
+	# Initial tree mass ("Forest patch" "Tree species") #
+
+	"Initial live tree mass" :     #(tonnes/Ha) [0, 10000]
 	100
 
 
@@ -194,9 +204,6 @@ parameters:
 
 	"Max tree growth rate" :     #(1/year) [0, 1000]
 	0.1
-
-	"Initial live tree mass" :     #(tonnes/Ha) [0, 10000]
-	100
 
 
 	# Tree (de)composition ("Tree species" "Tree compartment") #
