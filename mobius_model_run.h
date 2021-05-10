@@ -80,12 +80,16 @@ static void
 ErrorPrintEquation(mobius_model *Model, equation_h Equation, bool CareAboutConditionals = false)
 {
 	equation_spec &Spec = Model->Equations[Equation];
-	if(CareAboutConditionals && IsValid(Spec.Conditional))
-		ErrorPrint("conditional branch \"", GetName(Model, Spec.Conditional), "\" (");
+	conditional_h Conditional = GetConditional(Model, Equation);
+	
+	if(CareAboutConditionals && IsValid(Conditional))
+		ErrorPrint("conditional branch \"", GetName(Model, Conditional), "\" (");
 	if(IsValid(Spec.Solver))
 		ErrorPrint("solver \"", GetName(Model, Spec.Solver), "\" (");
 	ErrorPrint("equation \"", GetName(Model, Equation), "\"");
-	if(IsValid(Spec.Solver) || (CareAboutConditionals && IsValid(Spec.Conditional)))
+	if(IsValid(Spec.Solver))
+		ErrorPrint(")");
+	if(CareAboutConditionals && IsValid(Conditional))
 		ErrorPrint(")");
 }
 
