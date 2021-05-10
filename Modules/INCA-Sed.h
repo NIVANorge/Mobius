@@ -205,23 +205,16 @@ A notable difference with this implementation is that it is rigged to be run in 
 	auto ProportionOfSedimentThatCanBeEntrained = RegisterEquation(Model, "Proportion of sediment that can be entrained", Dimensionless);
 	auto StreamPower                        = RegisterEquation(Model, "Stream power", JPerSPerM2);
 	
-	auto SedimentEntrainment                = RegisterEquation(Model, "Sediment entrainment", KgPerM2PerDay);
-	SetSolver(Model, SedimentEntrainment, InstreamSedimentSolver);
+	auto SedimentEntrainment                = RegisterEquation(Model, "Sediment entrainment", KgPerM2PerDay, InstreamSedimentSolver);
+	auto SedimentDeposition                 = RegisterEquation(Model, "Sediment deposition", KgPerM2PerDay, InstreamSedimentSolver);
+	auto ReachSuspendedSedimentOutput       = RegisterEquation(Model, "Reach suspended sediment output", KgPerDay, InstreamSedimentSolver);
 	
-	auto SedimentDeposition                 = RegisterEquation(Model, "Sediment deposition", KgPerM2PerDay);
-	SetSolver(Model, SedimentDeposition, InstreamSedimentSolver);
-	
-	auto ReachSuspendedSedimentOutput       = RegisterEquation(Model, "Reach suspended sediment output", KgPerDay);
-	SetSolver(Model, ReachSuspendedSedimentOutput, InstreamSedimentSolver);
-	
-	auto MassOfBedSedimentPerUnitArea       = RegisterEquationODE(Model, "Mass of bed sediment per unit area", KgPerM2);
+	auto MassOfBedSedimentPerUnitArea       = RegisterEquationODE(Model, "Mass of bed sediment per unit area", KgPerM2, InstreamSedimentSolver);
 	SetInitialValue(Model, MassOfBedSedimentPerUnitArea, InitialMassOfBedSedimentPerUnitArea);
-	SetSolver(Model, MassOfBedSedimentPerUnitArea, InstreamSedimentSolver);
 	
 	auto InitialSuspendedSedimentMass = RegisterEquationInitialValue(Model, "Initial suspended sediment mass", Kg);
-	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Suspended sediment mass", Kg);
+	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Suspended sediment mass", Kg, InstreamSedimentSolver);
 	SetInitialValue(Model, SuspendedSedimentMass, InitialSuspendedSedimentMass);
-	SetSolver(Model, SuspendedSedimentMass, InstreamSedimentSolver);
 	
 	auto MassOfBedSediment = RegisterEquation(Model, "Mass of bed sediment", Kg);
 	

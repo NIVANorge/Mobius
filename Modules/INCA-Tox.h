@@ -58,7 +58,7 @@ New to V0.3: Multiple contaminants at a time.
 	auto DepositionToLand         = RegisterInput(Model, "Contaminant deposition to land", NgPerM2PerDay);
 	auto DepositionToReach        = RegisterInput(Model, "Contaminant deposition to reach", NgPerDay);
 	auto AtmosphericContaminantConcentrationIn = RegisterInput(Model, "Atmospheric contaminant concentration", NgPerM3);
-	auto WindSpeed                = RegisterInput(Model, "Wind speed", MPerS);
+	auto WindSpeed                = RegisterInput(Model, "Wind speed at 10m", MPerS);
 	
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto Soils          = GetIndexSetHandle(Model, "Soils");
@@ -624,30 +624,32 @@ New to V0.3: Multiple contaminants at a time.
 		
 		int Case = 1;
 		
+		/*
 		double depth = RESULT(ReachDepth);
 		double velocity = RESULT(ReachVelocity);
 		double shearvelocity = RESULT(ReachShearVelocity);
 		double stonedepth = PARAMETER(HeightOfLargeStones);
+		*/
 		
 		double schmidtnumber = RESULT(SchmidtNumber);
-		double froudenumber  = RESULT(ElementFroudeNumber);
-		double roughness     = RESULT(NonDimensionalRoughnessParameter);
+		//double froudenumber  = RESULT(ElementFroudeNumber);
+		//double roughness     = RESULT(NonDimensionalRoughnessParameter);
 		
-		double kinematicviscosity = RESULT(ReachKinematicViscosity);
-		double moleculardiffusitivity = RESULT(MolecularDiffusivityOfCompoundInWater);
+		//double kinematicviscosity = RESULT(ReachKinematicViscosity);
+		//double moleculardiffusitivity = RESULT(MolecularDiffusivityOfCompoundInWater);
 		
-		double criticalvelocity = (windspeed < 5.0) ? 0.2*std::cbrt(depth) : 3.0*std::cbrt(depth);	
+		//double criticalvelocity = (windspeed < 5.0) ? 0.2*std::cbrt(depth) : 3.0*std::cbrt(depth);	
 		
+		/*
 		if(depth < stonedepth) Case = 5;
 		else if(velocity < criticalvelocity) Case = 1;
 		else if(roughness < 136.0) Case = 2;
 		else if(froudenumber < 1.4) Case = 3;
 		else Case = 4;
-	
+		*/
 		
 		if(Case == 1)
 		{
-			//TODO: Separate equations for these for easier debugging?
 			if(windspeed <= 4.2)
 			{
 				asc = 0.67;
@@ -660,6 +662,7 @@ New to V0.3: Multiple contaminants at a time.
 			
 			return std::pow(schmidtnumber/600.0, -asc) * vCO2 * 864.0;
 		}
+		/*
 		else if(Case == 2)
 		{
 			return (0.161 / std::sqrt(schmidtnumber)) * std::pow(SafeDivide(kinematicviscosity*shearvelocity, depth), 0.25) * 86400.0;
@@ -677,7 +680,7 @@ New to V0.3: Multiple contaminants at a time.
 			//NOTE: In this case the exchange flux should be computed differently, not using the transfer velocity. //TODO!
 			return 0.0;
 		}
-		
+		*/
 		return 0.0; //Control flow will never reach here..
 	)
 	

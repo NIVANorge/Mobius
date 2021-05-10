@@ -1,7 +1,7 @@
 
 
 #define MOBIUS_TIMESTEP_VERBOSITY 0
-#define MOBIUS_TEST_FOR_NAN 0
+#define MOBIUS_TEST_FOR_NAN 1
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
 #define MOBIUS_INDEX_BOUNDS_TESTS 1
@@ -15,7 +15,7 @@
 
 #define EASYLAKE_SIMPLYQ
 #include "../../Modules/EasyLake.h"
-
+//#include "../../Modules/EasyLake_discrete.h"
 
 
 mobius_model *

@@ -80,14 +80,13 @@ This is a simple DOC model intended only for use with INCA-Tox. It is not suitab
 	auto SOCDeliveryToReachPerLU   = RegisterEquationCumulative(Model, "SOC delivery to reach per landscape unit", SOCDeliveryToReach, Class);
 	auto TotalSOCDeliveryToReach   = RegisterEquationCumulative(Model, "Total SOC delivery to reach", SOCDeliveryToReachPerLU, LandscapeUnits);
 	
-	auto ReachSolver = GetSolverHandle(Model, "Reach solver");
-	auto ReachDOCMass              = RegisterEquationODE(Model, "Reach DOC mass", Kg);
-	SetSolver(Model, ReachDOCMass, ReachSolver);
-	//SetInitialValue
-	auto ReachDOCOutput            = RegisterEquation(Model, "Reach DOC output", KgPerDay);
-	SetSolver(Model, ReachDOCOutput, ReachSolver);
 	auto ReachDOCInput             = RegisterEquation(Model, "Reach DOC input", KgPerDay);
-	auto ReachDOCConcentration     = RegisterEquation(Model, "Reach DOC concentration", MgPerL);
+	
+	auto ReachSolver = GetSolverHandle(Model, "Reach solver");
+	auto ReachDOCMass              = RegisterEquationODE(Model, "Reach DOC mass", Kg, ReachSolver);
+	auto ReachDOCOutput            = RegisterEquation(Model, "Reach DOC output", KgPerDay, ReachSolver);
+	auto ReachDOCConcentration     = RegisterEquation(Model, "Reach DOC concentration", MgPerL, ReachSolver);
+	
 	auto ReachSuspendedSOCMass     = RegisterEquation(Model, "Reach suspended SOC mass", Kg);
 	auto BedSOCMass                = RegisterEquation(Model, "Stream bed SOC mass", KgPerM2);
 	auto ReachSOCDeposition        = RegisterEquation(Model, "Reach SOC deposition", KgPerM2PerDay);

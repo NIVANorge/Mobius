@@ -122,7 +122,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto RelativeHumidity = RegisterInput(Model, "Relative humidity", Percent);
 	auto AirPressure      = RegisterInput(Model, "Air pressure", HPa);
 	auto CloudCover       = RegisterInput(Model, "Cloud cover", Dimensionless);
-	auto GlobalRadiation  = RegisterInput(Model, "Global radiation", WPerM2); // Net shortwave radiation falling at earth surface.
+	auto GlobalRadiation  = RegisterInput(Model, "Global radiation", WPerM2); // Shortwave radiation falling at earth surface.
 	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.1, IncaDascru);
 	
