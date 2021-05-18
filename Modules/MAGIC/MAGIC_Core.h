@@ -957,6 +957,8 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 		Result.Log10MgAlSelectCoeff = 2.0*Ratio + 3.0*log10(Input.conc_Mg / Input.exchangeable_Mg) - 6.0;
 		Result.Log10NaAlSelectCoeff = Ratio + 3.0*log10(Input.conc_Na / Input.exchangeable_Na)     - 12.0;
 		Result.Log10KAlSelectCoeff  = Ratio + 3.0*log10(Input.conc_K / Input.exchangeable_K)       - 12.0;
+		
+		//WarningPrint("Ca-Al was ", Result.Log10CaAlSelectCoeff, "\n");
 	}
 }
 

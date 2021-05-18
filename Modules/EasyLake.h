@@ -40,7 +40,7 @@ WaterDensity(double WaterTemperature)
 static void
 AddEasyLakePhysicalModule(mobius_model *Model)
 {
-	BeginModule(Model, "Easy-Lake physical", "_dev");
+	BeginModule(Model, "Easy-Lake physical", "0.1");
 	
 	SetModuleDescription(Model, R""""(
 This is a very simple lake model for use along with cathcment models.
@@ -723,34 +723,51 @@ The implementation is informed by the implementation in [^https://github.com/got
 	)
 	
 	EQUATION(Model, SurfaceHeatFlux,
-		double surfaceheat = RESULT(LongwaveRadiation);
-		double latentsensible = RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux);
-		if(!RESULT(IsIce)) surfaceheat += latentsensible;
+		double surfaceheat = RESULT(LongwaveRadiation) + RESULT(LatentHeatFlux) + RESULT(SensibleHeatFlux);
+		if(RESULT(IsIce)) surfaceheat = 0.0;
 		return surfaceheat;
 	)
 
 	EQUATION(Model, IceThickness,
 		double iceDensity = 917.0;              // kg m-3
 		double latentHeatOfFreezing = 333500.0; // J kg-1
+		double iceHeatConductionCoeff = 2.1; // W/m/K
+		
 		double iceenergy = RESULT(IceEnergy);   // W/m2
 		double airT = INPUT(AirTemperature);
 		double precip = INPUT(Precipitation);
+		double iceformationtemp = PARAMETER(IceFormationTemperature);
+		bool is_ice = (bool)RESULT(IsIce);
+		double Hice = RESULT(IceThickness);
 		
-		//double surfaceheatflux = 0.0;
 		double surfaceheatflux = RESULT(SurfaceHeatFlux);
-		if(!RESULT(IsIce)) surfaceheatflux = 0.0;
+		double shortwavein     = RESULT(ShortwaveRadiation)*RESULT(IceAttenuationCoefficient);
 		
 		//NOTE: The amount of shortwave radiation that is absorbed by the ice and contributes to melting
 		
-		//double shortwavein = 0.0;
-		double shortwavein     = RESULT(ShortwaveRadiation)*RESULT(IceAttenuationCoefficient);
+		double dIce_dt = iceenergy;
 		
-		double dIcedT = 86400.0 * (iceenergy - shortwavein - surfaceheatflux) / (iceDensity * latentHeatOfFreezing);
+		if((airT <= iceformationtemp) && is_ice)
+		{
+			double factor = (1.0 / (10.0 * Hice));
+			double iceT = (factor * iceformationtemp + airT) / (1.0 + factor);  // Approximation of ice temperature. TODO: factor out to separate equation?
+			dIce_dt += 2.0*iceHeatConductionCoeff * (iceformationtemp-iceT) / (2.0*Hice);
+			//NOTE: Stefan's law, but turned into ODE equation:
+			// Hice_n = sqrt(Hice_{n-1}^2 + Y)
+			// -> d(Hice^2)/dt = Y
+			// and d(Hice^2)/dt = 2*Hice*d(Hice)/dt
+		}
+		else if(is_ice)
+		{
+			dIce_dt += - shortwavein - surfaceheatflux;
+		}
+		
+		dIce_dt = 86400.0*dIce_dt / (latentHeatOfFreezing*iceDensity);
 		
 		bool snowaccum = PARAMETER(SnowAccumulates);
-		if(RESULT(IsIce) && snowaccum && airT <= 0.0) dIcedT += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
+		if(is_ice && snowaccum && (airT <= iceformationtemp)) dIce_dt += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
 		
-		return dIcedT;
+		return dIce_dt;
 	)
 	
 	EQUATION(Model, IsIce,
@@ -816,12 +833,16 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double z_b = RESULT(WaterLevel);
 		double a   = RESULT(LakeSurfaceArea);
 	
-		// parabola: Integrate[(1 - z/b)*((z-b)^2*(T-Y)/(e - b)^2 + Y), {z, e, b}]
+		
 		double V   = RESULT(LakeVolume); // = 0.5*a*z_D;
 		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
 		double V_e = V - V_h;
 		
-		return ( V_e*T_e + 0.5*V_h*(T_e+T_b)) / V;
+		// Linear temperature profile below epilimnion:        integrate ((Y + (T-Y)*(b-x) / (b-e))*A*(b-x)/b) dx from e to b
+		//return ( T_e*(V_e + (2.0/3.0)*V_h) + T_b*(1.0/3.0)*V_h)  / V;
+		
+		// Parabolic temperature profile below epilimnion:     integrate ((Y + (T-Y)*(x-b)^2 / (e-b)^2)*A*(b-x)/b) dx from e to b
+		return ( T_e*(V_e + 0.5*V_h) + T_b*0.5*V_h ) / V;
 	)
 	
 	EQUATION(Model, EpilimnionTemperature,
@@ -835,6 +856,10 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double V_h = a*(z_b-z_e)*(z_b-z_e)/(2.0*z_b);
 		double V_e = V - V_h;
 		
+		// Linear:
+		//return (T_m*V - T_b*(1.0/3.0)*V_h) / (V_e + (2.0/3.0)*V_h);
+		
+		// Parabolic:
 		return (T_m*V - 0.5*T_b*V_h) / (V_e + 0.5*V_h);
 	)
 	

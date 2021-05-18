@@ -212,9 +212,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicNLitter,
-		double fromtrees = RESULT(TotalTreeDecompNSource);
-		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) fromtrees = 0.0;
-		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio)  + fromtrees;
+		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio);
 	)
 	
 	EQUATION(Model, OrganicNDecomposition,
@@ -278,7 +276,9 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, NH4Inputs,
-		return RESULT(NH4BasicInputs) + RESULT(OrganicNMineralized);
+		double forest = RESULT(TotalTreeDecompNSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
+		return RESULT(NH4BasicInputs) + RESULT(OrganicNMineralized) + forest;
 	)
 	
 	
@@ -367,9 +367,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicPLitter,
-		double fromtrees = RESULT(TotalTreeDecompPSource);
-		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) fromtrees = 0.0;
-		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio) + fromtrees;
+		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio);
 	)
 	
 	EQUATION(Model, OrganicPDecomposition,
@@ -444,7 +442,9 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	
 	
 	EQUATION(Model, PO4Inputs,
-		return RESULT(PO4BasicInputs) + RESULT(OrganicPMineralized);
+		double forest = RESULT(TotalTreeDecompPSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
+		return RESULT(PO4BasicInputs) + RESULT(OrganicPMineralized) + forest;
 	)
 	
 	EQUATION(Model, PO4ProcessesLoss,

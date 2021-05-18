@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-04-12 13:26:23
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-05-18 11:52:38
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -55,16 +55,16 @@ parameters:
 	0
 
 	"Frazil threshold" :     #(m) [0, 0.1] Thickness of ice before it changes surface properties of the lake
-	0.01
+	0
 
 	"Snow contributes to ice thickness" :
-	false
+	true
 
 	"Ice has its own albedo" :
-	false
+	true
 
 	"Ice albedo" :     #(dimensionless) [0.001, 1]
-	0.4
+	0.58
 
 
 	# Temperature calibration depths ("Temperature calibration depth") #
