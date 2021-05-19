@@ -28,8 +28,8 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	auto TreeGrowth           = RegisterInput(Model, "Forest growth", TPerHaPerTs, true);
 	auto TreeTurnover         = RegisterInput(Model, "Forest turnover", TPerHaPerTs, true);
-	auto TreeHarvesting       = RegisterInput(Model, "Forest harvesting", TPerHaPerTs);
-	auto LeftByHarvesting     = RegisterInput(Model, "Biomass left by harvesting", TPerHaPerTs);
+	auto TreeDisturbance      = RegisterInput(Model, "Forest disturbance", Dimensionless);
+	auto LeftAfterDisturbance = RegisterInput(Model, "Biomass left on ground after disturbance", Dimensionless);
 	auto TreeAgeInterp        = RegisterInput(Model, "Compartment share interpolation variable", Dimensionless);  //Should go between 1 and 100
 	
 	
@@ -57,13 +57,13 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
 	auto InitialDeadTreeMass  = RegisterParameterDouble(Model, TreeDecomp, "Initial dead tree mass", TPerHa, 0.0, 0.0, 10000.0);
-	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100.0);
-	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100.0);
-	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MMolPerKg, 0.0, 0.0, 100.0);
-	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg, 0.0, 0.0, 100.0);
-	auto TreeMgConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Mg concentration", MEqPerKg, 0.0, 0.0, 100.0);
-	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg, 0.0, 0.0, 100.0);
-	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg, 0.0, 0.0, 100.0);
+	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100000.0);
+	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100000.0);
+	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MMolPerKg, 0.0, 0.0, 100000.0);
+	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg, 0.0, 0.0, 100000.0);
+	auto TreeMgConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Mg concentration", MEqPerKg, 0.0, 0.0, 100000.0);
+	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg, 0.0, 0.0, 100000.0);
+	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg, 0.0, 0.0, 100000.0);
 	
 	
 	auto ForestNetGrowth      = RegisterEquation(Model, "Tree net growth", TPerHaPerTs);
@@ -160,7 +160,9 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, LiveTreeMass,
-		return std::max(0.0, LAST_RESULT(LiveTreeMass) + RESULT(ForestNetGrowth) - INPUT(TreeHarvesting));
+		double before_disturbance = LAST_RESULT(LiveTreeMass) + RESULT(ForestNetGrowth);
+		double after_disturbance = before_disturbance * (1.0 - INPUT(TreeDisturbance));
+		return std::max(0.0, after_disturbance);
 	)
 
 	EQUATION(Model, CompartmentShare,
@@ -217,7 +219,11 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DeadTreeMass,
-		return LAST_RESULT(DeadTreeMass) * std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)) + INPUT(LeftByHarvesting) + RESULT(CompartmentTurnoverSummed);
+		double before_disturbance = LAST_RESULT(LiveTreeMass) + RESULT(ForestNetGrowth);
+		double disturbance  = before_disturbance * INPUT(TreeDisturbance);
+		double left_on_ground = INPUT(LeftAfterDisturbance) * disturbance * RESULT(CompartmentShare);
+		
+		return LAST_RESULT(DeadTreeMass) * std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)) + left_on_ground + RESULT(CompartmentTurnoverSummed);
 	)
 	
 	EQUATION(Model, TreeDecompCSource,      

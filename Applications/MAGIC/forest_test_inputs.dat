@@ -15,7 +15,7 @@ additional_timeseries:
 
 
 index_set_dependencies :
-"Biomass left by harvesting" : {"Tree compartment"}
+"Biomass left on ground after disturbance" : {"Tree compartment"}
 
 inputs:
 
@@ -26,18 +26,18 @@ inputs:
 
 
 
-"Forest harvesting" :                                 # tonnes/Ha
-1970-6-1    80
-2010-6-1    80
+"Forest disturbance" :        
+1970-6-1    0.8
+2010-6-1    0.8
 
 
-"Biomass left by harvesting" {"Needles"}:             # tonnes/Ha
-1970-6-1    10
-2010-6-1    10
+"Biomass left on ground after disturbance" {"Needles"}:
+1970-6-1    1
+2010-6-1    1
 
-"Biomass left by harvesting" {"Branches+roots"} :
-1970-6-1    2
-2010-6-1    2
+"Biomass left on ground after disturbance" {"Branches+roots"} :
+1970-6-1    1
+2010-6-1    1
 
 "Precipitation" :
 1850-01-01	155.255
