@@ -575,7 +575,7 @@ def get_input_dataframe(dataset, list, alignwithresults=False) :
 	
     (type, magnitude) = dataset.get_timestep_size()
 	
-    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s' % (magnitude, type)))
+    dates = np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s%s' % (magnitude, type, 'S' if type=='M' else '')))
 	
     df = pd.DataFrame({'Date' : dates})
 	

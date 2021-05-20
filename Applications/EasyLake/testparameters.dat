@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V_dev) at 2021-05-18 11:52:38
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V0.2) at 2021-05-20 14:24:42
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -14,7 +14,7 @@ parameters:
 2018-09-30
 
 
-{ module "Easy-Lake physical" version "_dev"
+{ module "Easy-Lake physical" version "0.2"
 
 	# Lake physical (no index sets) #
 
@@ -23,9 +23,6 @@ parameters:
 
 	"Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
 	0.4
-
-	"Initial water level" :     #(m) [0, 1642]
-	10
 
 	"Water level at which outflow is 0" :     #(m) [0, 1642]
 	10
@@ -48,7 +45,10 @@ parameters:
 	"Initial epilimnion thickness" :     #(m) [0, 20]
 	2
 
-	"Freezing thermal conductivity" :     #(dimensionless) [0, 20000]
+	"Initial ice thickness" :     #(m) [0, 10]
+	0
+
+	"Freezing thermal conductivity" :     #(dimensionless) [0, 20000] Should be left unchanged in most cases
 	200
 
 	"Ice formation temperature" :     #(°C) [-2, 2] Calibration parameter to allow for differences in surface temperature and mean epilimnion temperature
@@ -56,15 +56,6 @@ parameters:
 
 	"Frazil threshold" :     #(m) [0, 0.1] Thickness of ice before it changes surface properties of the lake
 	0
-
-	"Snow contributes to ice thickness" :
-	true
-
-	"Ice has its own albedo" :
-	true
-
-	"Ice albedo" :     #(dimensionless) [0.001, 1]
-	0.58
 
 
 	# Temperature calibration depths ("Temperature calibration depth") #

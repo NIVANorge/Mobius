@@ -173,9 +173,6 @@ false true
 "Lake shore slope" :     #(m/m) [0, 4] This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width
 0.2 0.2
 
-"Initial water level" :     #(m) [0, 1642]
-30 10
-
 "Water level at which outflow is 0" :     #(m) [0, 1642]
 30 10
 

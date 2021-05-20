@@ -40,7 +40,7 @@ WaterDensity(double WaterTemperature)
 static void
 AddEasyLakePhysicalModule(mobius_model *Model)
 {
-	BeginModule(Model, "Easy-Lake physical", "0.1");
+	BeginModule(Model, "Easy-Lake physical", "0.2");
 	
 	SetModuleDescription(Model, R""""(
 This is a very simple lake model for use along with cathcment models.
@@ -100,7 +100,6 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto InitialLakeSurfaceArea         = RegisterParameterDouble(Model, PhysParams, "Initial lake surface area", M2, 1e3, 0.0, 371e9);
 	auto LakeLength                     = RegisterParameterDouble(Model, PhysParams, "Lake length", M, 300.0, 0.0, 1.03e6);
 	auto LakeShoreSlope                 = RegisterParameterDouble(Model, PhysParams, "Lake shore slope", MPerM, 0.2, 0.0, 4.0, "This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width");
-	auto InitialWaterLevel              = RegisterParameterDouble(Model, PhysParams, "Initial water level", M, 10.0, 0.0, 1642.0);
 	auto WaterLevelAtWhichOutflowIsZero = RegisterParameterDouble(Model, PhysParams, "Water level at which outflow is 0", M, 10.0, 0.0, 1642.0);
 	auto OutflowRatingCurveShape        = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve shape", Dimensionless, 0.3, 0.0, 1.0, "0 if rating curve is linear, 1 if rating curve is a parabola. Values in between give linear interpolation between these types of curves.");
 	auto OutflowRatingCurveMagnitude    = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve magnitude", Dimensionless, 1.0, 0.01, 100.0, "Outflow is proportional to 10^(magnitude)");
@@ -134,7 +133,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	SetInitialValue(Model, LakeSurfaceArea, InitialLakeSurfaceArea);
 	
 	auto WaterLevel = RegisterEquationODE(Model, "Water level", M, LakeSolver);
-	SetInitialValue(Model, WaterLevel, InitialWaterLevel);
+	SetInitialValue(Model, WaterLevel, WaterLevelAtWhichOutflowIsZero);
 	
 	auto EpilimnionVolume  = RegisterEquation(Model, "Epilimnion volume", M3, LakeSolver);  //NOTE: In their current form, they are just put on the solver to not cause circular references in EasyLakeCNP.
 	auto HypolimnionVolume = RegisterEquation(Model, "Hypolimnion volume", M3, LakeSolver);
@@ -152,7 +151,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	ParameterIsComputedBy(Model, LakeLength, LakeLengthComputation, true);
 	
 	EQUATION(Model, LakeLengthComputation,
-		return 0.5*PARAMETER(InitialLakeSurfaceArea)*PARAMETER(LakeShoreSlope)/PARAMETER(InitialWaterLevel);
+		return 0.5*PARAMETER(InitialLakeSurfaceArea)*PARAMETER(LakeShoreSlope)/PARAMETER(WaterLevelAtWhichOutflowIsZero);
 	)
 	
 	
@@ -194,7 +193,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	*/
 	
 	EQUATION(Model, InitialLakeVolume,
-		return 0.5 * PARAMETER(InitialWaterLevel) * PARAMETER(InitialLakeSurfaceArea);
+		return 0.5 * PARAMETER(WaterLevelAtWhichOutflowIsZero) * PARAMETER(InitialLakeSurfaceArea);
 	)
 	
 	EQUATION(Model, DVDT,
@@ -244,13 +243,10 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto InitialBottomTemperature     = RegisterParameterDouble(Model, PhysParams, "Initial bottom temperature", DegreesCelsius, 4.0, 0.0, 50.0);
 	auto InitialEpilimnionThickness   = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion thickness", M, 5.0, 0.0, 20.0);
 	
-	auto FreezingSpeed = RegisterParameterDouble(Model, PhysParams, "Freezing thermal conductivity", Dimensionless, 2000.0, 0.0, 20000.0); 
-	auto IceFormationTemperature = RegisterParameterDouble(Model, PhysParams, "Ice formation temperature", DegreesCelsius, 0.0, -2.0, 2.0, "Calibration parameter to allow for differences in surface temperature and mean epilimnion temperature");
-	auto FrazilThreshold = RegisterParameterDouble(Model, PhysParams, "Frazil threshold", M, 0.05, 0.0, 0.1, "Thickness of ice before it changes surface properties of the lake");
-	auto SnowAccumulates = RegisterParameterBool(Model, PhysParams, "Snow contributes to ice thickness", true);
-	auto IceAlbedoOn     = RegisterParameterBool(Model, PhysParams, "Ice has its own albedo", true);
-	auto IceAlbedo       = RegisterParameterDouble(Model, PhysParams, "Ice albedo", Dimensionless, 0.4, 0.001, 1.0);
-	
+	auto InitialIceThickness          = RegisterParameterDouble(Model, PhysParams, "Initial ice thickness", M, 0.0, 0.0, 10.0);
+	auto FreezingSpeed                = RegisterParameterDouble(Model, PhysParams, "Freezing thermal conductivity", Dimensionless, 2000.0, 0.0, 20000.0, "Should be left unchanged in most cases"); 
+	auto IceFormationTemperature      = RegisterParameterDouble(Model, PhysParams, "Ice formation temperature", DegreesCelsius, 0.0, -2.0, 2.0, "Calibration parameter to allow for differences in surface temperature and mean epilimnion temperature");
+	auto FrazilThreshold              = RegisterParameterDouble(Model, PhysParams, "Frazil threshold", M, 0.05, 0.0, 0.1, "Thickness of ice before it changes surface properties of the lake");
 	
 	
 	auto SaturationSpecificHumidity           = RegisterEquation(Model, "Saturation specific humidity", KgPerKg, LakeSolver);
@@ -302,6 +298,9 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto IsIce               = RegisterEquation(Model, "There is ice", Dimensionless, LakeSolver);
 	auto IceEnergy           = RegisterEquation(Model, "Ice energy", WPerM2, LakeSolver);
 	auto IceThickness        = RegisterEquationODE(Model, "Ice thickness", M, LakeSolver);
+	
+	SetInitialValue(Model, IceThickness, InitialIceThickness);
+	SetInitialValue(Model, IsIce, IsIce); //Force this computation to be run in the initial value setup too.
 	
 	auto TemperatureAtDepth  = RegisterEquation(Model, "Temperature at depth", DegreesCelsius);
 
@@ -654,9 +653,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 
 	EQUATION(Model, ShortwaveRadiation,
 		double albedo = 0.045; //TODO: Maybe needs correction for solar angle!
-		bool icealbedoon = PARAMETER(IceAlbedoOn);
-		double icealbedo = PARAMETER(IceAlbedo);
-		if(RESULT(IsIce) && icealbedoon) albedo = icealbedo;
+		if(RESULT(IsIce)) albedo = 0.4;
 		return (1.0 - albedo) * INPUT(GlobalRadiation);
 	)
 	
@@ -764,8 +761,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 		
 		dIce_dt = 86400.0*dIce_dt / (latentHeatOfFreezing*iceDensity);
 		
-		bool snowaccum = PARAMETER(SnowAccumulates);
-		if(is_ice && snowaccum && (airT <= iceformationtemp)) dIce_dt += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
+
+		if(is_ice && (airT <= iceformationtemp)) dIce_dt += 0.001*precip;  //when it is warm we just allow overwater to pass "through". Should really have different densities of precip and ice, but we don't correct water level for that either.
 		
 		return dIce_dt;
 	)
