@@ -7,7 +7,7 @@
 static void
 AddSimplyNModel(mobius_model *Model)
 {
-	BeginModule(Model, "SimplyN", "_dev");
+	BeginModule(Model, "SimplyN", "_dev_02");
 	
 	SetModuleDescription(Model, R""""(
 This module is in early development.
@@ -45,7 +45,7 @@ This module is in early development.
 	auto GroundwaterDINConstant           = RegisterParameterBool(Model, NitrogenGlobal, "Constant groundwater DIN concentration", true, "Keep the concentration of DIN in the groundwater constant instead of simulating it.");
 	auto GroundwaterBufferVolume          = RegisterParameterDouble(Model, NitrogenGlobal, "Groundwater retention volume", Mm, 0.0, 0.0, 2000.0, "Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.");
 	
-	auto ReachDenitrificationRate         = RegisterParameterDouble(Model, NitrogenGlobal, "Reach denitrification rate at 20°C", M3PerDay, 0.0, 0.0, 1e6, "", "den"); //NOTE: m3/day is a weird unit. Alternatively we could have m/day, and then multiply that with the reach dimensions.
+	auto ReachDenitrificationRate         = RegisterParameterDouble(Model, NitrogenGlobal, "Reach denitrification rate at 20°C", M3PerDay, 0.0, 0.0, 10.0, "", "den"); //NOTE: m3/day is a weird unit. Alternatively we could have m/day, and then multiply that with the reach dimensions.
 	auto ReachDenitrificationQ10          = RegisterParameterDouble(Model, NitrogenGlobal, "(Q10) Reach denitrification rate response to 10°C change in temperature", Dimensionless, 1.0, 1.0, 5.0, "", "Q10den");
 	
 	auto QuickFlowIsOverland              = RegisterParameterBool(Model, NitrogenGlobal, "Quick flow is overland", false, "Whether quick flow water is clear or brings DIN from the soil");
@@ -238,10 +238,10 @@ This module is in early development.
 	)
 	
 	EQUATION(Model, ReachDenitrification,
-		double conc       = SafeDivide(RESULT(ReachDINMass), RESULT(ReachVolume));
-		double watertemp  = Max(0.0, INPUT(AirTemperature)); //TODO: Maybe use the water temperature module
+		double mass       = RESULT(ReachDINMass);
+		double watertemp  = Max(0.0, INPUT(AirTemperature)); //TODO: Factor out the river temperature module from EasyLake and use that here!
 		double tempfactor = std::pow(PARAMETER(ReachDenitrificationQ10), (watertemp - 20.0)/10.0); 
-		return conc * PARAMETER(ReachDenitrificationRate) * tempfactor;
+		return mass * PARAMETER(ReachDenitrificationRate) * tempfactor;
 	)
 	
 	EQUATION(Model, ReachDINInputFromCatchment,

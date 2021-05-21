@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplyN V_dev) at 2021-03-11 12:10:32
+# Parameter file generated for model SimplyN, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplyN V_dev_02) at 2021-05-21 16:41:15
 
 index_sets:
 "Landscape units" : {"Seminatural" "Agricultural"}
@@ -9,160 +9,168 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-2000-01-01
+1980-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
 2005-12-31
 
 
-###################### Degree-day PET V0.1 ######################
+{ module "Degree-day PET" version "0.1"
 
-# Potential evapotranspiration ("Landscape units") #
+	# Potential evapotranspiration ("Landscape units") #
 
-"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
-0.12 0.17
+	"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
+	0.12 0.17
 
-"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
-0 0
-
-
-###################### SimplyQ V0.4.1 ######################
-
-# Snow (no index sets) #
-
-"Initial snow depth as water equivalent" :     #(mm) [0, 50000]
-0
-
-"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
-2.74
+	"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
+	0 0
 
 
-# Hydrology (no index sets) #
+} # end of module "Degree-day PET"
 
-"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
-0
+{ module "SimplyQ" version "0.4.1"
 
-"Soil field capacity" :     #(mm) [0, 1000] 
-200
+	# Snow (no index sets) #
 
-"Baseflow index" :     #(dimensionless) [0, 1] 
-0.6
+	"Initial snow depth as water equivalent" :     #(mm) [0, 50000]
+	0
 
-"Groundwater time constant" :     #(days) [0.5, 400] 
-15
-
-"Minimum groundwater flow" :     #(mm/day) [0, 10] 
-0
-
-"Manning's coefficient" :     #(s/(m^1/3)) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
-0.04
+	"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
+	2.74
 
 
-# General subcatchment and reach parameters ("Reaches") #
+	# Hydrology (no index sets) #
 
-"Catchment area" :     #(km^2) [0, 10000]
-304.65
+	"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
+	0
 
-"Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
-20000
+	"Soil field capacity" :     #(mm) [0, 1000] 
+	200
 
-"Reach slope" :     #(m/m) [1e-05, 3]
-0.02
+	"Baseflow index" :     #(dimensionless) [0, 1] 
+	0.6
 
+	"Groundwater time constant" :     #(days) [0.5, 400] 
+	15
 
-# Hydrology subcatchment/reach ("Reaches") #
+	"Minimum groundwater flow" :     #(mm/day) [0, 10] 
+	0
 
-"Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
-1
-
-
-# Hydrology land ("Landscape units") #
-
-"Soil water time constant" :     #(days) [0.01, 40] 
-2 3
+	"Manning's coefficient" :     #(s/(m^1/3)) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
+	0.04
 
 
-# Land cover ("Reaches" "Landscape units") #
+	# General subcatchment and reach parameters ("Reaches") #
 
-"Land use proportions" :     #(dimensionless) [0, 1] Must sum to 1 over the landscape units for each given reach.
-0.78 0.22
+	"Catchment area" :     #(km^2) [0, 10000]
+	304.65
 
+	"Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
+	20000
 
-###################### Simply soil temperature V0.1 ######################
-
-# Global soil temperature parameters (no index sets) #
-
-"Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
--0.2
-
-"Initial soil temperature" :     #(°C) [-30, 40]
-10
+	"Reach slope" :     #(m/m) [1e-05, 3]
+	0.02
 
 
-# Soil temperature parameters (varying by soil or land class) ("Landscape units") #
+	# Hydrology subcatchment/reach ("Reaches") #
 
-"Soil thermal conductivity over specific heat capacity" :     #(1E-6 m2/s) [0.01, 0.8] Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)
-0.7 0.7
-
-
-###################### SimplyN V_dev ######################
-
-# Nitrogen global (no index sets) #
-
-"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/day) [0, 10] 
-0.01
-
-"(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
-2.73
-
-"Use growth curve" :
-false
-
-"Day of highest uptake+immobilisation" :     #(day) [1, 365]
-200
-
-"Length of interval where 95% of growth takes place" :     #(day) [0, 365]
-200
-
-"Groundwater DIN concentration" :     #(mg/l) [0, 30] 
-1
-
-"Constant groundwater DIN concentration" :     # Keep the concentration of DIN in the groundwater constant instead of simulating it.
-true
-
-"Groundwater retention volume" :     #(mm) [0, 2000] Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.
-1000
-
-"Reach denitrification rate at 20°C" :     #(m3/day) [0, 1000000] 
-0
-
-"(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
-1
-
-"Quick flow is overland" :     # Whether quick flow water is clear or brings DIN from the soil
-false
+	"Initial in-stream flow" :     #(m^3/s) [0, 1000000] This parameter is only used by reaches that don't have other reaches as inputs.
+	1
 
 
-# Nitrogen by land use ("Landscape units") #
+	# Hydrology land ("Landscape units") #
 
-"Initial soil water DIN concentration" :     #(mg/l) [0, 10]
-0.5 3.5
-
-"Net annual DIN input to soil" :     #(kg/Ha/year) [0, 1000] Inputs from deposition and fertilizer
-6.6 130
-
-"Fertilization start day" :     #(day) [1, 365]
-60 60
-
-"Fertilization end day" :     #(day) [1, 365]
-120 120
-
-"Daily NO3 fertilizer inputs" :     #(kg/Ha/day) [0, 100] 
-0 0
+	"Soil water time constant" :     #(days) [0.01, 40] 
+	2 3
 
 
-# Nitrogen by reach ("Reaches") #
+	# Land cover ("Reaches" "Landscape units") #
 
-"Effluent DIN inputs" :     #(kg/day) [0, 100] 
-2.75
+	"Land use proportions" :     #(dimensionless) [0, 1] Must sum to 1 over the landscape units for each given reach.
+	0.78 0.22
 
+
+} # end of module "SimplyQ"
+
+{ module "Simply soil temperature" version "0.1"
+
+	# Global soil temperature parameters (no index sets) #
+
+	"Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
+	-0.2
+
+	"Initial soil temperature" :     #(°C) [-30, 40]
+	10
+
+
+	# Soil temperature parameters (varying by soil or land class) ("Landscape units") #
+
+	"Soil thermal conductivity over specific heat capacity" :     #(1E-6 m2/s) [0.01, 0.8] Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)
+	0.7 0.7
+
+
+} # end of module "Simply soil temperature"
+
+{ module "SimplyN" version "_dev_02"
+
+	# Nitrogen global (no index sets) #
+
+	"Soil water DIN uptake+immobilisation rate at 20°C" :     #(m/day) [0, 10] 
+	0.0128783182974457
+
+	"(Q10) Soil water DIN uptake+immobilisation response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
+	2.74075948014963
+
+	"Use growth curve" :
+	false
+
+	"Day of highest uptake+immobilisation" :     #(day) [1, 365]
+	200
+
+	"Length of interval where 95% of growth takes place" :     #(day) [0, 365]
+	200
+
+	"Groundwater DIN concentration" :     #(mg/l) [0, 30] 
+	0.509437159814097
+
+	"Constant groundwater DIN concentration" :     # Keep the concentration of DIN in the groundwater constant instead of simulating it.
+	true
+
+	"Groundwater retention volume" :     #(mm) [0, 2000] Additional dissolution buffer for DIN that does not affect the hydrology. Only used with non-constant gw concentration.
+	1000
+
+	"Reach denitrification rate at 20°C" :     #(m3/day) [0, 1000000] 
+	0.995317786700823
+
+	"(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
+	1.00025853022692
+
+	"Quick flow is overland" :     # Whether quick flow water is clear or brings DIN from the soil
+	false
+
+
+	# Nitrogen by land use ("Landscape units") #
+
+	"Initial soil water DIN concentration" :     #(mg/l) [0, 10]
+	0.5 3.5
+
+	"Net annual DIN input to soil" :     #(kg/Ha/year) [0, 1000] Inputs from deposition and fertilizer
+	6.6 130
+
+	"Fertilization start day" :     #(day) [1, 365]
+	60 60
+
+	"Fertilization end day" :     #(day) [1, 365]
+	120 120
+
+	"Daily NO3 fertilizer inputs" :     #(kg/Ha/day) [0, 100] 
+	0 0
+
+
+	# Nitrogen by reach ("Reaches") #
+
+	"Effluent DIN inputs" :     #(kg/day) [0, 100] 
+	2.75
+
+
+} # end of module "SimplyN"
