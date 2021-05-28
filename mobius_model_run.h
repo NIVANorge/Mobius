@@ -1368,7 +1368,8 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 			ErrorPrint("Current value of \"", GetName(Model, Res), "\" is ", RunState->CurResults[Res.Handle], '\n');
 		
 		for(equation_h Res : Spec.DirectLastResultDependencies )
-			ErrorPrint("Last value of \"", GetName(Model, Res), "\" was ", RunState->LastResults[Res.Handle], '\n');
+			if(Model->Equations[Res].Type != EquationType_InitialValue)
+				ErrorPrint("Last value of \"", GetName(Model, Res), "\" was ", RunState->LastResults[Res.Handle], '\n');
 		
 		FatalError("");
 	}
