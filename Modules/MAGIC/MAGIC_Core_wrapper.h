@@ -249,43 +249,54 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		//WarningPrint("Initial conc Ca ", val);
 		//WarningPrint("Initial discharge ", RESULT(Discharge));
 		//return val;
-		return (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		//WarningPrint("Ca input ", RESULT(CaInput), "\n");
+		double Value = (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcMg,
-		return (RESULT(MgExternalFlux) + RESULT(MgInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(MgExternalFlux) + RESULT(MgInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcNa,
-		return (RESULT(NaExternalFlux) + RESULT(NaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(NaExternalFlux) + RESULT(NaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcK,
-		return (RESULT(KExternalFlux) + RESULT(KInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(KExternalFlux) + RESULT(KInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcNH4,
-		return (RESULT(NH4ExternalFlux) + RESULT(NH4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(NH4ExternalFlux) + RESULT(NH4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcAllSO4,
-		return (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcCl,
-		return (RESULT(ClExternalFlux) + RESULT(ClInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(ClExternalFlux) + RESULT(ClInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcNO3,
-		return (RESULT(NO3ExternalFlux) + RESULT(NO3Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(NO3ExternalFlux) + RESULT(NO3Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcAllF,
-		return (RESULT(FExternalFlux) + RESULT(FInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(FExternalFlux) + RESULT(FInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialConcPO4,
-		return (RESULT(PO4ExternalFlux) + RESULT(PO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		double Value = (RESULT(PO4ExternalFlux) + RESULT(PO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
+		return std::max(Value, 1e-6);
 	)
 	
 	EQUATION(Model, InitialCa,
@@ -393,12 +404,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		
 		double initconc = RESULT(ConcAllSO4); //Initial total concentration in solution.
 		
-		double exchangeable_SO4 = (PARAMETER(SO4MaxCap)*2.0*Result.conc_SO4/(PARAMETER(SO4HalfSat) + 2.0*Result.conc_SO4));
-		
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
-		double SMESO4        = exchangeable_SO4*PARAMETER(Depth)*PARAMETER(BulkDensity);
+		double SMESO4        = Result.exchangeable_SO4*PARAMETER(Depth)*PARAMETER(BulkDensity);
 		if(!PARAMETER(IsSoil)) SMESO4 = 0.0;
 		double total_SO4 = SMESO4 + WaterVolume*initconc;
 		

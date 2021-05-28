@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyP V0.4, Easy-Lake physical V0.2, Easy-Lake CNP V_dev) at 2021-05-21 15:21:19
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyP V0.4, Easy-Lake physical V0.2, Easy-Lake CNP V_dev) at 2021-05-21 16:46:38
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -230,13 +230,13 @@ parameters:
 	# Carbon global (no index sets) #
 
 	"Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 20] 
-	0
+	3
 
 	"Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20] 
 	0
 
 	"Mineral soil/groundwater DOC concentration" :     #(mg/l) [0, 70] 
-	0
+	8
 
 
 	# Carbon land ("Landscape units") #

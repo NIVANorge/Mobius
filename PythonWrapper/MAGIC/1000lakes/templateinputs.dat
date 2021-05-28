@@ -8,6 +8,7 @@ additional_timeseries :
 "Observed Mg"  unit "meq/m3"
 "Observed Na"  unit "meq/m3"
 "Observed K"   unit "meq/m3"
+"Observed NH4" unit "meq/m3"
 "Observed SO4" unit "meq/m3"
 "Observed Cl"  unit "meq/m3"
 "Observed NO3" unit "meq/m3"
@@ -16,6 +17,7 @@ additional_timeseries :
 "Observed ENa"
 "Observed EK"
 "Observed soil pH"  unit "log10(mol/l)"
+"Observed lake pH"  unit "log10(mol/l)"
 
 
 inputs :

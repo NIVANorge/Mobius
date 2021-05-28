@@ -235,7 +235,7 @@ def get_date_index(dataset) :
 	
     (type, magnitude) = dataset.get_timestep_size()
 	
-    return np.array(pd.date_range(start=start_date, periods=timesteps, freq='%d%s' % (magnitude, type)))
+    return pd.date_range(start=start_date, periods=timesteps, freq='%d%s%s' % (magnitude, type, 'S' if type=='M' else ''))
 
 
 
@@ -641,15 +641,19 @@ def plot_objective(dataset, comparisons, skip_timesteps=0, file_name=None):
 		
         if len(comparisons) > 1:
             df.plot(ax=axes[idx], style=['o--', '-'])
-            axes[idx].set_ylabel('$%s$' % unit)
+            #axes[idx].set_ylabel('$%s$' % unit)   #NOTE: The $ causes a problem when the unit is %
+            axes[idx].set_ylabel('%s' % unit)
         else :
             df.plot(ax=axes, style=['o--', '-'])
-            axes.set_ylabel('$%s$' % unit)
+            #axes.set_ylabel('$%s$' % unit)    #NOTE: The $ causes a problem when the unit is %
+            axes.set_ylabel('%s' % unit)   
 
     plt.tight_layout()
             
     if file_name:
         plt.savefig(filename, dpi=200)
+	
+    return axes
     
 def gof_stats(result, dataset, comparisons, skip_timesteps, use_stat='map'):
     """ Run the model with the 'best' (i.e. MAP or median) parameter set and print

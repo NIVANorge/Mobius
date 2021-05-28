@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
+cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"../../mobius_calib_uncert_lmfit.py").load_module()
 
 
 def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
@@ -13,11 +13,13 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 	dataset_copy = dataset.copy()
 	cu.set_parameter_values(params, dataset_copy)
 	
-	#try :
-	dataset_copy.run_model()
-	#except :
-	#	dataset_copy.delete()   
-	#	return np.inf            #Sometimes the initialization of the selectivity coefficients crash.
+	try :
+		dataset_copy.run_model()
+	except :
+		dataset_copy.delete()
+		print('Model crashed. Params:')
+		params.pretty_print()
+		return np.inf            #Sometimes the initialization of the selectivity coefficients crash with the wrong combination of values.
 
 	residuals = []
 	for i, comparison in enumerate(comparisons):
@@ -79,7 +81,7 @@ def get_so4_setup(dataset, idx) :
 	
 
 	
-def get_base_cations_setup(dataset, idx) :
+def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False) :
 	
 	wantparams = ['ECa_S', 'EMg_S', 'ENa_S', 'EK_S', 'WCa_S', 'WMg_S', 'WNa_S', 'WK_S']    #Maybe also OA_S
 	
@@ -91,21 +93,45 @@ def get_base_cations_setup(dataset, idx) :
 	params['ENa_S'].min = 1.0
 	params['EK_S'].min  = 1.0
 	
-	#TODO: This is not ideal, but the important thing is that they never sum above 100. The user could reconfigure this themselves
-	params['ECa_S'].max = 25.0
-	params['EMg_S'].max = 25.0
-	params['ENa_S'].max = 25.0
-	params['EK_S'].max  = 25.0
+	if usemax :
+		params['ECa_S'].max = params['ECa_S'].value
+		params['EMg_S'].max = params['EMg_S'].value
+		params['ENa_S'].max = params['ENa_S'].value
+		params['EK_S'].max  = params['EK_S'].value
+		
+		params['WCa_S'].max = params['WCa_S'].value
+		params['WMg_S'].max = params['WMg_S'].value
+		params['WNa_S'].max = params['WNa_S'].value
+		params['WK_S'].max = params['WK_S'].value
+		
+		params['WCa_S'].value*=0.1
+		params['WMg_S'].value*=0.1
+		params['WNa_S'].value*=0.1
+		params['WK_S'].value*=0.1
+	else :
+		#TODO: This is not ideal, but the important thing is that they never sum above 100. The user could reconfigure this themselves
+		params['ECa_S'].max = 25.0
+		params['EMg_S'].max = 25.0
+		params['ENa_S'].max = 25.0
+		params['EK_S'].max  = 25.0
 	
 
 	soilindex, waterindex = idx
 	
 	comparisons = [
-				('Ca(2+) ionic concentration', [waterindex], 'Observed runoff conc Ca', [], 1.0),
-				('Mg(2+) ionic concentration', [waterindex], 'Observed runoff conc Mg', [], 1.0),
-				('Na(+) ionic concentration', [waterindex], 'Observed runoff conc Na', [], 1.0),
-				('K(+) ionic concentration', [waterindex], 'Observed runoff conc K', [], 1.0),
+				('Ca(2+) ionic concentration', [waterindex], '%s Ca' %obsname, [], 1.0),
+				('Mg(2+) ionic concentration', [waterindex], '%s Mg' %obsname, [], 1.0),
+				('Na(+) ionic concentration', [waterindex], '%s Na' %obsname, [], 1.0),
+				('K(+) ionic concentration', [waterindex], '%s K' %obsname, [], 1.0),
 				]
+	comparisons2 = [
+				('Exchangeable Ca on soil as % of CEC', [soilindex], 'Observed ECa', [], 1.0),
+				('Exchangeable Mg on soil as % of CEC', [soilindex], 'Observed EMg', [], 1.0),
+				('Exchangeable Na on soil as % of CEC', [soilindex], 'Observed ENa', [], 1.0),
+				('Exchangeable K on soil as % of CEC', [soilindex], 'Observed EK', [], 1.0),
+				]
+	if obsE :
+		comparisons += comparisons2
 	
 	return params, comparisons
 	

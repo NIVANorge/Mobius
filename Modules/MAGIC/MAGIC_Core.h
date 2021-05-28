@@ -851,6 +851,8 @@ struct magic_init_result
 	
 	double pH;
 	double IonicStrength;
+	
+	double exchangeable_SO4;
 };
 
 void
@@ -951,6 +953,9 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	
 		double exchangeable_Al = 1.0 - Input.exchangeable_Ca - Input.exchangeable_Mg - Input.exchangeable_Na - Input.exchangeable_K;
 		
+		if(exchangeable_Al < 0.0)
+			FatalError("ERROR: (MAGIC Core) Initial exchangeable Ca, Mg, Na, and K sum to more than 100%\n");
+		
 		double Ratio = log10(exchangeable_Al / conc_Al);
 		
 		Result.Log10CaAlSelectCoeff = 2.0*Ratio + 3.0*log10(Input.conc_Ca / Input.exchangeable_Ca) - 6.0;
@@ -958,7 +963,14 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 		Result.Log10NaAlSelectCoeff = Ratio + 3.0*log10(Input.conc_Na / Input.exchangeable_Na)     - 12.0;
 		Result.Log10KAlSelectCoeff  = Ratio + 3.0*log10(Input.conc_K / Input.exchangeable_K)       - 12.0;
 		
-		//WarningPrint("Ca-Al was ", Result.Log10CaAlSelectCoeff, "\n");
+		//WarningPrint("Ca-Al was ", Result.Log10CaAlSelectCoeff, " Ratio was ", Ratio, " conc ", Input.conc_Ca, "\n");
+		
+		// If SO4 adsorption, calculate fraction of adsorption capacity filled (convert mmol to meq for adsorption isotherm)
+		Result.exchangeable_SO4 = 0.0;
+		if(Param.SO4MaxCap > 0.0 && Param.SO4HalfSat > 0.0)
+		{
+			Result.exchangeable_SO4 = (Param.SO4MaxCap*2.0*Result.conc_SO4/(Param.SO4HalfSat + 2.0*Result.conc_SO4)) / Param.SO4MaxCap;
+		}
 	}
 }
 
