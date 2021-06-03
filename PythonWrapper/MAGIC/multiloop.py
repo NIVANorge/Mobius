@@ -6,7 +6,7 @@ import numpy as np
 #wr = SourceFileLoader("mobius", r"../../mobius.py").load_module()
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"../../mobius_calib_uncert_lmfit.py").load_module()
 
-def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
+def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 	
 	soil_df = pd.read_excel(excelfile % 'soil', sheet_name='CCE-soil', header=16, skiprows=[17], index_col=1)
 	lake_df = pd.read_excel(excelfile % 'lake', sheet_name='CCE-lake', header=16, skiprows=[17], index_col=1)
@@ -20,12 +20,14 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 	n_sequence_years   = [1800, 1880, 1920, 1940, 1950, 1960, 1970, 1975, 1980, 1985, 1990, 1995, 2000]
 	so4_sequence_years = [1800, 1880, 1920, 1940, 1945, 1955, 1960, 1970, 1975, 1980, 1985, 1990, 2000]
 	
-	input_index = cu.get_date_index(dataset)
-	full_index = pd.date_range(pd.to_datetime('1800-1-1'), input_index[-1], freq='MS') #TODO: this is not that good...
+	input_index = cu.get_input_date_index(dataset)
+	full_index = pd.date_range(pd.to_datetime('1800-1-1'), '2100-1-1', freq='MS') #TODO: this is not that good...
 	
 	
 	loop_idx = 0
 	for id, soil in soil_df.iterrows() :
+	
+		if do_id!=-1 and id!=do_id : continue
 		
 		if limit_num >= 0 and loop_idx >= limit_num : break
 		loop_idx += 1
@@ -46,7 +48,7 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		def set_single_series_value(ds, name, year, value) :
 			in_df = cu.get_input_dataframe(ds, [(name, [])])
 			series = in_df['%s []' % name]
-			series['%s-1-1'%year] = value
+			series['%s-6-1'%year] = value
 			ds.set_input_series(name, [], series.values)
 		
 		
@@ -63,7 +65,7 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		#ds.set_parameter_double('Initial organic N', ['Soil'], row['N'])
 		
 		ds.set_parameter_double('Depth', ['Soil'], soil['Depth'])
-		ds.set_parameter_double('Porosity', ['Soil'], soil['Porosity'])
+		ds.set_parameter_double('Porosity', ['Soil'], soil['Porosity']*0.01)
 		ds.set_parameter_double('Bulk density', ['Soil'], soil['BulkDens'])
 		ds.set_parameter_double('Cation exchange capacity', ['Soil'], soil['CEC'])
 		ds.set_parameter_double('Soil sulfate adsorption capacity, half saturation', ['Soil'], soil['HlfSat'])
@@ -101,8 +103,12 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		for elem in elems :
 			ds.set_parameter_double('Initial exchangeable %s on soil as %% of CEC' % elem, ['Soil'], soil['E%s-0'%elem]*mult)
 		
-		for elem in elems :
-			set_single_series_value(ds, 'Observed %s'%elem, year, soil['Soil %s'%elem])
+		
+		#for elem in elems :
+		#	set_single_series_value(ds, 'Observed %s'%elem, year, soil['Soil %s'%elem])
+		
+		
+		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
 		
 		
 		#### LAKE sheet:
@@ -120,7 +126,8 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		#set_single_series_value(ds, 'TotMon-Al', year, lake['TotMon-Al'])
 	
 		ds.set_parameter_double('Relative area', ['Lake'], lake['RelArea']*0.01)
-		ds.set_parameter_double('Depth', ['Lake'], lake['RetTime']*lake['Qs'])
+		ds.set_parameter_double('Relative area', ['Soil'], 1.0-lake['RelArea']*0.01)
+		ds.set_parameter_double('Depth', ['Lake'], lake['RetTime']*lake['Qs']/(lake['RelArea']*0.01))
 		
 		ds.set_parameter_double('(log10) Al(OH)3 dissociation equilibrium constant', ['Lake'], lake['KAl'])
 		
@@ -129,16 +136,6 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		ds.set_parameter_double('Organic acid concentration', ['Lake'], lake['DOC'])
 		
 		ds.set_parameter_double('Nitrification', ['Lake'], -lake['Nitrif'])
-		
-		
-		#### DEPON sheet:
-		
-		for elem in elems :
-			index_elem = elem
-			if elem == 'Cl': index_elem = 'CL'   #sigh
-			ds.set_parameter_double('%s wet deposition' % elem, [], depo[index_elem])    #TODO: does this work, or do we need column renaming?
-		
-		ds.set_parameter_double('Precipitation', [], depo['Ppt'])
 		
 		
 		#### SEQUENCE sheet
@@ -153,10 +150,12 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		scale_df.set_index('Dates', inplace=True)
 		
 		for yr in range(0, len(n_sequence_years)) :
-			scale_df.loc[pd.to_datetime('%d-1-1' % n_sequence_years[yr]),   'NH4'] = nh4['(year%d)' %(yr+1)]
-			scale_df.loc[pd.to_datetime('%d-1-1' % n_sequence_years[yr]),   'NO3'] = no3['(year%d)' %(yr+1)]
-			scale_df.loc[pd.to_datetime('%d-1-1' % so4_sequence_years[yr]), 'SO4'] = so4['(year%d)' %(yr+1)]
+			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NH4'] = nh4['(year%d)' %(yr+1)]
+			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NO3'] = no3['(year%d)' %(yr+1)]
+			scale_df.loc[pd.to_datetime('%d-6-1' % so4_sequence_years[yr]), 'SO4'] = so4['(year%d)' %(yr+1)]
 		
+		#sdf = scale_df.dropna()
+		#print(sdf)
 		
 		scale_df.interpolate(inplace=True, limit_direction='both')
 		
@@ -165,8 +164,37 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1) :
 		ds.set_input_series('NO3 wet deposition scaling factor', [], scale_df['NO3'].values[mask], alignwithresults=True)
 		ds.set_input_series('SO4 wet deposition scaling factor', [], scale_df['SO4'].values[mask], alignwithresults=True)
 		
+		#### DEPON sheet:
 		
-		loopfun(ds)
+		elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
+		
+		depo_ref_year = depo['Year']
+		
+		for elem in elems :
+			index_elem = elem
+			if elem == 'Cl': index_elem = 'CL'   #sigh
+			scale = 1.0
+			if elem in scale_df.columns :
+				invscale = scale_df[elem]['%d-1-1'%depo_ref_year]    # Compensate for the fact that the reference year may not have been scaled as 1.0 in the sequence
+				#print('%s scale in %d was %f'%(elem,depo_ref_year,invscale))
+				scale = 1.0 / invscale
+				
+				#scale2 = scale_df[elem]['1990-1-1']
+				#print('%s 1990 scale was %f' %(elem, scale2))
+			value = depo[index_elem]*scale
+			if elem=='SO4':
+				sea_salt = depo['CL']*0.103
+				excess0 = depo['SO4']-sea_salt
+				excess1 = excess0*scale
+				value = sea_salt + excess1
+			ds.set_parameter_double('%s wet deposition' % elem, [], value)    
+		
+		ds.set_parameter_double('Precipitation', [], depo['Ppt'])
+		
+		
+		
+		
+		loopfun(ds, id, soil, depo)
 		#ds.write_parameters_to_file('testparams.dat')
 		
 		ds.delete()

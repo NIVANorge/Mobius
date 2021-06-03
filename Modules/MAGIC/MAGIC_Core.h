@@ -495,7 +495,7 @@ ComputeIonicStrength(const magic_coeff &Coeff, double conc_Ca, double conc_Mg, d
 
 
 void
-MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Result, bool IsSoil, double Conv, double H_estimate, double IonicStrength)
+MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Result, bool IsSoil, double Conv, double H_estimate, double IonicStrength, s64 Timestep, s64 CompartmentIdx)
 {
 	/*
 		Controls:
@@ -508,6 +508,7 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 			            NOTE: Values for these 2 conditions are needed as inputs from the external program. The external program must save 
 			                  these updated values and provide them as inputs on the next call to this compartment at the next time step.
 			                  (for first call to solution routine for each compartment, initialize HEST = 1.0, STRI = 0.0)
+			Timestep and CompartmentIdx are only passed to display an error message when the solution does not converge (see below).
 	
 	*/
 	
@@ -651,7 +652,7 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 	// Calculate charge balance for all aqueous ions
 	double ChargeBalance = Result.SumBaseCationConc + NetAlCharge + Result.conc_H + Result.conc_NH4 - Result.SumAcidAnionConc - Result.all_DIC - Result.all_DOC - Coeff.K_W/Result.conc_H;
 	
-	//int Iter = 0;
+	int Iter = 0;
 	if(abs(ChargeBalance) >= Conv)  // If charge balance is within convergence criterion, the solution has converged. Otherwise, do an iterative solution loop
 	{
 		// Set increment for changing pH and begin the iterative solution loop
@@ -755,7 +756,8 @@ MagicCore(const magic_input &Input, const magic_param &Param, magic_output &Resu
 			
 			ChargeBalance = ChargeBalance0;
 			
-			//if(Iter++ > 100) exit(0);
+			if(Iter++ > 100)
+				FatalError("ERROR: (MAGIC, timestep: ", Timestep, ", compartment: ", CompartmentIdx, ") Core solution ion balance failed to converge in 100 iterations\n CBAL: ", ChargeBalance0, " SBC: ", Result.SumBaseCationConc, " NetAl: ", NetAlCharge, " H: ", Result.conc_H, " NH4: ", Result.conc_NH4, " SAA: ", Result.SumAcidAnionConc, " DIC: ", Result.all_DIC, " DOC: ", Result.all_DOC, " KH/H: ", Coeff.K_W/Result.conc_H, "\n", "Ca: ", Result.conc_Ca, " Mg: ", Result.conc_Mg, " Na: ", Result.conc_Na, " K: ", Result.conc_K, " SO4: ", Result.conc_SO4, " Cl: ", Result.conc_Cl, " NO3: ", Result.conc_NO3, "\n");
 		}
 	}
 	
@@ -914,6 +916,7 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 	{
 		// Set increment for changing pH and begin the iterative solution loop
 		double dpH = (ChargeBalance < 0.0) ? -0.02 : 0.02;
+		int Iter = 0;
 		while(true)
 		{
 			Result.pH += dpH;
@@ -945,6 +948,9 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 			if(ChargeSgn < 0.0) dpH = -dpH/2.0;
 		
 			ChargeBalance = ChargeBalance0;
+			
+			if(Iter++ > 1000)
+				FatalError("ERROR: (MAGIC) Core solution ion balance failed to converge in 1000 iterations (initial value step).\n");
 		}
 	}
 	

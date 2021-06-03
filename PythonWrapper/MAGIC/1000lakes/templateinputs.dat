@@ -1,5 +1,5 @@
 
-start_date : 1850-1-1
+start_date : 1800-1-1
 end_date : 2020-1-1
 
 
@@ -22,20 +22,6 @@ additional_timeseries :
 
 inputs :
 
-
-"Ca wet deposition scaling factor" linear_interpolate :
-1850-1-1 0.5
-1915-1-1 0.81
-1925-1-1 0.82
-1940-1-1 0.89
-1955-1-1 1.1
-1960-1-1 1.13
-1965-1-1 1.24
-1970-1-1 1.3
-1975-1-1 1.2
-1980-1-1 1.17
-1985-1-1 1.06
-1990-1-1 1.0
 
 "SO4 wet deposition scaling factor" linear_interpolate :
 1850-1-1 0.05

@@ -698,7 +698,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		
 		if(RunState__->Running)   // Safeguard so that we don't crash on initialisation run.
 		{
-			MagicCore(Input, Param, Result, issoil, conv, H_estimate, ionic);
+			MagicCore(Input, Param, Result, issoil, conv, H_estimate, ionic, CURRENT_TIMESTEP(), (s64)CURRENT_INDEX(Compartment).Index);
 		}
 		
 		SET_RESULT(ConcCa,            2.0*Result.conc_Ca);

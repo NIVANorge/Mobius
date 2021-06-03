@@ -19,7 +19,7 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 		dataset_copy.delete()
 		print('Model crashed. Params:')
 		params.pretty_print()
-		return np.inf            #Sometimes the initialization of the selectivity coefficients crash with the wrong combination of values.
+		return np.ones(len(comparisons))*100. #np.inf            #Sometimes the initialization of the selectivity coefficients crash with the wrong combination of values.
 
 	residuals = []
 	for i, comparison in enumerate(comparisons):
@@ -35,24 +35,24 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 
 		resid = np.sqrt(weight)*(sim - obs) / (np.nanmean(obs) * np.sqrt(nvalues))
 
-		residuals.append(resid)
-	
+		#residuals.append(resid)
+		residuals.append(np.nansum(resid))
 
 	dataset_copy.delete()   
     
 	return residuals
 
 
-def calib(dataset, params, comparisons) :
+def calib(dataset, params, comparisons, method='nelder', max_nfev=None) :
 	
-	mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=get_residuals, method='nelder', iter_cb=None, norm=False)
+	mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=get_residuals, method=method, iter_cb=None, norm=False, max_nfev=max_nfev)
 	
-	#print(res.params)
+	#res.params.pretty_print()
 	
 	cu.set_parameter_values(res.params, dataset)
 	dataset.run_model()
 	
-	return res.params
+	return res.params, res.nfev
 	
 
 def get_params(dataset, wantparams, idx) :
@@ -81,17 +81,20 @@ def get_so4_setup(dataset, idx) :
 	
 
 	
-def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False) :
+def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False, so4dep=False, no3upt=False) :
 	
 	wantparams = ['ECa_S', 'EMg_S', 'ENa_S', 'EK_S', 'WCa_S', 'WMg_S', 'WNa_S', 'WK_S']    #Maybe also OA_S
+	
+	if so4dep : wantparams.append('DSO4')
+	if no3upt : wantparams.append('NO3Sink_S')  # TODO: This only works for magic_simple
 	
 	params = get_params(dataset, wantparams, idx)
 	
 	#If we don't do this, we get selectivity coefficients of infinity
-	params['ECa_S'].min = 1.0
-	params['EMg_S'].min = 1.0
-	params['ENa_S'].min = 1.0
-	params['EK_S'].min  = 1.0
+	params['ECa_S'].min = 0.01
+	params['EMg_S'].min = 0.01
+	params['ENa_S'].min = 0.01
+	params['EK_S'].min  = 0.01
 	
 	if usemax :
 		params['ECa_S'].max = params['ECa_S'].value
@@ -132,6 +135,15 @@ def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=
 				]
 	if obsE :
 		comparisons += comparisons2
+		
+	if so4dep :
+		comparisons.append(('SO4(2-) ionic concentration', [waterindex], '%s SO4' %obsname, [], 1.0))
+	
+	if no3upt :
+		comparisons.append(('NO3(-) ionic concentration', [waterindex], '%s NO3' %obsname, [], 1.0))
+		params['NO3Sink_S'].value = -90 #assume high retention
+		params['NO3Sink_S'].min = -100
+		params['NO3Sink_S'].max = 0
 	
 	return params, comparisons
 	

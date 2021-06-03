@@ -177,12 +177,13 @@ def parameter_df_to_lmfit(df):
         # exactly equal to either min or max (the algorithm needs to be able to 
         # "explore" around the current value to estimate the gradient).
         # Warn user if (value == min) or (value == max)
-        if ((row['initial_value'] == row['min_value']) or 
-            (row['initial_value'] == row['max_value'])):
-            print("WARNING: Parameter '%s' was initialised at the limit of its range. "
-                  "Gradient-based optimisers find this difficult.\n"
-                  "         Consider setting (min < value < max) instead?" % row['short_name'])
-    
+        #if ((row['initial_value'] == row['min_value']) or 
+        #    (row['initial_value'] == row['max_value'])):
+            #print("WARNING: Parameter '%s' was initialised at the limit of its range. "
+            #      "Gradient-based optimisers find this difficult.\n"
+            #      "         Consider setting (min < value < max) instead?" % row['short_name'])
+			#NOTE: I found the above error too annoying when I do large batch runs -MDN 01.06.2021
+	
         param = lmfit.Parameter(row['short_name'],
                                 value=row['initial_value'],
                                 min=row['min_value'],
@@ -237,6 +238,13 @@ def get_date_index(dataset) :
 	
     return pd.date_range(start=start_date, periods=timesteps, freq='%d%s%s' % (magnitude, type, 'S' if type=='M' else ''))
 
+def get_input_date_index(dataset) :
+    start_date = dataset.get_input_start_date()
+    timesteps  = dataset.get_input_timesteps()
+	
+    (type, magnitude) = dataset.get_timestep_size()
+	
+    return pd.date_range(start=start_date, periods=timesteps, freq='%d%s%s' % (magnitude, type, 'S' if type=='M' else ''))
 
 
 def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0):
@@ -292,7 +300,7 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
     return np.concatenate(residuals)
 
 def minimize_residuals(params, dataset, comparisons, residual_method=calculate_residuals, iter_cb=None, method='nelder', norm=False, 
-                       skip_timesteps=0):
+                       skip_timesteps=0, max_nfev=None):
     """ Lest squares minimisation of the residuals. See
             
             https://lmfit.github.io/lmfit-py/fitting.html#
@@ -330,6 +338,7 @@ def minimize_residuals(params, dataset, comparisons, residual_method=calculate_r
                                  },
                          nan_policy='omit',
 						 iter_cb=iter_cb,
+						 max_nfev=max_nfev
                         )
     
     # Run minimizer

@@ -40,16 +40,16 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto ClimateParams         = RegisterParameterGroup(Model, "Climate by compartment", Compartment);
 	
 	auto PrecipPar             = RegisterParameterDouble(Model, DepositionParams, "Precipitation", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
-	auto CaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Ca wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto MgWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Mg wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto NaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Na wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto KWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "K wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto NH4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NH4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto SO4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "SO4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto ClWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Cl wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto NO3WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NO3 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto FWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "F wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
-	auto PO4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "PO4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation");
+	auto CaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Ca wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DCa");
+	auto MgWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Mg wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DMg");
+	auto NaWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Na wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DNa");
+	auto KWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "K wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DK");
+	auto NH4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NH4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DNH4");
+	auto SO4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "SO4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DSO4");
+	auto ClWetDeposition       = RegisterParameterDouble(Model, DepositionParams, "Cl wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DCl");
+	auto NO3WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "NO3 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DNO3");
+	auto FWetDeposition        = RegisterParameterDouble(Model, DepositionParams, "F wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DF");
+	auto PO4WetDeposition      = RegisterParameterDouble(Model, DepositionParams, "PO4 wet deposition", MEqPerM3, 0.0, 0.0, 500.0, "Concentration in precipitation", "DPO4");
 	
 	
 	auto DischargePar          = RegisterParameterDouble(Model, ClimateParams, "Discharge", MPerYear, 0.0, 0.0, 100.0, "Default value for timesteps where no input series value is provided");
@@ -114,16 +114,16 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	auto FWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WF");
 	auto PO4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WPO4");
 	
-	auto CaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto MgSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto NaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Na sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto KSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "K sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto NH4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NH4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto SO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "SO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto ClSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Cl sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto NO3Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NO3 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto FSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "F sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
-	auto PO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "PO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs");
+	auto CaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "CaSink");
+	auto MgSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "MgSink");
+	auto NaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Na sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "NaSink");
+	auto KSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "K sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "KSink");
+	auto NH4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NH4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "NH4Sink");
+	auto SO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "SO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "SO4Sink");
+	auto ClSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Cl sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "ClSink");
+	auto NO3Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "NO3 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "NO3Sink");
+	auto FSinks                 = RegisterParameterDouble(Model, SourcesSinksCompartment, "F sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "FSink");
+	auto PO4Sinks               = RegisterParameterDouble(Model, SourcesSinksCompartment, "PO4 sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "PO4Sink");
 	
 	auto CaSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
 	auto MgSources              = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sources", MEqPerM2PerYear, 0.0, 0.0, 500.0);
@@ -274,14 +274,30 @@ This is a basic module that provides flow, temperature, and other drivers for th
 		return RESULT(Precipitation)*conc*PARAMETER(NH4DryDepositionFactor);
 	)
 	
-	EQUATION(Model, SO4Deposition,
+	EQUATION(Model, SO4Deposition,  //TODO: Something similar may have to be done for other sea salt-affected inputs that have a scaling factor
 		double scale = 1.0;
 		if(INPUT_WAS_PROVIDED(SO4WetDepositionScale)) scale = INPUT(SO4WetDepositionScale);
+#if 1
+		bool toplayer = PARAMETER(IsTopLayer);
+		double conc_ref = PARAMETER(SO4WetDeposition);
+		double in = INPUT(SO4WetDepositionIn);
+		double precip = RESULT(Precipitation);
+		double ddf = PARAMETER(SO4DryDepositionFactor);
+		
+		if(!toplayer) return 0.0;
+		if(std::isfinite(in)) return in*ddf*precip;
+		
+		double sea_salt = RESULT(ClDeposition)*0.103;   //Hmm, does not account for Cl ddf. Should factor out.
+		double excess = conc_ref*precip - sea_salt;
+		return (sea_salt + excess*scale)*ddf;
+#else
+		
 		if(!PARAMETER(IsTopLayer)) scale = 0.0;
 		double conc = PARAMETER(SO4WetDeposition)*scale;
 		double in = INPUT(SO4WetDepositionIn);
 		if(std::isfinite(in)) conc = in;
 		return RESULT(Precipitation)*conc*PARAMETER(SO4DryDepositionFactor);
+#endif		
 	)
 	
 	EQUATION(Model, ClDeposition,

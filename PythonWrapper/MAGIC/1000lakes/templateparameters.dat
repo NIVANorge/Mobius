@@ -8,10 +8,10 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-1850-01-01
+1800-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2020-01-01
+1995-12-01
 
 
 { module "MAGIC Core" version "0.1"
@@ -22,7 +22,7 @@ parameters:
 	1
 
 	"Solver sub-step length" :     #(months) [0.001, 1] Length of intermediate step between each time the solution is rebalanced
-	0.33
+	0.2
 
 
 	# Compartment parameters ("Compartment") #
