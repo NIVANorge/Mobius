@@ -300,7 +300,7 @@ def calculate_residuals(params, dataset, comparisons, norm=False, skip_timesteps
     return np.concatenate(residuals)
 
 def minimize_residuals(params, dataset, comparisons, residual_method=calculate_residuals, iter_cb=None, method='nelder', norm=False, 
-                       skip_timesteps=0, max_nfev=None):
+                       skip_timesteps=0):
     """ Lest squares minimisation of the residuals. See
             
             https://lmfit.github.io/lmfit-py/fitting.html#
@@ -338,7 +338,6 @@ def minimize_residuals(params, dataset, comparisons, residual_method=calculate_r
                                  },
                          nan_policy='omit',
 						 iter_cb=iter_cb,
-						 max_nfev=max_nfev
                         )
     
     # Run minimizer

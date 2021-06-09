@@ -16,10 +16,10 @@ def initialize(dllname) :
 	mobiusdll = ctypes.CDLL(dllname)
 
 	
-	mobiusdll.DllEncounteredError.argtypes = [ctypes.c_char_p]
+	mobiusdll.DllEncounteredError.argtypes = [ctypes.c_char_p, ctypes.c_uint64]
 	mobiusdll.DllEncounteredError.restype = ctypes.c_int
 	
-	mobiusdll.DllEncounteredWarning.argtypes = [ctypes.c_char_p]
+	mobiusdll.DllEncounteredWarning.argtypes = [ctypes.c_char_p, ctypes.c_uint64]
 	mobiusdll.DllEncounteredWarning.restype = ctypes.c_int
 	
 	mobiusdll.DllSetupModel.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
@@ -161,18 +161,29 @@ def _PackIndexes(indexes):
 	return (ctypes.c_char_p * len(cindexes))(*cindexes)
 	
 def check_dll_error() :
-	msgbuf = ctypes.create_string_buffer(1024)
+	buflen = 1024
+	msgbuf = ctypes.create_string_buffer(buflen)
 	
-	warncode  = mobiusdll.DllEncounteredWarning(msgbuf)
-	if warncode == 1 :
-		warnmsg = msgbuf.value.decode('utf-8')
-		#warnings.warn(warnmsg)
+	warnmsg = ''
+	warning = False
+	warnlen = mobiusdll.DllEncounteredWarning(msgbuf, buflen)
+	while warnlen > 0 :
+		warning = True
+		warnmsg += msgbuf.value.decode('utf-8')
+		warnlen = mobiusdll.DllEncounteredWarning(msgbuf, buflen)
+		
+	if warning :
 		print(warnmsg)
 
-	errcode = mobiusdll.DllEncounteredError(msgbuf)
-	if errcode == 1 :
-		errmsg = msgbuf.value.decode('utf-8')
-		raise RuntimeError(errmsg)
+	error = False
+	errmsg = ''
+	errlen = mobiusdll.DllEncounteredError(msgbuf, buflen)
+	while errlen > 0 :
+		error = True
+		errmsg += msgbuf.value.decode('utf-8')
+		errlen = mobiusdll.DllEncounteredError(msgbuf, buflen)
+	
+	if error : raise RuntimeError(errmsg)
 	
 class DataSet :
 	def __init__(self, datasetptr):

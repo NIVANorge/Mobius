@@ -1,10 +1,7 @@
 
 #include <sstream>
 
-static int Dll_GlobalErrorCode = 0;
 std::stringstream Dll_GlobalErrstream;
-
-static int Dll_GlobalWarningCode = 0;
 std::stringstream Dll_GlobalWarningStream;
 
 void
@@ -14,7 +11,6 @@ template<typename t, typename... v>
 void
 ErrorPrint(t Value, v... Tail)
 {
-	Dll_GlobalErrorCode = 1;
 	Dll_GlobalErrstream << Value;
 	ErrorPrint(Tail...);
 }
@@ -34,7 +30,6 @@ template<typename t, typename... v>
 void
 WarningPrint(t Value, v... Tail)
 {
-	Dll_GlobalWarningCode = 1;
 	Dll_GlobalWarningStream << Value;
 	WarningPrint(Tail...);
 }
@@ -58,31 +53,19 @@ try {
 #endif
 
 DLLEXPORT int
-DllEncounteredError(char *ErrmsgOut)
+DllEncounteredError(char *ErrmsgOut, u64 BufferLen)
 {
-	std::string ErrStr = Dll_GlobalErrstream.str();
-	strcpy(ErrmsgOut, ErrStr.c_str());
-	
-	int Code = Dll_GlobalErrorCode;
-	
-	Dll_GlobalErrorCode = 0;
-	Dll_GlobalErrstream.str(std::string());
-	
-	return Code;
+	Dll_GlobalErrstream.getline(ErrmsgOut, BufferLen, 0);
+	Dll_GlobalErrstream.clear(); // If the stream is shorter than the BufferLen, the eofbit flag is set. We have to clear it here to be able to reuse the buffer
+	return strlen(ErrmsgOut);
 }
 
 DLLEXPORT int
-DllEncounteredWarning(char *WarningmsgOut)
+DllEncounteredWarning(char *WarningmsgOut, u64 BufferLen)
 {
-	std::string WarnStr = Dll_GlobalWarningStream.str();
-	strcpy(WarningmsgOut, WarnStr.c_str());
-	
-	int Code = Dll_GlobalWarningCode;
-	
-	Dll_GlobalWarningCode = 0;
-	Dll_GlobalWarningStream.str(std::string());
-	
-	return Code;
+	Dll_GlobalWarningStream.getline(WarningmsgOut, BufferLen, 0);
+	Dll_GlobalWarningStream.clear(); // If the stream is shorter than the BufferLen, the eofbit flag is set. We have to clear it here to be able to reuse the buffer
+	return strlen(WarningmsgOut);
 }
 
 //This one has to be provided in each separate application
