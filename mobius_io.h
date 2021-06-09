@@ -1168,3 +1168,92 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 		}
 	}
 }
+
+
+
+static void
+WriteInputsToFile(mobius_data_set *DataSet, const char *Filename)
+{
+	if(!DataSet->InputData)
+		FatalError("ERROR: Tried to write inputs to a file before input data was allocated.\n");
+	
+	FILE *File;
+#ifdef _WIN32
+	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
+	File = _wfopen((wchar_t *)Filename16.data(), L"w");
+#else
+	File = fopen(Filename, "w");
+#endif
+
+	if(!File)
+		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\"");
+	
+	const mobius_model *Model = DataSet->Model;
+	
+	datetime StartDate = GetInputStartDate(DataSet);
+	u64 Timesteps      = DataSet->InputDataTimesteps;
+	
+	fprintf(File, "start_date : %s\n", StartDate.ToString());
+	fprintf(File, "timesteps  : %llu\n", Timesteps);
+	
+	fprintf(File, "\n");
+	fprintf(File, "additional_timeseries :\n");
+	for(input_h Input : Model->Inputs)
+	{
+		const input_spec &Spec = Model->Inputs[Input];
+		if(Spec.IsAdditional)
+			fprintf(File, "\"%s\"\n", Spec.Name);
+	}
+	
+	fprintf(File, "\n");
+	fprintf(File, "index_set_dependencies :\n");
+	for(input_h Input : Model->Inputs)
+	{
+		size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
+		array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[UnitIndex].IndexSets;
+		if(IndexSets.Count > 0)
+		{
+			fprintf(File, "\"%s\" : {", GetName(Model, Input));
+			for(index_set_h IndexSet : IndexSets)
+				fprintf(File, "\"%s\" ", GetName(Model, IndexSet));
+			fprintf(File, "}\n");
+		}
+	}
+	
+	fprintf(File, "inputs :\n");
+	
+	std::vector<double> Buffer(Timesteps);
+	
+	for(input_h Input : Model->Inputs)
+	{
+		const char *Name = GetName(Model, Input);
+		
+		ForeachInputInstance(DataSet, Name, [&](const char *const *IndexNames, size_t IndexesCount)
+		{
+			bool Provided = InputSeriesWasProvided(DataSet, Name, IndexNames, IndexesCount);
+			if(Provided)
+			{
+				fprintf(File, "\n\"%s\" ", Name);
+				if(IndexesCount > 0)
+				{
+					fprintf(File, "{");
+					for(size_t IdxIdx = 0; IdxIdx < IndexesCount; ++IdxIdx)
+						fprintf(File, "\"%s\" ", IndexNames[IdxIdx]); 
+					fprintf(File, "}");
+				}
+				fprintf(File, ":\n");
+				
+				GetInputSeries(DataSet, Name, IndexNames, IndexesCount, Buffer.data(), Buffer.size(), false);
+				
+				//NOTE: This can be very inefficient in some cases since it will print out a lot of NaNs for sparse series. We could make it smart about that in some way and use the sparse format if there is a lot of NaNs ...
+				for(double Value : Buffer)
+				{
+					if(std::isnan(Value)) fprintf(File, "NaN\n");
+					else fprintf(File, "%f\n", Value);
+				}
+			}
+		});
+	}
+	
+	fclose(File);
+}

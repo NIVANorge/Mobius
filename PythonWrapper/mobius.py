@@ -73,6 +73,8 @@ def initialize(dllname) :
 	
 	mobiusdll.DllWriteParametersToFile.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
+	mobiusdll.DllWriteInputsToFile.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+
 	mobiusdll.DllGetParameterDouble.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.c_uint64]
 	mobiusdll.DllGetParameterDouble.restype = ctypes.c_double
 
@@ -291,6 +293,13 @@ class DataSet :
 		Write the parameters in the dataset to a standard Mobius parameter file.
 		'''
 		mobiusdll.DllWriteParametersToFile(self.datasetptr, _CStr(filename))
+		check_dll_error()
+		
+	def write_inputs_to_file(self, filename) :
+		'''
+		Write the input series in the dataset to a standard Mobius input file (with only simple formatting).
+		'''
+		mobiusdll.DllWriteInputsToFile(self.datasetptr, _CStr(filename))
 		check_dll_error()
 		
 	def get_timestep_size(self) :

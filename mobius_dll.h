@@ -640,6 +640,16 @@ DllWriteParametersToFile(void *DataSetPtr, char *Filename)
 }
 
 DLLEXPORT void
+DllWriteInputsToFile(void *DataSetPtr, char *Filename)
+{
+	CHECK_ERROR_BEGIN
+	
+	WriteInputsToFile((mobius_data_set *)DataSetPtr, (const char *)Filename);
+	
+	CHECK_ERROR_END
+}
+
+DLLEXPORT void
 DllSetInputSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCount, double *InputData, u64 InputDataLength, bool AlignWithResults)
 {
 	CHECK_ERROR_BEGIN
@@ -751,7 +761,7 @@ DllGetResultIndexSetsCount(void *DataSetPtr, char *ResultName)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->ResultStorageStructure.HasBeenSetUp) return 0;
+	if(!DataSet->ResultStorageStructure.HasBeenSetUp) return 0;   //TODO: This is problematic, because the storage structure will not be set up before the model is run at least once. Then users can't determine the result structure before the model has been run..
 	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
 	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
