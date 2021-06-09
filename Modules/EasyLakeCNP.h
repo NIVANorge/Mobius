@@ -18,6 +18,7 @@ Currently in early development.
 	auto MPerDay = RegisterUnit(Model, "m/day");
 	auto MgPerL  = RegisterUnit(Model, "mg/l");
 	auto KgPerDay = RegisterUnit(Model, "kg/day");
+	auto M2PerMg = RegisterUnit(Model, "m2/mg");
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 
@@ -27,6 +28,7 @@ Currently in early development.
 	auto SSSettlingVelocity  = RegisterParameterDouble(Model, EasyLakeCNP, "Suspended solid settling velocity", MPerDay, 0.5, 0.0, 10.0);
 	auto DINSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "DIN settling velocity", MPerDay, 0.5, 0.0, 10.0);
 	auto DOCSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "DOC settling velocity", MPerDay, 0.5, 0.0, 10.0);
+	auto DOCOpticalCrossection = RegisterParameterDouble(Model, EasyLakeCNP, "DOC optical cross-section", M2PerMg, 0.01, 0.001, 1.0, "Can be used to scale the photomineralization speed");
 	
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 
@@ -69,21 +71,25 @@ Currently in early development.
 	auto LakeDINFlux                 = RegisterEquation(Model, "Lake DIN flux", MgPerL, LakeSolver);
 	auto DailyMeanLakeDINFlux        = RegisterEquationODE(Model, "Daily mean lake DIN flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeDINFlux);
+	auto EpilimnionDenitrification   = RegisterEquation(Model, "Epilimnion denitrification", KgPerDay, LakeSolver);
 	auto EpilimnionHypolimnionDINFlux= RegisterEquation(Model, "Epilimnion-hypolimnion DIN flux", KgPerDay, LakeSolver);
 	auto HypolimnionDINMass          = RegisterEquationODE(Model, "Hypolimnion DIN mass", Kg, LakeSolver);
 	auto HypolimnionDINConcentration = RegisterEquation(Model, "Hypolimnion DIN concentration", MgPerL, LakeSolver);
 	auto HypolimnionDINSettling      = RegisterEquation(Model, "Hypolimnion DIN settling", KgPerDay, LakeSolver);
+	auto HypolimnionDenitrification  = RegisterEquation(Model, "Hypolimnion denitrification", KgPerDay, LakeSolver);
 	
 	
 	auto EpilimnionDOCPhotoMineralization = RegisterEquation(Model, "Epilimnion DOC photomineralization", KgPerDay, LakeSolver);
 	auto EpilimnionDOCMass           = RegisterEquationODE(Model, "Epilimnion DOC mass", Kg, LakeSolver);
 	auto EpilimnionDOCConcentration  = RegisterEquation(Model, "Epilimnion DOC concentration", MgPerL, LakeSolver);
+	auto EpilimnionTOCConcentration  = RegisterEquation(Model, "Epilimnion TOC concentration", MgPerL);
 	auto LakeDOCFlux                 = RegisterEquation(Model, "Lake DOC flux", MgPerL, LakeSolver);
 	auto DailyMeanLakeDOCFlux        = RegisterEquationODE(Model, "Daily mean lake DOC flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeDOCFlux);
 	auto EpilimnionHypolimnionDOCFlux= RegisterEquation(Model, "Epilimnion-hypolimnion DOC flux", KgPerDay, LakeSolver);
 	auto HypolimnionDOCMass          = RegisterEquationODE(Model, "Hypolimnion DOC mass", Kg, LakeSolver);
 	auto HypolimnionDOCConcentration = RegisterEquation(Model, "Hypolimnion DOC concentration", MgPerL, LakeSolver);
+	auto HypolimnionTOCConcentration = RegisterEquation(Model, "Hypolimnion TOC concentration", MgPerL);
 	auto HypolimnionDOCSettling      = RegisterEquation(Model, "Hypolimnion DOC settling", KgPerDay, LakeSolver);
 	
 	
@@ -93,6 +99,13 @@ Currently in early development.
 	
 	
 	auto IsLake               = GetParameterBoolHandle(Model, "This section is a lake");
+	
+	//TODO: maybe have separate denitrification parameters for the lakes?
+	auto ReachDenitrificationQ10 = GetParameterDoubleHandle(Model, "(Q10) Reach denitrification rate response to 10°C change in temperature");
+	auto ReachDenitrificationRate = GetParameterDoubleHandle(Model, "Reach denitrification rate at 20°C");
+	
+	auto SedimentCarbonContent   = GetParameterDoubleHandle(Model, "Suspended sediment carbon content");
+	
 	
 	auto DailyMeanReachSSFlux  = GetEquationHandle(Model, "Reach daily mean suspended sediment flux");
 	auto SedimentInputFromLand = GetEquationHandle(Model, "Reach sediment input (erosion and entrainment)");
@@ -121,6 +134,8 @@ Currently in early development.
 	auto LakeOutflow           = GetEquationHandle(Model, "Lake outflow");
 	auto MixingVelocity        = GetEquationHandle(Model, "Mixing velocity");
 	auto EpilimnionShortwave   = GetEquationHandle(Model, "Epilimnion incoming shortwave radiation");
+	auto EpilimnionTemperature = GetEquationHandle(Model, "Epilimnion temperature");
+	auto HypolimnionTemperature = GetEquationHandle(Model, "Mean hypolimnion temperature");
 	
 	
 	EQUATION_OVERRIDE(Model, TDPInputFromUpstream,
@@ -335,6 +350,7 @@ Currently in early development.
 		return
 			  RESULT(DINInputFromCatchment)   // + effluents?
 			+ RESULT(DINInputFromUpstream)
+			- RESULT(EpilimnionDenitrification)
 			- RESULT(LakeDINFlux)
 			- RESULT(EpilimnionHypolimnionDINFlux);
 	)
@@ -349,6 +365,13 @@ Currently in early development.
 	
 	EQUATION(Model, DailyMeanLakeDINFlux,
 		return RESULT(LakeDINFlux);
+	)
+	
+	EQUATION(Model, EpilimnionDenitrification,
+		double mass       = RESULT(EpilimnionDINMass);
+		double watertemp  = RESULT(EpilimnionTemperature);
+		double tempfactor = std::pow(PARAMETER(ReachDenitrificationQ10), (watertemp - 20.0)/10.0); 
+		return mass * PARAMETER(ReachDenitrificationRate) * tempfactor;
 	)
 	
 	EQUATION(Model, EpilimnionHypolimnionDINFlux,
@@ -371,19 +394,26 @@ Currently in early development.
 		return PARAMETER(DINSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(HypolimnionDINConcentration) * 1e-3;
 	)
 	
+	EQUATION(Model, HypolimnionDenitrification,
+		double mass       = RESULT(HypolimnionDINMass);
+		double watertemp  = RESULT(HypolimnionTemperature);
+		double tempfactor = std::pow(PARAMETER(ReachDenitrificationQ10), (watertemp - 20.0)/10.0); 
+		return mass * PARAMETER(ReachDenitrificationRate) * tempfactor;
+	)
+	
 	
 	
 	
 	EQUATION(Model, EpilimnionDOCPhotoMineralization,
 	
 		//TODO: Some of these could be parameters
-		double oc_DOC = 0.01;   // Optical cross-section of DOM
-		double qy_DOC = 0.5;    // mol DOC /mol quanta   Quantum yield
+		double oc_DOC = PARAMETER(DOCOpticalCrossection);   // Optical cross-section of DOM
+		double qy_DOC = 0.1;    // mg/mol DOC   Quantum yield
 		
 		double f_par = 0.45;     //Fract.   of PAR in incoming solar radiation
 		double e_par = 240800.0; // J/mol   Average energy of PAR photons
 		
-		//‒oc_DOC * qy_DOC f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * [Nitrosamines]" in mg N m-3 d-1
+		//‒oc_DOC * qy_DOC f_par(1/e_par)*(86400)*Qsw*Attn_epilimnion * DOC in mg N m-3 d-1
 		double shortwave = RESULT(EpilimnionShortwave);
 		
 		double epilimnionattn = 1.0;  //TODO: This should be computed, and actually depends on the DOC conc. Moreover, the excess should go into the hypolimnion and cause photomineralization there.
@@ -402,6 +432,10 @@ Currently in early development.
 	
 	EQUATION(Model, EpilimnionDOCConcentration,
 		return SafeDivide(RESULT(EpilimnionDOCMass), RESULT(EpilimnionVolume)) * 1000.0;   // kg/m3 -> mg/l
+	)
+	
+	EQUATION(Model, EpilimnionTOCConcentration,
+		return RESULT(EpilimnionDOCConcentration) + PARAMETER(SedimentCarbonContent)*RESULT(EpilimnionSSConcentration);
 	)
 	
 	EQUATION(Model, LakeDOCFlux,
@@ -426,6 +460,10 @@ Currently in early development.
 	
 	EQUATION(Model, HypolimnionDOCConcentration,
 		return SafeDivide(RESULT(HypolimnionDOCMass), RESULT(HypolimnionVolume)) * 1000.0;   // kg/m3 -> mg/l
+	)
+	
+	EQUATION(Model, HypolimnionTOCConcentration,
+		return RESULT(HypolimnionDOCConcentration) + PARAMETER(SedimentCarbonContent)*RESULT(HypolimnionSSConcentration);
 	)
 	
 	EQUATION(Model, HypolimnionDOCSettling,

@@ -35,6 +35,7 @@ DllBuildModel()
 	AddSimplySedimentModule(Model);
 	AddSimplyNModel(Model);
 	AddSimplyCModel(Model);
+	AddSimplyTOCModule(Model);
 	AddSimplyPModel(Model);
 	
 	AddEasyLakePhysicalModule(Model);

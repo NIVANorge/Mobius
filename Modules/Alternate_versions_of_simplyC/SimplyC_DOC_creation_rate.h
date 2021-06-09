@@ -243,3 +243,26 @@ AddSimplyCModel(mobius_model *Model)
 	EndModule(Model);
 }
 
+
+static void
+AddSimplyTOCModule(mobius_model *Model)
+{
+	//NOTE: This one requires that you have added SimplyC AND SimplySed to the model beforehand
+	
+	BeginModule(Model, "SimplyC TOC", "0.0");
+	
+	auto Dimensionless = RegisterUnit(Model);
+	auto MgPerL        = RegisterUnit(Model, "mg/l");
+	
+	auto ReachDOCConcentration = GetEquationHandle(Model, "Reach DOC concentration (volume weighted daily mean)");
+	auto ReachSSConcentration  = GetEquationHandle(Model, "Reach suspended sediment concentration");
+	
+	auto TOCParams = RegisterParameterGroup(Model, "TOC");
+	auto SedimentCarbonContent = RegisterParameterDouble(Model, TOCParams, "Suspended sediment carbon content", Dimensionless, 0.0, 0.0, 1.0, "Fraction of mass of suspended sediment that is organic carbon");
+	
+	auto ReachTOCConcentration = RegisterEquation(Model, "Reach TOC concentration", MgPerL);
+	
+	EQUATION(Model, ReachTOCConcentration,
+		return RESULT(ReachDOCConcentration) + PARAMETER(SedimentCarbonContent)*RESULT(ReachSSConcentration);
+	)
+}

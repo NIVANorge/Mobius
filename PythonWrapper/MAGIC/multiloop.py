@@ -6,6 +6,14 @@ import numpy as np
 #wr = SourceFileLoader("mobius", r"../../mobius.py").load_module()
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"../../mobius_calib_uncert_lmfit.py").load_module()
 
+
+def set_single_series_value(ds, name, year, value) :
+	in_df = cu.get_input_dataframe(ds, [(name, [])])
+	series = in_df['%s []' % name]
+	series['%s-6-1'%year] = value
+	ds.set_input_series(name, [], series.values)
+
+
 def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 	
 	soil_df = pd.read_excel(excelfile % 'soil', sheet_name='CCE-soil', header=16, skiprows=[17], index_col=1)
@@ -44,12 +52,6 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		
 		
 		ds = dataset.copy()
-		
-		def set_single_series_value(ds, name, year, value) :
-			in_df = cu.get_input_dataframe(ds, [(name, [])])
-			series = in_df['%s []' % name]
-			series['%s-6-1'%year] = value
-			ds.set_input_series(name, [], series.values)
 		
 		
 		#### SOIL sheet
@@ -98,7 +100,8 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		for elem in elems :
 			sumexch += soil['E%s-0'%elem]
 			
-		mult = 1.0 if sumexch <= 90.0 else 90.0/sumexch   #NOTE: Correct ECa, EMg, ENa, EK so that they sum to < 100. Ideally this should be done in-model?
+		#mult = 1.0 if sumexch <= 90.0 else 90.0/sumexch   #NOTE: Correct ECa, EMg, ENa, EK so that they sum to < 100. Ideally this should be done in-model?
+		mult = 1.0
 		
 		for elem in elems :
 			ds.set_parameter_double('Initial exchangeable %s on soil as %% of CEC' % elem, ['Soil'], soil['E%s-0'%elem]*mult)
@@ -194,9 +197,7 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		
 		
 		
-		loopfun(ds, id, soil, depo)
-		#ds.write_parameters_to_file('testparams.dat')
+		loopfun(ds, id, soil, depo, lake)
 		
 		ds.delete()
 	
-	#print(depo_df)

@@ -24,6 +24,7 @@ additional_timeseries :
 "Observed PP at Kure"       unit "mg/l"
 "Observed TOTN at Kure"     unit "mg/l"
 "Observed NO3 at Kure"      unit "mg/l"
+"Observed TOC at Kure"      unit "mg/l"
 
 "Observed colour Store"     unit "mg Pt/l"
 "Observed chl-a Store"      unit "µg/l"
@@ -32,6 +33,7 @@ additional_timeseries :
 "Observed SS Store"         unit "mg/l"
 "Observed TOC Store"        unit "mg/l"
 "Observed TDP Store"        unit "mg/l"
+"Observed NO3 Store"        unit "mg/l"
 
 "Observed colour Vanem"     unit "mg Pt/l"
 "Observed chl-a Vanem"      unit "µg/l"
@@ -40,6 +42,7 @@ additional_timeseries :
 "Observed SS Vanem"         unit "mg/l"
 "Observed TOC Vanem"        unit "mg/l"
 "Observed TDP Vanem"        unit "mg/l"
+"Observed NO3 Vanem"        unit "mg/l"
 
 
 index_set_dependencies :
@@ -50,6 +53,7 @@ inputs :
 include_file "vansjo_ice_and_temp.dat"
 include_file "kure_p.dat"
 include_file "kure_n.dat"
+include_file "kure_c.dat"
 include_file "store_chem.dat"
 include_file "vanem_chem.dat"
 

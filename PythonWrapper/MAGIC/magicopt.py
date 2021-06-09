@@ -17,8 +17,8 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 		dataset_copy.run_model()
 	except :
 		dataset_copy.delete()
-		print('Model crashed. Params:')
-		params.pretty_print()
+		#print('Model crashed. Params:')
+		#params.pretty_print()
 		return np.ones(len(comparisons))*100. #np.inf            #Sometimes the initialization of the selectivity coefficients crash with the wrong combination of values.
 
 	residuals = []
@@ -43,9 +43,9 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 	return residuals
 
 
-def calib(dataset, params, comparisons, method='nelder', max_nfev=None) :
+def calib(dataset, params, comparisons, method='nelder') :
 	
-	mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=get_residuals, method=method, iter_cb=None, norm=False, max_nfev=max_nfev)
+	mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=get_residuals, method=method, iter_cb=None, norm=False)
 	
 	#res.params.pretty_print()
 	
@@ -80,14 +80,31 @@ def get_so4_setup(dataset, idx) :
 	return params, comparisons
 	
 
+def get_acid_anion_setup(dataset, idx, obsname='Observed runoff conc', so4dep = False):
 	
-def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False, so4dep=False, no3upt=False) :
-	
-	wantparams = ['ECa_S', 'EMg_S', 'ENa_S', 'EK_S', 'WCa_S', 'WMg_S', 'WNa_S', 'WK_S']    #Maybe also OA_S
+	wantparams = ['NO3Sink_S']  #TODO: Only works for MAGIC_simple
 	
 	if so4dep : wantparams.append('DSO4')
-	if no3upt : wantparams.append('NO3Sink_S')  # TODO: This only works for magic_simple
 	
+	params = get_params(dataset, wantparams, idx)
+	params['NO3Sink_S'].value = -90 #assume high retention
+	params['NO3Sink_S'].min = -100
+	params['NO3Sink_S'].max = 0
+	
+	soilindex, waterindex = idx
+	
+	comparisons = [('NO3(-) ionic concentration', [waterindex], '%s NO3' %obsname, [], 1.0)]
+	
+	if so4dep :
+		comparisons.append(('SO4(2-) ionic concentration', [waterindex], '%s SO4' %obsname, [], 1.0))
+	
+	return params, comparisons
+
+	
+def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False) :
+	
+	wantparams = ['ECa_S', 'EMg_S', 'ENa_S', 'EK_S', 'WCa_S', 'WMg_S', 'WNa_S', 'WK_S']    #Maybe also OA_S
+
 	params = get_params(dataset, wantparams, idx)
 	
 	#If we don't do this, we get selectivity coefficients of infinity
@@ -106,11 +123,6 @@ def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=
 		params['WMg_S'].max = params['WMg_S'].value
 		params['WNa_S'].max = params['WNa_S'].value
 		params['WK_S'].max = params['WK_S'].value
-		
-		params['WCa_S'].value*=0.1
-		params['WMg_S'].value*=0.1
-		params['WNa_S'].value*=0.1
-		params['WK_S'].value*=0.1
 	else :
 		#TODO: This is not ideal, but the important thing is that they never sum above 100. The user could reconfigure this themselves
 		params['ECa_S'].max = 25.0
@@ -128,22 +140,13 @@ def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=
 				('K(+) ionic concentration', [waterindex], '%s K' %obsname, [], 1.0),
 				]
 	comparisons2 = [
-				('Exchangeable Ca on soil as % of CEC', [soilindex], 'Observed ECa', [], 1.0),
-				('Exchangeable Mg on soil as % of CEC', [soilindex], 'Observed EMg', [], 1.0),
-				('Exchangeable Na on soil as % of CEC', [soilindex], 'Observed ENa', [], 1.0),
-				('Exchangeable K on soil as % of CEC', [soilindex], 'Observed EK', [], 1.0),
+				('Exchangeable Ca on soil as % of CEC', [soilindex], 'Observed ECa', [], 10.0),
+				('Exchangeable Mg on soil as % of CEC', [soilindex], 'Observed EMg', [], 10.0),
+				('Exchangeable Na on soil as % of CEC', [soilindex], 'Observed ENa', [], 10.0),
+				('Exchangeable K on soil as % of CEC', [soilindex], 'Observed EK', [], 10.0),
 				]
 	if obsE :
 		comparisons += comparisons2
-		
-	if so4dep :
-		comparisons.append(('SO4(2-) ionic concentration', [waterindex], '%s SO4' %obsname, [], 1.0))
-	
-	if no3upt :
-		comparisons.append(('NO3(-) ionic concentration', [waterindex], '%s NO3' %obsname, [], 1.0))
-		params['NO3Sink_S'].value = -90 #assume high retention
-		params['NO3Sink_S'].min = -100
-		params['NO3Sink_S'].max = 0
 	
 	return params, comparisons
 	
@@ -162,9 +165,7 @@ def get_doc_setup(dataset, idx) :
 	return params, comparisons
 	
 	
-def get_monte_carlo_setup(dataset, idx) :
-
-	wantparams = ['DEP_S', 'PV_S', 'BD_S', 'CEC_S', 'OA_S']
+def get_monte_carlo_setup(dataset, idx, wantparams = ['DEP_S', 'PV_S', 'BD_S', 'CEC_S', 'OA_S']) :
 	
 	params = get_params(dataset, wantparams, idx)
 	

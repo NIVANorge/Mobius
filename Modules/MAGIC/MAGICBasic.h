@@ -103,16 +103,16 @@ This is a basic module that provides flow, temperature, and other drivers for th
 	
 
 
-	auto CaWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Ca weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WCa");
-	auto MgWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Mg weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WMg");
-	auto NaWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Na weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WNa");
-	auto KWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "K weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WK");
-	auto NH4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "NH4 weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WNH4");
-	auto SO4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "SO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WSO4");
-	auto ClWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Cl weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WCl");
-	auto NO3Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WNO3");
-	auto FWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WF");
-	auto PO4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 500.0, "", "WPO4");
+	auto CaWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Ca weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WCa");
+	auto MgWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Mg weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WMg");
+	auto NaWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Na weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WNa");
+	auto KWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "K weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WK");
+	auto NH4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "NH4 weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WNH4");
+	auto SO4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "SO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WSO4");
+	auto ClWeathering           = RegisterParameterDouble(Model, WeatheringCompartment, "Cl weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WCl");
+	auto NO3Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WNO3");
+	auto FWeathering            = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WF");
+	auto PO4Weathering          = RegisterParameterDouble(Model, WeatheringCompartment, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 5000.0, "", "WPO4");
 	
 	auto CaSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Ca sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "CaSink");
 	auto MgSinks                = RegisterParameterDouble(Model, SourcesSinksCompartment, "Mg sinks", MEqPerM2PerYear, 0.0, 0.0, 500.0, "Negative rate sets value as % of inputs", "MgSink");
