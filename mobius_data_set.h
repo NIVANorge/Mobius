@@ -752,13 +752,13 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 }
 
 static void
-AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
+SetupResultStorageStructure(mobius_data_set *DataSet)
 {
 	const mobius_model *Model = DataSet->Model;
 	
 	if(!DataSet->AllIndexesHaveBeenSet)
 	{
-		ErrorPrint("ERROR: Tried to allocate result storage before all index sets were filled.\n");
+		ErrorPrint("ERROR: Tried to set up result storage structure before all index sets were filled.\n");
 		ErrorPrintUnfilledIndexSets(DataSet);
 	}
 	
@@ -788,6 +788,13 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 		
 		SetupStorageStructureSpecifer(&DataSet->ResultStorageStructure, DataSet->IndexCounts, Model->Equations.Count(), &DataSet->BucketMemory);
 	}
+}
+
+
+static void
+AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
+{
+	SetupResultStorageStructure(DataSet);
 	
 	if(DataSet->ResultData && (Timesteps != DataSet->TimestepsLastRun))
 	{

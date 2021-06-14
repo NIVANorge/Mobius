@@ -1245,11 +1245,35 @@ WriteInputsToFile(mobius_data_set *DataSet, const char *Filename)
 				
 				GetInputSeries(DataSet, Name, IndexNames, IndexesCount, Buffer.data(), Buffer.size(), false);
 				
-				//NOTE: This can be very inefficient in some cases since it will print out a lot of NaNs for sparse series. We could make it smart about that in some way and use the sparse format if there is a lot of NaNs ...
+				u64 NaNCount = 0;
 				for(double Value : Buffer)
+					if(std::isnan(Value)) NaNCount++;
+				
+				double Ratio = (double)NaNCount / (double)Timesteps;
+				
+				//If more than 20% of the values are NaN, use the sparse format. 
+				if(Ratio >= 0.2)
 				{
-					if(std::isnan(Value)) fprintf(File, "NaN\n");
-					else fprintf(File, "%f\n", Value);
+					if(Timesteps == NaNCount)
+						fprintf(File, "%s NaN", StartDate.ToString()); //NOTE: The format requires at least one value entry.
+					else
+					{	
+						expanded_datetime Date(StartDate, Model->TimestepSize);
+						for(double Value : Buffer)
+						{
+							if(!std::isnan(Value))
+								fprintf(File, "%s %f\n", Date.DateTime.ToString(), Value);
+							Date.Advance();
+						}
+					}
+				}
+				else
+				{
+					for(double Value : Buffer)
+					{
+						if(std::isnan(Value)) fprintf(File, "NaN\n");
+						else fprintf(File, "%f\n", Value);
+					}
 				}
 			}
 		});

@@ -88,6 +88,9 @@ DllSetupModel(char *ParameterFilename, char *InputFilename)
 	ReadParametersFromFile(DataSet, ParameterFilename);
 	ReadInputsFromFile(DataSet, InputFilename);
 	
+	//NOTE: This makes some functionality in MobiView more convenient. Without this it can't read the storage structure of the results before the model is run.
+	SetupResultStorageStructure(DataSet);
+	
 	return (void *)DataSet;
 	
 	CHECK_ERROR_END
