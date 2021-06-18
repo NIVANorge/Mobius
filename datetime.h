@@ -397,18 +397,14 @@ struct expanded_datetime
 		}
 		
 		if(Timestep.Unit == Timestep_Month)
-		{
 			ComputeNextStepSize();
-		}
 	}
 	
 	void
 	ComputeNextStepSize()
 	{
 		if(Timestep.Unit == Timestep_Second)
-		{
 			StepLengthInSeconds = Timestep.Magnitude;
-		}
 		else
 		{
 			assert(Timestep.Unit == Timestep_Month);
@@ -448,9 +444,7 @@ FindTimestep(datetime Start, datetime Current, timestep_size Timestep)
 {
 	s64 Diff;
 	if(Timestep.Unit == Timestep_Second)
-	{
 		Diff = Current.SecondsSinceEpoch - Start.SecondsSinceEpoch;
-	}
 	else
 	{
 		assert(Timestep.Unit == Timestep_Month);

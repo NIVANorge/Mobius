@@ -1203,3 +1203,68 @@ DllPrintResultStructure(void *DataSetPtr, char *Buf, u64 BufLen)
 	CHECK_ERROR_END
 }
 
+DLLEXPORT void
+DllCopyData(void *SourceDataSetPtr, void *TargetDataSetPtr, bool CopyParams, bool CopyInputs, bool CopyResults)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *Source = (mobius_data_set *)SourceDataSetPtr;
+	mobius_data_set *Target = (mobius_data_set *)TargetDataSetPtr;
+	
+	if(Source->Model != Target->Model) //NOTE: This is intentionally a pointer comparison
+		FatalError("ERROR (internal): Attempting to copy data between datasets belonging to different models.");
+	const mobius_model *Model = Source->Model;
+	
+	//TODO: This could be factored into mobius_data_set.h
+	bool Correct = true;
+	for(index_set_h IndexSet : Model->IndexSets)
+	{
+		if(Source->IndexCounts[IndexSet.Handle] != Target->IndexCounts[IndexSet.Handle])
+		{
+			Correct = false;
+			break;
+		}
+		for(size_t IdxIdx = 0; IdxIdx < Source->IndexCounts[IndexSet.Handle]; ++IdxIdx)
+			if(strcmp(Source->IndexNames[IndexSet.Handle][IdxIdx], Source->IndexNames[IndexSet.Handle][IdxIdx])!= 0)
+			{
+				Correct = false;
+				break;
+			}
+		if(!Correct) break;
+	}
+	if(!Correct)
+		FatalError("ERROR (internal): Attempting to copy data between datasets that don't have the same indexes.");
+	
+	if(CopyParams)
+	{
+		if(!Source->ParameterStorageStructure.HasBeenSetUp)
+			FatalError("ERROR (internal): Attempting to copy parameter data from a dataset where the parameter data is not allocated");
+		if(!Target->ParameterStorageStructure.HasBeenSetUp)
+			AllocateParameterStorage(Target);
+		
+		memcpy(Target->ParameterData, Source->ParameterData, Source->ParameterStorageStructure.TotalCount*sizeof(parameter_value));
+	}
+	
+	if(CopyInputs)
+	{
+		if(!Source->InputStorageStructure.HasBeenSetUp)
+			FatalError("ERROR (internal): Attempting to copy input data from a dataset where the input data is not allocated");
+		if(!Target->InputStorageStructure.HasBeenSetUp)
+			AllocateInputStorage(Target, Source->InputDataTimesteps);
+		
+		memcpy(Target->InputData, Source->InputData, Source->InputStorageStructure.TotalCount*Source->InputDataTimesteps*sizeof(double));
+	}
+	
+	if(CopyResults)
+	{
+		if(!Source->ResultStorageStructure.HasBeenSetUp)
+			FatalError("ERROR (internal): Attempting to copy result data from a dataset where the result data is not allocated");
+		if(!Target->ResultStorageStructure.HasBeenSetUp)
+			AllocateResultStorage(Target, Source->TimestepsLastRun);
+		
+		memcpy(Target->ResultData, Source->ResultData, Source->ResultStorageStructure.TotalCount*(Source->TimestepsLastRun+1)*sizeof(double));
+	}
+	
+	CHECK_ERROR_END
+}
+

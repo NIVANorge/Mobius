@@ -810,6 +810,8 @@ AllocateResultStorage(mobius_data_set *DataSet, u64 Timesteps)
 		DataSet->ResultData = AllocClearedArray(double, AllocationSize);
 	else
 		memset(DataSet->ResultData, 0, sizeof(double)*AllocationSize);
+	
+	DataSet->TimestepsLastRun = Timesteps; //TODO: This may be misindicative naming since the model has not run yet at this point. We need to set this so that other routines can know how much result data has been allocated though.
 }
 
 

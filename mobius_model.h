@@ -481,7 +481,10 @@ struct mobius_data_set
 	
 	parameter_value *ParameterData;
 	storage_structure<parameter_h> ParameterStorageStructure;
-		
+	
+	//TODO: The length of the data blocks should really really be stored here!
+	//  Also, why not use array<bla> for more of these below?
+	
 	double *InputData;
 	bool   *InputTimeseriesWasProvided;
 	storage_structure<input_h> InputStorageStructure;
