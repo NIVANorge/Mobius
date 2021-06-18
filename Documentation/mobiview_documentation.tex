@@ -100,9 +100,10 @@ The toolbar has the following buttons.
 \item Open an additional plot view to display multiple plots at the same time. This is further explained in section \ref{sec:additionalplotview}.
 \item Export to csv (ctrl-E). Allows you to save all selected time series in a .csv format. The separator is ;
 
-\item Save baseline (ctrl-B). Saves a background copy of the current dataset. This is only used in the "Compare baseline" plot mode. See Section \ref{sec:comparebaseline}
-\item Perturbation view. Allows you to see the effect on one time series of perturbing a single parameter. Documentation of this feature is forthcoming.
-\item Optimization view. Allows you to autocalibrate the model. Documentation of this feature is forthcoming.
+\item Save baseline. Saves a background copy of the current dataset. This is used in the "Compare baseline" plot mode. See Section \ref{sec:comparebaseline}.
+\item Revert to baseline. Restores the baseline parameters and result series to the main dataset if a baseline was saved earlier.
+\item Perturbation view. Allows you to see the effect on one time series of perturbing a single parameter. See Section \ref{sec:sensitivity}
+\item Optimization view. Allows you to autocalibrate the model. Documentation of this feature is forthcoming. See Section \ref{sec:optimization}
 
 \item Edit statistics settings. Here you can turn on or off what statistics you want displayed in the timeseries info box, and also choose percentiles for the Q-Q plot mode.
 \item View model equation batch structure. This displays the equation batch structure, as described in the Mobius model builder documentation. This is mostly interesting if you are a model developer, as it can provide some debug information for your work-in-progress model.
@@ -249,20 +250,20 @@ In addition to what we have implemented in MobiView (described above), the plot 
 
 \subsection{The GOF interval}\label{sec:gofint}
 
-If you have selected one of the Residual, Residual histogram or the Q-Q plot modes, you can select the GOF interval below the timseries info box. The interval consists of two dates, and only timesteps between these dates will be considered in the plot and in the goodness-of-fit computations (see next section).
+You can select the GOF interval below the timseries info box. The interval consists of two dates, and only timesteps between these dates will be considered in the goodness-of-fit computations (see next section).
 
 \begin{center}
-\includegraphics[width=0.3\linewidth]{img/scr3}
+\includegraphics[width=0.3\linewidth]{img/gof}
 \captionof{figure}{When in a Residual-type plot mode, the GOF interval can be chosen using the two date text fields below the time series info box, where the goodness-of-fit stats are displayed.}
 \end{center}
 
 \subsection{Goodness-of-fit statistics}\label{sec:gof}
 
-The goodness-of-fit statistics are displayed in the time series info box if you have exactly one result series and one input series selected, and have selected one of the Residuals, Residual histogram or Q-Q plot modes.
+The goodness-of-fit statistics are displayed in the time series info box if you have exactly one result series and one input series selected, and the "Show GOF" box is checked.
 
 It can be useful sometimes to not have all statistics displayed. In that case, you can turn them off in the statistics settings window, opened from the toolbar.
 
-During model calibration you can also see the changes in each statistic between runs. This is displayed to the right of the value, and is color coded to show if the change was good or bad.
+During model calibration you can also see the changes in each statistic between runs. This is displayed to the right of the value, and is color coded to show if the change was good or bad. If the plot is in "compare baseline" mode, the changes in the GOF will be computed relative to the baseline, otherwise it is always relative to the previous run of the model.
 
 Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various statistics are discussed in that paper.
 
@@ -336,6 +337,34 @@ Spearman's rank correlation coefficient \cite{spearman04} is computed as follows
 \]
 The coefficient takes values in $[-1, 1]$. If the value is 1, the modeled series is a (positively) monotone function of the observed series.
 
+\subsection{Hydrological indexes}
+
+In addition to the common statistics like mean, standard deviation etc., MobiView computes some hydrological indexes. These are mostly meaningful only for flow series, but are computed for all series any way. See e.g. \cite{fenicia-et-al18} for reference.
+
+\subsubsection{Flashiness}
+
+The flashiness index is defined as
+\[
+\frac{\sum_i=2^N}|m_i-m_{i-1}|/\overline{m}
+\]
+and says something about how quick the time series is to respond to events.
+
+\subsubsection{Baseflow index (filter approximation)}
+
+The baseflow index approximation (est.bfi) is
+\[
+\frac{\sum{m_i^b}}{\sum{m_i}}
+\]
+where $m_i^b$ is the result of applying the single pass forward filter
+\[
+m_i^b = \min{m_i, am_{i-1}^b + (1-a)\frac{m_{i-1}+m_i}{2}}
+\]
+The filter constant $a$ can be set in the statistics settings menu.
+
+This index is an approximation that tries to separate out how much of the signal comes from a long-frequency source.
+
+Note that even if you have a model that uses a "Baseflow index" parameter, this approximation will probably not coincide with that parameter, but should be linearly correlated with it.
+
 \subsection{The additional plot view}\label{sec:additionalplotview}
 
 \begin{center}
@@ -357,7 +386,7 @@ This window has a toolbar with two buttons on its own
 
 \section{Sensitivity and optimization}
 
-\subsection{Single parameter perturbation}
+\subsection{Single parameter perturbation}\label{sec:sensitivity}
 
 \begin{center}
 \includegraphics[width=\linewidth]{img/parameterperturbation}
@@ -373,7 +402,7 @@ If an index set was checked as "locked" in the main window, all values across th
 You can also select a statistic to plot in the rightmost plot, with the perturbed parameter as the x axis and the statistic as the y axis. If you want to plot a goodness-of-fit statistic (these are documented in section \ref{sec:gof}, you must have an input series selected that will be used as the comparison series. The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
 
 
-\subsection{Optimization}
+\subsection{Optimization}\label{sec:optimization}
 
 \begin{center}
 \includegraphics[width=\linewidth]{img/mobiview_optimizer}
