@@ -40,7 +40,7 @@ void SnowStep(int Timestep, const std::vector<std::vector<double>> &Inputs, std:
 	InfEx[Timestep] = PQuick*HydrolInputSoil[Timestep];
 }
 
-// #define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const mobius_solver_equation_function &EquationFunction, const mobius_solver_equation_function &JacobiFunction, double AbsErr, double RelErr)
+static void IncaDascruSolver(double h, size_t n, double *x0, double *wk, const std::function<void(double *, double *)> &ODEEquationFunction);
 
 void LandStep(int Timestep, const std::vector<double> &PET, std::vector<std::vector<double>> &LandResults, const std::vector<double> &Parameters, double TC, double Inf, double *x0, double *wk)
 {
@@ -62,7 +62,7 @@ void LandStep(int Timestep, const std::vector<double> &PET, std::vector<std::vec
 		wk[1] = Qsw;
 	};
 	
-	IncaDascruImpl_(0.01, 2, x0, wk, EquationFunction, nullptr, 0.0, 0.0); //NOTE: this particular solver doesn't use the RelErr and AbsErr figures.
+	IncaDascruSolver(0.01, 2, x0, wk, EquationFunction);
 	
 	LandResults[0][Timestep] = x0[0];
 	LandResults[1][Timestep] = x0[1];
@@ -104,7 +104,7 @@ void ReachStep(int Timestep, std::vector<std::vector<double>> &ReachResults, con
 		wk[2] = Qr;
 	};
 	
-	IncaDascruImpl_(0.1, 3, x0, wk, EquationFunction, nullptr, 0.0, 0.0); //NOTE: this particular solver doesn't use the RelErr and AbsErr figures.
+	IncaDascruSolver(0.1, 3, x0, wk, EquationFunction);
 	
 	double Vg = x0[0];
 	double Qg0 = Vg / Tg;
@@ -319,4 +319,135 @@ int main()
 	}
 	std::cout << "Ratio: " << (double)SumHardcode / (double)SumMobius << std::endl;
 	std::cout << "Dummy: " << DummySum << std::endl;
+}
+
+
+
+void
+IncaDascruSolver(double h, size_t n, double *x0, double *wk, const std::function<void(double *, double *)> &ODEEquationFunction)
+{
+	//NOTE: We had to make a separate copy of this here since the original API changed to hardwire the other one more into the Mobius system.
+	
+	//NOTE: This is the original solver from INCA based on the DASCRU Runge-Kutta 4 solver. See also
+	// Rational Runge-Kutta Methods for Solving Systems of Ordinary Differential Equations, Computing 20, 333-342.
+
+	double hmin = 0.01 * h;	  //NOTE: The solver is only allowed to adjust the step length h to be 1/100 of the desired value, not smaller.
+
+	double t = 0.0;			  // 0 <= t <= 1 is the time progress of the solver.
+	
+	// Divide up "workspaces" for equation values.
+	double *wk0 = wk + n;
+	double *wk1 = wk0 + n;
+	double *wk2 = wk1 + n;
+
+	bool Continue = true;
+	
+	while(Continue)
+	{
+		double t_backup = t;
+		bool StepWasReduced = false;
+		bool StepCanBeReduced = true;
+
+		for(size_t EqIdx = 0; EqIdx < n; ++EqIdx)
+			wk0[EqIdx] = x0[EqIdx];
+
+FT:
+		
+		bool StepCanBeIncreased = true;
+
+		if (h + t > 1.0)
+		{
+			h = 1.0 - t;
+			Continue = false;
+		}
+		
+		for(int SubStep = 0; SubStep < 5; SubStep++)  // TODO: I really want to unroll this loop!
+		{
+			//NOTE: The ODEEquationFunction computes dx/dt at x0 and puts the results in wk.
+			ODEEquationFunction(x0, wk);
+			
+			double h3 = h / 3.0;
+
+			for(size_t EqIdx = 0; EqIdx < n; ++EqIdx)
+			{
+				double dx0 = h3 * wk[EqIdx];
+				double dx;
+
+				switch(SubStep)
+				{
+					case 0:
+						dx = dx0;
+						wk1[EqIdx] = dx0;
+					break;
+
+					case 1:
+						dx = 0.5 * (dx0 + wk1[EqIdx]);
+					break;
+
+					case 2:
+						dx = 3.0 * dx0;
+						wk2[EqIdx] = dx;
+						dx = 0.375 * (dx + wk1[EqIdx]);
+					break;
+
+					case 3:
+						dx = wk1[EqIdx] + 4.0 * dx0;
+						wk1[EqIdx] = dx;
+						dx = 1.5*(dx - wk2[EqIdx]);
+					break;
+
+					case 4:
+						dx = 0.5 * (dx0 + wk1[EqIdx]);
+					break;
+				}
+
+				x0[EqIdx] = wk0[EqIdx] + dx;
+
+				if(SubStep == 4)
+				{
+					double Tol = 0.0005;
+					double abs_x0 = fabs(x0[EqIdx]);
+					if (abs_x0 >= 0.001) Tol = abs_x0 * 0.0005;
+					
+					double Est = fabs(dx + dx - 1.5 * (dx0 + wk2[EqIdx]));
+					
+					if (Est < Tol || !StepCanBeReduced)
+					{
+						if (Est >= (0.03125 * Tol))
+							StepCanBeIncreased = false;
+					}
+					else
+					{
+						Continue = true; // If we thought we reached the end of the integration, that may no longer be true since we are reducing the step size.
+						StepWasReduced = true;
+						
+						h = 0.5 * h; // Reduce the step size.
+
+						if(h < hmin)
+						{
+							h = hmin;
+							StepCanBeReduced = false;
+						}
+
+						for (size_t Idx = 0; Idx < n; ++Idx)
+							x0[Idx] = wk0[Idx];
+
+						t = t_backup;
+						
+						goto FT;  //TODO: I really don't like this goto, but there is no easy syntax for breaking the outer loop.
+					}
+				}
+			}
+
+			if(SubStep == 0)	  t += h3;
+			else if(SubStep == 2) t += 0.5 * h3;
+			else if(SubStep == 3) t += 0.5 * h;
+		}
+
+		if(StepCanBeIncreased && !StepWasReduced && Continue)
+		{
+			h = h + h;
+			StepCanBeReduced = true;
+		}
+	}
 }
