@@ -36,19 +36,26 @@ It is not complete yet.
 	
 	
 	
-	auto Reach = GetIndexSetHandle(Model, "Reaches");
+	auto Reach        = GetIndexSetHandle(Model, "Reaches");
+	auto Contaminant  = GetIndexSetHandle(Model, "Contaminants");
 	
 	auto LakeParams = RegisterParameterGroup(Model, "Lake Tox");
 	
-	auto OpticalCrossection     = RegisterParameterDouble(Model, LakeParams, "Optical cross-section", Dimensionless, 255.0, 0.0, 1000.0, "For photodegradation"); //TODO: Other unit
+	
 	auto SecchiDepth            = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
 	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0);
+	
+	auto Photomin   = RegisterParameterGroup(Model, "Photomineralization", Contaminant);
+	
+	auto OpticalCrossection     = RegisterParameterDouble(Model, Photomin, "Optical cross-section", Dimensionless, 255.0, 0.0, 1000.0, "For photo-degradation"); //TODO: Other unit
 	
 	//auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 	auto LakeContaminantSolver = RegisterSolver(Model, "Lake contaminant solver", 0.1, IncaDascru);
 	
 	auto EpilimnionDegradationTemperatureModifier  = RegisterEquation(Model, "Temperature modifier for degradation in epilimnion", Dimensionless, LakeContaminantSolver);
 	auto HypolimnionDegradationTemperatureModifier = RegisterEquation(Model, "Temperature modifier for degradation in hypolimnion", Dimensionless, LakeContaminantSolver);
+	
+	auto DepositionOnLakeSurface                   = RegisterEquation(Model, "Deposition on lake surface", NgPerDay, LakeContaminantSolver);
 	
 	auto EpilimnionContaminantDegradation          = RegisterEquation(Model, "Epilimnion contaminant degradation", NgPerDay, LakeContaminantSolver);
 	auto HypolimnionContaminantDegradation         = RegisterEquation(Model, "Hypolimnion contaminant degradation", NgPerDay, LakeContaminantSolver);
@@ -100,7 +107,7 @@ It is not complete yet.
 	
 	auto AtmosphericContaminantConcentrationIn  = GetInputHandle(Model, "Atmospheric contaminant concentration");
 	auto DepositionToLand                       = GetInputHandle(Model, "Contaminant deposition to land");
-
+	auto DepositionToLandPar                    = GetParameterDoubleHandle(Model, "Deposition to land");
 
 
 	auto ThisIsARiver                           = GetConditionalHandle(Model, "This is a river");
@@ -188,11 +195,16 @@ It is not complete yet.
 		return
 			  RESULT(ContaminantInputFromLand)
 			+ RESULT(ContaminantInputFromUpstream)
+			+ RESULT(DepositionOnLakeSurface)
 			- RESULT(LayerExchange)
 			- RESULT(LakeContaminantFlux)
 			- RESULT(DiffusiveAirLakeExchangeFlux)
 			- RESULT(PhotoDegradation)
 			- RESULT(EpilimnionContaminantDegradation);
+	)
+	
+	EQUATION(Model, DepositionOnLakeSurface,
+		return IF_INPUT_ELSE_PARAMETER(DepositionToLand, DepositionToLandPar)*RESULT(LakeSurfaceArea);
 	)
 	
 	EQUATION(Model, LakeContaminantFlux,

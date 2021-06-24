@@ -360,7 +360,6 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,
-		//TODO: Maybe let the user parametrize this in case they don't have detailed timeseries
 		double input = IF_INPUT_ELSE_PARAMETER(DepositionToLand, DepositionToLandPar) + RESULT(ComputedWetDeposition) + RESULT(ComputedDryDeposition);
 		return input * 1e6; //NOTE: convert ng/m2 -> ng/km2
 	)
