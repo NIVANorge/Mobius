@@ -26,8 +26,10 @@ AddSedFlexModel(mobius_model *Model)
 	auto LPerKgOC      = RegisterUnit(Model, "log10(L/kg(OC))");
 	auto KPaM3PerMol   = RegisterUnit(Model, "-log10(kPa m3/mol)");
 	auto MolM3PerPa    = RegisterUnit(Model, "mol m3/Pa");
+	auto MolPerPaM3    = RegisterUnit(Model, "mol/(m3 Pa)");
 	auto GPerMol       = RegisterUnit(Model, "g/mol");
 	auto KJPerMol      = RegisterUnit(Model, "kJ/mol");
+	auto MolPerDayPa   = RegisterUnit(Model, "mol/(day Pa)");
 	
 	
 	//TODO: Some of these could be parametrized
@@ -56,8 +58,8 @@ AddSedFlexModel(mobius_model *Model)
 	auto SedimentTemperature = RegisterInput(Model, "Sediment temperature", DegC);
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MPerDay);
 	
-	auto AirSideMassTransferCoeff   = RegisterParameterDouble(Model, AirPars, "Air-side mass transfer coefficient", MPerDay, 100.0, 0.0, 1000.0); // k_A
-	auto WaterSideMassTransferCoeff = RegisterParameterDouble(Model, AirPars, "Water-side mass transfer coefficent", MPerDay, 1.0, 0.0, 10.0);
+	auto AirSideMassTransferCoeff   = RegisterParameterDouble(Model, AirPars, "Air-side mass transfer coefficient", MPerDay, 100.0, 0.0, 1000.0); // k_VA
+	auto WaterSideMassTransferCoeff = RegisterParameterDouble(Model, AirPars, "Water-side mass transfer coefficent", MPerDay, 1.0, 0.0, 10.0); // k_VW
 	auto ScavengingRatio            = RegisterParameterDouble(Model, AirPars, "Scavenging ratio", Dimensionless, 200000.0, 0.0, 2000000.0, "The ratio between a raindrop's volume to the volume of air it sweeps through when falling"); // Q
 	auto VolumeFractionAerosols     = RegisterParameterDouble(Model, AirPars, "Volume fraction of aerosols", Dimensionless, 1e-12, 0.0, 1e-10);  // v_Q or F_Q
 	auto DryDepositionRate          = RegisterParameterDouble(Model, AirPars, "Particle dry deposition rate", MPerDay, 25.0, 0.0, 200.0); // U_Q
@@ -71,19 +73,20 @@ AddSedFlexModel(mobius_model *Model)
 	auto ConcDOC                    = RegisterParameterDouble(Model, WaterPars, "DOC concentration", MgPerM3, 3000.0, 0.0, 10000.0, "Dissolved organic carbon concentration");  // C_DOC
 	auto ConcBC                     = RegisterParameterDouble(Model, WaterPars, "BC concentration", MgPerM3, 10.0, 0.0, 100.0, "Black carbon (soot) concentration");  // C_BC
 	POCSettlingVelocity             = RegisterParameterDouble(Model, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC");  // U_POC
-	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Wheter or not chemicals can degrade in this water compartment");
+	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Whether or not chemicals can react/degrade in this water compartment");
 	//IsBelow: How to represent this?
 	
 	auto SedSurfaceArea             = RegisterParameterDouble(Model, SedPars, "Sediment surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by the sediments of this compartment");
 	auto SedHeight                  = RegisterParameterDouble(Model, SedPars, "Sediment effective height", M, 0.5, 0.0, 10.0, "Thickness of the sediment layer");
 	auto Porosity                   = RegisterParameterDouble(Model, SedPars, "Sediment porosity", Dimensionless, 0.86, 0.0, 1.0);
 	auto SedPOCVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment POC volume fraction", Dimensionless, 0.0825, 0.0, 0.2, "Fraction of solid sediments that is particulate organic carbon"); // f_POC
-	auto SedimentBCVolumeFraction   = RegisterParameterDouble(Model, SedPars, "Sediment BC volume fraction", Dimensionless, 0.01, 0.0, 0.1, "Fraction of solid sediments that is black carbon (soot)"); // f_BC
-	auto SedimentConcDOC            = RegisterParameterDouble(Model, SedPars, "Sediment DOC concentration", MgPerM3, 78000.0, 0.0, 1e6, "Concentration in pore water");
+	auto SedBCVolumeFraction        = RegisterParameterDouble(Model, SedPars, "Sediment BC volume fraction", Dimensionless, 0.01, 0.0, 0.1, "Fraction of solid sediments that is black carbon (soot)"); // f_BC
+	auto SedConcDOC                 = RegisterParameterDouble(Model, SedPars, "Sediment DOC concentration", MgPerM3, 78000.0, 0.0, 1e6, "Concentration in pore water");
 	auto POCMineralizationHL        = RegisterParameterDouble(Model, SedPars, "POC mineralization half-life", Days, 32613.0, 0.0, 100000.0);
 	auto BurialVelocity             = RegisterParameterDouble(Model, SedPars, "Burial velocity", MPerDay, 5e-7, 0.0, 5e-6);
 	auto ResuspensionVelocity       = RegisterParameterDouble(Model, SedPars, "Resuspension velocity", MPerDay, 3e-6, 0.0, 3e-5);
 	auto SedWaterMassTransferCoeff  = RegisterParameterDouble(Model, SedPars, "Sediment-water mass transfer coeffcient", MPerDay, 2.4e-3, 0.0, 5e-2, "Also applies to DOC");
+	auto HasSedDegrad               = RegisterParameterBool(Model, WaterPars, "Degradation in sediment", true, "Whether or not chemicals can react/degrade in this sediment compartment");
 	
 	auto LogKOW25                   = RegisterParameterDouble(Model, ChemPars, "(log10) Octanol-water partitioning coefficient", Dimensionless, 6.0, -3.0, 10.0, "Reference value at 25°C");
 	auto LogKOA25                   = RegisterParameterDouble(Model, ChemPars, "(log10) Octanol-air partitioning coefficient", Dimensionless, 12.0, -3.0, 14.0, "Reference value at 25°C");
@@ -118,20 +121,29 @@ AddSedFlexModel(mobius_model *Model)
 	auto MinusLogHWater           = RegisterEquation(Model, "(-log10) Henry's law constant in open water (temperature adjusted)", KPaM3PerMol);
 	auto MinusLogHSed             = RegisterEquation(Model, "(-log10) Henry's law constant in sediments (temperature adjusted)", KPaM3PerMol);
 	
-	auto WaterFugacityCapacityAir   = RegisterEquation(Model, "Water fugacity capacity in atmosphere", MolM3PerPa);
-	auto WaterFugacityCapacityWater = RegisterEquation(Model, "Water fugacity capacity in open water", MolM3PerPa);
-	auto WaterFugacityCapacitySed   = RegisterEquation(Model, "Water fugacity capacity in sediments", MolM3PerPa);
-	auto AirFugacityCapacity        = RegisterEquation(Model, "Air fugacity capacity", MolM3PerPa);
-	auto AerosolFugacityCapacity    = RegisterEquation(Model, "Aerosol fugacity capacity", MolM3PerPa);
-	auto POCFugacityCapacityWater   = RegisterEquation(Model, "POC fugacity capacity in open water", MolM3PerPa);
-	auto POCFugacityCapacitySed     = RegisterEquation(Model, "POC fugacity capacity in sediments", MolM3PerPa);
-	auto DOCFugacityCapacityWater   = RegisterEquation(Model, "DOC fugacity capacity in open water", MolM3PerPa);
-	auto DOCFugacityCapacitySed     = RegisterEquation(Model, "DOC fugacity capacity in sediments", MolM3PerPa);
-	auto BCFugacityCapacityWater    = RegisterEquation(Model, "BC fugacity capacity in open water", MolM3PerPa);
-	auto BCFugacityCapacitySed      = RegisterEquation(Model, "BC fugacity capacity in sediments", MolM3PerPa);
+	auto WaterFugacityCapacityAir   = RegisterEquation(Model, "Water fugacity capacity in atmosphere", MolPerPaM3);
+	auto WaterFugacityCapacityWater = RegisterEquation(Model, "Water fugacity capacity in open water", MolPerPaM3);
+	auto WaterFugacityCapacitySed   = RegisterEquation(Model, "Water fugacity capacity in sediments", MolPerPaM3);
+	auto AirFugacityCapacity        = RegisterEquation(Model, "Air fugacity capacity", MolPerPaM3);
+	auto AerosolFugacityCapacity    = RegisterEquation(Model, "Aerosol fugacity capacity", MolPerPaM3);
+	auto TotalFugacityCapacityAir   = RegisterEquation(Model, "Total fugacity capacity in atmosphere", MolPerPaM3);
+	auto POCFugacityCapacityWater   = RegisterEquation(Model, "POC fugacity capacity in open water", MolPerPaM3);
+	auto POCFugacityCapacitySed     = RegisterEquation(Model, "POC fugacity capacity in sediments", MolPerPaM3);
+	auto DOCFugacityCapacityWater   = RegisterEquation(Model, "DOC fugacity capacity in open water", MolPerPaM3);
+	auto DOCFugacityCapacitySed     = RegisterEquation(Model, "DOC fugacity capacity in sediments", MolPerPaM3);
+	auto BCFugacityCapacityWater    = RegisterEquation(Model, "BC fugacity capacity in open water", MolPerPaM3);
+	auto BCFugacityCapacitySed      = RegisterEquation(Model, "BC fugacity capacity in sediments", MolPerPaM3);
 	
-	auto DegradationRateWater       = RegisterEquation(Model, "Degradation rate in open water", PerDay);
-	auto DegradationRateSed         = RegisterEquation(Model, "Degradation rate in sediments", PerDay);
+	auto SolidFugacityCapacityWater = RegisterEquation(Model, "Solids fugacity capacity in open water", MolPerPaM3);
+	auto WaterAndDOCFugacityCapacityWater = RegisterEquation(Model, "Water+DOC fugacity capacity in open water", MolPerPaM3);
+	auto TotalFugacityCapacityWater = RegisterEquation(Model, "Total fugacity capacity in open water", MolPerPaM3);
+	auto PorewaterFugacityCapacitySed = RegisterEquation(Model, "Water+DOC fugacity capacity in sediments", MolPerPaM3);
+	auto SolidFugacityCapacitySedExclSoot = RegisterEquation(Model, "Solids fugacity capacity in sediments excluding soot", MolPerPaM3);
+	auto SolidFugacityCapacitySed   = RegisterEquation(Model, "Solids fugacity capacity in sediments", MolPerPaM3);
+	auto TotalFugacityCapacitySed   = RegisterEquation(Model, "Total fugacity capacity in sediments", MolPerPaM3);
+	
+	auto ReactionRateWater          = RegisterEquation(Model, "Reaction rate in open water", PerDay);
+	auto Reaction RateSed           = RegisterEquation(Model, "Reaction rate in sediments", PerDay);
 	
 	
 	EQUATION(Model, LogKOWWater,
@@ -189,6 +201,10 @@ AddSedFlexModel(mobius_model *Model)
 		double b = PARAMETER(AerosolParB);
 		double K_aerosol = b*std::pow(10.0, RESULT(LogKOA)*a);
 		return RESULT(AirFugacityCapacity)*K_aerosol;
+	)
+	
+	EQUATION(Model, TotalFugacityCapacityAir,
+		return RESULT(AirFugacityCapacity) + PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFugacityCapacity);
 	)
 	
 	EQUATION(Model, POCFugacityCapacityWater,
@@ -271,14 +287,105 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_sed*K_DOC*rho_oc;
 	)
 	
-	EQUATION(Model, DegradationRateWater,
+	EQUATION(Model, SolidFugacityCapacityWater,
+		//factor 1e-9/rho_oc for mg/m3 to mass fraction
+		return (1e-9/rho_oc)*(PARAMETER(ConcPOC)*RESULT(POCFugacityCapacityWater)) + (1e-9/rho_bc)*(PARAMETER(ConcBC)*RESULT(BCFugacityCapacityWater));
+	)
+	
+	EQUATION(Model, WaterAndDOCFugacityCapacityWater,
+		return RESULT(WaterFugacityCapacityWater) + (1e-9/rho_oc)*(PARAMETER(ConcDOC)*RESULT(DOCFugacityCapacityWater));
+	)
+	
+	EQUATION(Model, TotalFugacityCapacityWater,
+		return RESULT(SolidFugacityCapacityWater) + RESULT(WaterAndDOCFugacityCapacityWater);
+	)
+	
+	EQUATION(Model, PorewaterFugacityCapacitySed,
+		// pore water = water + DOC
+		return RESULT(WaterFugacityCapacitySed) + (1e-9/rho_oc)*PARAMETER(SedConcDOC)*RESULT(DOCFugacityCapacitySed);
+	)
+	
+	EQUATION(Model, SolidFugacityCapacitySedExclSoot,
+		return PARAMETER(SedPOCVolumeFraction)*RESULT(POCFugacityCapacitySed);
+	)
+	
+	EQUATION(Model, SolidFugacityCapacitySed,
+		return RESULT(SolidFugacityCapacitySedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFugacityCapacitySed);
+	)
+	
+	EQUATION(Model, TotalFugacityCapacitySed,
+		double phi = PARAMETER(Porosity);
+		return phi*RESULT(PorewaterFugacityCapacitySed) + (1.0-phi)*RESULT(SolidFugacityCapacitySed);
+	)
+	
+	
+	EQUATION(Model, ReactionRateWater,
 		double Kreac_wat_ref = ln2/PARAMETER(DegradHLWater25);
 		Kreac_wat_ref*std::exp((Ea/R)*(1.0/(RefTemp+273.15)-1.0/(INPUT(WaterTemperature)+273.15)));
 	)
 	
-	EQUATION(Model, DegradationRateSed,
+	EQUATION(Model, ReactionRateSed,
 		double Kreac_sed_ref = ln2/PARAMETER(DegradHLSed25);
 		Kreac_sed_ref*std::exp((Ea/R)*(1.0/(RefTemp+273.15)-1.0/(INPUT(SedimentTemperature)+273.15)));
+	)
+	
+	
+	EQUATION(Model, PotentialSettlingTCOut,
+		// D value for poc and bc settling: (mol/(m3 oc*Pa))*(g oc/m3 w)*(m/d)*m2*(m3 oc/g oc) = mol/(Pa d)
+		return
+			RESULT(POCFugacityCapacityWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_oc)
+		  + RESULT(BCFugacityCapacityWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_bc);
+	)
+	
+	EQUATION(Model, ReactionTCWater,
+		return RESULT(ReactionRateWater)*RESULT(WaterFugacityCapacityWater)*((double)PARAMETER(HasWaterDegrad))*PARAMETER(WaterHeight)*PARAMETER(WaterSurfaceArea);
+	)
+	
+	EQUATION(Model, ReactionTCSed,
+		return RESULT(ReactionRateSed)*RESULT(WaterFugacityCapacitySed)*((double)PARAMETER(HasSedDegrad))*PARAMETER(SedHeight)*PARAMETER(SedSurfaceArea);
+	)
+	
+	//TODO: These should only apply to surface compartments
+	EQUATION(Model, VolVaporTC,
+		return
+			1.0/(1.0/(PARAMETER(AirSideMassTransferCoeff)*RESULT(AirFugacityCapacity)*PARAMETER(WaterSurfaceArea)) + 1.0/(PARAMETER(WaterSideMassTransferCoeff)*RESULT(WaterFugacityCapacityWater)*PARAMETER(WaterSurfaceArea)));
+	)
+	
+	EQUATION(Model, RainDissTC,
+		return INPUT(Precipitation)*RESULT(WaterFugacityCapacityAir)*PARAMETER(WaterSurfaceArea);
+	)
+	
+	EQUATION(Model, WetDepositionTC,
+		return INPUT(Precipitation)*PARAMETER(VolumeFractionAerosols)*PARAMETER(ScavengingRatio)*RESULT(AerosolFugacityCapacity)*PARAMETER(WaterSurfaceArea);
+	)
+	
+	EQUATION(Model, DryDepositionTC,
+		return PARAMETER(DryDepositionRate)*PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFugacityCapacity)*PARAMETER(WaterSurfaceArea);
+	)
+	
+	EQUATION(Model, TotalAirWaterTC,
+		return RESULT(VolVaporTC) + RESULT(RainDissTC) + RESULT(WetDepositionTC) + RESULT(DryDepositionTC);
+	)
+	
+	
+	EQUATION(Model, UpDissTC,
+		return RESULT(PorewaterFugacityCapacitySed)*PARAMETER(SedWaterMassTransferCoeff)*PARAMETER(SedSurfaceArea);
+	)
+	
+	EQUATION(Model, DownDissTC,
+		return RESULT(WaterAndDOCFugacityCapacityWater)*PARAMETER(SedWaterMassTransferCoeff)*PARAMETER(SedSurfaceArea);
+	)
+	
+	EQUATION(Model, ResuspensionTC,
+		return PARAMETER(ResuspensionVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFugacityCapacitySed);
+	)
+	
+	EQUATION(Model, BurialTC,
+		return PARAMETER(BurialVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFugacityCapacityWater);
+	)
+	
+	EQUATION(Model, MineralizationTC,
+		return (ln2*PARAMETER(SedHeight)/PARAMETER(POCMineralizationHL))*PARAMETER(SedSurfaceArea)*RESULT(SolidFugacityCapacitySedExclSoot);
 	)
 }
 
