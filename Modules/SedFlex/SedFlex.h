@@ -22,6 +22,7 @@ AddSedFlexModel(mobius_model *Model)
 	auto M             = RegisterUnit(Model, "m");
 	auto M2            = RegisterUnit(Model, "m2");
 	auto M3            = RegisterUnit(Model, "m3");
+	auto M3PerS        = RegisterUnit(Model, "m3/s");
 	auto MgPerM3       = RegisterUnit(Model, "mg/m3");
 	auto LPerKgOC      = RegisterUnit(Model, "log10(L/kg(OC))");
 	auto KPaM3PerMol   = RegisterUnit(Model, "-log10(kPa m3/mol)");
@@ -30,6 +31,7 @@ AddSedFlexModel(mobius_model *Model)
 	auto GPerMol       = RegisterUnit(Model, "g/mol");
 	auto KJPerMol      = RegisterUnit(Model, "kJ/mol");
 	auto MolPerDayPa   = RegisterUnit(Model, "mol/(day Pa)");
+	auto Pa            = RegisterUnit(Model, "Pa");
 	
 	
 	//TODO: Some of these could be parametrized
@@ -38,20 +40,25 @@ AddSedFlexModel(mobius_model *Model)
 	constexpr double Ea = 30000.0;      // Activation energy (J/mol)
 	constexpr double ln2 = 0.69314718056;
 	
-	constexpr double rho_OC = 1.0;      //Density of organic carbon [kg/L]
-	constexpr double rho_BC = 1.0;      //Density of black carbon (soot) [kg/L] 
+	constexpr double rho_oc = 1.0;      //Density of organic carbon [kg/L]
+	constexpr double rho_bc = 1.0;      //Density of black carbon (soot) [kg/L] 
 	
 	constexpr double Offset = -std::log10(1e3*R*(RefTemp+273.15));
 	
-	auto Compartment = RegisterIndexSet(Model, "Compartment");
-	auto Chemical    = RegisterIndexSet(Model, "Chemical");
+	auto Compartment         = RegisterIndexSet(Model, "Compartment");
+	auto BoundaryCompartment = RegisterIndexSet(Model, "Boundary compartment");
+	auto Chemical            = RegisterIndexSet(Model, "Chemical");
 	
 	
 	auto AirPars   = RegisterParameterGroup(Model, "Atmosphere");
 	auto WaterPars = RegisterParameterGroup(Model, "Water compartment", Compartment);
 	auto SedPars   = RegisterParameterGroup(Model, "Sediment compartment", Compartment);
-	auto ChemPars  = RegisterParameterGroup(Model, "Chemistry");
+	auto ChemPars  = RegisterParameterGroup(Model, "Chemistry", Chemical);
 	auto AppxPars  = RegisterParameterGroup(Model, "KOC approximation");
+	
+	auto FlowPars  = RegisterParameterGroup(Model, "Flow rates", Compartment, Compartment);
+	auto BoundFlow = RegisterParameterGroup(Model, "Boundary flows", Compartment, BoundaryCompartment);
+	
 	
 	auto AirTemperature      = RegisterInput(Model, "Air temperature", DegC);
 	auto WaterTemperature    = RegisterInput(Model, "Water temperature", DegC);
@@ -68,11 +75,11 @@ AddSedFlexModel(mobius_model *Model)
 	
 	
 	auto WaterSurfaceArea           = RegisterParameterDouble(Model, WaterPars, "Water surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by water compartment");
-	auto WaterHeight                = RegisterParameterDouble(Model, WaterPars, "Water effective height", M, 20.0, 0.0, 10,984, "Vertical thickness of water compartment");
+	auto WaterHeight                = RegisterParameterDouble(Model, WaterPars, "Water effective height", M, 20.0, 0.0, 10.984, "Vertical thickness of water compartment");
 	auto ConcPOC                    = RegisterParameterDouble(Model, WaterPars, "POC concentration", MgPerM3, 100.0, 0.0, 1000.0, "Particulate organic carbon concentration");  // C_POC
 	auto ConcDOC                    = RegisterParameterDouble(Model, WaterPars, "DOC concentration", MgPerM3, 3000.0, 0.0, 10000.0, "Dissolved organic carbon concentration");  // C_DOC
 	auto ConcBC                     = RegisterParameterDouble(Model, WaterPars, "BC concentration", MgPerM3, 10.0, 0.0, 100.0, "Black carbon (soot) concentration");  // C_BC
-	POCSettlingVelocity             = RegisterParameterDouble(Model, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC");  // U_POC
+	auto POCSettlingVelocity        = RegisterParameterDouble(Model, WaterPars, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC");  // U_POC
 	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Whether or not chemicals can react/degrade in this water compartment");
 	//IsBelow: How to represent this?
 	
@@ -86,21 +93,21 @@ AddSedFlexModel(mobius_model *Model)
 	auto BurialVelocity             = RegisterParameterDouble(Model, SedPars, "Burial velocity", MPerDay, 5e-7, 0.0, 5e-6);
 	auto ResuspensionVelocity       = RegisterParameterDouble(Model, SedPars, "Resuspension velocity", MPerDay, 3e-6, 0.0, 3e-5);
 	auto SedWaterMassTransferCoeff  = RegisterParameterDouble(Model, SedPars, "Sediment-water mass transfer coeffcient", MPerDay, 2.4e-3, 0.0, 5e-2, "Also applies to DOC");
-	auto HasSedDegrad               = RegisterParameterBool(Model, WaterPars, "Degradation in sediment", true, "Whether or not chemicals can react/degrade in this sediment compartment");
+	auto HasSedDegrad               = RegisterParameterBool(Model, SedPars, "Degradation in sediment", true, "Whether or not chemicals can react/degrade in this sediment compartment");
 	
 	auto LogKOW25                   = RegisterParameterDouble(Model, ChemPars, "(log10) Octanol-water partitioning coefficient", Dimensionless, 6.0, -3.0, 10.0, "Reference value at 25°C");
 	auto LogKOA25                   = RegisterParameterDouble(Model, ChemPars, "(log10) Octanol-air partitioning coefficient", Dimensionless, 12.0, -3.0, 14.0, "Reference value at 25°C");
 	auto MinusLogH25                = RegisterParameterDouble(Model, ChemPars, "(-log10) Henry's law constant", KPaM3PerMol, 3.0, -5.0, 10.0, "Reference value at 25°C");
 	auto LogKOCObsWater             = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficient in open water", LPerKgOC, 8.0, -3.0, 12.0);
-	auto LogKOCObsSed               = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficent in sediments"
+	auto LogKOCObsSed               = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficent in sediments", LPerKgOC, 8.0, -3.0, 12.0);
 	auto EstLogKOCWater             = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in open water", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto EstLogKOCSed               = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in sediments", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto MolecularWeight            = RegisterParameterDouble(Model, ChemPars, "Molecular weight", GPerMol, 400.0, 0.0, 10000.0);
 	auto DegradHLWater25            = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in open water", Days, 1e3, 1.0, 1e5, "Reference value at 25°C");
 	auto DegradHLSed25              = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in sediments", Days, 4.17e8, 1.0, 1e10, "Reference value at 25°C");
-	auto InternalEnergyChangeOA     = RegisterParameterDouble(Model, "Internal energy change of the OA phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
-	auto InternalEnergyChangeOW     = RegisterParameterDouble(Model, "Internal energy change of the OW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
-	auto InternalEnergyChangeAW     = RegisterParameterDouble(Model, "Internal energy change of the AW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
+	auto InternalEnergyChangeOA     = RegisterParameterDouble(Model, ChemPars,"Internal energy change of the OA phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
+	auto InternalEnergyChangeOW     = RegisterParameterDouble(Model, ChemPars, "Internal energy change of the OW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
+	auto InternalEnergyChangeAW     = RegisterParameterDouble(Model, ChemPars, "Internal energy change of the AW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
 	
 	
 	auto POCParA                    = RegisterParameterDouble(Model, AppxPars, "K_POC a parameter", Dimensionless, 1.0, 0.1, 10.0, "From the approximation K_POC = b*K_OW^a if used");
@@ -109,9 +116,16 @@ AddSedFlexModel(mobius_model *Model)
 	auto DOCParB                    = RegisterParameterDouble(Model, AppxPars, "K_DOC b parameter", Dimensionless, 0.08, 0.0, 10.0, "From the approximation K_DOC = b*K_OW^a");
 	auto BCParA                     = RegisterParameterDouble(Model,
 	AppxPars, "K_BC a parameter", Dimensionless, 1.6, 0.1, 10.0, "From the approximation K_BC = b*K_OW^a");
-	auto BCParB                     = RegisterParameterDouble(Model, AppxPars, "K_BC b parameter", Dimensionless, 0.0398, 1.0, 0.0, 10.0, "From the approximation K_BC = b*K_OW^a");
+	auto BCParB                     = RegisterParameterDouble(Model, AppxPars, "K_BC b parameter", Dimensionless, 0.0398, 0.0, 10.0, "From the approximation K_BC = b*K_OW^a");
 	auto AerosolParA                = RegisterParameterDouble(Model, AppxPars, "K_aerosol a parameter", Dimensionless, 1.0, 0.1, 10.0, "From the approximation K_aerosol = b*K_OA^a");
 	auto AerosolParB                = RegisterParameterDouble(Model, AppxPars, "K_aerosol b parameter", Dimensionless, 03.8, 0.0, 10.0, "From the approximation K_aerosol = b*K_OA^a");
+	
+	auto FlowRate                   = RegisterParameterDouble(Model, FlowPars, "Flow rate", M3PerS, 0.0, 0.0, 10000.0);
+	
+	auto FlowOut                    = RegisterParameterDouble(Model, BoundFlow, "Flow to boundary", M3PerS, 0.0, 0.0, 10000.0);
+	auto FlowIn                     = RegisterParameterDouble(Model, BoundFlow, "Flow from boundary", M3PerS, 0.0, 0.0, 10000.0);
+	
+	
 	
 	
 	auto LogKOWWater              = RegisterEquation(Model, "(log10) Octanol-water partitioning coefficient in open water (temperature adjusted)", Dimensionless);
@@ -121,29 +135,54 @@ AddSedFlexModel(mobius_model *Model)
 	auto MinusLogHWater           = RegisterEquation(Model, "(-log10) Henry's law constant in open water (temperature adjusted)", KPaM3PerMol);
 	auto MinusLogHSed             = RegisterEquation(Model, "(-log10) Henry's law constant in sediments (temperature adjusted)", KPaM3PerMol);
 	
-	auto WaterFugacityCapacityAir   = RegisterEquation(Model, "Water fugacity capacity in atmosphere", MolPerPaM3);
-	auto WaterFugacityCapacityWater = RegisterEquation(Model, "Water fugacity capacity in open water", MolPerPaM3);
-	auto WaterFugacityCapacitySed   = RegisterEquation(Model, "Water fugacity capacity in sediments", MolPerPaM3);
-	auto AirFugacityCapacity        = RegisterEquation(Model, "Air fugacity capacity", MolPerPaM3);
-	auto AerosolFugacityCapacity    = RegisterEquation(Model, "Aerosol fugacity capacity", MolPerPaM3);
-	auto TotalFugacityCapacityAir   = RegisterEquation(Model, "Total fugacity capacity in atmosphere", MolPerPaM3);
-	auto POCFugacityCapacityWater   = RegisterEquation(Model, "POC fugacity capacity in open water", MolPerPaM3);
-	auto POCFugacityCapacitySed     = RegisterEquation(Model, "POC fugacity capacity in sediments", MolPerPaM3);
-	auto DOCFugacityCapacityWater   = RegisterEquation(Model, "DOC fugacity capacity in open water", MolPerPaM3);
-	auto DOCFugacityCapacitySed     = RegisterEquation(Model, "DOC fugacity capacity in sediments", MolPerPaM3);
-	auto BCFugacityCapacityWater    = RegisterEquation(Model, "BC fugacity capacity in open water", MolPerPaM3);
-	auto BCFugacityCapacitySed      = RegisterEquation(Model, "BC fugacity capacity in sediments", MolPerPaM3);
+	auto WaterFCAir               = RegisterEquation(Model, "Water FC in atmosphere", MolPerPaM3);
+	auto WaterFCWater             = RegisterEquation(Model, "Water FC in open water", MolPerPaM3);
+	auto WaterFCSed               = RegisterEquation(Model, "Water FC in sediments", MolPerPaM3);
+	auto AirFC                    = RegisterEquation(Model, "Air FC", MolPerPaM3);
+	auto AerosolFC                = RegisterEquation(Model, "Aerosol FC", MolPerPaM3);
+	auto TotalFCAir               = RegisterEquation(Model, "Total FC in atmosphere", MolPerPaM3);
+	auto POCFCWater               = RegisterEquation(Model, "POC FC in open water", MolPerPaM3);
+	auto POCFCSed                 = RegisterEquation(Model, "POC FC in sediments", MolPerPaM3);
+	auto DOCFCWater               = RegisterEquation(Model, "DOC FC in open water", MolPerPaM3);
+	auto DOCFCSed                 = RegisterEquation(Model, "DOC FC in sediments", MolPerPaM3);
+	auto BCFCWater                = RegisterEquation(Model, "BC FC in open water", MolPerPaM3);
+	auto BCFCSed                  = RegisterEquation(Model, "BC FC in sediments", MolPerPaM3);
 	
-	auto SolidFugacityCapacityWater = RegisterEquation(Model, "Solids fugacity capacity in open water", MolPerPaM3);
-	auto WaterAndDOCFugacityCapacityWater = RegisterEquation(Model, "Water+DOC fugacity capacity in open water", MolPerPaM3);
-	auto TotalFugacityCapacityWater = RegisterEquation(Model, "Total fugacity capacity in open water", MolPerPaM3);
-	auto PorewaterFugacityCapacitySed = RegisterEquation(Model, "Water+DOC fugacity capacity in sediments", MolPerPaM3);
-	auto SolidFugacityCapacitySedExclSoot = RegisterEquation(Model, "Solids fugacity capacity in sediments excluding soot", MolPerPaM3);
-	auto SolidFugacityCapacitySed   = RegisterEquation(Model, "Solids fugacity capacity in sediments", MolPerPaM3);
-	auto TotalFugacityCapacitySed   = RegisterEquation(Model, "Total fugacity capacity in sediments", MolPerPaM3);
+	auto SolidFCWater             = RegisterEquation(Model, "Solids FC in open water", MolPerPaM3);
+	auto WaterAndDOCFCWater       = RegisterEquation(Model, "Water+DOC FC in open water", MolPerPaM3);
+	auto TotalFCWater             = RegisterEquation(Model, "Total FC in open water", MolPerPaM3);
+	auto PorewaterFCSed           = RegisterEquation(Model, "Water+DOC FC in sediments", MolPerPaM3);
+	auto SolidFCSedExclSoot       = RegisterEquation(Model, "Solids FC in sediments excluding soot", MolPerPaM3);
+	auto SolidFCSed               = RegisterEquation(Model, "Solids FC in sediments", MolPerPaM3);
+	auto TotalFCSed               = RegisterEquation(Model, "Total FC in sediments", MolPerPaM3);
 	
-	auto ReactionRateWater          = RegisterEquation(Model, "Reaction rate in open water", PerDay);
-	auto Reaction RateSed           = RegisterEquation(Model, "Reaction rate in sediments", PerDay);
+	auto ReactionRateWater        = RegisterEquation(Model, "Reaction rate in open water", PerDay);
+	auto ReactionRateSed          = RegisterEquation(Model, "Reaction rate in sediments", PerDay);
+	
+	auto FlowTCOut                = RegisterEquation(Model, "Flow to boundary TC", MolPerDayPa);
+	auto PotentialSettlingTCOut   = RegisterEquation(Model, "Potential downward settling TC", MolPerDayPa);
+	auto ReactionTCWater          = RegisterEquation(Model, "Reaction (degradation) TC in open water", MolPerDayPa);
+	auto ReactionTCSed            = RegisterEquation(Model, "Reaction (degradation) TC in sediments", MolM3PerPa);
+	auto VolVaporTC               = RegisterEquation(Model, "Volatilisation to and vapor adsorption to water surface TC", MolPerDayPa);
+	auto RainDissTC               = RegisterEquation(Model, "Rain dissolution to water surface TC", MolPerDayPa);
+	auto WetDepositionTC          = RegisterEquation(Model, "Wet particle deposition TC", MolPerDayPa);
+	auto DryDepositionTC          = RegisterEquation(Model, "Dry particle deposition TC", MolPerDayPa);
+	auto TotalAirWaterTC          = RegisterEquation(Model, "Total air-water TC", MolPerDayPa);
+	auto UpDiffTC                 = RegisterEquation(Model, "Upward water-sediment diffusion TC", MolPerDayPa);
+	auto DownDiffTC               = RegisterEquation(Model, "Downward water-sediment diffusion TC", MolPerDayPa);
+	auto ResuspensionTC           = RegisterEquation(Model, "Re-suspension TC", MolPerDayPa);
+	auto BurialTC                 = RegisterEquation(Model, "BurialTC", MolPerDayPa);
+	auto MineralizationTC         = RegisterEquation(Model, "POC mineralization TC", MolPerDayPa);
+	auto GrossSedimentationTC     = RegisterEquation(Model, "Gross sedimentation TC", MolPerDayPa);
+	auto IntoSedimentsTC          = RegisterEquation(Model, "Total water-sediment downward TC", MolPerDayPa);
+	auto OutofSedimentsTC         = RegisterEquation(Model, "Total sediment-water upward TC", MolPerDayPa);
+
+
+	auto FugacityInAir            = RegisterEquation(Model, "Fugacity in air", Pa);
+	auto FugacityInWater          = RegisterEquation(Model, "Fugacity in water compartment", Pa);
+	auto FugacityInSediments      = RegisterEquation(Model, "Fugacity in sediment compartment", Pa);
+	
+	
 	
 	
 	EQUATION(Model, LogKOWWater,
@@ -160,55 +199,55 @@ AddSedFlexModel(mobius_model *Model)
 	
 	EQUATION(Model, MinusLogHAir,
 		double logKAW_ref = -PARAMETER(MinusLogH25) + Offset;
-		double logKAW_air = logKxxT(logKAW_ref, RefTemp, INPUT(AirTemperature), PARAMETERS(InternalEnergyChangeAW));
+		double logKAW_air = logKxxT(logKAW_ref, RefTemp, INPUT(AirTemperature), PARAMETER(InternalEnergyChangeAW));
 		return -logKAW_air + Offset;
 	)
 	
 	EQUATION(Model, MinusLogHWater,
 		double logKAW_ref = -PARAMETER(MinusLogH25) + Offset;
-		double logKAW_water = logKxxT(logKAW_ref, RefTemp, INPUT(WaterTemperature), PARAMETERS(InternalEnergyChangeAW));
+		double logKAW_water = logKxxT(logKAW_ref, RefTemp, INPUT(WaterTemperature), PARAMETER(InternalEnergyChangeAW));
 		return -logKAW_water + Offset;
 	)
 	
 	EQUATION(Model, MinusLogHSed,
 		double logKAW_ref = -PARAMETER(MinusLogH25) + Offset;
-		double logKAW_sed = logKxxT(logKAW_ref, RefTemp, INPUT(SedimentTemperature), PARAMETERS(InternalEnergyChangeAW));
+		double logKAW_sed = logKxxT(logKAW_ref, RefTemp, INPUT(SedimentTemperature), PARAMETER(InternalEnergyChangeAW));
 		return -logKAW_sed + Offset;
 	)
 	
 	
-	EQUATION(Model, WaterFugacityCapacityAir,
+	EQUATION(Model, WaterFCAir,
 		//Factor of 1e3 for converting kPa -> Pa
-		return 1.0/(1e3*std::pow(10.0, -PARAMETER(MinusLogHAir)));
+		return 1.0/(1e3*std::pow(10.0, -RESULT(MinusLogHAir)));
 	)
 	
-	EQUATION(Model, WaterFugacityCapacityWater,
+	EQUATION(Model, WaterFCWater,
 		//Factor of 1e3 for converting kPa -> Pa
-		return 1.0/(1e3*std::pow(10.0, -PARAMETER(MinusLogHWater)));
+		return 1.0/(1e3*std::pow(10.0, -RESULT(MinusLogHWater)));
 	)
 	
-	EQUATION(Model, WaterFugacityCapacitySed,
+	EQUATION(Model, WaterFCSed,
 		//Factor of 1e3 for converting kPa -> Pa
-		return 1.0/(1e3*std::pow(10.0, -PARAMETER(MinusLogHSed)));
+		return 1.0/(1e3*std::pow(10.0, -RESULT(MinusLogHSed)));
 	)
 	
-	EQUATION(Model, AirFugacityCapacity,
+	EQUATION(Model, AirFC,
 		return 1.0/(R*(INPUT(AirTemperature) + 273.15));
 	)
 	
-	EQUATION(Model, AerosolFugacityCapacity,
+	EQUATION(Model, AerosolFC,
 		double a = PARAMETER(AerosolParA);
 		double b = PARAMETER(AerosolParB);
 		double K_aerosol = b*std::pow(10.0, RESULT(LogKOA)*a);
-		return RESULT(AirFugacityCapacity)*K_aerosol;
+		return RESULT(AirFC)*K_aerosol;
 	)
 	
-	EQUATION(Model, TotalFugacityCapacityAir,
-		return RESULT(AirFugacityCapacity) + PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFugacityCapacity);
+	EQUATION(Model, TotalFCAir,
+		return RESULT(AirFC) + PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFC);
 	)
 	
-	EQUATION(Model, POCFugacityCapacityWater,
-		double Zw_wat = RESULT(WaterFugacityCapacityWater);
+	EQUATION(Model, POCFCWater,
+		double Zw_wat = RESULT(WaterFCWater);
 		double logK_POC = PARAMETER(LogKOCObsWater);
 		double logKOW   = RESULT(LogKOWWater);
 		double a      = PARAMETER(POCParA);
@@ -223,8 +262,8 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_wat*K_POC*rho_oc;
 	)
 	
-	EQUATION(Model, POCFugacityCapacityWater,
-		double Zw_sed = RESULT(WaterFugacityCapacitySed);
+	EQUATION(Model, POCFCSed,
+		double Zw_sed = RESULT(WaterFCSed);
 		double logK_POC = PARAMETER(LogKOCObsSed);
 		double logKOW   = RESULT(LogKOWSed);
 		double a      = PARAMETER(POCParA);
@@ -239,8 +278,8 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_sed*K_POC*rho_oc;
 	)
 	
-	EQUATION(Model, BCFugacityCapacityWater,
-		double Zw_wat = RESULT(WaterFugacityCapacityWater);
+	EQUATION(Model, BCFCWater,
+		double Zw_wat = RESULT(WaterFCWater);
 		double logKOW = RESULT(LogKOWWater);
 		double a      = PARAMETER(BCParA);
 		double b      = PARAMETER(BCParB);
@@ -254,8 +293,8 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_wat*K_BC*rho_bc;
 	)
 	
-	EQUATION(Model, BCFugacityCapacitySed,
-		double Zw_sed = RESULT(WaterFugacityCapacitySed);
+	EQUATION(Model, BCFCSed,
+		double Zw_sed = RESULT(WaterFCSed);
 		double logKOW = RESULT(LogKOWSed);
 		double a      = PARAMETER(BCParA);
 		double b      = PARAMETER(BCParB);
@@ -269,8 +308,8 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_sed*K_BC*rho_bc;
 	)
 	
-	EQUATION(Model, DOCFugacityCapacityWater,
-		double Zw_wat = RESULT(WaterFugacityCapacityWater);
+	EQUATION(Model, DOCFCWater,
+		double Zw_wat = RESULT(WaterFCWater);
 		double logKOW = RESULT(LogKOWWater);
 		double a      = PARAMETER(DOCParA);
 		double b      = PARAMETER(DOCParB);
@@ -278,8 +317,8 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_wat*K_DOC*rho_oc;
 	)
 	
-	EQUATION(Model, DOCFugacityCapacitySed,
-		double Zw_sed = RESULT(WaterFugacityCapacitySed);
+	EQUATION(Model, DOCFCSed,
+		double Zw_sed = RESULT(WaterFCSed);
 		double logKOW = RESULT(LogKOWSed);
 		double a      = PARAMETER(DOCParA);
 		double b      = PARAMETER(DOCParB);
@@ -287,80 +326,89 @@ AddSedFlexModel(mobius_model *Model)
 		return Zw_sed*K_DOC*rho_oc;
 	)
 	
-	EQUATION(Model, SolidFugacityCapacityWater,
+	EQUATION(Model, SolidFCWater,
 		//factor 1e-9/rho_oc for mg/m3 to mass fraction
-		return (1e-9/rho_oc)*(PARAMETER(ConcPOC)*RESULT(POCFugacityCapacityWater)) + (1e-9/rho_bc)*(PARAMETER(ConcBC)*RESULT(BCFugacityCapacityWater));
+		return (1e-9/rho_oc)*(PARAMETER(ConcPOC)*RESULT(POCFCWater)) + (1e-9/rho_bc)*(PARAMETER(ConcBC)*RESULT(BCFCWater));
 	)
 	
-	EQUATION(Model, WaterAndDOCFugacityCapacityWater,
-		return RESULT(WaterFugacityCapacityWater) + (1e-9/rho_oc)*(PARAMETER(ConcDOC)*RESULT(DOCFugacityCapacityWater));
+	EQUATION(Model, WaterAndDOCFCWater,
+		return RESULT(WaterFCWater) + (1e-9/rho_oc)*(PARAMETER(ConcDOC)*RESULT(DOCFCWater));
 	)
 	
-	EQUATION(Model, TotalFugacityCapacityWater,
-		return RESULT(SolidFugacityCapacityWater) + RESULT(WaterAndDOCFugacityCapacityWater);
+	EQUATION(Model, TotalFCWater,
+		return RESULT(SolidFCWater) + RESULT(WaterAndDOCFCWater);
 	)
 	
-	EQUATION(Model, PorewaterFugacityCapacitySed,
+	EQUATION(Model, PorewaterFCSed,
 		// pore water = water + DOC
-		return RESULT(WaterFugacityCapacitySed) + (1e-9/rho_oc)*PARAMETER(SedConcDOC)*RESULT(DOCFugacityCapacitySed);
+		return RESULT(WaterFCSed) + (1e-9/rho_oc)*PARAMETER(SedConcDOC)*RESULT(DOCFCSed);
 	)
 	
-	EQUATION(Model, SolidFugacityCapacitySedExclSoot,
-		return PARAMETER(SedPOCVolumeFraction)*RESULT(POCFugacityCapacitySed);
+	EQUATION(Model, SolidFCSedExclSoot,
+		return PARAMETER(SedPOCVolumeFraction)*RESULT(POCFCSed);
 	)
 	
-	EQUATION(Model, SolidFugacityCapacitySed,
-		return RESULT(SolidFugacityCapacitySedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFugacityCapacitySed);
+	EQUATION(Model, SolidFCSed,
+		return RESULT(SolidFCSedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFCSed);
 	)
 	
-	EQUATION(Model, TotalFugacityCapacitySed,
+	EQUATION(Model, TotalFCSed,
 		double phi = PARAMETER(Porosity);
-		return phi*RESULT(PorewaterFugacityCapacitySed) + (1.0-phi)*RESULT(SolidFugacityCapacitySed);
+		return phi*RESULT(PorewaterFCSed) + (1.0-phi)*RESULT(SolidFCSed);
 	)
 	
 	
 	EQUATION(Model, ReactionRateWater,
 		double Kreac_wat_ref = ln2/PARAMETER(DegradHLWater25);
-		Kreac_wat_ref*std::exp((Ea/R)*(1.0/(RefTemp+273.15)-1.0/(INPUT(WaterTemperature)+273.15)));
+		return Kreac_wat_ref*std::exp((Ea/R)*(1.0/(RefTemp+273.15)-1.0/(INPUT(WaterTemperature)+273.15)));
 	)
 	
 	EQUATION(Model, ReactionRateSed,
 		double Kreac_sed_ref = ln2/PARAMETER(DegradHLSed25);
-		Kreac_sed_ref*std::exp((Ea/R)*(1.0/(RefTemp+273.15)-1.0/(INPUT(SedimentTemperature)+273.15)));
+		return Kreac_sed_ref*std::exp((Ea/R)*(1.0/(RefTemp+273.15)-1.0/(INPUT(SedimentTemperature)+273.15)));
 	)
 	
+	
+	EQUATION(Model, FlowTCOut,
+		double SumFlowOut = 0.0;
+		for(index_t Bound = FIRST_INDEX(BoundaryCompartment); Bound < INDEX_COUNT(BoundaryCompartment); ++Bound)
+		{
+			SumFlowOut += PARAMETER(FlowOut, Bound);
+		}
+		return 86400.0*SumFlowOut*RESULT(TotalFCWater);
+	)
 	
 	EQUATION(Model, PotentialSettlingTCOut,
 		// D value for poc and bc settling: (mol/(m3 oc*Pa))*(g oc/m3 w)*(m/d)*m2*(m3 oc/g oc) = mol/(Pa d)
 		return
-			RESULT(POCFugacityCapacityWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_oc)
-		  + RESULT(BCFugacityCapacityWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_bc);
+			RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_oc)
+		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_bc);
 	)
 	
 	EQUATION(Model, ReactionTCWater,
-		return RESULT(ReactionRateWater)*RESULT(WaterFugacityCapacityWater)*((double)PARAMETER(HasWaterDegrad))*PARAMETER(WaterHeight)*PARAMETER(WaterSurfaceArea);
+		return RESULT(ReactionRateWater)*RESULT(WaterFCWater)*((double)PARAMETER(HasWaterDegrad))*PARAMETER(WaterHeight)*PARAMETER(WaterSurfaceArea);
 	)
 	
 	EQUATION(Model, ReactionTCSed,
-		return RESULT(ReactionRateSed)*RESULT(WaterFugacityCapacitySed)*((double)PARAMETER(HasSedDegrad))*PARAMETER(SedHeight)*PARAMETER(SedSurfaceArea);
+		return RESULT(ReactionRateSed)*RESULT(WaterFCSed)*((double)PARAMETER(HasSedDegrad))*PARAMETER(SedHeight)*PARAMETER(SedSurfaceArea);
 	)
 	
 	//TODO: These should only apply to surface compartments
 	EQUATION(Model, VolVaporTC,
 		return
-			1.0/(1.0/(PARAMETER(AirSideMassTransferCoeff)*RESULT(AirFugacityCapacity)*PARAMETER(WaterSurfaceArea)) + 1.0/(PARAMETER(WaterSideMassTransferCoeff)*RESULT(WaterFugacityCapacityWater)*PARAMETER(WaterSurfaceArea)));
+			1.0/(1.0/(PARAMETER(AirSideMassTransferCoeff)*RESULT(AirFC)*PARAMETER(WaterSurfaceArea)) + 1.0/(PARAMETER(WaterSideMassTransferCoeff)*RESULT(WaterFCWater)*PARAMETER(WaterSurfaceArea)));
 	)
 	
 	EQUATION(Model, RainDissTC,
-		return INPUT(Precipitation)*RESULT(WaterFugacityCapacityAir)*PARAMETER(WaterSurfaceArea);
+		return INPUT(Precipitation)*RESULT(WaterFCAir)*PARAMETER(WaterSurfaceArea);
 	)
 	
 	EQUATION(Model, WetDepositionTC,
-		return INPUT(Precipitation)*PARAMETER(VolumeFractionAerosols)*PARAMETER(ScavengingRatio)*RESULT(AerosolFugacityCapacity)*PARAMETER(WaterSurfaceArea);
+		return INPUT(Precipitation)*PARAMETER(VolumeFractionAerosols)*PARAMETER(ScavengingRatio)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
 	)
 	
 	EQUATION(Model, DryDepositionTC,
-		return PARAMETER(DryDepositionRate)*PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFugacityCapacity)*PARAMETER(WaterSurfaceArea);
+		return PARAMETER(DryDepositionRate)*PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
 	)
 	
 	EQUATION(Model, TotalAirWaterTC,
@@ -368,25 +416,68 @@ AddSedFlexModel(mobius_model *Model)
 	)
 	
 	
-	EQUATION(Model, UpDissTC,
-		return RESULT(PorewaterFugacityCapacitySed)*PARAMETER(SedWaterMassTransferCoeff)*PARAMETER(SedSurfaceArea);
+	EQUATION(Model, UpDiffTC,
+		return RESULT(PorewaterFCSed)*PARAMETER(SedWaterMassTransferCoeff)*PARAMETER(SedSurfaceArea);
 	)
 	
-	EQUATION(Model, DownDissTC,
-		return RESULT(WaterAndDOCFugacityCapacityWater)*PARAMETER(SedWaterMassTransferCoeff)*PARAMETER(SedSurfaceArea);
+	EQUATION(Model, DownDiffTC,
+		return RESULT(WaterAndDOCFCWater)*PARAMETER(SedWaterMassTransferCoeff)*PARAMETER(SedSurfaceArea);
 	)
 	
 	EQUATION(Model, ResuspensionTC,
-		return PARAMETER(ResuspensionVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFugacityCapacitySed);
+		return PARAMETER(ResuspensionVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFCSed);
 	)
 	
 	EQUATION(Model, BurialTC,
-		return PARAMETER(BurialVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFugacityCapacityWater);
+		return PARAMETER(BurialVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFCWater);
 	)
 	
 	EQUATION(Model, MineralizationTC,
-		return (ln2*PARAMETER(SedHeight)/PARAMETER(POCMineralizationHL))*PARAMETER(SedSurfaceArea)*RESULT(SolidFugacityCapacitySedExclSoot);
+		return (ln2*PARAMETER(SedHeight)/PARAMETER(POCMineralizationHL))*PARAMETER(SedSurfaceArea)*RESULT(SolidFCSedExclSoot);
 	)
+	
+	EQUATION(Model, GrossSedimentationTC,
+		return RESULT(ResuspensionTC) + RESULT(BurialTC) + RESULT(MineralizationTC);
+	)
+	
+	EQUATION(Model, IntoSedimentsTC,
+		return RESULT(GrossSedimentationTC) + RESULT(DownDiffTC);
+	)
+	
+	EQUATION(Model, OutofSedimentsTC,
+		return RESULT(ResuspensionTC) + RESULT(UpDiffTC);
+	)
+	
+	#if 0
+	
+	EQUATION(Model, SolveSedFlex,
+		size_t N = INDEX_COUNT(Compartment)*2;
+		
+		arma_vec x0(N);       // Fugacities
+		arma_mat A(N, N);     // Transport capacities
+		arma_vec b(N);        // Sources
+		
+		// TODO: Fill in values
+		
+		/*
+		NOTE: the linear system
+			dA/dt = A*x + b
+		has solution
+			x(t) = exp(A*t)x(0) + A^-1(exp(A*t) - I)b
+		*/
+		
+		double dt = (double)CURRENT_TIME().StepLengthInSeconds / 86400.0;  // Step length in days
+		arma_mat expAdt = expmat(dt*A);
+		vec FNext  = expAdt*x0 + solve(A, expAdt*b - b);
+		
+		// TODO: Write out values
+	)
+	
+	#endif
+	
+	
+	
+	EndModule(Model);
 }
 
 
