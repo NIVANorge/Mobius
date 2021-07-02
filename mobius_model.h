@@ -1624,7 +1624,7 @@ SetResult(model_run_state *RunState, double Value, equation_h Result)
 }
 
 
-#define INDEX_COUNT(IndexSetH) (RunState__->Running ? (RunState__->DataSet->IndexCounts[IndexSetH.Handle]) : 1)
+#define INDEX_COUNT(IndexSetH) (RunState__->Running ? (RunState__->DataSet->IndexCounts[IndexSetH.Handle]) : index_t(IndexSetH, 1))
 #define CURRENT_INDEX(IndexSetH) (RunState__->Running ? GetCurrentIndex(RunState__, IndexSetH) : RegisterIndexSetDependency(RunState__, IndexSetH))
 #define FIRST_INDEX(IndexSetH) (index_t(IndexSetH, 0))
 #define INDEX_NUMBER(IndexSetH, Index) (index_t(IndexSetH, (u32)Index))

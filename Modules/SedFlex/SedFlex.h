@@ -1,5 +1,8 @@
 
 
+#include <armadillo>
+
+
 inline double
 logKxxT(double Log10RefCoef, double RefTempDegC, double TempDegC, double InternalEnergyChange)
 // (log10) temperature corrected partitioning coefficent
@@ -32,6 +35,10 @@ AddSedFlexModel(mobius_model *Model)
 	auto KJPerMol      = RegisterUnit(Model, "kJ/mol");
 	auto MolPerDayPa   = RegisterUnit(Model, "mol/(day Pa)");
 	auto Pa            = RegisterUnit(Model, "Pa");
+	auto GPerM3        = RegisterUnit(Model, "g/m3");
+	auto MolPerDay     = RegisterUnit(Model, "mol/day");
+	auto GPerDay       = RegisterUnit(Model, "g/day");
+	
 	
 	
 	//TODO: Some of these could be parametrized
@@ -42,7 +49,6 @@ AddSedFlexModel(mobius_model *Model)
 	
 	constexpr double rho_oc = 1.0;      //Density of organic carbon [kg/L]
 	constexpr double rho_bc = 1.0;      //Density of black carbon (soot) [kg/L] 
-	
 	constexpr double Offset = -std::log10(1e3*R*(RefTemp+273.15));
 	
 	auto Compartment         = RegisterIndexSet(Model, "Compartment");
@@ -53,8 +59,11 @@ AddSedFlexModel(mobius_model *Model)
 	auto AirPars   = RegisterParameterGroup(Model, "Atmosphere");
 	auto WaterPars = RegisterParameterGroup(Model, "Water compartment", Compartment);
 	auto SedPars   = RegisterParameterGroup(Model, "Sediment compartment", Compartment);
-	auto ChemPars  = RegisterParameterGroup(Model, "Chemistry", Chemical);
+	auto ChemPars  = RegisterParameterGroup(Model, "Chemicals", Chemical);
 	auto AppxPars  = RegisterParameterGroup(Model, "KOC approximation");
+	auto InitAirConc = RegisterParameterGroup(Model, "Atmospheric background", Chemical);
+	auto InitBoundConc = RegisterParameterGroup(Model, "Boundary background", Chemical, BoundaryCompartment);
+	auto InitCompConc = RegisterParameterGroup(Model, "Initial concentrations", Chemical, Compartment);
 	
 	auto FlowPars  = RegisterParameterGroup(Model, "Flow rates", Compartment, Compartment);
 	auto BoundFlow = RegisterParameterGroup(Model, "Boundary flows", Compartment, BoundaryCompartment);
@@ -63,9 +72,13 @@ AddSedFlexModel(mobius_model *Model)
 	auto AirTemperature      = RegisterInput(Model, "Air temperature", DegC);
 	auto WaterTemperature    = RegisterInput(Model, "Water temperature", DegC);
 	auto SedimentTemperature = RegisterInput(Model, "Sediment temperature", DegC);
-	auto Precipitation  = RegisterInput(Model, "Precipitation", MPerDay);
+	auto Precipitation       = RegisterInput(Model, "Precipitation", MPerDay);
+	auto EmissionToAir       = RegisterInput(Model, "Emission to air", GPerDay);
+	auto EmissionToWater     = RegisterInput(Model, "Emission to water", GPerDay);
 	
-	auto AirSideMassTransferCoeff   = RegisterParameterDouble(Model, AirPars, "Air-side mass transfer coefficient", MPerDay, 100.0, 0.0, 1000.0); // k_VA
+	
+	
+	auto AirSideMassTransferCoeff   = RegisterParameterDouble(Model, AirPars, "Air-side mass transfer coefficient", MPerDay, 100.0, 0.0, 1000.0);	// k_VA
 	auto WaterSideMassTransferCoeff = RegisterParameterDouble(Model, AirPars, "Water-side mass transfer coefficent", MPerDay, 1.0, 0.0, 10.0); // k_VW
 	auto ScavengingRatio            = RegisterParameterDouble(Model, AirPars, "Scavenging ratio", Dimensionless, 200000.0, 0.0, 2000000.0, "The ratio between a raindrop's volume to the volume of air it sweeps through when falling"); // Q
 	auto VolumeFractionAerosols     = RegisterParameterDouble(Model, AirPars, "Volume fraction of aerosols", Dimensionless, 1e-12, 0.0, 1e-10);  // v_Q or F_Q
@@ -81,7 +94,7 @@ AddSedFlexModel(mobius_model *Model)
 	auto ConcBC                     = RegisterParameterDouble(Model, WaterPars, "BC concentration", MgPerM3, 10.0, 0.0, 100.0, "Black carbon (soot) concentration");  // C_BC
 	auto POCSettlingVelocity        = RegisterParameterDouble(Model, WaterPars, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC");  // U_POC
 	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Whether or not chemicals can react/degrade in this water compartment");
-	//IsBelow: How to represent this?
+	auto IsBelow                    = RegisterParameterUInt(Model, WaterPars, "Is below", Dimensionless, 10000, 0, 9999, "The numerical index of the other water compartment that this water compartment is below. If this is a top layer, set the number to 10000");
 	
 	auto SedSurfaceArea             = RegisterParameterDouble(Model, SedPars, "Sediment surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by the sediments of this compartment");
 	auto SedHeight                  = RegisterParameterDouble(Model, SedPars, "Sediment effective height", M, 0.5, 0.0, 10.0, "Thickness of the sediment layer");
@@ -125,6 +138,11 @@ AddSedFlexModel(mobius_model *Model)
 	auto FlowOut                    = RegisterParameterDouble(Model, BoundFlow, "Flow to boundary", M3PerS, 0.0, 0.0, 10000.0);
 	auto FlowIn                     = RegisterParameterDouble(Model, BoundFlow, "Flow from boundary", M3PerS, 0.0, 0.0, 10000.0);
 	
+	
+	auto BackgroundAirConc          = RegisterParameterDouble(Model, InitAirConc, "Background atmospheric concentration", GPerM3, 0.0, 0.0, 1e8);
+	auto InitialWaterConc           = RegisterParameterDouble(Model, InitCompConc, "Initial concentration in water", GPerM3, 0.0, 0.0, 1e8);
+	auto InitialSedConc             = RegisterParameterDouble(Model, InitCompConc, "Initial concentration in sediments", GPerM3, 0.0, 0.0, 1e8);
+	auto BoundaryBackgroundConc     = RegisterParameterDouble(Model, InitBoundConc, "Background concentration in boundary", GPerM3, 0.0, 0.0, 1e8);
 	
 	
 	
@@ -177,11 +195,31 @@ AddSedFlexModel(mobius_model *Model)
 	auto IntoSedimentsTC          = RegisterEquation(Model, "Total water-sediment downward TC", MolPerDayPa);
 	auto OutofSedimentsTC         = RegisterEquation(Model, "Total sediment-water upward TC", MolPerDayPa);
 
-
 	auto FugacityInAir            = RegisterEquation(Model, "Fugacity in air", Pa);
 	auto FugacityInWater          = RegisterEquation(Model, "Fugacity in water compartment", Pa);
-	auto FugacityInSediments      = RegisterEquation(Model, "Fugacity in sediment compartment", Pa);
+	auto FugacityInSed            = RegisterEquation(Model, "Fugacity in sediment compartment", Pa);
 	
+	auto AtmosphericConcentration = RegisterEquation(Model, "Atmospheric concentration", GPerM3);
+	
+	auto EmissionToWaterEq        = RegisterEquation(Model, "Emission to water", GPerDay);
+	auto AdvectionFromBoundary    = RegisterEquation(Model, "Advection from boundary", MolPerDay);
+	
+	auto InitialFugacityInWater   = RegisterEquationInitialValue(Model, "Initial fugacity in water", Pa);
+	auto InitialFugacityInSed     = RegisterEquationInitialValue(Model, "Initial fugacity in sediments", Pa);
+	SetInitialValue(Model, FugacityInWater, InitialFugacityInWater);
+	SetInitialValue(Model, FugacityInSed, InitialFugacityInSed);
+	
+	
+	auto SolveSedFlex = RegisterEquation(Model, "SedFlex solver code", Dimensionless);
+	
+	
+	EQUATION(Model, InitialFugacityInWater,
+		return PARAMETER(InitialWaterConc)/(PARAMETER(MolecularWeight)*RESULT(TotalFCWater));
+	)
+	
+	EQUATION(Model, InitialFugacityInSed,
+		return PARAMETER(InitialSedConc)/(PARAMETER(MolecularWeight)*RESULT(TotalFCSed));
+	)
 	
 	
 	
@@ -393,26 +431,45 @@ AddSedFlexModel(mobius_model *Model)
 		return RESULT(ReactionRateSed)*RESULT(WaterFCSed)*((double)PARAMETER(HasSedDegrad))*PARAMETER(SedHeight)*PARAMETER(SedSurfaceArea);
 	)
 	
-	//TODO: These should only apply to surface compartments
 	EQUATION(Model, VolVaporTC,
-		return
+		double Value =
 			1.0/(1.0/(PARAMETER(AirSideMassTransferCoeff)*RESULT(AirFC)*PARAMETER(WaterSurfaceArea)) + 1.0/(PARAMETER(WaterSideMassTransferCoeff)*RESULT(WaterFCWater)*PARAMETER(WaterSurfaceArea)));
+		
+		// Exchange with air only occurs in surface compartments
+		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		return Value;
 	)
 	
 	EQUATION(Model, RainDissTC,
-		return INPUT(Precipitation)*RESULT(WaterFCAir)*PARAMETER(WaterSurfaceArea);
+		double Value = INPUT(Precipitation)*RESULT(WaterFCAir)*PARAMETER(WaterSurfaceArea);
+		
+		// Exchange with air only occurs in surface compartments
+		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		return Value;
 	)
 	
 	EQUATION(Model, WetDepositionTC,
-		return INPUT(Precipitation)*PARAMETER(VolumeFractionAerosols)*PARAMETER(ScavengingRatio)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
+		double Value = INPUT(Precipitation)*PARAMETER(VolumeFractionAerosols)*PARAMETER(ScavengingRatio)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
+		
+		// Exchange with air only occurs in surface compartments
+		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		return Value;
 	)
 	
 	EQUATION(Model, DryDepositionTC,
-		return PARAMETER(DryDepositionRate)*PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
+		double Value = PARAMETER(DryDepositionRate)*PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
+		
+		// Exchange with air only occurs in surface compartments
+		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		return Value;
 	)
 	
 	EQUATION(Model, TotalAirWaterTC,
-		return RESULT(VolVaporTC) + RESULT(RainDissTC) + RESULT(WetDepositionTC) + RESULT(DryDepositionTC);
+		double Value = RESULT(VolVaporTC) + RESULT(RainDissTC) + RESULT(WetDepositionTC) + RESULT(DryDepositionTC);
+		
+		// Exchange with air only occurs in surface compartments
+		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		return Value;
 	)
 	
 	
@@ -448,16 +505,126 @@ AddSedFlexModel(mobius_model *Model)
 		return RESULT(ResuspensionTC) + RESULT(UpDiffTC);
 	)
 	
-	#if 0
+	
+	EQUATION(Model, AtmosphericConcentration,
+		return PARAMETER(BackgroundAirConc) + INPUT(EmissionToAir)*PARAMETER(AtmosphericResidenceTime)/PARAMETER(AtmosphericVolume);
+	)
+	
+	EQUATION(Model, FugacityInAir,
+		return RESULT(AtmosphericConcentration) / (PARAMETER(MolecularWeight)*RESULT(TotalFCAir));
+	)
+	
+	EQUATION(Model, EmissionToWaterEq,
+		return INPUT(EmissionToWater);
+	)
+	
+	EQUATION(Model, AdvectionFromBoundary,
+		double adv = 0.0;
+		for(index_t Comp = FIRST_INDEX(BoundaryCompartment); Comp < INDEX_COUNT(BoundaryCompartment); ++Comp)
+		{
+			adv += PARAMETER(FlowIn, Comp)*PARAMETER(BoundaryBackgroundConc, Comp);
+		}
+		return adv*86400.0/PARAMETER(MolecularWeight); //((24*3600 s/day) * (mol/g) * (g/m3) * (m3/s) = mol/d)
+	)
+	
+	
 	
 	EQUATION(Model, SolveSedFlex,
-		size_t N = INDEX_COUNT(Compartment)*2;
+		u32 N = INDEX_COUNT(Compartment).Index;
+		u32 N2 = N*2;
 		
-		arma_vec x0(N);       // Fugacities
-		arma_mat A(N, N);     // Transport capacities
-		arma_vec b(N);        // Sources
 		
-		// TODO: Fill in values
+		arma::vec x0(N2, arma::fill::zeros);       // Fugacities
+		arma::mat A(N2, N2, arma::fill::zeros);    // Transport capacities
+		arma::vec b(N2, arma::fill::zeros);        // Sources
+		
+		
+		
+		double MW = PARAMETER(MolecularWeight);
+		
+		for(index_t Comp = FIRST_INDEX(Compartment); Comp < INDEX_COUNT(Compartment); ++Comp)
+		{
+			u32 Wat = Comp.Index;
+			u32 Sed = Wat + N;
+			
+			x0(Wat) = LAST_RESULT(FugacityInWater, Comp);
+			x0(Sed) = LAST_RESULT(FugacityInSed, Comp);
+			
+			
+			// Settling between water compartments
+			u64 Below = PARAMETER(IsBelow, Comp);
+			if(Below != 10000)
+			{
+				index_t BelowThat = INDEX_NUMBER(Compartment, (u32)Below);
+				u32 FromWat = BelowThat.Index;
+				
+				double Settling = RESULT(PotentialSettlingTCOut, BelowThat);
+				
+				A(Wat, FromWat) += Settling;
+				A(FromWat, FromWat) -= Settling;
+			}
+			
+			// Sinks
+			double SinkWat = RESULT(FlowTCOut, Comp) + RESULT(ReactionTCWater, Comp) + RESULT(VolVaporTC, Comp);
+			double SinkSed = RESULT(ReactionTCSed, Comp) + RESULT(BurialTC, Comp);
+			
+			A(Wat, Wat) -= SinkWat;
+			A(Sed, Sed) -= SinkSed;
+			
+			// Sediment-water exchange
+			
+			double IntoSed  = RESULT(IntoSedimentsTC, Comp);
+			double OutofSed = RESULT(OutofSedimentsTC, Comp);
+			
+			A(Sed, Wat) += IntoSed;
+			A(Wat, Wat) -= IntoSed;
+			A(Wat, Sed) += OutofSed;
+			A(Sed, Sed) -= OutofSed;
+			
+			double TotFCWat = RESULT(TotalFCWater, Comp);
+			
+			// Flow between water compartments, and final unit adjustment
+			for(index_t ToComp = FIRST_INDEX(Compartment); ToComp < INDEX_COUNT(Compartment); ++ToComp)
+			{
+				u32 ToWat = ToComp.Index;
+				u32 ToSed = ToWat + N;
+				
+				double Flow = 86400.0*PARAMETER(FlowRate, Comp, ToComp)*TotFCWat;
+				A(ToWat, Wat) += Flow;
+				A(Wat, Wat) -= Flow;
+			}
+		}
+		
+		double fAir = RESULT(FugacityInAir);
+		
+		// Adjust units of A from mol/(day Pa) to 1/day
+		//NOTE: There should not be any assignments to A below this!
+		// For that reason, this loop can also not be combined with the above one since it adjusts things in a different order
+		for(index_t Comp = FIRST_INDEX(Compartment); Comp < INDEX_COUNT(Compartment); ++Comp)
+		{
+			u32 Wat = Comp.Index;
+			u32 Sed = Wat + N;
+			
+			double WatCorr = RESULT(TotalFCWater, Comp)*PARAMETER(WaterSurfaceArea, Comp)*PARAMETER(WaterHeight, Comp);
+			double SedCorr = RESULT(TotalFCSed, Comp)*PARAMETER(SedSurfaceArea, Comp)*PARAMETER(SedHeight, Comp);
+			
+			for(int J = 0; J < N2; ++J)
+			{
+				//mol/(day Pa) -> 1/day
+				A(Wat, J) /= WatCorr;
+				A(Sed, J) /= SedCorr;
+			}
+			
+			// Filling in sources
+			
+			//NOTE: This means that EmissionToWater HAS to have an index set dependency (Chemical, Compartment)
+			// We could do the division by MW inside EmissionToWaterEq though
+			b(Wat) += RESULT(EmissionToWaterEq, Comp) / MW;
+			b(Wat) += RESULT(TotalAirWaterTC, Comp)*fAir; //NOTE that TotalAirWaterTC is already 0 for non-surface compartments
+			b(Wat) += RESULT(AdvectionFromBoundary, Comp);
+			
+			b(Wat) /= WatCorr;  // mol/day -> Pa/day
+		}
 		
 		/*
 		NOTE: the linear system
@@ -467,15 +634,35 @@ AddSedFlexModel(mobius_model *Model)
 		*/
 		
 		double dt = (double)CURRENT_TIME().StepLengthInSeconds / 86400.0;  // Step length in days
-		arma_mat expAdt = expmat(dt*A);
-		vec FNext  = expAdt*x0 + solve(A, expAdt*b - b);
+		arma::mat expAdt = arma::expmat(dt*A);
+		arma::vec x  = expAdt*x0 + arma::solve(A, expAdt*b - b);
+		//NOTE: In exact math, The image (colspace) of exp(A*t)-I will always be in the image of A, so the is well defined, but there could be numerical errors in the computation of expAdt, or it could be ill-conditioned? Is there a better way to do this that computes A^-1(exp(At)-I) directly, and which doesn't involve using ODE solvers (which is slow) ?
 		
-		// TODO: Write out values
+		// Write the results back out
+		for(index_t Comp = FIRST_INDEX(Compartment); Comp < INDEX_COUNT(Compartment); ++Comp)
+		{
+			u32 Wat = Comp.Index;
+			u32 Sed = Wat + N;
+			
+			SET_RESULT(FugacityInWater, x(Wat), Comp);
+			SET_RESULT(FugacityInSed,   x(Sed), Comp);
+		}
+		
+		return 0.0; //The return value of this code piece is not meaningful on its own.
 	)
 	
-	#endif
 	
+	//NOTE: Just make sure that these two don't overwrite their values.
+	//TODO: We should eventually have some kind of IsComputedBy functionality that makes sure we don't have to use this hack here...
 	
+	EQUATION(Model, FugacityInWater,
+		return RESULT(FugacityInWater, CURRENT_INDEX(Compartment));
+	)
+	
+	EQUATION(Model, FugacityInSed,
+		return RESULT(FugacityInSed, CURRENT_INDEX(Compartment));
+	)
+
 	
 	EndModule(Model);
 }

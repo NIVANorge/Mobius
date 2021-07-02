@@ -1,4 +1,4 @@
-# Parameter file generated for model SedFlex, containing modules (SedFlex V0.1) at 2021-06-30 16:28:51
+# Parameter file generated for model SedFlex, containing modules (SedFlex V0.1) at 2021-07-02 12:28:29
 
 index_sets:
 "Compartment" : {"River_surf" "River_comp_curr" "Heroya_surf" "Heroya_imd" "Heroya_deep" "Frier_surf" "Frier_imd" "Frier_deep" "Outer_surf" "Outer_imd" "Outer_deep" "Skager_surf" "Skager_deep"}
@@ -65,6 +65,9 @@ parameters:
 	"Degradation in water" :     # Whether or not chemicals can react/degrade in this water compartment
 	true true true false false true false false true false false true false
 
+	"Is below" :     #(dimensionless) [0, 9999] The numerical index of the other water compartment that this water compartment is below. If this is a top layer, set the number to 10000
+	10000 0 10000 2 3 10000 5 6 10000 8 9 10000 10
+
 
 	# Sediment compartment ("Compartment") #
 
@@ -102,7 +105,7 @@ parameters:
 	false false false false false false false false false false false false false
 
 
-	# Chemistry ("Chemical") #
+	# Chemicals ("Chemical") #
 
 	"(log10) Octanol-water partitioning coefficient" :     #(dimensionless) [-3, 10] Reference value at 25°C
 	6.96 7.5 7.94 7.98 8.02 8.4 8.75 6.46 6.95 7.11 7.53 7.57 7.76 7.65 0.01 8.23 8.6
@@ -171,22 +174,91 @@ parameters:
 	3.8
 
 
+	# Atmospheric background ("Chemical") #
+
+	"Background atmospheric concentration" :     #(g/m3) [0, 100000000]
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+
+	# Boundary background ("Chemical" "Boundary compartment") #
+
+	"Background concentration in boundary" :     #(g/m3) [0, 100000000]
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+
+
+	# Initial concentrations ("Chemical" "Compartment") #
+
+	"Initial concentration in water" :     #(g/m3) [0, 100000000]
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"Initial concentration in sediments" :     #(g/m3) [0, 100000000]
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+
 	# Flow rates ("Compartment" "Compartment") #
 
 	"Flow rate" :     #(m3/s) [0, 10000]
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
-	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 100 0 0 169 0 0 0 0 0 0 0
+	19 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 4 0 200 0 0 0 0 0 0 0
+	0 19 4 0 2 0 80 0 0 0 0 0 0
+	0 0 0 2 0 0 0 40 0 0 0 0 0
+	0 0 100 0 0 0 21 0 342 0 0 0 0
+	0 0 0 99 0 94 0 13 0 60 0 0 0
+	0 0 0 0 40 0 17 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 50 0 226 0
+	0 0 0 0 0 0 148 4 50 0 14 588 0
+	0 0 0 0 0 0 0 0 0 30 0 0 0
+	0 0 0 0 0 0 0 0 34 664 16 0 140
+	0 0 0 0 0 0 0 0 0 0 0 140 0
 
 
 	# Boundary flows ("Compartment" "Boundary compartment") #
@@ -200,13 +272,14 @@ parameters:
 	0 0
 	0 0
 	0 0
+	0 150
 	0 0
 	0 0
-	0 0
-	0 0
-	0 0
+	0 915
+	0 216
 
 	"Flow from boundary" :     #(m3/s) [0, 10000]
+	250 0
 	0 0
 	0 0
 	0 0
@@ -217,9 +290,8 @@ parameters:
 	0 0
 	0 0
 	0 0
-	0 0
-	0 0
-	0 0
+	0 815
+	0 216
 
 
 } # end of module "SedFlex"
