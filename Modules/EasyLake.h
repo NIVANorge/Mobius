@@ -603,7 +603,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double g = 9.81;
 		double As = RESULT(LakeSurfaceArea);
 		double epiT = RESULT(EpilimnionTemperature);
-		double meanHypT = (epiT + RESULT(BottomTemperature))*0.5; //TODO: too easy simplification.
+		double meanHypT = RESULT(MeanHypolimnionTemperature);
 		double delta_rho = WaterDensity(meanHypT) - WaterDensity(epiT);
 		double z_e = RESULT(EpilimnionThickness);
 		double v = 0.0;

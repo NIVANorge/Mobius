@@ -135,6 +135,14 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	auto MmPerDay      = RegisterUnit(Model, "mm/day");
 	auto PerDay        = RegisterUnit(Model, "1/day");
 	
+	
+	
+	constexpr double waterdensity = 1e3;   //This should maybe be temperature dependent, but it is unlikely to be very sensitive.
+	constexpr double earthsurfacegravity = 9.807;
+	constexpr double sedimentdensity = 2650.0;
+	
+	
+	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	auto SoilBoxes = GetIndexSetHandle(Model, "Soils");
@@ -426,7 +434,6 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 		double b = a / PARAMETER(RatioOfMajorToMinor);
 		double c = b;
 		double waterkinematicviscosity = RESULT(ReachKinematicViscosity);
-		double waterdensity            = 1e3;       //TODO: Should also be temperature-adjusted?
 		double plasticdensity          = PARAMETER(DensityOfClass);
 		int    ShapeType               = (int) PARAMETER(ClassShapeType);
 		
@@ -438,16 +445,11 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	)
 	
 	EQUATION(Model, ReachShearStress,
-		double waterdensity = 1e3;
-		double earthsurfacegravity = 9.807;
 		return PARAMETER(ShearStressCoefficient) * PARAMETER(MeanChannelSlope) * RESULT(ReachHydraulicRadius) * waterdensity * earthsurfacegravity;
 	)
 	
 	EQUATION(Model, SedimentBedCriticalShieldsParameter,
-		double earthsurfacegravity = 9.807;
-		double waterdensity = 1000.0;
 		double waterkinematicviscosity = RESULT(ReachKinematicViscosity);
-		double sedimentdensity = 2650.0;
 		
 		//Dimensionless particle diameter for the median mineral sediment particle.
 		double dstar = std::cbrt(((sedimentdensity - waterdensity)/waterdensity)*earthsurfacegravity/(waterkinematicviscosity*waterkinematicviscosity))*PARAMETER(MedianSedimentGrainSize);
@@ -460,7 +462,6 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	)
 	
 	EQUATION(Model, ClassCriticalShieldsParameter,
-
 		// Equivalent particle diameter of minimal particle
 		double d_equi = ParticleEquivalentDiameter(PARAMETER(SmallestDiameterOfClass), PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
 		
@@ -468,19 +469,13 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	)
 	
 	EQUATION(Model, ClassCriticalShearStress,
-		
 		// Equivalent particle diameter of minimal particle
 		double d_equi = ParticleEquivalentDiameter(PARAMETER(SmallestDiameterOfClass), PARAMETER(RatioOfMajorToMinor), (int)PARAMETER(ClassShapeType));
 		
-		double earthsurfacegravity = 9.807;
-		double waterdensity = 1000.0;  // TODO: Temperature dependence?
 		return RESULT(ClassCriticalShieldsParameter) * (PARAMETER(DensityOfClass) - waterdensity) * earthsurfacegravity * d_equi;
 	)
 	
 	EQUATION(Model, MaxGrainSizeForEntrainment,
-		double earthsurfacegravity = 9.807;
-		double waterdensity = 1000.0;  // TODO: Temperature dependence?
-		
 		return std::pow(RESULT(ReachShearStress) / (0.5588*RESULT(SedimentBedCriticalShieldsParameter)*std::pow(PARAMETER(MedianSedimentGrainSize), 0.503)*(PARAMETER(DensityOfClass) - waterdensity)*earthsurfacegravity), 1.0 / (1.0 - 0.503));
 	)
 	

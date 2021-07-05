@@ -7,9 +7,6 @@ AttnIndefiniteIntegral(double z, double a, double D)
 	return exp(-a*z)*(a*(z-D)) / (a*a*D);
 }
 
-
-#define CONST_LN_2 0.69314718056
-
 void
 AddIncaToxLakeModule(mobius_model *Model)
 {
@@ -33,6 +30,9 @@ It is not complete yet.
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto Percent        = RegisterUnit(Model, "%");
 	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
+	
+	
+	constexpr double ln2 = 0.69314718056;
 	
 	
 	
@@ -183,11 +183,11 @@ It is not complete yet.
 	)
 	
 	EQUATION(Model, EpilimnionContaminantDegradation,
-		return (CONST_LN_2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(EpilimnionContaminantMass) * RESULT(EpilimnionDegradationTemperatureModifier);
+		return (ln2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(EpilimnionContaminantMass) * RESULT(EpilimnionDegradationTemperatureModifier);
 	)
 	
 	EQUATION(Model, HypolimnionContaminantDegradation,
-		return (CONST_LN_2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(HypolimnionContaminantMass) * RESULT(HypolimnionDegradationTemperatureModifier);
+		return (ln2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(HypolimnionContaminantMass) * RESULT(HypolimnionDegradationTemperatureModifier);
 	)
 	
 	EQUATION(Model, EpilimnionContaminantMass,
@@ -264,9 +264,3 @@ It is not complete yet.
 	
 	EndModule(Model);
 }
-
-
-#undef CONST_LN_2
-
-
-

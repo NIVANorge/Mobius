@@ -88,13 +88,13 @@ AddSedFlexModel(mobius_model *Model)
 	
 	
 	auto WaterSurfaceArea           = RegisterParameterDouble(Model, WaterPars, "Water surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by water compartment");
-	auto WaterHeight                = RegisterParameterDouble(Model, WaterPars, "Water effective height", M, 20.0, 0.0, 10.984, "Vertical thickness of water compartment");
+	auto WaterHeight                = RegisterParameterDouble(Model, WaterPars, "Water effective height", M, 20.0, 0.0, 10984, "Vertical thickness of water compartment");
 	auto ConcPOC                    = RegisterParameterDouble(Model, WaterPars, "POC concentration", MgPerM3, 100.0, 0.0, 1000.0, "Particulate organic carbon concentration");  // C_POC
 	auto ConcDOC                    = RegisterParameterDouble(Model, WaterPars, "DOC concentration", MgPerM3, 3000.0, 0.0, 10000.0, "Dissolved organic carbon concentration");  // C_DOC
 	auto ConcBC                     = RegisterParameterDouble(Model, WaterPars, "BC concentration", MgPerM3, 10.0, 0.0, 100.0, "Black carbon (soot) concentration");  // C_BC
 	auto POCSettlingVelocity        = RegisterParameterDouble(Model, WaterPars, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC");  // U_POC
 	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Whether or not chemicals can react/degrade in this water compartment");
-	auto IsBelow                    = RegisterParameterUInt(Model, WaterPars, "Is below", Dimensionless, 10000, 0, 9999, "The numerical index of the other water compartment that this water compartment is below. If this is a top layer, set the number to 10000");
+	auto IsBelow                    = RegisterParameterUInt(Model, WaterPars, "Is below", Dimensionless, 10000, 0, 9999, "The numerical index of the other water compartment that this water compartment is below. If this is a surface layer, set the number to 10000");
 	
 	auto SedSurfaceArea             = RegisterParameterDouble(Model, SedPars, "Sediment surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by the sediments of this compartment");
 	auto SedHeight                  = RegisterParameterDouble(Model, SedPars, "Sediment effective height", M, 0.5, 0.0, 10.0, "Thickness of the sediment layer");
@@ -121,6 +121,7 @@ AddSedFlexModel(mobius_model *Model)
 	auto InternalEnergyChangeOA     = RegisterParameterDouble(Model, ChemPars,"Internal energy change of the OA phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
 	auto InternalEnergyChangeOW     = RegisterParameterDouble(Model, ChemPars, "Internal energy change of the OW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
 	auto InternalEnergyChangeAW     = RegisterParameterDouble(Model, ChemPars, "Internal energy change of the AW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
+	auto ToxicEquivalentFactor      = RegisterParameterDouble(Model, ChemPars, "Toxic equivalent factor", Dimensionless, 1.0, 0.0, 50.0);
 	
 	
 	auto POCParA                    = RegisterParameterDouble(Model, AppxPars, "K_POC a parameter", Dimensionless, 1.0, 0.1, 10.0, "From the approximation K_POC = b*K_OW^a if used");
@@ -199,8 +200,6 @@ AddSedFlexModel(mobius_model *Model)
 	auto FugacityInWater          = RegisterEquation(Model, "Fugacity in water compartment", Pa);
 	auto FugacityInSed            = RegisterEquation(Model, "Fugacity in sediment compartment", Pa);
 	
-	auto AtmosphericConcentration = RegisterEquation(Model, "Atmospheric concentration", GPerM3);
-	
 	auto EmissionToWaterEq        = RegisterEquation(Model, "Emission to water", GPerDay);
 	auto AdvectionFromBoundary    = RegisterEquation(Model, "Advection from boundary", MolPerDay);
 	
@@ -208,6 +207,14 @@ AddSedFlexModel(mobius_model *Model)
 	auto InitialFugacityInSed     = RegisterEquationInitialValue(Model, "Initial fugacity in sediments", Pa);
 	SetInitialValue(Model, FugacityInWater, InitialFugacityInWater);
 	SetInitialValue(Model, FugacityInSed, InitialFugacityInSed);
+	
+	auto AirConc                  = RegisterEquation(Model, "Concentration in atmoshpere", GPerM3);
+	auto WaterConc                = RegisterEquation(Model, "Total concentration in water", GPerM3);
+	auto SedConc                  = RegisterEquation(Model, "Total concentration in sediments", GPerM3);
+	auto WaterConcParticulate     = RegisterEquation(Model, "Particulate concentration in water", GPerM3);
+	auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sdeiments", GPerM3);
+	auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", PGPerM3);
+	auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments", PGPerM3);
 	
 	
 	auto SolveSedFlex = RegisterEquation(Model, "SedFlex solver code", Dimensionless);
@@ -506,12 +513,12 @@ AddSedFlexModel(mobius_model *Model)
 	)
 	
 	
-	EQUATION(Model, AtmosphericConcentration,
+	EQUATION(Model, AirConc,
 		return PARAMETER(BackgroundAirConc) + INPUT(EmissionToAir)*PARAMETER(AtmosphericResidenceTime)/PARAMETER(AtmosphericVolume);
 	)
 	
 	EQUATION(Model, FugacityInAir,
-		return RESULT(AtmosphericConcentration) / (PARAMETER(MolecularWeight)*RESULT(TotalFCAir));
+		return RESULT(AirConc) / (PARAMETER(MolecularWeight)*RESULT(TotalFCAir));
 	)
 	
 	EQUATION(Model, EmissionToWaterEq,
@@ -527,7 +534,23 @@ AddSedFlexModel(mobius_model *Model)
 		return adv*86400.0/PARAMETER(MolecularWeight); //((24*3600 s/day) * (mol/g) * (g/m3) * (m3/s) = mol/d)
 	)
 	
+	EQUATION(Model, WaterConc,
+		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
+		
+		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
+	)
 	
+	EQUATION(Model, SedConc,
+		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
+		
+		return RESULT(FugacityInSed)*RESULT(TotalFCSed)*PARAMETER(MolecularWeight);
+	)
+	
+	EQUATION(Model, WaterConcParticulate,
+		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
+		
+		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
+	)
 	
 	EQUATION(Model, SolveSedFlex,
 		u32 N = INDEX_COUNT(Compartment).Index;

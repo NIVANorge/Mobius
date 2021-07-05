@@ -55,6 +55,11 @@ New to V0.3: Multiple contaminants at a time.
 	auto DegreesCelsius   = RegisterUnit(Model, "°C");
 	auto Log10            = RegisterUnit(Model, "log10");
 	
+	
+	constexpr double ln2 = 0.69314718056;
+	
+	
+	
 	auto DepositionToLand         = RegisterInput(Model, "Contaminant deposition to land", NgPerM2PerDay);
 	auto DepositionToReach        = RegisterInput(Model, "Contaminant deposition to reach", NgPerDay);
 	auto AtmosphericContaminantConcentrationIn = RegisterInput(Model, "Atmospheric contaminant concentration", NgPerM3);
@@ -93,7 +98,6 @@ New to V0.3: Multiple contaminants at a time.
 	auto ReachContaminantHalfLife                  = RegisterParameterDouble(Model, Chemistry, "Reach contaminant half life", Days, 3650.0, 10.0, 365000.0);
 	auto StreamBedContaminantHalfLife              = RegisterParameterDouble(Model, Chemistry, "Stream bed contaminant half life", Days, 3650.0, 10.0, 365000.0);
 	
-	#define CONST_LN_2 0.69314718056
 	
 	auto DegradationResponseToTemperature           = RegisterParameterDouble(Model, Chemistry, "Degradation rate response to 10°C change in temperature", Dimensionless, 1.0, 0.5, 5.0);
 	auto TemperatureAtWhichDegradationRatesAreMeasured = RegisterParameterDouble(Model, Chemistry, "Temperature at which degradation rates are measured", DegreesCelsius, 20.0, -20.0, 50.0);
@@ -328,7 +332,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, SoilContaminantDegradationPotentiallyAccessible,
-		return (CONST_LN_2 / PARAMETER(SoilContaminantHalfLifePotentially)) * RESULT(SoilDegradationTemperatureModifier) * RESULT(ContaminantMassInPotentiallyAccessibleFraction);
+		return (ln2 / PARAMETER(SoilContaminantHalfLifePotentially)) * RESULT(SoilDegradationTemperatureModifier) * RESULT(ContaminantMassInPotentiallyAccessibleFraction);
 	)
 	
 	
@@ -387,7 +391,7 @@ New to V0.3: Multiple contaminants at a time.
 		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
 		+ PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6  * RESULT(SoilSOCContaminantConcentration);
 		
-		return (CONST_LN_2 / PARAMETER(SoilContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
+		return (ln2 / PARAMETER(SoilContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInSoil,
@@ -408,7 +412,7 @@ New to V0.3: Multiple contaminants at a time.
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
-		return (CONST_LN_2 / PARAMETER(GroundwaterContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
+		return (ln2 / PARAMETER(GroundwaterContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInGroundwater,
@@ -520,7 +524,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
-		return (CONST_LN_2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(ContaminantMassInReach) * RESULT(ReachDegradationTemperatureModifier);
+		return (ln2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(ContaminantMassInReach) * RESULT(ReachDegradationTemperatureModifier);
 	)
 	
 	
@@ -726,7 +730,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, BedContaminantDegradation,
-		return (CONST_LN_2 / PARAMETER(StreamBedContaminantHalfLife)) * RESULT(BedContaminantMass) * RESULT(ReachDegradationTemperatureModifier);
+		return (ln2 / PARAMETER(StreamBedContaminantHalfLife)) * RESULT(BedContaminantMass) * RESULT(ReachDegradationTemperatureModifier);
 	)
 	
 	EQUATION(Model, BedContaminantMass,
@@ -777,6 +781,4 @@ New to V0.3: Multiple contaminants at a time.
 	)
 
 	EndModule(Model);
-	
-	#undef CONST_LN_2
 }
