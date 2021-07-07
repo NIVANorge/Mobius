@@ -66,7 +66,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="297.1002"
+     inkscape:cx="307.51013"
      inkscape:cy="125.07044"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -170,34 +170,6 @@
        id="path7192-0-2"
        sodipodi:nodetypes="cccccccc" />
     <text
-       id="text7211-4"
-       y="3.0143661"
-       x="13.739625"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:25.4px;line-height:1.25;font-family:Celias;-inkscape-font-specification:Celias;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-       xml:space="preserve"
-       transform="rotate(17.797317)"><tspan
-         sodipodi:role="line"
-         style="font-size:4.23333px;baseline-shift:sub;stroke-width:0.264583"
-         y="3.0143661"
-         x="13.739625"
-         id="tspan7209-4">F<tspan
-   style="font-size:65%;baseline-shift:sub"
-   id="tspan2473">in</tspan></tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;line-height:1.25;font-family:Celias;-inkscape-font-specification:Celias;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-       x="96.148453"
-       y="47.170155"
-       id="text7211-4-5"
-       transform="rotate(-16.241723)"><tspan
-         sodipodi:role="line"
-         id="tspan7209-4-9"
-         x="96.148453"
-         y="47.170155"
-         style="font-size:4.23333px;baseline-shift:sub;stroke-width:0.264583">-F<tspan
-   style="font-size:65%;baseline-shift:sub"
-   id="tspan2489">out</tspan></tspan></text>
-    <text
        id="text2493"
        y="44.366741"
        x="53.854813"
@@ -298,5 +270,33 @@
        id="path2318-3"
        d="m 46.939769,19.194315 c 0.03443,0.129854 0.03788,0.138761 0.03788,0.138761 l 0.140067,0.313629"
        style="fill:none;stroke:#000000;stroke-width:0.136003px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker2589-4)" />
+    <text
+       transform="rotate(15.075038)"
+       id="text2702"
+       y="8.1927891"
+       x="13.193614"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:25.4px;line-height:1.25;font-family:Celias;-inkscape-font-specification:Celias;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       xml:space="preserve"><tspan
+         style="font-size:4.23333px;stroke-width:0.264583"
+         y="8.1927891"
+         x="13.193614"
+         id="tspan2700"
+         sodipodi:role="line">F<tspan
+   id="tspan2704"
+   style="font-size:65%;baseline-shift:sub">in</tspan></tspan></text>
+    <text
+       transform="rotate(-14.895891)"
+       id="text2729"
+       y="45.431023"
+       x="99.247078"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:25.4px;line-height:1.25;font-family:Celias;-inkscape-font-specification:Celias;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       xml:space="preserve"><tspan
+         style="font-size:4.23333px;stroke-width:0.264583"
+         y="45.431023"
+         x="99.247078"
+         id="tspan2727"
+         sodipodi:role="line">F<tspan
+   id="tspan2731"
+   style="font-size:65%;baseline-shift:sub">out</tspan></tspan></text>
   </g>
 </svg>
