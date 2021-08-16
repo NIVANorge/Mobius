@@ -40,7 +40,7 @@ WaterDensity(double WaterTemperature)
 static void
 AddEasyLakePhysicalModule(mobius_model *Model)
 {
-	BeginModule(Model, "Easy-Lake physical", "0.2");
+	BeginModule(Model, "Easy-Lake physical", "0.3");
 	
 	SetModuleDescription(Model, R""""(
 This is a very simple lake model for use along with cathcment models.
@@ -63,6 +63,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto M3PerS         = RegisterUnit(Model, "m3/s");
 	auto M3PerDay       = RegisterUnit(Model, "m3/day");
 	auto MmPerDay       = RegisterUnit(Model, "mm/day");
+	auto MPerDay        = RegisterUnit(Model, "m/day");
 	auto PerM           = RegisterUnit(Model, "1/m");
 	auto MPerM          = RegisterUnit(Model, "m/m");
 	auto Degrees        = RegisterUnit(Model, "°");
@@ -74,8 +75,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto WPerM2         = RegisterUnit(Model, "W/m2");
 	auto Watts          = RegisterUnit(Model, "W");
-	auto MPerDay        = RegisterUnit(Model, "M/day");
 	auto NPerM2         = RegisterUnit(Model, "N/m2");
+	//auto Days           = RegisterUnit(Model, "days");
 
 #ifdef EASYLAKE_STANDALONE
 	auto LakeInflow       = RegisterInput(Model, "Lake inflow", M3PerS);
@@ -241,7 +242,11 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
 	auto InitialEpilimnionTemperature = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion temperature", DegreesCelsius, 20.0, 0.0, 50.0);
 	auto InitialBottomTemperature     = RegisterParameterDouble(Model, PhysParams, "Initial bottom temperature", DegreesCelsius, 4.0, 0.0, 50.0);
-	auto InitialEpilimnionThickness   = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion thickness", M, 5.0, 0.0, 20.0);
+	
+	auto EpilimnionWinterThickness = RegisterParameterDouble(Model, PhysParams, "Epilimnion winter thickness", M, 5.0, 0.0, 20.0);
+	auto EpilimnionThickeningRate     = RegisterParameterDouble(Model, PhysParams, "Epilimnion thickening rate", MPerDay, 0.005, 0.0, 0.05, "Empirical rate of how fast the thickness of the epilimnion grows during summer.");
+	//auto InitialEpilimnionThickness   = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion thickness", M, 5.0, 0.0, 20.0);
+	
 	
 	auto InitialIceThickness          = RegisterParameterDouble(Model, PhysParams, "Initial ice thickness", M, 0.0, 0.0, 10.0);
 	auto FreezingSpeed                = RegisterParameterDouble(Model, PhysParams, "Freezing thermal conductivity", Dimensionless, 2000.0, 0.0, 20000.0, "Should be left unchanged in most cases"); 
@@ -261,8 +266,9 @@ The implementation is informed by the implementation in [^https://github.com/got
 	auto LatentHeatFlux                       = RegisterEquation(Model, "Latent heat flux", WPerM2, LakeSolver);
 	auto SensibleHeatFlux                     = RegisterEquation(Model, "Sensible heat flux", WPerM2, LakeSolver);
 	auto SurfaceStress                        = RegisterEquation(Model, "Surface stress", NPerM2, LakeSolver);
-	auto MixingPower                          = RegisterEquation(Model, "Mixing power", Watts, LakeSolver);
-	auto MixingVelocity                       = RegisterEquation(Model, "Mixing velocity", MPerDay, LakeSolver);
+	auto IsMixing                             = RegisterEquation(Model, "The lake is being mixed", Dimensionless, LakeSolver);
+	//auto MixingPower                          = RegisterEquation(Model, "Mixing power", Watts, LakeSolver);
+	//auto MixingVelocity                       = RegisterEquation(Model, "Mixing velocity", MPerDay, LakeSolver);
 	
 	auto EmittedLongwaveRadiation             = RegisterEquation(Model, "Emitted longwave radiation", WPerM2, LakeSolver);
 	auto DownwellingLongwaveRadation          = RegisterEquation(Model, "Downwelling longwave radiation", WPerM2);
@@ -286,7 +292,8 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	auto MeanHypolimnionTemperature = RegisterEquation(Model, "Mean hypolimnion temperature", DegreesCelsius, LakeSolver);
 	
-	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M);
+	auto InitialEpilimnionThickness = RegisterEquationInitialValue(Model, "Initial epilimnion thickness", M);
+	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M, LakeSolver);
 	SetInitialValue(Model, EpilimnionThickness, InitialEpilimnionThickness);
 	
 	auto BottomTemperature   = RegisterEquation(Model, "Bottom temperature", DegreesCelsius);
@@ -324,7 +331,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	SetConditional(Model, AirDensity, ThisIsALake);
 	SetConditional(Model, DownwellingLongwaveRadation, ThisIsALake);
 	//SetConditional(Model, ShortwaveRadiation, ThisIsALake);
-	SetConditional(Model, EpilimnionThickness, ThisIsALake);
+	//SetConditional(Model, EpilimnionThickness, ThisIsALake);
 	SetConditional(Model, BottomTemperature, ThisIsALake);
 	SetConditional(Model, TemperatureAtDepth, ThisIsALake);
 	
@@ -586,6 +593,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		return RESULT(SurfaceStressCoefficient) * RESULT(AirDensity) * Wind * Wind;
 	)
 	
+	/*
 	EQUATION(Model, MixingPower,
 		double As = RESULT(LakeSurfaceArea);
 		double tau = RESULT(SurfaceStress);
@@ -597,22 +605,67 @@ The implementation is informed by the implementation in [^https://github.com/got
 		
 		return power;
 	)
+	*/
 	
-	EQUATION(Model, MixingVelocity,
+	EQUATION(Model, IsMixing,
+		/*
 		double power = RESULT(MixingPower);
 		double g = 9.81;
-		double As = RESULT(LakeSurfaceArea);
+		//double As = RESULT(LakeSurfaceArea);
 		double epiT = RESULT(EpilimnionTemperature);
 		double meanHypT = RESULT(MeanHypolimnionTemperature);
 		double delta_rho = WaterDensity(meanHypT) - WaterDensity(epiT);
-		double z_e = RESULT(EpilimnionThickness);
+		//double z_e = PARAMETER();
+		double V = LAST_RESULT(LakeVolume);
+		
+		if(RESULT(IsIce)) return 0.0;
+		
 		double v = 0.0;
 		if(delta_rho >= 0.0)
-			v = 86400.0 * power / (g*delta_rho*As*z_e);
-		if(v >= 5.0*RESULT(WaterLevel) || !std::isfinite(v))
-			v = 5.0*RESULT(WaterLevel); //NOTE: if densities are similar, the mixing velocity gets too high. But if the mixing velocity is large enough to mix everything in a day, we don't need it larger.
-		return v;
+			v = 86400.0 * power / (g*delta_rho*V);
+		
+		if(v >= 1.0 || !std::isfinite(v)) //NOTE: The 1.0 threshold for v is a bit arbitrary. TODO: Test how it impacts the result!
+			return 1.0;
+		*/
+		
+		double dT = std::abs(RESULT(EpilimnionTemperature) - RESULT(MeanHypolimnionTemperature));
+		
+		return (double)(dT < 0.4);
 	)
+	
+	EQUATION(Model, InitialEpilimnionThickness,
+		return PARAMETER(EpilimnionWinterThickness); //TODO: Should start relative to the day of year
+	)
+	
+	EQUATION(Model, EpilimnionThickness,
+		bool   ismix      = (bool)RESULT(IsMixing);
+		double z_e_winter = PARAMETER(EpilimnionWinterThickness);
+		double dz         = PARAMETER(EpilimnionThickeningRate);
+		double z_e_prev   = LAST_RESULT(EpilimnionThickness);		
+		double z_b        = LAST_RESULT(WaterLevel);
+		double T_e        = LAST_RESULT(EpilimnionTemperature);
+		double T_b        = LAST_RESULT(BottomTemperature);
+
+		double z_e = z_e_winter;
+		
+		if(!ismix && T_e > T_b)   // The last clause is to not get deepening in winter.
+			z_e = z_e_prev + dz;
+		
+		return std::min(z_e, z_b-1.0);
+	)
+	
+	/*
+	EQUATION(Model, MixingVelocity,
+		//TODO: Fix!
+		bool ismix = (bool)RESULT(IsMixing);
+		bool isice = (bool)RESULT(IsIce);
+		double Slope = PARAMETER(EpilimnionThickeningRate);
+		double Depth = RESULT(WaterLevel);
+		if(ismix) return 5.0*Depth; //NOTE: Just to get a sufficiently large mixing speed.
+		if(isice) return 0.0;
+		return Slope;
+	)
+	*/
 	
 	
 	EQUATION(Model, EmittedLongwaveRadiation,
@@ -845,7 +898,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 	EQUATION(Model, EpilimnionTemperature,
 		double T_m = RESULT(MeanLakeTemperature);
 		double T_b = RESULT(BottomTemperature);
-		double z_e = RESULT(EpilimnionThickness);
+		double z_e = LAST_RESULT(EpilimnionThickness);   //NOTE: Not ideal with LAST_RESULT, but must be like this in order to avoid circularity
 		double z_b = RESULT(WaterLevel);
 		double a   = RESULT(LakeSurfaceArea);
 	
@@ -864,7 +917,7 @@ The implementation is informed by the implementation in [^https://github.com/got
 		double T_m = RESULT(MeanLakeTemperature);
 		double T_e = RESULT(EpilimnionTemperature);
 		
-		double z_e = RESULT(EpilimnionThickness);
+		double z_e = LAST_RESULT(EpilimnionThickness); //NOTE: Not ideal with LAST_RESULT, but must be like this in order to avoid circularity
 		double z_b = RESULT(WaterLevel);
 		double a   = RESULT(LakeSurfaceArea);
 	
@@ -891,10 +944,6 @@ The implementation is informed by the implementation in [^https://github.com/got
 	
 	EQUATION(Model, BottomTemperature,
 		return LAST_RESULT(BottomTemperature);      //Note: may eventually be dynamic
-	)
-	
-	EQUATION(Model, EpilimnionThickness,
-		return LAST_RESULT(EpilimnionThickness);   //Note: may eventually be dynamic
 	)
 	
 	EQUATION(Model, EpilimnionVolume,

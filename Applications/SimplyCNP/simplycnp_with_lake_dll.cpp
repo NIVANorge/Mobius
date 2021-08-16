@@ -1,4 +1,6 @@
 
+#define MOBIUS_TEST_FOR_NAN 0
+
 #include "../../mobius_dll.h"
 
 #include "../../Modules/UnitConversions.h"

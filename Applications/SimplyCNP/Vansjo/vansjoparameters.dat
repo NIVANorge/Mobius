@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.2, Easy-Lake CNP V_dev) at 2021-06-08 15:40:17
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-08-16 15:03:58
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -271,7 +271,7 @@ parameters:
 	# Phosphorous (no index sets) #
 
 	"Dynamic soil water EPC0, TDP and soil labile P" :     # Calculate a dynamic soil water EPC0 (the equilibrium P concentration of zero sorption), and therefore soilwater TDP concentration, so that it varies with labile P content? The labile P will also therefore vary
-	true
+	false
 
 	"Run in calibration mode" :     # Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file
 	true
@@ -315,7 +315,7 @@ parameters:
 
 } # end of module "SimplyP"
 
-{ module "Easy-Lake physical" version "0.2"
+{ module "Easy-Lake physical" version "0.3"
 
 	# Lake physical ("Reaches") #
 
@@ -346,8 +346,11 @@ parameters:
 	"Initial bottom temperature" :     #(°C) [0, 50]
 	4 4 4 5
 
-	"Initial epilimnion thickness" :     #(m) [0, 20]
-	5 5 5 2
+	"Epilimnion winter thickness" :     #(m) [0, 20]
+	5 5 4 1.5
+
+	"Epilimnion thickening rate" :     #(m/day) [0, 0.05] Empirical rate of how fast the thickness of the epilimnion grows during summer.
+	0.005 0.005 0.005 0.005
 
 	"Initial ice thickness" :     #(m) [0, 10]
 	0 0 0 0

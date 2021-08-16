@@ -1,4 +1,4 @@
-# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V0.2) at 2021-05-20 14:24:42
+# Parameter file generated for model Easy-Lake, containing modules (Easy-Lake physical V0.3) at 2021-08-16 14:06:15
 
 index_sets:
 "Temperature calibration depth" : {"0.5m" "1.5m" "2m" "3m" "4m" "6m" "8m"}
@@ -8,13 +8,13 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-2014-08-12
+2015-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
 2018-09-30
 
 
-{ module "Easy-Lake physical" version "0.2"
+{ module "Easy-Lake physical" version "0.3"
 
 	# Lake physical (no index sets) #
 
@@ -42,8 +42,11 @@ parameters:
 	"Initial bottom temperature" :     #(°C) [0, 50]
 	4
 
-	"Initial epilimnion thickness" :     #(m) [0, 20]
+	"Epilimnion winter thickness" :     #(m) [0, 20]
 	2
+
+	"Epilimnion thickening rate" :     #(M/day) [0, 0.05] Empirical rate of how fast the thickness of the epilimnion grows during summer.
+	0.005
 
 	"Initial ice thickness" :     #(m) [0, 10]
 	0

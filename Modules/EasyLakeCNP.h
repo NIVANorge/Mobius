@@ -130,9 +130,11 @@ Currently in early development.
 	auto LakeVolume            = GetEquationHandle(Model, "Lake volume");
 	auto HypolimnionVolume     = GetEquationHandle(Model, "Hypolimnion volume");
 	auto EpilimnionVolume      = GetEquationHandle(Model, "Epilimnion volume");
+	auto EpilimnionThickness   = GetEquationHandle(Model, "Epilimnion thickness");
 	auto LakeSurfaceArea       = GetEquationHandle(Model, "Lake surface area");
 	auto LakeOutflow           = GetEquationHandle(Model, "Lake outflow");
-	auto MixingVelocity        = GetEquationHandle(Model, "Mixing velocity");
+	//auto MixingVelocity        = GetEquationHandle(Model, "Mixing velocity");
+	auto IsMixing              = GetEquationHandle(Model, "The lake is being mixed");
 	auto EpilimnionShortwave   = GetEquationHandle(Model, "Epilimnion incoming shortwave radiation");
 	auto EpilimnionTemperature = GetEquationHandle(Model, "Epilimnion temperature");
 	auto HypolimnionTemperature = GetEquationHandle(Model, "Mean hypolimnion temperature");
@@ -232,7 +234,13 @@ Currently in early development.
 	
 	EQUATION(Model, EpilimnionHypolimnionSSFlux,
 		double settling = PARAMETER(SSSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionSSConcentration)*1e-3;
-		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionSSConcentration) - RESULT(HypolimnionSSConcentration))*1e-3;
+		
+		bool ismix = (bool)RESULT(IsMixing);
+		double from_mixing = RESULT(LakeVolume)*(RESULT(EpilimnionSSConcentration) - RESULT(HypolimnionSSConcentration))*1e-3;  //NOTE: Just have the speed large enough so that the mixing is "instant"
+		double from_layer_thickening = -(RESULT(EpilimnionThickness)-LAST_RESULT(EpilimnionThickness))*RESULT(LakeSurfaceArea)*RESULT(HypolimnionSSConcentration)*1e-3;
+		
+		double mixing = from_layer_thickening;
+		if(ismix) mixing = from_mixing;
 		
 		return settling + mixing;
 	)
@@ -275,7 +283,13 @@ Currently in early development.
 	
 	EQUATION(Model, EpilimnionHypolimnionTDPFlux,
 		double settling = PARAMETER(TDPSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionTDPConcentration)*1e-3;
-		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionTDPConcentration) - RESULT(HypolimnionTDPConcentration))*1e-3;
+		
+		bool ismix = (bool)RESULT(IsMixing);
+		double from_mixing = RESULT(LakeVolume)*(RESULT(EpilimnionTDPConcentration) - RESULT(HypolimnionTDPConcentration))*1e-3;  //NOTE: Just have the speed large enough so that the mixing is "instant"
+		double from_layer_thickening = -(RESULT(EpilimnionThickness)-LAST_RESULT(EpilimnionThickness))*RESULT(LakeSurfaceArea)*RESULT(HypolimnionTDPConcentration)*1e-3;
+		
+		double mixing = from_layer_thickening;
+		if(ismix) mixing = from_mixing;
 		
 		return settling + mixing;
 	)
@@ -318,7 +332,14 @@ Currently in early development.
 	
 	EQUATION(Model, EpilimnionHypolimnionPPFlux,
 		double settling = PARAMETER(SSSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionPPConcentration)*1e-3;
-		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionPPConcentration) - RESULT(HypolimnionPPConcentration))*1e-3;
+		
+		bool ismix = (bool)RESULT(IsMixing);
+		double from_mixing = RESULT(LakeVolume)*(RESULT(EpilimnionPPConcentration) - RESULT(HypolimnionPPConcentration))*1e-3;  //NOTE: Just have the speed large enough so that the mixing is "instant"
+		double from_layer_thickening = -(RESULT(EpilimnionThickness)-LAST_RESULT(EpilimnionThickness))*RESULT(LakeSurfaceArea)*RESULT(HypolimnionPPConcentration)*1e-3;
+		
+		double mixing = from_layer_thickening;
+		if(ismix) mixing = from_mixing;
+		
 		return settling + mixing;
 	)
 	
@@ -376,7 +397,14 @@ Currently in early development.
 	
 	EQUATION(Model, EpilimnionHypolimnionDINFlux,
 		double settling = PARAMETER(DINSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionDINConcentration)*1e-3;
-		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionDINConcentration) - RESULT(HypolimnionDINConcentration))*1e-3;
+		
+		bool ismix = (bool)RESULT(IsMixing);
+		double from_mixing = RESULT(LakeVolume)*(RESULT(EpilimnionDINConcentration) - RESULT(HypolimnionDINConcentration))*1e-3; //NOTE: Just have the speed large enough so that the mixing is "instant"
+		double from_layer_thickening = -(RESULT(EpilimnionThickness)-LAST_RESULT(EpilimnionThickness))*RESULT(LakeSurfaceArea)*RESULT(HypolimnionDINConcentration)*1e-3;
+		
+		double mixing = from_layer_thickening;
+		if(ismix) mixing = from_mixing;
+		
 		return settling + mixing;
 	)
 	
@@ -448,7 +476,14 @@ Currently in early development.
 	
 	EQUATION(Model, EpilimnionHypolimnionDOCFlux,
 		double settling = PARAMETER(DOCSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(EpilimnionDOCConcentration)*1e-3;
-		double mixing = RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionDOCConcentration) - RESULT(HypolimnionDOCConcentration))*1e-3;
+		
+		bool ismix = (bool)RESULT(IsMixing);
+		double from_mixing = RESULT(LakeVolume)*(RESULT(EpilimnionDOCConcentration) - RESULT(HypolimnionDOCConcentration))*1e-3;  //NOTE: Just have the speed large enough so that the mixing is "instant"
+		double from_layer_thickening = -(RESULT(EpilimnionThickness)-LAST_RESULT(EpilimnionThickness))*RESULT(LakeSurfaceArea)*RESULT(HypolimnionDOCConcentration)*1e-3;
+		
+		double mixing = from_layer_thickening;
+		if(ismix) mixing = from_mixing;
+		
 		return settling + mixing;
 	)
 	

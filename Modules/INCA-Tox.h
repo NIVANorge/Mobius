@@ -3,8 +3,6 @@
 
 //#include "../boost_solvers.h"
 
-//NOTE: THIS MODULE IS IN DEVELOPMENT!
-
 
 static void
 AddIncaToxModule(mobius_model *Model)

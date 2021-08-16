@@ -13,9 +13,7 @@ AddIncaToxLakeModule(mobius_model *Model)
 	BeginModule(Model, "INCA-Tox Lake", "_dev");
 	
 	SetModuleDescription(Model, R""""(
-This is an extremely simple lake module for INCA-Tox that was made for just one specific project. It may not be widely applicable. Specifically, it does not work well with hydrophobic contaminants.
-
-It is not complete yet.
+This is a simple lake module for INCA-Tox that was made for just one specific project. It may not be widely applicable. Specifically, it does not work well with hydrophobic contaminants.
 )"""");
 	
 	auto Dimensionless  = RegisterUnit(Model);
@@ -92,7 +90,8 @@ It is not complete yet.
 	auto LakeOutflow                        = GetEquationHandle(Model, "Lake outflow");
 	auto EpilimnionVolume                   = GetEquationHandle(Model, "Epilimnion volume");
 	auto HypolimnionVolume                  = GetEquationHandle(Model, "Hypolimnion volume");
-	auto MixingVelocity                     = GetEquationHandle(Model, "Mixing velocity");
+	//auto MixingVelocity                     = GetEquationHandle(Model, "Mixing velocity");
+	auto IsMixing                           = GetEquationHandle(Model, "The lake is being mixed");
 	auto LakeSurfaceArea                    = GetEquationHandle(Model, "Lake surface area");
 	auto LakeDepth                          = GetEquationHandle(Model, "Water level");
 	auto EpilimnionThickness                = GetEquationHandle(Model, "Epilimnion thickness");
@@ -224,7 +223,12 @@ It is not complete yet.
 	)
 	
 	EQUATION(Model, LayerExchange,
-		return RESULT(MixingVelocity)*RESULT(LakeSurfaceArea)*(RESULT(EpilimnionContaminantConc) - RESULT(HypolimnionContaminantConc));
+		bool ismix = (bool)RESULT(IsMixing);
+		double from_mixing = RESULT(LakeSurfaceArea)*RESULT(LakeDepth)*(RESULT(EpilimnionContaminantConc) - RESULT(HypolimnionContaminantConc));  //NOTE: Just have the speed large enough so that the mixing is "instant"
+		double from_layer_thickening = -(RESULT(EpilimnionThickness)-LAST_RESULT(EpilimnionThickness))*RESULT(LakeSurfaceArea)*RESULT(HypolimnionContaminantConc);
+		
+		if(ismix) return from_mixing;
+		return from_layer_thickening;
 	)
 	
 	EQUATION(Model, PhotoDegradation,
