@@ -13,19 +13,18 @@ The following model implementations are considered to be in "release quality", i
 - PERSiST
 - INCA-C
 - INCA-Microplastic
-
-The following model implementations are probably correct and have been tested on some real datasets, but not all aspects of them have been rigorously tested.
 - INCA-P
 - INCA-Sed
 - INCA-Tox
 - INCA-Rad
+- MAGIC
 
 The following models are in development and are not finished
 - SimplyC
 - SimplyN
-- MAGIC
 - EasyLake
 - INCA-Macroplastic
+- SedFlex
 
 The following models were made for mini-projects, are highly specific, and not intended for widespread use:
 - ShrimpTox
