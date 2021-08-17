@@ -80,18 +80,18 @@ WarningPrint(t Value, v... Tail)
 
 
 
-#include "mobius_math.h"
-#include "mobius_util.h"
-#include "bucket_allocator.h"
-#include "token_string.h"
-#include "datetime.h"
-#include "mobius_model.h"
-#include "mobius_data_set.h"
-#include "jacobian.h"
-#include "mobius_model_run.h"
-#include "lexer.h"
-#include "mobius_io.h"
-#include "mobius_solvers.h"
+#include "Src/mobius_math.h"
+#include "Src/mobius_util.h"
+#include "Src/bucket_allocator.h"
+#include "Src/token_string.h"
+#include "Src/datetime.h"
+#include "Src/mobius_model.h"
+#include "Src/mobius_data_set.h"
+#include "Src/jacobian.h"
+#include "Src/mobius_model_run.h"
+#include "Src/lexer.h"
+#include "Src/mobius_io.h"
+#include "Src/mobius_solvers.h"
 
 
 #define MOBIUS_H
