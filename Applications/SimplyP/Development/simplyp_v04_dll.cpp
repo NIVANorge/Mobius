@@ -9,9 +9,9 @@
 #include "../../../Modules/PET.h"
 
 #define SIMPLYQ_GROUNDWATER
-#include "../../../Modules/SimplyQ.h"
-#include "../../../Modules/SimplySed.h"
-#include "../../../Modules/SimplyP_v04.h"
+#include "../../../Modules/Simply/SimplyQ.h"
+#include "../../../Modules/Simply/SimplySed.h"
+#include "../../../Modules/Simply/SimplyP_v04.h"
 
 
 mobius_model *

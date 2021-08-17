@@ -9,7 +9,7 @@
 #include "../../mobius_dll.h"
 
 #define EASYLAKE_STANDALONE
-#include "../../Modules/EasyLake.h"
+#include "../../Modules/EasyLake/EasyLake.h"
 
 
 

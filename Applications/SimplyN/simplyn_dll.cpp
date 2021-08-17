@@ -1,19 +1,16 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/UnitConversions.h"
-
 //#include "../../Modules/SolarRadiation.h"
 #include "../../Modules/PET.h"
 #define SIMPLYQ_GROUNDWATER          
-#include "../../Modules/SimplyQ.h"
+#include "../../Modules/Simply/SimplyQ.h"
 //#include "../../Modules/SimplyQ_Langtjern.h"
 
 
-#include "../../Modules/SimplyN.h"
+#include "../../Modules/Simply/SimplyN.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
-#include "../../Modules/SimplyQLakeAddon.h"
 
 mobius_model *
 DllBuildModel()
@@ -25,7 +22,6 @@ DllBuildModel()
 	
 	AddDegreeDayPETModule(Model);
 	AddSimplyHydrologyModule(Model);
-	//AddSimplyQLakeAddon(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyNModel(Model);
 	

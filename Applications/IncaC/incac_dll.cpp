@@ -11,7 +11,7 @@
 #include "../../Modules/Old/Persist_0_3.h"
 #include "../../Modules/SoilTemperature.h"
 #include "../../Modules/SolarRadiation.h"
-#include "../../Modules/INCA-C.h"
+#include "../../Modules/INCA/INCA-C.h"
 
 
 mobius_model *

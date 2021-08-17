@@ -8,10 +8,10 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/PERSiST.h"
+#include "../../Modules/INCA/PERSiST.h"
 
 #define EASYLAKE_PERSIST
-#include "../../Modules/EasyLake.h"
+#include "../../Modules/EasyLake/EasyLake.h"
 
 
 

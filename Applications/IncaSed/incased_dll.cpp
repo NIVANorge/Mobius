@@ -8,8 +8,8 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/Persist.h"
-#include "../../Modules/INCA-Sed.h"
+#include "../../Modules/INCA/Persist.h"
+#include "../../Modules/INCA/INCA-Sed.h"
 
 
 mobius_model *

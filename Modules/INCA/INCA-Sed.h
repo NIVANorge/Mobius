@@ -1,7 +1,7 @@
 
 //NOTE: Is designed to work with PERSiST 1.4 or later
 
-#include "../boost_solvers.h"
+#include "../../boost_solvers.h"
 
 static void
 AddINCASedModel(mobius_model *Model)

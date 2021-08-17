@@ -11,11 +11,10 @@
 #include "../../Modules/PET.h"
 
 #define SIMPLYQ_GROUNDWATER
-#include "../../Modules/SimplyQ.h"
+#include "../../Modules/Simply/SimplyQ.h"
 
 #define EASYLAKE_SIMPLYQ
-#include "../../Modules/EasyLake.h"
-//#include "../../Modules/EasyLake_discrete.h"
+#include "../../Modules/EasyLake/EasyLake.h"
 
 
 mobius_model *
