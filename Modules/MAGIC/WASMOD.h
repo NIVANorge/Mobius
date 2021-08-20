@@ -11,7 +11,7 @@ AddWASMODModel(mobius_model *Model)
 This is an implementation of the WASMOD model ("the Water And Snow balance MODeling system"). It is a simple monthly-timestep hydrology model.
 
 This is based on the version that was published as a part of NOPEX:
-[^https://doi.org/10.2166/nh.1998.19^ C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.]
+[C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.](https://doi.org/10.2166/nh.1998.19)
 )"""");
 
 	

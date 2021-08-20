@@ -11,9 +11,9 @@ AddIncaRadModule(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it suitable to describe radionuclides.
 
-[^https://doi.org/10.1016/j.scitotenv.2015.11.087^ Nizzetto, L., Butterfield, D., Futter, M., Lin, Y., Allan, I., Larssen, T., 2016. Assessment of contaminant fate in catchments using a novel integrated hydrobiogeochemical-multimedia fate model. Science of the Total Environment 544, 553-563.]
+[Nizzetto, L., Butterfield, D., Futter, M., Lin, Y., Allan, I., Larssen, T., 2016. Assessment of contaminant fate in catchments using a novel integrated hydrobiogeochemical-multimedia fate model. Science of the Total Environment 544, 553-563.](https://doi.org/10.1016/j.scitotenv.2015.11.087)
 
-[^https://www.niva.no/en/publications/inca-contaminants^ INCA-Contaminants home page]
+[INCA-Contaminants home page](https://www.niva.no/en/publications/inca-contaminants)
 )"""");
 
 

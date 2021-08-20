@@ -11,7 +11,7 @@ AddIncaNModel(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 An early version of INCA-N is described in
 
-[^https://hess.copernicus.org/articles/6/559/2002/hess-6-559-2002.pdf^ A.J.Wade et. al. 2002, A nitrogen model for European catchments: INCA, new model structure and equations, Hydrol. Earth Syst. Sci., 6(3), 559-582]
+[A.J.Wade et. al. 2002, A nitrogen model for European catchments: INCA, new model structure and equations, Hydrol. Earth Syst. Sci., 6(3), 559-582](https://hess.copernicus.org/articles/6/559/2002/hess-6-559-2002.pdf)
 
 This version is based on the INCA-N software developed by Dan Butterfield, which saw many revisions after the initial papers. New to this version is that it is integrated with the PERSiST hydrology model instead of the earlier hydrology model that was specific to INCA-N.
 )"""");

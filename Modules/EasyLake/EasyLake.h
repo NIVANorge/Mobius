@@ -47,11 +47,11 @@ This is a very simple lake model for use along with cathcment models.
 The physical part of the model simulates water balance and temperature.
 
 The water balance part of the model is conceptually similar to VEMALA
-[^https://doi.org/10.1007/s10666-015-9470-6^ A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109]
+[A National-Scale Nutrient Loading Model for Finnish Watersheds - VEMALA, Inse Huttunen et. al. 2016, Environ Model Assess 21, 83-109](https://doi.org/10.1007/s10666-015-9470-6)
 
 Air-lake heat fluxes are based off of
-[^https://link.springer.com/article/10.1007/BF00232256^ Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112]
-The implementation is informed by the implementation in [^https://github.com/gotm-model GOTM]
+[Air-Sea bulk transfer coefficients in diabatic conditions, Junsei Kondo, 1975, Boundary-Layer Meteorology 9(1), 91-112](https://link.springer.com/article/10.1007/BF00232256)
+The implementation is informed by the implementation in [GOTM](https://github.com/gotm-model).
 )"""");
 	
 	

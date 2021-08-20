@@ -16,7 +16,7 @@ AddYassoModel(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 This is an un-official implementation of the Yasso model
 
-[^https://doi.org/10.1016/j.foreco.2005.12.023^ De Wit et. al. 2006, A carbon budget of forest biomass and soils in southeast Norway calculated using a widely applicable method, Forest Ecology and Management 226(1-3) pp15-26.]
+[De Wit et. al. 2006, A carbon budget of forest biomass and soils in southeast Norway calculated using a widely applicable method, Forest Ecology and Management 226(1-3) pp15-26.](https://doi.org/10.1016/j.foreco.2005.12.023)
 )"""");
 
 

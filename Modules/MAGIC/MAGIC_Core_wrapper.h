@@ -20,7 +20,7 @@ AddMagicCoreModel(mobius_model *Model)
 MAGIC is the Model of Acidification of Groundwater In Catchments.
 	
 The model has been published as
-[^https://doi.org/10.5194/hess-5-499-2001^ B.J Cosby, R. C. Ferrier, A. Jenkins and R. F. Wright, 2001, Modelling the effects of acid deposition: refinements, adjustments and inclusion of nitrogen dynamics in the MAGIC model. Hydrol. Earth Syst. Sci, 5(3), 499-517]
+[B.J Cosby, R. C. Ferrier, A. Jenkins and R. F. Wright, 2001, Modelling the effects of acid deposition: refinements, adjustments and inclusion of nitrogen dynamics in the MAGIC model. Hydrol. Earth Syst. Sci, 5(3), 499-517](https://doi.org/10.5194/hess-5-499-2001)
 	
 This is a Mobius implementation. There are earlier implementations in FORTRAN by Bernard J. Cosby.
 )"""");

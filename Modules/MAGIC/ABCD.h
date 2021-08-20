@@ -7,11 +7,11 @@ AddABCDModel(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 This is the ABCD hydrological model, with snow sub-model taken from WASMOD.
 
-[^https://doi.org/10.3133/70046351^ Harold A. Thomas Jr. 1981, Improved methods for national water assessment: Final report, U.S. Geol. Surv. Water Resour. Contract WR15249270]
+[Harold A. Thomas Jr. 1981, Improved methods for national water assessment: Final report, U.S. Geol. Surv. Water Resour. Contract WR15249270](https://doi.org/10.3133/70046351)
 
-[^https://doi.org/10.1029/2009WR008294^ Guillermo F. Martinez and Hoshin V. Gupta 2010, Toward improved identification of hydrological models: A diagnostic evaluation of the “abcd” monthly water balance model for the conterminous United States, Water Resources Research 46(8)]
+[Guillermo F. Martinez and Hoshin V. Gupta 2010, Toward improved identification of hydrological models: A diagnostic evaluation of the “abcd” monthly water balance model for the conterminous United States, Water Resources Research 46(8)](https://doi.org/10.1029/2009WR008294)
 
-[^https://doi.org/10.2166/nh.1998.19^ C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.]
+[C-Y Xu and Sven Halldin (1997). The Effect of Climate Change on River Flow and Snow Cover in the NOPEX Area Simulated by a Simple Water Balance Model. Hydrology Research 28 (4-5), pp. 273–282.](https://doi.org/10.2166/nh.1998.19)
 )"""");
 
 	

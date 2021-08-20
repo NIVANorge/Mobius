@@ -36,7 +36,7 @@ AddSimplyHydrologyModule(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 This is an adaption of a hydrology module originally implemented in Python as a part of the model SimplyP, which was published as
 
-[^https://doi.org/10.1002/2016WR020132^ Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132]
+[Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132](https://doi.org/10.1002/2016WR020132)
 )"""");
 	
 	auto Degrees           = RegisterUnit(Model, "°C");

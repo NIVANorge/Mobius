@@ -15,7 +15,7 @@ AddThornthwaitePETModule(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 This is an implementation of the potential evapotranspiration model from
 
-[^https://doi.org/10.2307%2F210739^ Thornthwaite, C. W. (1948). An approach toward a rational classification of climate. Geographical Review. 38 (1): 55–94]
+[Thornthwaite, C. W. (1948). An approach toward a rational classification of climate. Geographical Review. 38 (1): 55–94](https://doi.org/10.2307%2F210739)
 
 Linear interpolation is used to convert monthly to daily values.	
 )"""");
@@ -80,9 +80,9 @@ AddPriestleyTaylorPETModule(mobius_model *Model)
 	BeginModule(Model, "Priestley-Taylor PET", "0.1");
 	
 	SetModuleDescription(Model, R""""(
-This is an adaptation of the Priestley-Taylor model as implemented by [^https://swat.tamu.edu/media/99192/swat2009-theory.pdf^ SWAT]
+This is an adaptation of the Priestley-Taylor model as implemented by [SWAT](https://swat.tamu.edu/media/99192/swat2009-theory.pdf)
 
-[^https://doi.org/10.1175/1520-0493(1972)100<0081:OTAOSH>2.3.CO;2^ C. H. B. Priestley; R. J. Taylor (1972). On the assessment of surface heat flux and evaporation using large-scale parameters. Monthly Weather Review. 100 (2): 81–82] 
+[C. H. B. Priestley; R. J. Taylor (1972). On the assessment of surface heat flux and evaporation using large-scale parameters. Monthly Weather Review. 100 (2): 81–82](https://doi.org/10.1175/1520-0493(1972)100<0081:OTAOSH>2.3.CO;2). 
 )"""");
 	
 	auto SolarRadiationMax          = GetEquationHandle(Model, "Solar radiation on a clear sky day"); //From SolarRadiation.h : AddMaxSolarRadiationModule
@@ -212,9 +212,9 @@ AddPriestleyTaylorPETModule2(mobius_model *Model)
 	BeginModule(Model, "Priestley-Taylor PET", "0.1");
 	
 	SetModuleDescription(Model, R""""(
-This is an adaptation of the Priestley-Taylor model as implemented by [^https://swat.tamu.edu/media/99192/swat2009-theory.pdf^ SWAT]
+This is an adaptation of the Priestley-Taylor model as implemented by [SWAT](https://swat.tamu.edu/media/99192/swat2009-theory.pdf)
 
-[^https://doi.org/10.1175/1520-0493(1972)100<0081:OTAOSH>2.3.CO;2^ C. H. B. Priestley; R. J. Taylor (1972). On the assessment of surface heat flux and evaporation using large-scale parameters. Monthly Weather Review. 100 (2): 81–82] 
+[C. H. B. Priestley; R. J. Taylor (1972). On the assessment of surface heat flux and evaporation using large-scale parameters. Monthly Weather Review. 100 (2): 81–82] (https://doi.org/10.1175/1520-0493(1972)100<0081:OTAOSH>2.3.CO;2)
 )"""");
 	
 	auto SolarRadiationMax          = GetEquationHandle(Model, "Solar radiation on a clear sky day"); //From SolarRadiation.h : AddMaxSolarRadiationModule

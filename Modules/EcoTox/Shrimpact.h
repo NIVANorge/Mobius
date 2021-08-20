@@ -12,7 +12,7 @@ void AddShrimpactModel(mobius_model *Model)
 	SetModuleDescription(Model, R""""(
 This is a shrimp population model that can react to environmental stressors. It has been published as:
 
-[^https://doi.org/10.1016/j.ecolmodel.2019.108833^ S. Jannicke Moe & al. 2019, Effects of an aquaculture pesticide (diflubenzuron) on non-target shrimp populations: Extrapolation from laboratory experiments to the risk of population decline.  Ecological Modelling 413, 108833]	
+[S. Jannicke Moe & al. 2019, Effects of an aquaculture pesticide (diflubenzuron) on non-target shrimp populations: Extrapolation from laboratory experiments to the risk of population decline.  Ecological Modelling 413, 108833](https://doi.org/10.1016/j.ecolmodel.2019.108833)
 )"""");
 	
 	auto Dimensionless        = RegisterUnit(Model);
