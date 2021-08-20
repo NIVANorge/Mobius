@@ -62,7 +62,7 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	auto CalibrationMode                = RegisterParameterBool(Model, Phosphorous, "Run in calibration mode", true, "Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file");
 	
 	auto MSoilPerM2                     = RegisterParameterDouble(Model, Phosphorous, "Soil mass per m2", KgPerM2, 95.0, 0.0, 200.0);
-	auto PhosphorousSorptionCoefficient = RegisterParameterDouble(Model, Phosphorous, "Phosphorous sorption coefficient", LPerMg, 1.13e-4, 0.0, 0.1, "Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model");
+	auto PhosphorousSorptionCoefficient = RegisterParameterDouble(Model, Phosphorous, "Phosphorous sorption coefficient", LPerMg, 1.13e-4, 0.0, 0.1, "Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model", "Ks");
 	
 	auto GroundwaterTDPConcentration    = RegisterParameterDouble(Model, Phosphorous, "Groundwater TDP concentration", MgPerL, 0.02, 0.0, 10.0, "", "TDPgw");
 	auto PPEnrichmentFactor             = RegisterParameterDouble(Model, Phosphorous, "Particulate P enrichment factor", Dimensionless, 1.6, 1.0, 5.0, "P content of eroded material compared to P content of bulk soils", "EPP");
@@ -74,8 +74,8 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	
 	// Phorphorus parameters that vary by land class
 	auto PhosphorousLand = RegisterParameterGroup(Model, "Phosphorous land", LandscapeUnits);
-	auto NetAnnualPInput                = RegisterParameterDouble(Model, PhosphorousLand, "Net annual P input to soil", KgPerHaPerYear, 10.0, -100.0, 100.0);
-	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0",      MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run.", "TDPsw");
+	auto NetAnnualPInput                = RegisterParameterDouble(Model, PhosphorousLand, "Net annual P input to soil", KgPerHaPerYear, 10.0, -100.0, 100.0, "", "Pin");
+	auto InitialEPC0                    = RegisterParameterDouble(Model, PhosphorousLand, "Initial soil water TDP concentration and EPC0", MgPerL, 0.1, 0.0, 10.0, "If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run.", "TDPsw");
 	auto InitialSoilPConcentration      = RegisterParameterDouble(Model, PhosphorousLand, "Initial total soil P content", MgPerKg, 1458, 0.0, 10000.0);
 	auto SoilInactivePConcentration     = RegisterParameterDouble(Model, Phosphorous, "Inactive soil P content", MgPerKg, 873, 0.0, 10000.0, "Is recommended to be about the same as the Initial total soil P content of seminatural land, but a little lower.");
 

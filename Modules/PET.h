@@ -26,7 +26,7 @@ Linear interpolation is used to convert monthly to daily values.
 	
 	auto PETParams = RegisterParameterGroup(Model, "Potential evapotranspiration");
 	RegisterParameterDouble(Model, PETParams, "Latitude", Degrees, 60.0, -90.0, 90.0, "Used in PET calculation if no PET timeseries was provided in the input data");
-	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, PETParams, "PET multiplication factor", Dimensionless, 1.0, 0.0, 2.0, "Parameter to scale potential evapotranspiration. Should be set to 1 in most cases.");
+	auto PETMultiplicationFactor      = RegisterParameterDouble(Model, PETParams, "PET multiplication factor", Dimensionless, 1.0, 0.0, 2.0, "Parameter to scale potential evapotranspiration. Should be set to 1 in most cases.", "mPET");
 	
 	
 	auto PET = RegisterInput(Model, "Potential evapotranspiration", MmPerDay); //This input timeseries is filled in by the ComputeThornthwaitePET preprocessing step if the timeseries is not provided in the input file.
