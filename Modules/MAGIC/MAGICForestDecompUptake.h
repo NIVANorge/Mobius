@@ -102,9 +102,9 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TotalTreeKUptake     = RegisterEquationCumulative(Model, "Total tree K uptake", TotalTreeKUptakeSpecies, TreeClass);
 	
 	
-	//TODO: This should be done differently.
-	// growth and decomposition should be summed over patches before deciding  uptake and sources!!
-	
+
+	auto LeftOnGroundByDisturbance = RegisterEquation(Model, "Tree mass left on ground by disturbance", TPerHa);
+	auto TotalLeftOnGroundByDisturbance = RegisterEquationCumulative(Model, "Tree mass left on ground by disturbance averaged over forest patches", LeftOnGroundByDisturbance, ForestPatch, PatchArea);
 	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree mass", TPerHa);
 	auto DeadTreeDecomp       = RegisterEquation(Model, "Dead tree decomposition", TPerHaPerTs);
 	
@@ -218,12 +218,14 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		return LAST_RESULT(DeadTreeMass) * (1.0 - std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)));
 	)
 	
-	EQUATION(Model, DeadTreeMass,
+	EQUATION(Model, LeftOnGroundByDisturbance,
 		double before_disturbance = LAST_RESULT(LiveTreeMass) + RESULT(ForestNetGrowth);
 		double disturbance  = before_disturbance * INPUT(TreeDisturbance);
-		double left_on_ground = INPUT(LeftAfterDisturbance) * disturbance * RESULT(CompartmentShare);
-		
-		return LAST_RESULT(DeadTreeMass) * std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)) + left_on_ground + RESULT(CompartmentTurnoverSummed);
+		return INPUT(LeftAfterDisturbance) * disturbance * RESULT(CompartmentShare);
+	)
+	
+	EQUATION(Model, DeadTreeMass,
+		return LAST_RESULT(DeadTreeMass) * std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)) + RESULT(TotalLeftOnGroundByDisturbance) + RESULT(CompartmentTurnoverSummed);
 	)
 	
 	EQUATION(Model, TreeDecompCSource,      

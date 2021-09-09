@@ -92,8 +92,8 @@ WriteParameterValues(FILE *File, parameter_h Parameter, const parameter_spec &Sp
 			WriteParameterValues(File, Parameter, Spec, DataSet, IndexSets, Indexes, IndexSetCount, Level + 1, Indent);
 			if(Index + 1 != IndexCount)
 			{
-				if(Level + 2 == IndexSetCount) fprintf(File, "\n", Indent);
-				else fprintf(File, "\n\n", Indent);
+				if(Level + 2 == IndexSetCount) fprintf(File, "\n");
+				else fprintf(File, "\n\n");
 			}
 		}
 	}
@@ -1194,7 +1194,7 @@ WriteInputsToFile(mobius_data_set *DataSet, const char *Filename)
 	u64 Timesteps      = DataSet->InputDataTimesteps;
 	
 	fprintf(File, "start_date : %s\n", StartDate.ToString());
-	fprintf(File, "timesteps  : %llu\n", Timesteps);
+	fprintf(File, "timesteps  : %llu\n", (unsigned long long)Timesteps);
 	
 	fprintf(File, "\n");
 	fprintf(File, "additional_timeseries :\n");

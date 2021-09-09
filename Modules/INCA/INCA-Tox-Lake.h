@@ -7,6 +7,17 @@ AttnIndefiniteIntegral(double z, double a, double D)
 	return exp(-a*z)*(a*(z-D)) / (a*a*D);
 }
 
+inline double
+DiffusionCoefficient(double MolVol, double Temp)
+{
+	//Diffusion coefficient of contaminant in water. MolVol = molecular volume at boiling point, Temp = temperature Celsius.
+	//Computation using Wilke Chang equation.
+	
+	double AbsT = 273.15 + Temp;
+	return 4.09521908e-7 * AbsT * pow(MolVol, -0.6);
+}
+
+
 void
 AddIncaToxLakeModule(mobius_model *Model)
 {
@@ -28,6 +39,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto HPa            = RegisterUnit(Model, "HPa");
 	auto Percent        = RegisterUnit(Model, "%");
 	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
+	auto Cm2PerS        = RegisterUnit(Model, "cm2/s");
 	
 	
 	constexpr double ln2 = 0.69314718056;
@@ -37,15 +49,17 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto Reach        = GetIndexSetHandle(Model, "Reaches");
 	auto Contaminant  = GetIndexSetHandle(Model, "Contaminants");
 	
-	auto LakeParams = RegisterParameterGroup(Model, "Lake Tox");
+	auto LakeParams = RegisterParameterGroup(Model, "Additional lake params");
 	
 	
-	auto SecchiDepth            = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0);
-	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0);
+	auto SecchiDepth            = RegisterParameterDouble(Model, LakeParams, "Secchi depth", Metres, 2.0, 0.0, 10.0);
+	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0, 0.0, 10.0, "Scaling factor for diffusive exchange with atmosphere");
+	auto SedimentThickness      = RegisterParameterDouble(Model, LakeParams, "Lake sediment thickness", Metres, 0.5, 0.0, 100.0, "Thickness of porous sediment");
+	auto SedimentPorosity       = RegisterParameterDouble(Model, LakeParams, "Lake sediment porosity", Dimensionless, 0.92, 0.0, 1.0);
 	
-	auto Photomin   = RegisterParameterGroup(Model, "Photomineralization", Contaminant);
+	auto LakeTox   = RegisterParameterGroup(Model, "Lake contaminant", Contaminant);
 	
-	auto OpticalCrossection     = RegisterParameterDouble(Model, Photomin, "Optical cross-section", Dimensionless, 255.0, 0.0, 1000.0, "For photo-degradation"); //TODO: Other unit
+	auto OpticalCrossection     = RegisterParameterDouble(Model, LakeTox, "Optical cross-section", Dimensionless, 255.0, 0.0, 1000.0, "For photo-degradation"); //TODO: Other unit
 	
 	//auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 	auto LakeContaminantSolver = RegisterSolver(Model, "Lake contaminant solver", 0.1, IncaDascru);
@@ -64,12 +78,18 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto HypolimnionContaminantMass                = RegisterEquationODE(Model, "Hypolimnion contaminant mass", Ng, LakeContaminantSolver);
 	auto HypolimnionContaminantConc                = RegisterEquation(Model, "Hypolimnion contaminant concentration", NgPerM3, LakeContaminantSolver);
 	
+	auto LayerDiffusion                            = RegisterEquation(Model, "Lake layer contaminant diffusion", NgPerDay, LakeContaminantSolver);
 	auto LayerExchange                             = RegisterEquation(Model, "Lake layer contaminant exchange", NgPerDay, LakeContaminantSolver);
 	auto EpilimnionAttn                            = RegisterEquation(Model, "Epilimnion attenuation fraction", Dimensionless, LakeContaminantSolver);
 	auto PhotoDegradation                          = RegisterEquation(Model, "Photo-degradation", NgPerDay, LakeContaminantSolver);
 	
 	auto DiffusiveAirLakeExchangeFlux              = RegisterEquation(Model, "Diffusive air-lake exchange flux", NgPerDay, LakeContaminantSolver);
 	auto LakeContaminantFlux                       = RegisterEquation(Model, "Lake contaminant flux", NgPerDay, LakeContaminantSolver);
+	
+	auto SedimentContaminantMass                   = RegisterEquationODE(Model, "Sediment contaminant mass", Ng, LakeContaminantSolver);
+	auto LakeSedimentContaminantDiffusion          = RegisterEquation(Model, "Diffusive lake-sediment exchange flux", Ng, LakeContaminantSolver);
+	auto SedimentContaminantDegradation            = RegisterEquation(Model, "Sediment contaminant degradation", NgPerDay, LakeContaminantSolver);
+	auto SedimentPoreWaterContaminantConc          = RegisterEquation(Model, "Sediment pore water contaminant conc", NgPerM3, LakeContaminantSolver);
 	
 	//PERSiST:
 	auto ReachFlow                          = GetEquationHandle(Model, "Reach flow"); // m3/s
@@ -97,11 +117,15 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto EpilimnionThickness                = GetEquationHandle(Model, "Epilimnion thickness");
 	auto EpilimnionShortwave                = GetEquationHandle(Model, "Epilimnion incoming shortwave radiation");
 	auto IsIce                              = GetEquationHandle(Model, "There is ice");
+	auto BottomTemperature                  = GetEquationHandle(Model, "Bottom temperature");
+	auto MeanLakeTemperature                = GetEquationHandle(Model, "Mean lake temperature");
 	
 	auto AtmosphericContaminantConcentration           = GetParameterDoubleHandle(Model, "Atmospheric contaminant concentration");
 	auto ReachContaminantHalfLife                      = GetParameterDoubleHandle(Model, "Reach contaminant half life");
+	auto SedimentContaminantHalfLife                   = GetParameterDoubleHandle(Model, "Stream bed contaminant half life");  //TODO: this should be renamed in inca-tox to sediment.
 	auto DegradationResponseToTemperature              = GetParameterDoubleHandle(Model, "Degradation rate response to 10°C change in temperature");
 	auto TemperatureAtWhichDegradationRatesAreMeasured = GetParameterDoubleHandle(Model, "Temperature at which degradation rates are measured");
+	auto MolecularVolume                               = GetParameterDoubleHandle(Model, "Contaminant molecular volume at surface pressure");
 	auto IsLake                                        = GetParameterBoolHandle(Model, "This section is a lake");
 	
 	auto AtmosphericContaminantConcentrationIn  = GetInputHandle(Model, "Atmospheric contaminant concentration");
@@ -196,6 +220,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 			+ RESULT(ContaminantInputFromUpstream)
 			+ RESULT(DepositionOnLakeSurface)
 			- RESULT(LayerExchange)
+			- RESULT(LayerDiffusion)
 			- RESULT(LakeContaminantFlux)
 			- RESULT(DiffusiveAirLakeExchangeFlux)
 			- RESULT(PhotoDegradation)
@@ -215,11 +240,17 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	)
 	
 	EQUATION(Model, HypolimnionContaminantMass,
-		return RESULT(LayerExchange) - RESULT(HypolimnionContaminantDegradation);
+		return RESULT(LayerExchange) + RESULT(LayerDiffusion) - RESULT(LakeSedimentContaminantDiffusion) - RESULT(HypolimnionContaminantDegradation);
 	)
 	
 	EQUATION(Model, HypolimnionContaminantConc,
 		return SafeDivide(RESULT(HypolimnionContaminantMass), RESULT(HypolimnionVolume));
+	)
+	
+	EQUATION(Model, LayerDiffusion,
+		double dz = 0.5*RESULT(LakeDepth);
+		double diffusionCoeff = DiffusionCoefficient(RESULT(MeanLakeTemperature), PARAMETER(MolecularVolume)); //TODO; should use molecular volume at boiling point instead...
+		return diffusionCoeff*86400.0*1e-4*RESULT(LakeSurfaceArea) * (RESULT(EpilimnionContaminantConc) - RESULT(HypolimnionContaminantConc)) * 0.5 / dz;
 	)
 	
 	EQUATION(Model, LayerExchange,
@@ -265,6 +296,30 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 		return PARAMETER(DiffusiveExchangeScale)*flux;
 	)
 	
+	
+	EQUATION(Model, SedimentContaminantMass,
+		return
+			  RESULT(LakeSedimentContaminantDiffusion)
+			- RESULT(SedimentContaminantDegradation);
+	)
+	
+	EQUATION(Model, LakeSedimentContaminantDiffusion,
+		double z_h_mean = (RESULT(LakeDepth) - RESULT(EpilimnionThickness))*0.5;
+		double dz = z_h_mean + 0.5*PARAMETER(SedimentThickness);
+		double diffusionCoeff = DiffusionCoefficient(RESULT(BottomTemperature), PARAMETER(MolecularVolume)); //TODO; should use molecular volume at boiling point instead...
+		return diffusionCoeff*86400.0*1e-4*RESULT(LakeSurfaceArea) * (RESULT(HypolimnionContaminantConc) - RESULT(SedimentPoreWaterContaminantConc)) * 0.5 / dz;
+	)
+	
+	EQUATION(Model, SedimentContaminantDegradation,
+		double tempmod = pow(PARAMETER(DegradationResponseToTemperature), 0.1*(RESULT(BottomTemperature) - PARAMETER(TemperatureAtWhichDegradationRatesAreMeasured)));
+		return (ln2 / PARAMETER(SedimentContaminantHalfLife)) * RESULT(SedimentContaminantMass) * tempmod;
+	)
+	
+	EQUATION(Model, SedimentPoreWaterContaminantConc,
+		double volume = RESULT(LakeSurfaceArea) * PARAMETER(SedimentThickness) * PARAMETER(SedimentPorosity); //NOTE: It is a bit awkward that this varies with the surface area...
+		return RESULT(SedimentContaminantMass) / volume;
+	)
+
 	
 	EndModule(Model);
 }

@@ -58,7 +58,7 @@ Computation of reach flow based on the Manning flow equations.
 
     auto InitialWaterDepth = RegisterParameterDouble(Model, SoilsLand, "Initial water depth", Mm, 200.0, 0.0, 9999.0, "The initial depth of water in a box at the start of a simulation");
 	auto RelativeAreaIndex = RegisterParameterDouble(Model, SoilsLand, "Relative area index", Dimensionless, 1.0, 0.0, 1.0, "The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0");
-	auto Infiltration      = RegisterParameterDouble(Model, SoilsLand, "Infiltration", MmPerDay, 100.0, 0.0, 500.0, "The maximum rate at which water can infiltrate into a box from overlying boxes");
+	auto Infiltration      = RegisterParameterDouble(Model, SoilsLand, "Infiltration", MmPerDay, 100.0, 0.0, 500.0, "The maximum rate at which water can infiltrate into a box from overlying boxes", "inf");
 	auto RetainedWaterDepth = RegisterParameterDouble(Model, SoilsLand, "Retained water depth", Mm, 100.0, 0.0, 100000.0, "The depth of water in a box which does not contribute to runoff but can contribute to evapotranspiration and to diluting nutrient inputs to the box. For the soil water box, this is similar to the field capacity");
     auto DroughtRunoffFraction = RegisterParameterDouble(Model, SoilsLand, "Drought runoff fraction", Dimensionless, 0.0, 0.0, 0.5, "The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth", "drought");
     auto TimeConstant = RegisterParameterDouble(Model, SoilsLand, "Time constant", Days, 5.0, 1.0, 9999.0, "The inverse of the rate at which water flows out of a box", "Tc");

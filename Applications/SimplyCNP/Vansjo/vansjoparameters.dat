@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-08-16 15:03:58
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-09 09:28:59
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -289,7 +289,7 @@ parameters:
 	1.5
 
 	"SRP fraction" :     #(dimensionless) [0, 1] Factor to multiply TDP by to estimate instream SRP concentration
-	0.7
+	0.26
 
 	"Inactive soil P content" :     #(mg/kg) [0, 10000] Is recommended to be about the same as the Initial total soil P content of seminatural land, but a little lower.
 	873
@@ -303,7 +303,7 @@ parameters:
 
 	# Phosphorous land ("Landscape units") #
 
-	"Net annual P input to soil" :     #(kg/ha/year) [-100, 100]
+	"Net annual P input to soil" :     #(kg/ha/year) [-100, 100] 
 	10 0
 
 	"Initial soil water TDP concentration and EPC0" :     #(mg/l) [0, 10] If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run.
