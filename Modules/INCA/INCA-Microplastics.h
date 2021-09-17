@@ -181,7 +181,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	
 	auto SedimentLand = RegisterParameterGroup(Model, "Erosion by grain and land class", Class, LandscapeUnits);
 	
-	auto SplashDetachmentScalingFactor          = RegisterParameterDouble(Model, SedimentLand, "Splash detachment scaling factor", KgPerM, 0.001, 0.0, 1.0, "Particle class specific splash detachment behaviour");
+	auto SplashDetachmentScalingFactor          = RegisterParameterDouble(Model, SedimentLand, "Splash detachment scaling factor", KgPerM3, 0.001, 0.0, 1.0, "Particle class specific splash detachment behaviour");
 	auto FlowErosionPotential                   = RegisterParameterDouble(Model, SedimentLand, "Flow erosion potential", Dimensionless, 1.0, 0.0, 1000.0, "Particle class specific flow erosion scaling");
 	auto InfiltrationRate                       = RegisterParameterDouble(Model, SedimentLand, "Grain infiltration rate", PerDay, 0.0, 0.0, 1.0, "The rate at which particles infiltrate from the surface store to the immobile store");
 	auto InitialSurfaceStore                    = RegisterParameterDouble(Model, SedimentLand, "Initial surface grain store", KgPerKm2, 0.0, 0.0, 1e10);
@@ -249,7 +249,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 			VegIndex = Min(VegIndex, 1.0);
 	
 		double Reffq = RESULT(Rainfall)*1e-3;
-		double SSD = PARAMETER(SplashDetachmentScalingFactor) * Reffq * pow(PARAMETER(SplashDetachmentSoilErodibility), 10.0 / (10.0 - VegIndex));
+		double SSD = 1e6*PARAMETER(SplashDetachmentScalingFactor) * Reffq * pow(PARAMETER(SplashDetachmentSoilErodibility), 10.0 / (10.0 - VegIndex));
 		return Min(SSD, RESULT(ImmobileGrainStoreBeforeMobilisation));
 	)
 	

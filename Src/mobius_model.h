@@ -997,6 +997,23 @@ RegisterParameterEnum(mobius_model *Model, parameter_group_h Group, const char *
 	return {Parameter.Handle};
 }
 
+inline u64
+EnumValue(mobius_model *Model, parameter_enum_h Parameter, const char *StringValue)
+{
+	REGISTRATION_BLOCK(Model)
+	
+	parameter_spec &Spec = Model->Parameters[Parameter];
+	auto Find = Spec.EnumNameToValue.find(StringValue);
+	if(Find == Spec.EnumNameToValue.end())
+	{
+		PrintRegistrationErrorHeader(Model);
+		FatalError("ERROR: The enum parameter \"", Spec.Name, "\" does not have \"", StringValue, "\" as a possible value.\n");
+	}
+	
+	return Find->second;
+}
+
+
 inline void
 ParameterIsComputedBy(mobius_model *Model, parameter_h Parameter, equation_h Equation, bool ShouldNotBeExposed = true)
 {
