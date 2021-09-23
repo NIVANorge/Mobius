@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-23 14:39:53
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-23 14:52:12
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -88,10 +88,10 @@ parameters:
 	# Land cover ("Reaches" "Landscape units") #
 
 	"Land use proportions" :     #(dimensionless) [0, 1] Must sum to 1 over the landscape units for each given reach.
-	0.22 0.78
-	0.22 0.78
-	0.22 0.78
-	0.22 0.78
+	0.168 0.832
+	0.2 0.8
+	0.12 0.88
+	0.162 0.838
 
 
 } # end of module "SimplyQ"
@@ -280,10 +280,10 @@ parameters:
 	95
 
 	"Phosphorous sorption coefficient" :     #(l/mg) [0, 0.1] Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model
-	-0.0025
+	-0.002
 
 	"Groundwater TDP concentration" :     #(mg/l) [0, 10] 
-	0.014
+	0.016
 
 	"Particulate P enrichment factor" :     #(dimensionless) [1, 5] P content of eroded material compared to P content of bulk soils
 	1.51
@@ -307,7 +307,7 @@ parameters:
 	10 0
 
 	"Initial soil water TDP concentration and EPC0" :     #(mg/l) [0, 10] If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run.
-	0.1 0.0012
+	0.13 0.0015
 
 	"Initial total soil P content" :     #(mg/kg) [0, 10000]
 	1200 870
@@ -347,10 +347,10 @@ parameters:
 	4 4 4 5
 
 	"Epilimnion winter thickness" :     #(m) [0, 20]
-	5 5 3.1 1.5
+	5 5 3.1 4
 
 	"Epilimnion thickening rate" :     #(m/day) [0, 0.05] Empirical rate of how fast the thickness of the epilimnion grows during summer.
-	0.005 0.005 0.01 0.005
+	0.005 0.005 0.01 0.006
 
 	"Initial ice thickness" :     #(m) [0, 10]
 	0 0 0 0
