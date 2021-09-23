@@ -96,6 +96,8 @@ Currently in early development.
 	auto ThisIsALake = GetConditionalHandle(Model, "This is a lake");
 	SetConditional(Model, EpilimnionTPConcentration, ThisIsALake);
 	SetConditional(Model, HypolimnionTPConcentration, ThisIsALake);
+	SetConditional(Model, EpilimnionTOCConcentration, ThisIsALake);
+	SetConditional(Model, HypolimnionTOCConcentration, ThisIsALake);
 	
 	
 	auto IsLake               = GetParameterBoolHandle(Model, "This section is a lake");

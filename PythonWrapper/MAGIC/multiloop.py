@@ -140,6 +140,9 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		
 		ds.set_parameter_double('Nitrification', ['Lake'], -lake['Nitrif'])
 		
+		S_N = 5.0
+		ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0 * S_N / (lake['Qs'] + S_N))
+		
 		
 		#### SEQUENCE sheet
 		

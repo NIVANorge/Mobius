@@ -16,38 +16,29 @@ additional_timeseries :
 "Observed ice thickness Vanem"    unit "m"
 "Observed temperature Vanem"      unit "°C"
 
-"Observed Q Kure"           unit "m3/s"
-
-"Observed SS at Kure"       unit "mg/l"
-"Observed TP at Kure"       unit "mg/l"
-"Observed TDP at Kure"      unit "mg/l"
-"Observed SRP at Kure"      unit "mg/l"
-"Observed PP at Kure"       unit "mg/l"
-"Observed TOTN at Kure"     unit "mg/l"
-"Observed NO3 at Kure"      unit "mg/l"
-"Observed TOC at Kure"      unit "mg/l"
-
-"Observed colour Store"     unit "mg Pt/l"
-"Observed chl-a Store"      unit "µg/l"
-"Observed TP Store"         unit "mg/l"
-"Observed SS_min Store"     unit "mg/l"
-"Observed SS Store"         unit "mg/l"
-"Observed TOC Store"        unit "mg/l"
-"Observed TDP Store"        unit "mg/l"
-"Observed NO3 Store"        unit "mg/l"
-
-"Observed colour Vanem"     unit "mg Pt/l"
-"Observed chl-a Vanem"      unit "µg/l"
-"Observed TP Vanem"         unit "mg/l"
-"Observed SS_min Vanem"     unit "mg/l"
-"Observed SS Vanem"         unit "mg/l"
-"Observed TOC Vanem"        unit "mg/l"
-"Observed TDP Vanem"        unit "mg/l"
-"Observed NO3 Vanem"        unit "mg/l"
-
+"Observed Q Kure"                 unit "m3/s"
+"Observed SS"                     unit "mg/l"
+"Observed TP"                     unit "mg/l"
+"Observed TDP"                    unit "mg/l"
+"Observed PP"                     unit "mg/l"
+"Observed NO3"                    unit "mg/l"
+"Observed TOC"                    unit "mg/l"
+"Observed colour"                 unit "mg Pt/l"
+"Observed chl-a"                  unit "µg/l"
+"Observed SRP at Kure"            unit "mg/l"
+"Observed TOTN at Kure"           unit "mg/l"
 
 index_set_dependencies :
 "Observed temperature Vanem" : {"Temperature calibration depth"}
+"Observed SS"                : {"Reaches"}
+"Observed TP"                : {"Reaches"}
+"Observed TDP"               : {"Reaches"}
+"Observed PP"                : {"Reaches"}
+"Observed NO3"               : {"Reaches"}
+"Observed TOC"               : {"Reaches"}
+"Observed colour"            : {"Reaches"}
+"Observed chl-a"             : {"Reaches"}
+
 
 inputs :
 

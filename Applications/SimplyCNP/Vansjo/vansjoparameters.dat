@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-09 09:28:59
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-23 13:49:10
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -190,7 +190,7 @@ parameters:
 	1000
 
 	"Reach denitrification rate at 20°C" :     #(m3/day) [0, 10] 
-	1
+	0.005
 
 	"(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
 	1
@@ -390,7 +390,7 @@ parameters:
 	0
 
 	"DOC optical cross-section" :     #(m2/mg) [0.001, 1] Can be used to scale the photomineralization speed
-	0.0021
+	0.0001
 
 
 } # end of module "Easy-Lake CNP"
