@@ -345,7 +345,7 @@ In addition to the common statistics like mean, standard deviation etc., MobiVie
 
 The flashiness index is defined as
 \[
-\frac{\sum_i=2^N}|m_i-m_{i-1}|/\overline{m}
+\frac{\sum_{i=2}^N|m_i-m_{i-1}|}{\overline{m}}
 \]
 and says something about how quick the time series is to respond to events.
 
@@ -357,7 +357,7 @@ The baseflow index approximation (est.bfi) is
 \]
 where $m_i^b$ is the result of applying the single pass forward filter
 \[
-m_i^b = \min{m_i, am_{i-1}^b + (1-a)\frac{m_{i-1}+m_i}{2}}
+m_i^b = \min(m_i, am_{i-1}^b + (1-a)\frac{m_{i-1}+m_i}{2})
 \]
 The filter constant $a$ can be set in the statistics settings menu.
 
