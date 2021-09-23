@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-23 14:52:12
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-23 14:54:52
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -190,10 +190,10 @@ parameters:
 	1000
 
 	"Reach denitrification rate at 20°C" :     #(m3/day) [0, 10] 
-	0.005
+	0.001
 
 	"(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
-	2.4
+	4
 
 	"Quick flow is overland" :     # Whether quick flow water is clear or brings DIN from the soil
 	false
@@ -384,7 +384,7 @@ parameters:
 	0.11
 
 	"DIN settling velocity" :     #(m/day) [0, 10]
-	1e-05
+	0
 
 	"DOC settling velocity" :     #(m/day) [0, 10]
 	0.001
@@ -405,7 +405,7 @@ parameters:
 	0
 
 	"Initial lake DIN concentration" :     #(mg/l) [0, 100]
-	0.5
+	0.7
 
 	"Initial lake DOC concentration" :     #(mg/l) [0, 100]
 	7
