@@ -32,6 +32,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto M2             = RegisterUnit(Model, "m2");
 	auto Ng             = RegisterUnit(Model, "ng");
 	auto NgPerM3        = RegisterUnit(Model, "ng/m3");
+	auto NgPerKg        = RegisterUnit(Model, "ng/kg");
 	auto NgPerDay       = RegisterUnit(Model, "ng/day");
 	auto Days           = RegisterUnit(Model, "day");
 	auto DegreesCelsius = RegisterUnit(Model, "°C");
@@ -40,6 +41,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto Percent        = RegisterUnit(Model, "%");
 	auto KgPerM3        = RegisterUnit(Model, "kg/m3");
 	auto Cm2PerS        = RegisterUnit(Model, "cm2/s");
+	auto M3PerKg        = RegisterUnit(Model, "m3/kg");
 	
 	
 	constexpr double ln2 = 0.69314718056;
@@ -56,6 +58,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto DiffusiveExchangeScale = RegisterParameterDouble(Model, LakeParams, "Diffusive exchange scaling factor", Dimensionless, 1.0, 0.0, 10.0, "Scaling factor for diffusive exchange with atmosphere");
 	auto SedimentThickness      = RegisterParameterDouble(Model, LakeParams, "Lake sediment thickness", Metres, 0.5, 0.0, 100.0, "Thickness of porous sediment");
 	auto SedimentPorosity       = RegisterParameterDouble(Model, LakeParams, "Lake sediment porosity", Dimensionless, 0.92, 0.0, 1.0);
+	auto SedSOCDensity          = RegisterParameterDouble(Model, LakeParams, "Lake sediment SOC density", KgPerM3, 300.0, 0.0, 1500.0, "Density in dry sediments");
 	
 	auto LakeTox   = RegisterParameterGroup(Model, "Lake contaminant", Contaminant);
 	
@@ -86,10 +89,14 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto DiffusiveAirLakeExchangeFlux              = RegisterEquation(Model, "Diffusive air-lake exchange flux", NgPerDay, LakeContaminantSolver);
 	auto LakeContaminantFlux                       = RegisterEquation(Model, "Lake contaminant flux", NgPerDay, LakeContaminantSolver);
 	
-	auto SedimentContaminantMass                   = RegisterEquationODE(Model, "Sediment contaminant mass", Ng, LakeContaminantSolver);
+	auto OctanolWaterPartitioningCoefficientSed    = RegisterEquation(Model, "Octanol-water partitioning coefficient in lake sediments", Dimensionless, LakeContaminantSolver);
+	auto WaterSOCPartitioningCoefficientSed        = RegisterEquation(Model, "Water-SOC partitioning coefficient in lake sediments", M3PerKg, LakeContaminantSolver);
+	auto SedimentContaminantMass                   = RegisterEquationODE(Model, "Lake sediment contaminant mass", Ng, LakeContaminantSolver);
 	auto LakeSedimentContaminantDiffusion          = RegisterEquation(Model, "Diffusive lake-sediment exchange flux", Ng, LakeContaminantSolver);
-	auto SedimentContaminantDegradation            = RegisterEquation(Model, "Sediment contaminant degradation", NgPerDay, LakeContaminantSolver);
-	auto SedimentPoreWaterContaminantConc          = RegisterEquation(Model, "Sediment pore water contaminant conc", NgPerM3, LakeContaminantSolver);
+	auto SedimentContaminantDegradation            = RegisterEquation(Model, "Lake sediment contaminant degradation", NgPerDay, LakeContaminantSolver);
+	auto SedimentPoreWaterContaminantConc          = RegisterEquation(Model, "Lake sediment pore water contaminant conc", NgPerM3, LakeContaminantSolver);
+	auto SedimentSOCContaminantConc                = RegisterEquation(Model, "Lake sediment SOC contaminant conc", NgPerKg, LakeContaminantSolver);
+	
 	
 	//PERSiST:
 	auto ReachFlow                          = GetEquationHandle(Model, "Reach flow"); // m3/s
@@ -126,6 +133,8 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto DegradationResponseToTemperature              = GetParameterDoubleHandle(Model, "Degradation rate response to 10°C change in temperature");
 	auto TemperatureAtWhichDegradationRatesAreMeasured = GetParameterDoubleHandle(Model, "Temperature at which degradation rates are measured");
 	auto MolecularVolume                               = GetParameterDoubleHandle(Model, "Contaminant molecular volume at surface pressure");
+	auto Log10OctanolWaterPartitioningCoefficient25    = GetParameterDoubleHandle(Model, "Log10 Octanol-water partitioning coefficient at 25°C");
+	auto OctanolWaterPhaseTransferEntalphy             = GetParameterDoubleHandle(Model, "Enthalpy of phase tranfer between octanol and water");
 	auto IsLake                                        = GetParameterBoolHandle(Model, "This section is a lake");
 	
 	auto AtmosphericContaminantConcentrationIn  = GetInputHandle(Model, "Atmospheric contaminant concentration");
@@ -315,9 +324,30 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 		return (ln2 / PARAMETER(SedimentContaminantHalfLife)) * RESULT(SedimentContaminantMass) * tempmod;
 	)
 	
+	EQUATION(Model, OctanolWaterPartitioningCoefficientSed,
+		double LogKOW25 = PARAMETER(Log10OctanolWaterPartitioningCoefficient25);
+		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+		double tdiff = (1.0 / (RESULT(BottomTemperature)+273.15) - 1.0/(273.15 + 25.0));
+		double LogKOWT = LogKOW25 - (1e3*PARAMETER(OctanolWaterPhaseTransferEntalphy) / (std::log(10.0)*R))   * tdiff;
+		return std::pow(10.0, LogKOWT);
+	)
+	
+	EQUATION(Model, WaterSOCPartitioningCoefficientSed,
+		double densityofSOC = 1900.0; // kg/m^3
+		double rOC = 0.41;   // Empirical constant.
+		return RESULT(OctanolWaterPartitioningCoefficientSed) * rOC / densityofSOC;
+	)
+	
 	EQUATION(Model, SedimentPoreWaterContaminantConc,
-		double volume = RESULT(LakeSurfaceArea) * PARAMETER(SedimentThickness) * PARAMETER(SedimentPorosity); //NOTE: It is a bit awkward that this varies with the surface area...
-		return RESULT(SedimentContaminantMass) / volume;
+		double sed_volume = RESULT(LakeSurfaceArea) * PARAMETER(SedimentThickness); //NOTE: It is a bit awkward that this varies with the surface area...
+		double phi = PARAMETER(SedimentPorosity);
+		double porewater_volume = sed_volume * phi;
+		double sed_soc_mass = sed_volume * (1.0 - phi) * PARAMETER(SedSOCDensity);
+		return RESULT(SedimentContaminantMass) / (porewater_volume + RESULT(WaterSOCPartitioningCoefficientSed)*sed_soc_mass);
+	)
+	
+	EQUATION(Model, SedimentSOCContaminantConc,
+		return RESULT(SedimentPoreWaterContaminantConc) * RESULT(WaterSOCPartitioningCoefficientSed);
 	)
 
 	

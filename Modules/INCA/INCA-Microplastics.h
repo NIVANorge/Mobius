@@ -406,6 +406,7 @@ Moreover, in-stream settling and erosion behaviour are now computed based on new
 	SetInitialValue(Model, SuspendedGrainMass, InitialSuspendedGrainMass);
 	
 	auto SuspendedGrainConcentration         = RegisterEquation(Model, "Suspended grain concentration", MgPerL);
+	auto TotalSuspendedGrainConcentration    = RegisterEquationCumulative(Model, "Total suspended grain concentration", SuspendedGrainConcentration, Class);
 	
 	
 	auto EffluentFlow = GetParameterDoubleHandle(Model, "Effluent flow");

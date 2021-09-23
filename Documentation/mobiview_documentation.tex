@@ -223,7 +223,7 @@ You must have exactly one result time series and one input time series selected.
 
 To compare your modeled time series against an observed series, you can load the observed series in as an "additional timeseries", which is explained in the Mobius file format documentation.
 
-A linear regression line of the residuals is also displayed. This shows the trend in the residuals. For instance if this trend goes up, it says that the observed quantity increases over time compared to the modeled one. The regression line is only computed for the GOF interval (see section \ref{sec:gofint}).
+A linear regression line of the residuals is also displayed. This shows the trend in the residuals. For instance if this trend goes up, it says that the observed quantity increases over time compared to the modeled one. The regression line is only computed for the stat interval (see section \ref{sec:gofint}).
 
 You can also use aggregation. For instance, the monthly sum of the residuals of something like "Reach flow" versus "Observed discharge" can tell you something about the monthly water balance in a hydrology model.
 
@@ -248,13 +248,13 @@ In addition to what we have implemented in MobiView (described above), the plot 
 \item Save the image of the plot (Save image). Several formats are available (e.g. png, pdf).
 \end{enumerate}
 
-\subsection{The GOF interval}\label{sec:gofint}
+\subsection{The stat interval}\label{sec:gofint}
 
-You can select the GOF interval below the timseries info box. The interval consists of two dates, and only timesteps between these dates will be considered in the goodness-of-fit computations (see next section).
+You can select the stat interval below the timseries info box. The interval consists of two dates, and only timesteps between these dates will be considered in the statistics and goodness-of-fit computations (see next section).
 
 \begin{center}
 \includegraphics[width=0.3\linewidth]{img/gof}
-\captionof{figure}{When in a Residual-type plot mode, the GOF interval can be chosen using the two date text fields below the time series info box, where the goodness-of-fit stats are displayed.}
+\captionof{figure}{When in a Residual-type plot mode, the stat interval can be chosen using the two date text fields below the time series info box, where the goodness-of-fit stats are displayed.}
 \end{center}
 
 \subsection{Goodness-of-fit statistics}\label{sec:gof}
@@ -267,7 +267,7 @@ During model calibration you can also see the changes in each statistic between 
 
 Most of the goodness-of-fit statistics are implemented following \cite{krause05}. Further properties of the various statistics are discussed in that paper.
 
-Let $o=\{o_i\}_{i\in I}$ be the observed time series, and let $m=\{m_i\}_{i\in I}$ be the modelled time series. The set $I$ of comparison points is the set of all timesteps in the GOF interval where both series have a valid value. For instance, the observed time series can have missing values, so the timesteps corresponding to the missing values will not be considered when evaluating goodness-of-fit. The GOF interval is the entire model run interval unless something else is specified by the user. Let
+Let $o=\{o_i\}_{i\in I}$ be the observed time series, and let $m=\{m_i\}_{i\in I}$ be the modelled time series. The set $I$ of comparison points is the set of all timesteps in the stat interval (see Section \ref{sec:gofint} where both series have a valid value. For instance, the observed time series can have missing values, so the timesteps corresponding to the missing values will not be considered when evaluating goodness-of-fit. The stat interval is the entire model run interval unless something else is specified by the user. Let
 \[
 \overline{m} = \frac{1}{|I|}\sum_{i\in I}m_i
 \]
@@ -402,44 +402,68 @@ If an index set was checked as "locked" in the main window, all values across th
 You can also select a statistic to plot in the rightmost plot, with the perturbed parameter as the x axis and the statistic as the y axis. If you want to plot a goodness-of-fit statistic (these are documented in section \ref{sec:gof}, you must have an input series selected that will be used as the comparison series. The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
 
 
-\subsection{Optimization}\label{sec:optimization}
+\subsection{Optimization and Monte-Carlo sensitivity and uncertainty analysis}\label{sec:optimization}
 
 \begin{center}
 \includegraphics[width=\linewidth]{img/mobiview_optimizer}
-\captionof{figure}{Optimization setup}
+\captionof{figure}{Optimization and MCMC setup}
 \end{center}
 
-The optimizer, or auto-calibrator, allows you to tell MobiView to search a subset of the parameter space in order to optimize a set of selected statistics.
+The optimizer, or auto-calibrator, allows you to tell MobiView to search a subset of the parameter space in order to optimize a set of selected statistics. MCMC and variance based sensitivity analysis allow you to sample the given parameter space in order to determine sensitivity of model outcomes to changes in these parameters and to sample the posterior distribution of likelihoods in error structures. They all use a common parameter space and target setup.
 
-If you select a parameter in the main window, you can click "Add parameter" in the optimization setup to add it to the list. You can also set the min and max values that you want the optimizer to search over. Note that all of these have to be valid values that don't make the model crash. It helps if you can narrow down the range as much as possible before running the optimizer.
+If you select a parameter in the main window, you can click "Add parameter" in the setup to add it to the list. You can also set the min and max values that you want to constrain this parameter with. Note that all values in the range have to be valid values that don't make the model crash. For the optimizer it helps if you can narrow down the range as much as possible before running it.
 
 You can click "Add group" to add all the parameters that are visible in the main parameter view.
 
-If an index set was checked as "locked" in the main window at the time a parameter was added, all values across the indexes of that index set will be treated as a single parameter, and all of them will be given the same value every time the model is run.
+If an index set was checked as "locked" in the main window at the time a parameter was added, all values across the indexes of that index set will be treated as a single parameter, and all of them will be given the same value every time the model is run. Documentation of the feature that allows using expressions to make relationships between parameters is forthcoming.
 
-To add a target statistic, select one result series and one comparison input series in the main window, then click "Add target". You can select the target statistic from a list of all the GOF statistics (section \ref{sec:gof}). The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
-
-The statistic that is optimized is the sum of the statistics for the individual targets multiplied with their weight. The statistics MAE and RMSE will be minimized, the others maximized. You can't mix targets that should be minimized with targets that should be maximized.
-
-You can set the maximal number of times the optimizer is allowed to evaluate the model. It will typically use all of these. The higher number, the better result, but also longer run time. The total time of the optimizer is roughly equal to the time to run one model multiplied with the number of evaluations (overhead of the algorithm is small in comparison).
-
-The main parameter set (that is loaded in memory) is replaced with the new best parameter set when the optimization run is finished.
-
-Unfortunately, there is no feedback from the program during optimization. The window will freeze and appear to be not responding until the job is done.
-
-We use the dlib global optimization algorithm from \url{http://dlib.net/optimization.html}.
-
-Documentation of the feature that allows using expressions to make relationships between parameters is forthcoming.
+To add a target statistic, select one result series and up to one comparison input series in the main window, then click "Add target". You can select the target statistic from a list of statistics. The available statistic will depend on what kind of run you want (optimizer, MCMC or variance-based sensitivity). The total statistic that is considered in each model run is the weighted sum of the statistics for the individual targets. All statistics are computed inside the stat interval only (see Section \ref{sec:gofint}.
 
 If you need a more complex setup than the one you can make here, we recommend that you use the Mobius python wrapper to script it instead.
 
 In the toolbar of the optimization setup window you can click buttons to save the current setup for future use, or load it again.
 
+\subsubsection{optimizer}
+All the GOF statistics (section \ref{sec:gof}) are available for optimization. The statistics MAE and RMSE will be minimized, the others maximized. You can not mix targets that should be minimized with targets that should be maximized. All targets have to have an input comparison series for it to be able to evaluate the error of the modeled series compared to the observed series.
+
+You can set the maximal number of times the optimizer is allowed to evaluate the model. It will typically use all of these. The higher number, the better result, but also longer run time. The total time of the optimizer is roughly equal to the time to run one model multiplied with the number of evaluations (overhead of the algorithm is small in comparison).
+
+The main parameter set (that is loaded in memory) is replaced with the new best parameter set when the optimization run is finished.
+
+We use the dlib global optimization algorithm from \url{http://dlib.net/optimization.html}.
+
+If you have the "show progress" box ticked, it will periodically show how many evaluations it has done and what is the best current value of the (compound) target statistic compared to the initial value of the statistic. If you additionally have the additional plot view open with the targeted time series
+
+\subsubsection{MCMC}
+Documentation of this feature is forthcoming
+
+\subsubsection{Variance based sensitivity}
+We compute two statistics that say something about how much of the variance of the (compound) target statistic (over the given parameter space) is accounted for by each individual parameter.
+
+We compute the first-order sensitivity coefficient (main effect index) and total effect index of the listed parameters on the chosen (compound) target statistic. The algorithms used for computation are based on the ones suggested in \cite{saltelli-et-al10}.
+
+The first-order sensitivity coefficient is
+\[
+S_i = \frac{V_{X_i}(E_{X_{\sim i}}(Y|X_i))}{V(Y)}
+\]
+where $V$ is the variance, $E$ the expected value, $X=(X_i)_{i=1}^n$ the parameter vector, $X_{\sim i}$ the parameter space excluding parameter $i$, and $Y$ the (compound) target statistic.
+
+The total effect index is
+\[
+S_{T_i} = \frac{E_{X_{\sim i}}(V_{X_i}(Y|X_{\sim i}))}{V(Y)}
+\]
+The total effect index measures both the first-order effect and the higher-order effects (interactions between parameter $i$ and others). In one has
+\[
+\sum_{i=1}^n S_i \leq 1,\; \sum_{i=1}^n S_{T_i} \geq 1.
+\]
+
+Note that since these are estimated using a Monte-Carlo method, they will not be exact, and especially small values are unreliable. The first-order index can be shown as negative even though the exact value has to be positive, and the first order index could be shown as smaller than the total index even though that is not possible for the exact values. You can try to run with a higher number of samples if this becomes a problem.
+
 \section{Known issues}
 
 Windows 10 may scale the layout of your programs, and for MobiView this can make the window too large for your screen if the screen resolution is not very high. If this happens:
 \begin{itemize}
-\item Right click your desktop, choose 'display settings', then go to 'Change the size of text, apps, and other items' and set it to 100%.
+\item Right click your desktop, choose 'display settings', then go to 'Change the size of text, apps, and other items' and set it to 100\%.
 \end{itemize}
 If this does not work right away, you could try to
 \begin{itemize}
