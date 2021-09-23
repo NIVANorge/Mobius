@@ -22,7 +22,7 @@ Currently in early development.
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 
-	auto EasyLakeCNP = RegisterParameterGroup(Model, "Lake Carbon Nitrogen Phosphorous");
+	auto EasyLakeCNP         = RegisterParameterGroup(Model, "Lake Carbon Nitrogen Phosphorous");
 	
 	auto TDPSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "TDP settling velocity", MPerDay, 0.5, 0.0, 10.0);
 	auto SSSettlingVelocity  = RegisterParameterDouble(Model, EasyLakeCNP, "Suspended solid settling velocity", MPerDay, 0.5, 0.0, 10.0);
@@ -30,68 +30,100 @@ Currently in early development.
 	auto DOCSettlingVelocity = RegisterParameterDouble(Model, EasyLakeCNP, "DOC settling velocity", MPerDay, 0.5, 0.0, 10.0);
 	auto DOCOpticalCrossection = RegisterParameterDouble(Model, EasyLakeCNP, "DOC optical cross-section", M2PerMg, 0.01, 0.001, 1.0, "Can be used to scale the photomineralization speed");
 	
+	auto InitialValues       = RegisterParameterGroup(Model, "Initial lake concentrations");
+	auto InitialSSConc       = RegisterParameterDouble(Model, InitialValues, "Initial lake SS concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto InitialTDPConc      = RegisterParameterDouble(Model, InitialValues, "Initial lake TDP concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto InitialPPConc       = RegisterParameterDouble(Model, InitialValues, "Initial lake PP concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto InitialDINConc      = RegisterParameterDouble(Model, InitialValues, "Initial lake DIN concentration", MgPerL, 0.0, 0.0, 100.0);
+	auto InitialDOCConc      = RegisterParameterDouble(Model, InitialValues, "Initial lake DOC concentration", MgPerL, 0.0, 0.0, 100.0);
+	
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 
 
 	auto EpilimnionSSMass            = RegisterEquationODE(Model, "Epilimnion SS mass", Kg, LakeSolver);
-	auto EpilimnionSSConcentration   = RegisterEquation(Model, "Epilimnion SS concentration", MgPerL, LakeSolver);
+	auto HypolimnionSSMass           = RegisterEquationODE(Model, "Hypolimnion SS mass", Kg, LakeSolver);
 	auto LakeSSFlux                  = RegisterEquation(Model, "Lake SS flux", KgPerDay, LakeSolver);
 	auto DailyMeanLakeSSFlux         = RegisterEquationODE(Model, "Lake daily mean SS flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeSSFlux);
 	auto EpilimnionHypolimnionSSFlux = RegisterEquation(Model, "Epilimnion-hypolimnion SS flux", KgPerDay, LakeSolver);
-	auto HypolimnionSSMass           = RegisterEquationODE(Model, "Hypolimnion SS mass", Kg, LakeSolver);
-	auto HypolimnionSSConcentration  = RegisterEquation(Model, "Hypolimnion SS concentration", MgPerL, LakeSolver);
 	auto HypolimnionSSSettling       = RegisterEquation(Model, "Hypolimnion SS settling", KgPerDay, LakeSolver);
+	auto EpilimnionSSConcentration   = RegisterEquation(Model, "Epilimnion SS concentration", MgPerL, LakeSolver);
+	auto HypolimnionSSConcentration  = RegisterEquation(Model, "Hypolimnion SS concentration", MgPerL, LakeSolver);
+	
+	auto InitialEpilimnionSSMass     = RegisterEquationInitialValue(Model, "Initial epilimnion SS mass", Kg);
+	SetInitialValue(Model, EpilimnionSSMass, InitialEpilimnionSSMass);
+	auto InitialHypolimnionSSMass    = RegisterEquationInitialValue(Model, "Initial hypolimnion SS mass", Kg);
+	SetInitialValue(Model, HypolimnionSSMass, InitialHypolimnionSSMass);
 
 	auto EpilimnionTDPMass           = RegisterEquationODE(Model, "Epilimnion TDP mass", Kg, LakeSolver);
-	auto EpilimnionTDPConcentration  = RegisterEquation(Model, "Epilimnion TDP concentration", MgPerL, LakeSolver);
+	auto HypolimnionTDPMass          = RegisterEquationODE(Model, "Hypolimnion TDP mass", Kg, LakeSolver);
 	auto LakeTDPFlux                 = RegisterEquation(Model, "Lake TDP flux", KgPerDay, LakeSolver);
 	auto DailyMeanLakeTDPFlux        = RegisterEquationODE(Model, "Lake daily mean TDP flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeTDPFlux);
 	auto EpilimnionHypolimnionTDPFlux = RegisterEquation(Model, "Epilimnion-hypolimnion TDP flux", KgPerDay, LakeSolver);
-	auto HypolimnionTDPMass          = RegisterEquationODE(Model, "Hypolimnion TDP mass", Kg, LakeSolver);
-	auto HypolimnionTDPConcentration = RegisterEquation(Model, "Hypolimnion TDP concentration", MgPerL, LakeSolver);
 	auto HypolimnionTDPSettling      = RegisterEquation(Model, "Hypolimnion TDP settling", KgPerDay, LakeSolver);
+	auto EpilimnionTDPConcentration  = RegisterEquation(Model, "Epilimnion TDP concentration", MgPerL, LakeSolver);
+	auto HypolimnionTDPConcentration = RegisterEquation(Model, "Hypolimnion TDP concentration", MgPerL, LakeSolver);
+	
+	auto InitialEpilimnionTDPMass    = RegisterEquationInitialValue(Model, "Initial epilimnion TDP mass", Kg);
+	SetInitialValue(Model, EpilimnionTDPMass, InitialEpilimnionTDPMass);
+	auto InitialHypolimnionTDPMass    = RegisterEquationInitialValue(Model, "Initial hypolimnion TDP mass", Kg);
+	SetInitialValue(Model, HypolimnionTDPMass, InitialHypolimnionTDPMass);
 	
 	auto EpilimnionPPMass            = RegisterEquationODE(Model, "Epilimnion PP mass", Kg, LakeSolver);
-	auto EpilimnionPPConcentration   = RegisterEquation(Model, "Epilimnion PP concentration", MgPerL, LakeSolver);
+	auto HypolimnionPPMass           = RegisterEquationODE(Model, "Hypolimnion PP mass", Kg, LakeSolver);
 	auto LakePPFlux                  = RegisterEquation(Model, "Lake PP flux", MgPerL, LakeSolver);
 	auto DailyMeanLakePPFlux         = RegisterEquationODE(Model, "Daily mean lake PP flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakePPFlux);
 	auto EpilimnionHypolimnionPPFlux = RegisterEquation(Model, "Epilimnion-hypolimnion PP flux", KgPerDay, LakeSolver);
-	auto HypolimnionPPMass           = RegisterEquationODE(Model, "Hypolimnion PP mass", Kg, LakeSolver);
-	auto HypolimnionPPConcentration  = RegisterEquation(Model, "Hypolimnion PP concentration", MgPerL, LakeSolver);
 	auto HypolimnionPPSettling       = RegisterEquation(Model, "Hypolimnion PP settling", KgPerDay, LakeSolver);
+	auto EpilimnionPPConcentration   = RegisterEquation(Model, "Epilimnion PP concentration", MgPerL, LakeSolver);
+	auto HypolimnionPPConcentration  = RegisterEquation(Model, "Hypolimnion PP concentration", MgPerL, LakeSolver);
+	
+	auto InitialEpilimnionPPMass    = RegisterEquationInitialValue(Model, "Initial epilimnion PP mass", Kg);
+	SetInitialValue(Model, EpilimnionPPMass, InitialEpilimnionPPMass);
+	auto InitialHypolimnionPPMass    = RegisterEquationInitialValue(Model, "Initial hypolimnion PP mass", Kg);
+	SetInitialValue(Model, HypolimnionPPMass, InitialHypolimnionPPMass);
 	
 	auto EpilimnionTPConcentration   = RegisterEquation(Model, "Epilimnion TP concentration", MgPerL);
 	auto HypolimnionTPConcentration  = RegisterEquation(Model, "Hypolimnion TP concentration", MgPerL);
 	
 	auto EpilimnionDINMass           = RegisterEquationODE(Model, "Epilimnion DIN mass", Kg, LakeSolver);
-	auto EpilimnionDINConcentration  = RegisterEquation(Model, "Epilimnion DIN concentration", MgPerL, LakeSolver);
+	auto HypolimnionDINMass          = RegisterEquationODE(Model, "Hypolimnion DIN mass", Kg, LakeSolver);
 	auto LakeDINFlux                 = RegisterEquation(Model, "Lake DIN flux", MgPerL, LakeSolver);
 	auto DailyMeanLakeDINFlux        = RegisterEquationODE(Model, "Daily mean lake DIN flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeDINFlux);
 	auto EpilimnionDenitrification   = RegisterEquation(Model, "Epilimnion denitrification", KgPerDay, LakeSolver);
 	auto EpilimnionHypolimnionDINFlux= RegisterEquation(Model, "Epilimnion-hypolimnion DIN flux", KgPerDay, LakeSolver);
-	auto HypolimnionDINMass          = RegisterEquationODE(Model, "Hypolimnion DIN mass", Kg, LakeSolver);
-	auto HypolimnionDINConcentration = RegisterEquation(Model, "Hypolimnion DIN concentration", MgPerL, LakeSolver);
 	auto HypolimnionDINSettling      = RegisterEquation(Model, "Hypolimnion DIN settling", KgPerDay, LakeSolver);
 	auto HypolimnionDenitrification  = RegisterEquation(Model, "Hypolimnion denitrification", KgPerDay, LakeSolver);
+	auto EpilimnionDINConcentration  = RegisterEquation(Model, "Epilimnion DIN concentration", MgPerL, LakeSolver);
+	auto HypolimnionDINConcentration = RegisterEquation(Model, "Hypolimnion DIN concentration", MgPerL, LakeSolver);
 	
+	auto InitialEpilimnionDINMass    = RegisterEquationInitialValue(Model, "Initial epilimnion DIN mass", Kg);
+	SetInitialValue(Model, EpilimnionDINMass, InitialEpilimnionDINMass);
+	auto InitialHypolimnionDINMass    = RegisterEquationInitialValue(Model, "Initial hypolimnion DIN mass", Kg);
+	SetInitialValue(Model, HypolimnionDINMass, InitialHypolimnionDINMass);
 	
-	auto EpilimnionDOCPhotoMineralization = RegisterEquation(Model, "Epilimnion DOC photomineralization", KgPerDay, LakeSolver);
 	auto EpilimnionDOCMass           = RegisterEquationODE(Model, "Epilimnion DOC mass", Kg, LakeSolver);
-	auto EpilimnionDOCConcentration  = RegisterEquation(Model, "Epilimnion DOC concentration", MgPerL, LakeSolver);
-	auto EpilimnionTOCConcentration  = RegisterEquation(Model, "Epilimnion TOC concentration", MgPerL);
+	auto HypolimnionDOCMass          = RegisterEquationODE(Model, "Hypolimnion DOC mass", Kg, LakeSolver);
+	auto EpilimnionDOCPhotoMineralization = RegisterEquation(Model, "Epilimnion DOC photomineralization", KgPerDay, LakeSolver);
 	auto LakeDOCFlux                 = RegisterEquation(Model, "Lake DOC flux", MgPerL, LakeSolver);
 	auto DailyMeanLakeDOCFlux        = RegisterEquationODE(Model, "Daily mean lake DOC flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeDOCFlux);
 	auto EpilimnionHypolimnionDOCFlux= RegisterEquation(Model, "Epilimnion-hypolimnion DOC flux", KgPerDay, LakeSolver);
-	auto HypolimnionDOCMass          = RegisterEquationODE(Model, "Hypolimnion DOC mass", Kg, LakeSolver);
-	auto HypolimnionDOCConcentration = RegisterEquation(Model, "Hypolimnion DOC concentration", MgPerL, LakeSolver);
-	auto HypolimnionTOCConcentration = RegisterEquation(Model, "Hypolimnion TOC concentration", MgPerL);
-	auto HypolimnionDOCSettling      = RegisterEquation(Model, "Hypolimnion DOC settling", KgPerDay, LakeSolver);
 	
+	auto HypolimnionDOCSettling      = RegisterEquation(Model, "Hypolimnion DOC settling", KgPerDay, LakeSolver);
+	auto EpilimnionDOCConcentration  = RegisterEquation(Model, "Epilimnion DOC concentration", MgPerL, LakeSolver);
+	auto HypolimnionDOCConcentration = RegisterEquation(Model, "Hypolimnion DOC concentration", MgPerL, LakeSolver);
+	
+	auto InitialEpilimnionDOCMass    = RegisterEquationInitialValue(Model, "Initial epilimnion DOC mass", Kg);
+	SetInitialValue(Model, EpilimnionDOCMass, InitialEpilimnionDOCMass);
+	auto InitialHypolimnionDOCMass    = RegisterEquationInitialValue(Model, "Initial hypolimnion DOC mass", Kg);
+	SetInitialValue(Model, HypolimnionDOCMass, InitialHypolimnionDOCMass);
+	
+	auto EpilimnionTOCConcentration  = RegisterEquation(Model, "Epilimnion TOC concentration", MgPerL);
+	auto HypolimnionTOCConcentration = RegisterEquation(Model, "Hypolimnion TOC concentration", MgPerL);
 	
 	auto ThisIsALake = GetConditionalHandle(Model, "This is a lake");
 	SetConditional(Model, EpilimnionTPConcentration, ThisIsALake);
@@ -212,6 +244,46 @@ Currently in early development.
 		return upstreamflux;
 	)
 	
+	
+	EQUATION(Model, InitialEpilimnionSSMass,
+		return PARAMETER(InitialSSConc) * RESULT(EpilimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialHypolimnionSSMass,
+		return PARAMETER(InitialSSConc) * RESULT(HypolimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialEpilimnionTDPMass,
+		return PARAMETER(InitialTDPConc) * RESULT(EpilimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialHypolimnionTDPMass,
+		return PARAMETER(InitialTDPConc) * RESULT(HypolimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialEpilimnionPPMass,
+		return PARAMETER(InitialPPConc) * RESULT(EpilimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialHypolimnionPPMass,
+		return PARAMETER(InitialPPConc) * RESULT(HypolimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialEpilimnionDINMass,
+		return PARAMETER(InitialDINConc) * RESULT(EpilimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialHypolimnionDINMass,
+		return PARAMETER(InitialDINConc) * RESULT(HypolimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialEpilimnionDOCMass,
+		return PARAMETER(InitialDOCConc) * RESULT(EpilimnionVolume) * 1e-3;
+	)
+	
+	EQUATION(Model, InitialHypolimnionDOCMass,
+		return PARAMETER(InitialDOCConc) * RESULT(HypolimnionVolume) * 1e-3;
+	)
 	
 	
 	EQUATION(Model, EpilimnionSSMass,
