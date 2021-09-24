@@ -423,7 +423,7 @@ If you need a more complex setup than the one you can make here, we recommend th
 
 In the toolbar of the optimization setup window you can click buttons to save the current setup for future use, or load it again.
 
-\subsubsection{optimizer}
+\subsubsection{Optimizer}
 All the GOF statistics (section \ref{sec:gof}) are available for optimization. The statistics MAE and RMSE will be minimized, the others maximized. You can not mix targets that should be minimized with targets that should be maximized. All targets have to have an input comparison series for it to be able to evaluate the error of the modeled series compared to the observed series.
 
 You can set the maximal number of times the optimizer is allowed to evaluate the model. It will typically use all of these. The higher number, the better result, but also longer run time. The total time of the optimizer is roughly equal to the time to run one model multiplied with the number of evaluations (overhead of the algorithm is small in comparison).
@@ -452,7 +452,7 @@ The total effect index is
 \[
 S_{T_i} = \frac{E_{X_{\sim i}}(V_{X_i}(Y|X_{\sim i}))}{V(Y)}
 \]
-The total effect index measures both the first-order effect and the higher-order effects (interactions between parameter $i$ and others). In one has
+The total effect index measures both the first-order effect and the higher-order effects (interactions between parameter $i$ and others). In general one has
 \[
 \sum_{i=1}^n S_i \leq 1,\; \sum_{i=1}^n S_{T_i} \geq 1.
 \]

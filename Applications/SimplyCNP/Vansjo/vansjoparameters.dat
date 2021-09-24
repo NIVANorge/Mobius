@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-23 14:54:52
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2021-09-24 15:07:44
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -349,8 +349,8 @@ parameters:
 	"Epilimnion winter thickness" :     #(m) [0, 20]
 	5 5 3.1 4
 
-	"Epilimnion thickening rate" :     #(m/day) [0, 0.05] Empirical rate of how fast the thickness of the epilimnion grows during summer.
-	0.005 0.005 0.01 0.006
+	"Epilimnion thickening rate" :     #(m/day2) [0, 0.05] Empirical rate of how fast the thickness of the epilimnion grows during summer.
+	0 0 0.0001 0.0001
 
 	"Initial ice thickness" :     #(m) [0, 10]
 	0 0 0 0

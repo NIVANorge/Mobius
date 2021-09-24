@@ -59,11 +59,13 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 	auto M              = RegisterUnit(Model, "m");
 	auto M2             = RegisterUnit(Model, "m2");
 	auto M3             = RegisterUnit(Model, "m3");
+	auto Days           = RegisterUnit(Model, "days");
 	auto MPerS          = RegisterUnit(Model, "m/s");
 	auto M3PerS         = RegisterUnit(Model, "m3/s");
 	auto M3PerDay       = RegisterUnit(Model, "m3/day");
 	auto MmPerDay       = RegisterUnit(Model, "mm/day");
 	auto MPerDay        = RegisterUnit(Model, "m/day");
+	auto MPerDay2       = RegisterUnit(Model, "m/day2");
 	auto PerM           = RegisterUnit(Model, "1/m");
 	auto MPerM          = RegisterUnit(Model, "m/m");
 	auto Degrees        = RegisterUnit(Model, "°");
@@ -244,7 +246,7 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 	auto InitialBottomTemperature     = RegisterParameterDouble(Model, PhysParams, "Initial bottom temperature", DegreesCelsius, 4.0, 0.0, 50.0);
 	
 	auto EpilimnionWinterThickness = RegisterParameterDouble(Model, PhysParams, "Epilimnion winter thickness", M, 5.0, 0.0, 20.0);
-	auto EpilimnionThickeningRate     = RegisterParameterDouble(Model, PhysParams, "Epilimnion thickening rate", MPerDay, 0.005, 0.0, 0.05, "Empirical rate of how fast the thickness of the epilimnion grows during summer.");
+	auto EpilimnionThickeningRate     = RegisterParameterDouble(Model, PhysParams, "Epilimnion thickening rate", MPerDay2, 0.005, 0.0, 0.05, "Empirical rate of how fast the thickness of the epilimnion grows during summer.");
 	//auto InitialEpilimnionThickness   = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion thickness", M, 5.0, 0.0, 20.0);
 	
 	
@@ -291,6 +293,8 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 	SetInitialValue(Model, EpilimnionTemperature, InitialEpilimnionTemperature);
 	
 	auto MeanHypolimnionTemperature = RegisterEquation(Model, "Mean hypolimnion temperature", DegreesCelsius, LakeSolver);
+	
+	auto LastMixing          = RegisterEquation(Model, "Last mixing", Days, LakeSolver);
 	
 	auto InitialEpilimnionThickness = RegisterEquationInitialValue(Model, "Initial epilimnion thickness", M);
 	auto EpilimnionThickness = RegisterEquation(Model, "Epilimnion thickness", M, LakeSolver);
@@ -637,16 +641,28 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 		return PARAMETER(EpilimnionWinterThickness); //TODO: Should start relative to the day of year
 	)
 	
+	EQUATION(Model, LastMixing,
+		bool   ismix  = (bool)RESULT(IsMixing);
+		double prev   = LAST_RESULT(LastMixing);
+		if(ismix) return (double)CURRENT_TIME().DayOfYear;
+		return prev;
+	)
+	
 	EQUATION(Model, EpilimnionThickness,
 		bool   ismix      = (bool)RESULT(IsMixing);
 		double z_e_winter = PARAMETER(EpilimnionWinterThickness);
-		double dz         = PARAMETER(EpilimnionThickeningRate);
+		double dz0        = PARAMETER(EpilimnionThickeningRate);
 		double z_e_prev   = LAST_RESULT(EpilimnionThickness);		
 		double z_b        = LAST_RESULT(WaterLevel);
 		double T_e        = LAST_RESULT(EpilimnionTemperature);
 		double T_b        = LAST_RESULT(BottomTemperature);
 
 		double z_e = z_e_winter;
+		
+		double day = (double)CURRENT_TIME().DayOfYear;
+		double prevmix = RESULT(LastMixing);
+		
+		double dz = dz0*(1.0 + 2.0*(day - prevmix));
 		
 		if(!ismix && T_e > T_b)   // The last clause is to not get deepening in winter.
 			z_e = z_e_prev + dz;
