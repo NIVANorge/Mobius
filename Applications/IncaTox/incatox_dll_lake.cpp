@@ -24,7 +24,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("INCA-Tox + Lake");
+	mobius_model *Model = BeginModelDefinition("INCA-Tox + Lake", true);
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);
