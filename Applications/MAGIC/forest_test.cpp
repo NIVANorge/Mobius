@@ -18,8 +18,8 @@
 
 int main()
 {
-    const char *InputFile     = "forest_test_inputs.dat";
-	const char *ParameterFile = "forest_test_parameters2.dat";
+    const char *InputFile     = "Plesne/forest_PL_inputs.dat";
+	const char *ParameterFile = "Plesne/no_forest_parameters.dat";
 	
 	mobius_model *Model = BeginModelDefinition("MAGIC Forest", true, "1M");
 	
@@ -28,7 +28,7 @@ int main()
 	AddMagicCoreModel(Model);
 	AddMagicForestModule(Model);
 	AddMAGICForestDecompUptakeModel(Model);
-	AddSimpleMagicForestCNPModel(Model);
+	AddMagicForestCNPModel(Model);
 	
 	ReadInputDependenciesFromFile(Model, InputFile);
 	
@@ -40,7 +40,7 @@ int main()
     
 	ReadParametersFromFile(DataSet, ParameterFile);
 	
-	SetParameterValue(DataSet, "End date", {}, "1850-1-1");
+	//SetParameterValue(DataSet, "End date", {}, "1850-1-1");
 	//AllocateParameterStorage(DataSet);
 	//WriteParametersToFile(DataSet, "newparams.dat");
 

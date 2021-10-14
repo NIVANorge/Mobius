@@ -1,12 +1,12 @@
 
 
 static void
-AddSimpleMagicForestCNPModel(mobius_model *Model)
+AddMagicForestCNPModel(mobius_model *Model)
 {
 	
 	BeginModule(Model, "MAGIC Forest CNP", "_dev");
 	SetModuleDescription(Model, R""""(
-A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
+A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Bernard J. Cosby.
 )"""");
 
 	auto Dimensionless    = RegisterUnit(Model);
@@ -142,7 +142,6 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from tree decomposition");
 	
 	
-	
 	EQUATION(Model, InitialOrganicCScaled,
 		return PARAMETER(InitialOrganicC)*1000.0;
 	)
@@ -175,13 +174,10 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 		double steady = RESULT(OrganicCDecompositionEq) - RESULT(OrganicCInBiomass);
 		double uptake = (RESULT(DesiredNO3Uptake) + RESULT(DesiredNH4Uptake))*PARAMETER(LitterCNRatio);
 		
-		double fromtrees = RESULT(TotalTreeDecompCSource);
-		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) fromtrees = 0.0;
-		
 		double result = input;
 		if(type == 1) result = steady;
 		if(type == 2) result = uptake;
-		return result + fromtrees;
+		return result;// + fromtrees;
 	)
 	
 	EQUATION(Model, OrganicCDecompositionEq,
@@ -201,8 +197,12 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicC,
+		double forest = RESULT(TotalTreeDecompCSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
+	
 		double dCdt =
 			  RESULT(OrganicCLitterEq)
+			+ forest
 			- RESULT(OrganicCSolubilized)
 			- RESULT(OrganicCMineralized);
 		
@@ -224,7 +224,11 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, OrganicNMineralized,
-		return (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(NUseEfficiency)) * RESULT(OrganicNDecomposition);
+		double Value = (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(NUseEfficiency)) * RESULT(OrganicNDecomposition);
+		
+		if(CURRENT_TIMESTEP()==-1) Value = 0.0;  //NOTE: Stopgap because we don't compute uptake in the initial step to balance this..
+		
+		return Value;
 	)
 	
 	EQUATION(Model, DesiredNImmobilisation,
@@ -262,12 +266,18 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	
 	EQUATION(Model, DesiredNO3Uptake,
 		double treeuptake = RESULT(TotalTreeNUptake);
-		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) treeuptake = 0.0;        //Hmm, plantuptake should maybe also be 0. But trees could have deep roots ideally
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil) || CURRENT_TIMESTEP()==-1) treeuptake = 0.0;        //Hmm, plantuptake should maybe also be 0. But trees could have deep roots ideally
 		double plantuptake = RESULT(FractionOfYear) * PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
 		return (plantuptake + treeuptake) / (1.0 + PARAMETER(NH4UptakeScale));
 	)
 	
 	EQUATION(Model, DesiredNH4Uptake,
+	/*
+		double treeuptake = RESULT(TotalTreeNUptake);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil) || CURRENT_TIMESTEP()==-1) treeuptake = 0.0;        //Hmm, plantuptake should maybe also be 0. But trees could have deep roots ideally
+		double plantuptake = RESULT(FractionOfYear) * PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
+		return (plantuptake + treeuptake) * PARAMETER(NH4UptakeScale);
+	*/
 		return RESULT(DesiredNO3Uptake) * PARAMETER(NH4UptakeScale);
 	)
 	
@@ -276,9 +286,7 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	)
 	
 	EQUATION(Model, NH4Inputs,
-		double forest = RESULT(TotalTreeDecompNSource);
-		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
-		return RESULT(NH4BasicInputs) + RESULT(OrganicNMineralized) + forest;
+		return RESULT(NH4BasicInputs) + RESULT(OrganicNMineralized);
 	)
 	
 	
@@ -353,8 +361,12 @@ A CNP-module for MAGIC Forest. Developed by Bernard J. Cosby.
 	
 	
 	EQUATION(Model, OrganicN,
+		double forest = RESULT(TotalTreeDecompNSource);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
+	
 		double dNdt =
 			  RESULT(OrganicNLitter)
+			+ forest
 			- RESULT(OrganicNSolubilized)
 			- RESULT(OrganicNMineralized)
 			- RESULT(OrganicNUptake)

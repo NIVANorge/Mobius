@@ -48,13 +48,13 @@ INCA-Macroplastics is in early development
 	auto Bag                           = EnumValue(Model, LitterType, "Bag");
 	auto MargarineTub                  = EnumValue(Model, LitterType, "Margarine_tub");
 	auto PVCPiece                      = EnumValue(Model, LitterType, "PVC_piece");
-	
-	
+
 	auto ItemDim                       = RegisterParameterDouble(Model, ClassParameters, "Item major axis", Metres, 0.2, 0.0, 1.0);
+	auto PropensityToStayStuck         = RegisterParameterDouble(Model, ClassParameters, "Propensity to stay stuck", Dimensionless, 1.0, 0.0, 100.0, "Tuning parameter that makes it easier or harder for this item class to be remobilized");
 
 	auto ReachParameters      = RegisterParameterGroup(Model, "Reach characteristics", Reach);
 	
-	auto AverageCurvingRadius          = RegisterParameterDouble(Model, ReachParameters, "Average curving radius", Metres, 1000.0, 20.0, 1e10);
+	auto AverageCurvingRadius          = RegisterParameterDouble(Model, ReachParameters, "Average curving radius", Metres, 1000.0, 20.0, 1e10, "If the river is straight, just set this to a high number (e.g. 1e10)");
 	auto BankVegetationType            = RegisterParameterEnum(Model, ReachParameters, "Bank vegetation type", {"None", "Bushes", "Reeds", "Grass"}, "None");
 	auto BankVegetationDensity         = RegisterParameterDouble(Model, ReachParameters, "Bank vegetation density", Dimensionless, 0.0, 0.0, 1.0);
 	auto RiverVegetationType           = RegisterParameterEnum(Model, ReachParameters, "River vegetation type", {"None", "Reeds", "Mangrove"}, "None");
@@ -71,6 +71,7 @@ INCA-Macroplastics is in early development
 	ParameterIsComputedBy(Model, DragCoefficient, SetDragCoefficient, true);
 	
 	EQUATION(Model, SetDragCoefficient,
+		//NOTE: These values are just based on common values for shapes https://en.wikipedia.org/wiki/Drag_coefficient
 		auto type = PARAMETER(LitterType);
 		if(     type == OpenBottle)
 			return 0.85;         //TODO: get a good value here
@@ -119,13 +120,12 @@ INCA-Macroplastics is in early development
 	auto ReachShearStress = RegisterEquation(Model, "Reach shear stress", NPerM2, ReachSolver);
 	if(!Model->Parameters.Has("Shear stress coefficient"))
 	{
-		auto ReachParameters = RegisterParameterGroup(Model, "Reach shear stress", Reach);
 		auto ShearStressCoefficient = RegisterParameterDouble(Model, ReachParameters, "Shear stress coefficient", Dimensionless, 1.0, 0.01, 10.0, "Tuning parameter to account for the shear stress not being the same as in ideal conditions");
 		
 		EQUATION(Model, ReachShearStress,
 			double waterdensity = 1e3;
 			double earthsurfacegravity = 9.807;
-			return PARAMETER(ShearStressCoefficient) * PARAMETER(MeanChannelSlope) * RESULT(ReachHydraulicRadius) * earthsurfacegravity *waterdensity;
+			return PARAMETER(ShearStressCoefficient) * PARAMETER(MeanChannelSlope) * RESULT(ReachHydraulicRadius) * earthsurfacegravity * waterdensity;
 		)
 	}
 	
@@ -161,10 +161,14 @@ INCA-Macroplastics is in early development
 		double w    = PARAMETER(ReachBottomWidth);  //Or use the dynamic width
 		double C_DA = PARAMETER(DragCoefficient)*PARAMETER(DragArea);
 		
+		//NOTE: The following "attachment model" was made by sampling the result of solving an ODE system with a floating piece being transported down a river and seing if it hits the bank. It is probably not very realistic in non-ideal rivers.
+		// The values of 1000 and 50 are reference values that you tune against
+		// The value of 300 is a bit arbitrary (though determined-ish by the reference model). Could be a tuning parameter.
+		
 		double curvature = 1.0 / R;
 		double curv_contrib = 1.0;
-		if(!std::isfinite(curvature)) curv_contrib = std::min(100.0, curvature*1000.0);   //NOTE: Value of 100 is a bit arbitrary
-		double width_contrib = std::max(0.01, 1.0 - (w-50.0)/300.0);     //NOTE: Value of 0.01 and 300 is a bit arbitrary
+		if(!std::isfinite(curvature)) curv_contrib = std::min(curv_contrib, curvature*1000.0);
+		double width_contrib = std::max(0.01, 1.0 - (w-50.0)/300.0);
 		double drag_contrib = std::max(0.01, C_DA);
 		
 		return PARAMETER(BankAttachmentTuning)*curv_contrib*width_contrib*drag_contrib*RESULT(FloatingLitter);
@@ -181,8 +185,7 @@ INCA-Macroplastics is in early development
 	)
 	
 	EQUATION(Model, BankDetachmentRate,
-		double threshold = PARAMETER(DetachmentThresholdBase);
-		if(PARAMETER(LitterType) == Bag) threshold *= 5.0;       //    NOTE: value is currently not well-founded
+		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck);
 		double threshold2 = threshold * ThresholdModBank[(int)PARAMETER(BankVegetationType)];
 		threshold = threshold + (threshold2 - threshold)*PARAMETER(BankVegetationDensity);
 		
@@ -203,7 +206,7 @@ INCA-Macroplastics is in early development
 	)
 	
 	
-	double ThresholdModRiver[4] = {0.0, 1.5, 1.2}; // none, reeds, mangrove..  //TODO: arbitrary numbers...
+	double ThresholdModRiver[4] = {0.0, 1.5, 0.1}; // none, reeds, mangrove..  //TODO: arbitrary numbers...
 	
 	EQUATION(Model, RiverVegDragForce,
 		double waterdensity = 1e3;
@@ -214,8 +217,7 @@ INCA-Macroplastics is in early development
 	)
 	
 	EQUATION(Model, RiverVegDetachment,
-		double threshold = PARAMETER(DetachmentThresholdBase);
-		if(PARAMETER(LitterType) == Bag) threshold *= 50.0;       //   NOTE: value is currently not well-founded
+		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck);
 		double threshold2 = threshold * ThresholdModRiver[(int)PARAMETER(RiverVegetationType)];
 		threshold = threshold + (threshold2 - threshold)*PARAMETER(RiverVegetationDensity);
 		
@@ -224,10 +226,10 @@ INCA-Macroplastics is in early development
 	)
 	
 	// open bottle, capped bottle, bag, margarine tub, pvc piece
-	double HardnessMod[5] = { 1.0, 1.0, 0.3, 0.7, 2.0 };          // NOTE: value is currently not well-founded
+	double HardnessMod[5] = { 1.0, 1.0, 0.3, 0.7, 2.0 };          // NOTE: value is loosely based on hardness of plastic types.
 	
 	
-	//TODO: Torn bags are still macroplastic, they should really go in a separate category of less-attachable bags.
+	//TODO: Torn bags are still macroplastic, they should really go in a separate category of less-attachable bags rather than being removed as microplastic.
 	
 	EQUATION(Model, BankLitterBreakdown,
 		u64 type = PARAMETER(LitterType);

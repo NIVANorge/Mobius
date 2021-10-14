@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyQ, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1) at 2021-08-19 14:26:56
+# Parameter file generated for model SimplyQ, containing modules (Degree-day PET V0.1, SimplyQ V0.4.1) at 2021-10-07 11:54:06
 
 index_sets:
 "Landscape units" : {"Arable" "Improved grassland" "Semi-natural"}
@@ -20,10 +20,10 @@ parameters:
 	# Potential evapotranspiration ("Landscape units") #
 
 	"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
-	0.12 0.12 0.12
+	0.157259860661406 0.157259860661406 0.157259860661406
 
 	"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
-	0 0 0
+	-1.31696713783918 -1.31696713783918 -1.31696713783918
 
 
 } # end of module "Degree-day PET"
@@ -36,22 +36,22 @@ parameters:
 	0
 
 	"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
-	2.74
+	1.5325818297552
 
 
 	# Hydrology (no index sets) #
 
 	"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
-	0.02
+	0.0276368121315009
 
 	"Soil field capacity" :     #(mm) [0, 1000] 
 	290
 
 	"Baseflow index" :     #(dimensionless) [0, 1] 
-	0.7
+	0.72561797005751
 
 	"Groundwater time constant" :     #(days) [0.5, 400] 
-	65
+	42.0212181491907
 
 	"Minimum groundwater flow" :     #(mm/day) [0, 10] 
 	0
@@ -68,7 +68,7 @@ parameters:
 	"Reach length" :     #(m) [0, 10000000] This is divided by two for headwater reaches in the model to calculate the average reach length travelled by water. If this is inappropriate for your headwater reach, adjust this parameter accordingly
 	10000
 
-	"Reach slope" :     #(m/m) [1e-005, 3]
+	"Reach slope" :     #(m/m) [1e-05, 3]
 	0.014
 
 
@@ -81,7 +81,7 @@ parameters:
 	# Hydrology land ("Landscape units") #
 
 	"Soil water time constant" :     #(days) [0.01, 40] 
-	1 1 10
+	1.79252221693565 1.79252221693565 6.50883859529964
 
 
 	# Land cover ("Reaches" "Landscape units") #

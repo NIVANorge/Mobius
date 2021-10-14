@@ -7,7 +7,7 @@
 static void
 AddMAGICForestDecompUptakeModel(mobius_model *Model)
 {
-	BeginModule(Model, "MAGIC Forest decomposition and uptake", "0.0");
+	BeginModule(Model, "MAGIC Forest decomposition and uptake", "0.001");
 	
 	auto Dimensionless   = RegisterUnit(Model);
 	auto TPerHa          = RegisterUnit(Model, "tonnes/Ha");
@@ -56,7 +56,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
-	auto InitialDeadTreeMass  = RegisterParameterDouble(Model, TreeDecomp, "Initial dead tree mass", TPerHa, 0.0, 0.0, 10000.0);
+	//auto InitialDeadTreeMass  = RegisterParameterDouble(Model, TreeDecomp, "Initial dead tree mass", TPerHa, 0.0, 0.0, 10000.0);
 	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100000.0);
 	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100000.0);
 	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MMolPerKg, 0.0, 0.0, 100000.0);
@@ -100,15 +100,13 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TotalTreeMgUptake    = RegisterEquationCumulative(Model, "Total tree Mg uptake", TotalTreeMgUptakeSpecies, TreeClass);
 	auto TotalTreeNaUptake    = RegisterEquationCumulative(Model, "Total tree Na uptake", TotalTreeNaUptakeSpecies, TreeClass);
 	auto TotalTreeKUptake     = RegisterEquationCumulative(Model, "Total tree K uptake", TotalTreeKUptakeSpecies, TreeClass);
-	
-	
 
 	auto LeftOnGroundByDisturbance = RegisterEquation(Model, "Tree mass left on ground by disturbance", TPerHa);
 	auto TotalLeftOnGroundByDisturbance = RegisterEquationCumulative(Model, "Tree mass left on ground by disturbance averaged over forest patches", LeftOnGroundByDisturbance, ForestPatch, PatchArea);
 	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree mass", TPerHa);
 	auto DeadTreeDecomp       = RegisterEquation(Model, "Dead tree decomposition", TPerHaPerTs);
 	
-	//TODO: Should maybe just steady-state this instead?
+	auto InitialDeadTreeMass  = RegisterEquationInitialValue(Model, "Initial dead tree mass", TPerHa);
 	SetInitialValue(Model, DeadTreeMass, InitialDeadTreeMass);
 	
 	auto TreeDecompCSource    = RegisterEquation(Model, "C source from tree decomposition", MMolPerM2PerTs);
@@ -178,7 +176,8 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		double in = INPUT(TreeTurnover);
 		double share = RESULT(CompartmentShare);
 	
-		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), 1.0/12.0);  //NOTE: Turn 1/year to 1/month
+		double invdt = RESULT(FractionOfYear);
+		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), invdt);  //NOTE: Turn 1/year to 1/month
 		double computed = r * share * RESULT(LiveTreeMass); //NOTE: Is based on current-timestep so that trees that are harvested are not counted for turnover. But does that mean that it is counted doubly in compartmentgrowth below?
 		
 		if(std::isfinite(in)) return in * share;
@@ -213,9 +212,26 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		return RESULT(CompartmentGrowthSummed) * PARAMETER(TreeKConc) * 0.1;  // Convert   tonne/Ha -> kg/m2
 	)
 	
-	
 	EQUATION(Model, DeadTreeDecomp,
 		return LAST_RESULT(DeadTreeMass) * (1.0 - std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)));
+	)
+	
+	EQUATION(Model, InitialDeadTreeMass,
+		double invdt = RESULT(FractionOfYear);
+		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), invdt);
+		double share = PARAMETER(ShareOfOld);  //NOTE: Hmm, should be the interpolated one, but can't access it!
+		
+		//NOTE: Again, we can't use result of cumulative equations in initial value computations for some reason.
+		double turnoveravg = 0.0;
+		for(index_t Patch = FIRST_INDEX(ForestPatch); Patch < INDEX_COUNT(ForestPatch); ++Patch)
+		{
+			double turnover = PARAMETER(InitialTreeMass, Patch, CURRENT_INDEX(TreeClass));
+			turnoveravg += PARAMETER(PatchArea, Patch) * turnover;
+		}
+		
+		turnoveravg *= (r * share);
+		
+		return turnoveravg / (1.0 - std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)));
 	)
 	
 	EQUATION(Model, LeftOnGroundByDisturbance,

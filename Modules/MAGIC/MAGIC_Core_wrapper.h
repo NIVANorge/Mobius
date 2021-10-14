@@ -243,6 +243,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto Log10NaAlSelectCoeff      = RegisterEquation(Model, "(log10) Na/Al exchange selectivity coefficient", Dimensionless);
 	auto Log10KAlSelectCoeff       = RegisterEquation(Model, "(log10) K/Al exchange selectivity coefficient", Dimensionless);
 	
+	constexpr double MinInitConc = 1e-6;   //NOTE: To safeguard against numerical errors.
 
 	EQUATION(Model, InitialConcCa,
 		//double val = (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
@@ -250,53 +251,55 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		//WarningPrint("Initial discharge ", RESULT(Discharge));
 		//return val;
 		//WarningPrint("Ca input ", RESULT(CaInput), "\n");
+		//std::cout <<"external: "<< RESULT(CaExternalFlux)<<"\n";
+		
 		double Value = (RESULT(CaExternalFlux) + RESULT(CaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcMg,
 		double Value = (RESULT(MgExternalFlux) + RESULT(MgInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcNa,
 		double Value = (RESULT(NaExternalFlux) + RESULT(NaInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcK,
 		double Value = (RESULT(KExternalFlux) + RESULT(KInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcNH4,
 		double Value = (RESULT(NH4ExternalFlux) + RESULT(NH4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcAllSO4,
 		double Value = (RESULT(SO4ExternalFlux) + RESULT(SO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcCl,
 		double Value = (RESULT(ClExternalFlux) + RESULT(ClInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcNO3,
 		double Value = (RESULT(NO3ExternalFlux) + RESULT(NO3Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, MinInitConc);
 	)
 	
 	EQUATION(Model, InitialConcAllF,
 		double Value = (RESULT(FExternalFlux) + RESULT(FInput)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, 1e-10);
 	)
 	
 	EQUATION(Model, InitialConcPO4,
 		double Value = (RESULT(PO4ExternalFlux) + RESULT(PO4Input)) / (RESULT(Discharge) / PARAMETER(RelativeArea)); // Assume initial steady state
-		return std::max(Value, 1e-6);
+		return std::max(Value, 1e-10);
 	)
 	
 	EQUATION(Model, InitialCa,

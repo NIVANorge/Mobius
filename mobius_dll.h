@@ -287,6 +287,22 @@ DllGetStartDate(void *DataSetPtr, char *WriteTo)
 	CHECK_ERROR_END
 }
 
+DLLEXPORT void
+DllGetNextStartDate(void *DataSetPtr, char *WriteTo)
+{
+	CHECK_ERROR_BEGIN
+	//IMPORTANT: This assumes that WriteTo is a char* buffer that is long enough (i.e. at least 30-ish bytes)
+	//IMPORTANT: This is NOT thread safe since TimeString is not thread safe.
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	datetime StartDate = GetStartDate(DataSet);
+	const char *TimeStr = StartDate.ToString();
+	strcpy(WriteTo, TimeStr);
+	
+	CHECK_ERROR_END
+}
+
+
 DLLEXPORT timestep_size
 DllGetTimestepSize(void *DataSetPtr)
 {

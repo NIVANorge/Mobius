@@ -1050,15 +1050,18 @@ EndModelDefinition(mobius_model *Model)
 		Model->Equations[Eq].TempVisited = false;
 	}
 	
-	array<size_t> EquationBelongsToBatchGroup(&TemporaryBucket, Model->Equations.Count());
+	array<s64> EquationBelongsToBatchGroup(&TemporaryBucket, Model->Equations.Count());
+	for(size_t Idx = 0; Idx < Model->Equations.Count(); ++Idx)
+		EquationBelongsToBatchGroup[Idx] = -1;
 	
 	//NOTE: Sort the order of initial value equations in the batch group.
 	//Also store references about batch group belonging for later.
+	std::vector<std::vector<equation_h>> InitialValueOrders(Model->BatchGroups.Count);
 
-	size_t BatchGroupIdx = 0;
+	s64 BatchGroupIdx = 0;
 	for(equation_batch_group &Group : Model->BatchGroups)
 	{
-		std::vector<equation_h> InitialValueOrder;
+		std::vector<equation_h> &InitialValueOrder = InitialValueOrders[BatchGroupIdx];
 		for(size_t BatchIdx = Group.FirstBatch; BatchIdx <= Group.LastBatch; ++BatchIdx)
 		{
 			equation_batch &Batch = Model->EquationBatches[BatchIdx];
@@ -1068,9 +1071,7 @@ EndModelDefinition(mobius_model *Model)
 			{
 				equation_spec &Spec = Model->Equations[Equation];
 				if(IsValid(Spec.InitialValueEquation) || IsValid(Spec.InitialValue) || Spec.HasExplicitInitialValue) //NOTE: We only care about equations that have an initial value (or that are depended on by an initial value equation, but they are added recursively inside the topological sort below)
-				{
 					InitialValueOrder.push_back(Equation);
-				}
 				return false;
 			});
 			
@@ -1082,7 +1083,7 @@ EndModelDefinition(mobius_model *Model)
 			});
 		}
 		
-		//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A is before batch group B. If we want to allow this, we need a completely separate batch structure for the initial value equations.... Hopefully that won't be necessary.
+		//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A != B. If we want to allow this, we need a completely separate batch structure for the initial value equations....
 		//TODO: We should report an error if that happens!
 
 #if 0		
@@ -1097,11 +1098,38 @@ EndModelDefinition(mobius_model *Model)
 		std::cout << "***************** Initial value order post\n";
 		for(equation_h Equation : InitialValueOrder)
 			std::cout << GetName(Model, Equation) << "\n";
-#endif	
-	
-		Group.InitialValueOrder.CopyFrom(&Model->BucketMemory, InitialValueOrder);
+#endif
+
+		//TODO: This fixup is not entirely failsafe because two equations that are removed could have an out-of-order dependency
+		// on one another that is now not detected. We should instead rewrite the initial value system to have its own batch group structure!
+		/*
+		std::vector<equation_h> ToRemove;
+		
+		for(auto Equation : InitialValueOrder)
+		{
+			s64 BelongsTo = EquationBelongsToBatchGroup[Equation.Handle];
+			if(Model->Equations[Equation].Type != EquationType_InitialValue && BelongsTo != BatchGroupIdx)
+			{
+				ToRemove.push_back(Equation);
+				//WarningPrint("WARNING: An equation has an initial value dependency to an equation that is in a different batch group. That will currently not work correctly!\n");
+				//TODO: The warning should say what depends on what.
+			}
+		}
+		
+		for(equation_h Eq : ToRemove)
+		{
+			auto It = std::find(InitialValueOrder.begin(), InitialValueOrder.end(), Eq);
+			InitialValueOrder.erase(It);
+		}
+		*/
+		
 		++BatchGroupIdx;
 	}
+	
+	for(s64 BatchGroupIdx = 0; BatchGroupIdx < Model->BatchGroups.Count; ++BatchGroupIdx)
+		Model->BatchGroups[BatchGroupIdx].InitialValueOrder.CopyFrom(&Model->BucketMemory, InitialValueOrders[BatchGroupIdx]);
+	
+	InitialValueOrders.clear();
 	
 	///////////////// Find out which parameters, results and last_results that need to be hotloaded into the CurParameters, CurInputs etc. buffers in the model_run_state at each iteration stage during model run. /////////////////
 	
@@ -1689,9 +1717,9 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 	if(CurrentLevel >= 0)
 	{
 		index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-		for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+		for(int Lev = 0; Lev < CurrentLevel; ++Lev) WarningPrint("\t");
 		index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
-		std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
+		WarningPrint("*** ", GetName(Model, CurrentIndexSet), ": ", DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex], "\n");
 	}
 #endif
 	
@@ -1702,8 +1730,8 @@ INNER_LOOP_BODY(InitialValueSetupInnerLoop)
 		{
 			double Initial = SetupInitialValue(DataSet, RunState, Equation);
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-			for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-			std::cout << "\t" << GetName(Model, Equation) << " = " << Initial << std::endl;
+			for(int Lev = 0; Lev < CurrentLevel; ++Lev) WarningPrint("\t");
+			WarningPrint("\t", GetName(Model, Equation), " = ", Initial, "\n");
 #endif
 		}
 		

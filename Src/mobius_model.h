@@ -1228,11 +1228,11 @@ SetInitialValue(mobius_model *Model, equation_h Equation, equation_h InitialValu
 {
 	REGISTRATION_BLOCK(Model)
 	equation_type Type = Model->Equations[InitialValueEquation].Type;
-	if(Type != EquationType_InitialValue && Type != EquationType_Basic)
+	if(Type != EquationType_InitialValue && Type != EquationType_Basic && Type != EquationType_Cumulative)
 	{
 		PrintRegistrationErrorHeader(Model);
 		//NOTE: We found out that sometimes we want the ability to force an equation to be its own initial value equation. So we also allow basic equations
-		FatalError("ERROR: Tried to set the equation \"", GetName(Model, InitialValueEquation), "\" as an initial value of another equation, but it was not registered as an equation of type EquationInitialValue or Equation.\n");
+		FatalError("ERROR: Tried to set the equation \"", GetName(Model, InitialValueEquation), "\" as an initial value of another equation, but it was not registered as an equation of type Cumulative, InitialValue or Equation.\n");
 	}
 	
 	Model->Equations[Equation].InitialValueEquation = InitialValueEquation;

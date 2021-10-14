@@ -969,7 +969,7 @@ MagicCoreInitial(const magic_init_input &Input, const magic_param &Param, magic_
 		Result.Log10NaAlSelectCoeff = Ratio + 3.0*log10(Input.conc_Na / Input.exchangeable_Na)     - 12.0;
 		Result.Log10KAlSelectCoeff  = Ratio + 3.0*log10(Input.conc_K / Input.exchangeable_K)       - 12.0;
 		
-		//WarningPrint("Ca-Al was ", Result.Log10CaAlSelectCoeff, " Ratio was ", Ratio, " conc ", Input.conc_Ca, "\n");
+		//WarningPrint("H: ", Result.conc_H, "    Ca-Al: ", Result.Log10CaAlSelectCoeff, "     Ratio: ", Ratio, "     conc Ca: ", Input.conc_Ca, "\n");
 		
 		// If SO4 adsorption, calculate fraction of adsorption capacity filled (convert mmol to meq for adsorption isotherm)
 		Result.exchangeable_SO4 = 0.0;

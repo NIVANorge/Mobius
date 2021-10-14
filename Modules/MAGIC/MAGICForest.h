@@ -34,8 +34,12 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	auto PartialPressureCO2Par   = RegisterParameterDouble(Model, Climate, "CO2 partial pressure", Percent, 0.3, 0.1, 2.0, "Default value for timesteps where no input series value is provided");
 	auto OAConcentrationPar      = RegisterParameterDouble(Model, Climate, "Organic acid concentration", MMolPerM3, 0.0, 0.0, 200.0, "Default value for timesteps where no input series value is provided", "OA");
+	auto ComputeOAConc           = RegisterParameterBool(Model, Climate, "Adjust OA concentration based on SO4 concentration", false);
+	auto OAConcSO4Scale          = RegisterParameterDouble(Model, Climate, "Reduction in OA by SO4", Dimensionless, 0.0, 0.0, 10.0);
 	auto MinCompartmentTemp      = RegisterParameterDouble(Model, Climate, "Minimal compartment temperature", DegreesCelsius, 0.0, -10.0, 10.0);
 	auto ThisIsATopCompartment   = RegisterParameterBool(Model, Climate, "This is a top compartment", true, "True if it receives deposition. Also, if it interacts with the forest module");
+	
+	
 	
 	auto Weathering              = RegisterParameterGroup(Model, "Weathering", Compartment);
 	
@@ -123,6 +127,8 @@ Forest growth driver module developed as part of the CatchCAN project.
 	// From the core wrapper:
 	auto IsSoil                  = GetParameterBoolHandle(Model, "This is a soil compartment");
 	
+	auto ConcSO4                 = GetEquationHandle(Model, "SO4(2-) ionic concentration");
+	
 
 	
 	EQUATION(Model, FractionOfYear,
@@ -139,6 +145,12 @@ Forest growth driver module developed as part of the CatchCAN project.
 	EQUATION(Model, OAConcentration,
 		double par = PARAMETER(OAConcentrationPar);
 		double in = INPUT(OAConcentrationIn);
+		
+		bool compute = PARAMETER(ComputeOAConc);
+		double so4factor = PARAMETER(OAConcSO4Scale);
+		double so4 = LAST_RESULT(ConcSO4);
+		if(compute) par -= so4*so4factor;
+		
 		if(std::isfinite(in)) return in;
 		return par;
 	)
@@ -213,7 +225,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	EQUATION(Model, KExternalFlux,
 		double deposition = INPUT(KDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering);
-		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeKUptake);
+		double forest     = RESULT(TotalTreeDecompKSource) - RESULT(TotalTreeKUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
 		if(!PARAMETER(IsSoil)) forest = 0.0;
 		return deposition + weathering + forest;

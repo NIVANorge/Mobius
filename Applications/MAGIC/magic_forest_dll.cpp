@@ -4,16 +4,14 @@
 #define MOBIUS_TEST_FOR_NAN 1
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
-#define MOBIUS_INDEX_BOUNDS_TESTS 0
+#define MOBIUS_INDEX_BOUNDS_TESTS 1
 
 #include "../../mobius_dll.h"
 
 #include "../../Modules/MAGIC/MAGIC_Core_Wrapper.h"
 #include "../../Modules/MAGIC/MagicForestDecompUptake.h"
 #include "../../Modules/MAGIC/MAGICForest.h"
-//#include "../../Modules/MAGIC/WASMOD.h"
 #include "../../Modules/MAGIC/ABCD.h"
-//#include "../../Modules/MAGIC/MAGIC_CarbonNitrogen.h"
 #include "../../Modules/MAGIC/MagicForestCNP.h"
 
 
@@ -27,7 +25,7 @@ DllBuildModel()
 	AddMagicCoreModel(Model);
 	AddMagicForestModule(Model);
 	AddMAGICForestDecompUptakeModel(Model);
-	AddSimpleMagicForestCNPModel(Model);
+	AddMagicForestCNPModel(Model);
 	
 
 	return Model;

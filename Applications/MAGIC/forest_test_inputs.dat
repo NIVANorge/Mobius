@@ -31,13 +31,11 @@ inputs:
 2010-6-1    0.8
 
 
-"Biomass left on ground after disturbance" {"Needles"}:
+"Biomass left on ground after disturbance" {"Needles"} {"Branch"} {"Roots"}:
 1970-6-1    1
 2010-6-1    1
 
-"Biomass left on ground after disturbance" {"Branches+roots"} :
-1970-6-1    1
-2010-6-1    1
+
 
 "Precipitation" :
 1850-01-01	155.255
