@@ -1,10 +1,10 @@
-# Parameter file generated for model INCA-Microplastics, containing modules (PERSiST V1.4, INCA water temperature V1.0, INCA-Microplastics V0.12) at 2021-10-14 14:42:02
+# Parameter file generated for model INCA-Microplastics, containing modules (PERSiST V1.4, INCA water temperature V1.0, INCA-Microplastics V0.12) at 2021-10-19 10:34:45
 
 index_sets:
 "Landscape units" : {"All"}
 "Soils" : {"Direct runoff" "Soil water" "Groundwater"}
 "Reaches" : {"Kure"}
-"Grain class" : {"Frag1" "Frag2"}
+"Grain class" : {"Frag1" "Frag2" "Fib1"}
 
 parameters:
 
@@ -154,7 +154,7 @@ parameters:
 	# Percolation ("Landscape units" "Soils" "Soils") #
 
 	"Percolation matrix" :     #(dimensionless) [0, 1] The fraction of runoff that goes from one box to another
-	8.55475263539843e-05 0.999914452473649 0
+	8.55475263539843e-05 0.99991445247365 0
 	1 0.754003987282043 0.245996012717957
 	1 0 1
 
@@ -212,19 +212,19 @@ parameters:
 	# Grain class ("Grain class") #
 
 	"Shape type" :     # [Fragment, Fiber]
-	Fragment Fragment
+	Fragment Fragment Fiber
 
 	"Smallest major diameter of grain in class" :     #(m) [0, 2000]
-	1e-06 1e-06
+	1e-06 1e-06 1e-06
 
 	"Largest major diameter of grain in class" :     #(m) [0, 2000]
-	1e-05 1e-05
+	1e-05 1e-05 0.0001
 
 	"Ratio of major to minor diameter" :     #(dimensionless) [1, 1000]
-	1 1
+	1 1 20
 
 	"Density of grain class" :     #(kg/m3) [-1.79769313486232e+308, 1.79769313486232e+308]
-	1001 1300
+	1001 1380 1380
 
 
 	# Erosion by land class ("Landscape units") #
@@ -247,24 +247,30 @@ parameters:
 	"Splash detachment scaling factor" :     #(kg/m3) [0, 1] Particle class specific splash detachment behaviour
 	0.001
 	0.001
+	0.001
 
 	"Flow erosion potential" :     #(dimensionless) [0, 1000] Particle class specific flow erosion scaling
+	1
 	1
 	1
 
 	"Grain infiltration rate" :     #(1/day) [0, 1] The rate at which particles infiltrate from the surface store to the immobile store
 	0.3
 	0.3
+	0.3
 
 	"Initial surface grain store" :     #(kg/km2) [0, 10000000000]
+	0
 	0
 	0
 
 	"Initial immobile grain store" :     #(kg/km2) [0, 10000000000]
 	0
 	0
+	0
 
 	"Grain input to land" :     #(kg/km2/day) [0, 10000000000] Is overridden by the time series of the same name if it is provided
+	1
 	1
 	1
 
@@ -272,12 +278,14 @@ parameters:
 	# Transfer matrix ("Grain class" "Grain class") #
 
 	"Mass transfer rate between classes on land" :     #(1/day) [0, 1]
-	0 0
-	0 0
+	0 0 0
+	0 0 0
+	0 0 0
 
 	"Mass transfer rate between classes in the reach" :     #(dimensionless) [0, 1]
-	0 0
-	0 0
+	0 0 0
+	0 0 0
+	0 0 0
 
 
 	# Grain characteristics by subcatchment ("Grain class" "Reaches") #
@@ -285,16 +293,20 @@ parameters:
 	"Effluent grain concentration" :     #(mg/L) [0, 1000] Mass concentration of this type of particle in effluent input flow
 	0
 	0
+	0
 
 	"Initial mass of bed grain per unit area" :     #(kg/m2) [0, 1000]
+	0
 	0
 	0
 
 	"Initial suspended grain mass" :     #(kg) [0, 100000000]
 	0
 	0
+	0
 
 	"Constant grain deposition to reach" :     #(kg/day) [0, 1000000] Direct deposition to the reach not depending on erosion
+	0
 	0
 	0
 
