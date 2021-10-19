@@ -14,7 +14,7 @@ parameters:
 2004-01-01
 
 "Timesteps" :     #(days) [0, 18446744073709551615]
-1500
+730
 
 
 { module "PERSiST" version "1.4"
