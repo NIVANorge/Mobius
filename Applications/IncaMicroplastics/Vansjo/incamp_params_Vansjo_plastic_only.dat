@@ -224,7 +224,7 @@ parameters:
 	1 1 20
 
 	"Density of grain class" :     #(kg/m3) [-1.79769313486232e+308, 1.79769313486232e+308]
-	1001 1380 1380
+	1001 1300 1300
 
 
 	# Erosion by land class ("Landscape units") #
