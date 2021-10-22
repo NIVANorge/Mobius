@@ -4,7 +4,7 @@ static void
 AddMagicForestCNPModel(mobius_model *Model)
 {
 	
-	BeginModule(Model, "MAGIC Forest CNP", "_dev");
+	BeginModule(Model, "MAGIC Forest CNP", "_dev_2");
 	SetModuleDescription(Model, R""""(
 A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Bernard J. Cosby.
 )"""");
@@ -20,23 +20,19 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto CNPPar                    = RegisterParameterGroup(Model, "C, N, and P", Compartment);
 	
 	
-	auto OrganicCLitter               = RegisterParameterDouble(Model, CNPPar, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	auto ComputeCLitterUsing          = RegisterParameterEnum(Model, CNPPar, "Compute C litter using", {"input", "steady_state", "scale_to_uptake"}, "input");
-	auto OrganicCDecompositionR0      = RegisterParameterDouble(Model, CNPPar, "Organic C decomposition at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	auto OrganicCDecompositionQ10     = RegisterParameterDouble(Model, CNPPar, "Decomposition Q10", Dimensionless, 1.0, 1.0, 5.0);
-	auto Solubilization               = RegisterParameterDouble(Model, CNPPar, "Solubilization", Dimensionless, 0.0, 0.0, 1.0, "Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.");
-	auto CUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "C use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic C that becomes biomass and is returned to the organic C pool. The rest is mineralized/respired as CO2.");
+	//auto OrganicCLitter               = RegisterParameterDouble(Model, CNPPar, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	//auto ComputeCLitterUsing          = RegisterParameterEnum(Model, CNPPar, "Compute C litter using", {"input", "steady_state", "scale_to_uptake"}, "input");
+	//auto OrganicCDecompositionR0      = RegisterParameterDouble(Model, CNPPar, "Organic C decomposition at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1e6);
+	//auto OrganicCDecompositionQ10     = RegisterParameterDouble(Model, CNPPar, "Decomposition Q10", Dimensionless, 1.0, 1.0, 5.0);
+	
 	auto NUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "N use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic N that becomes biomass and is returned to the organic N pool. The rest is mineralized as NH4.");
 	auto PUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "P use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic P that becomes biomass and is returned to the organic P pool. The rest is mineralized as PO4.");
 	
-
-	auto LitterCNRatio                = RegisterParameterDouble(Model, CNPPar, "C/N ratio of litter", Dimensionless, 0.1, 0.0001, 10.0);
+	//auto LitterCNRatio                = RegisterParameterDouble(Model, CNPPar, "C/N ratio of litter", Dimensionless, 0.1, 0.0001, 10.0);
 	auto MicrobeCNRatio               = RegisterParameterDouble(Model, CNPPar, "C/N ratio of soil microbial community", Dimensionless, 0.1, 0.0001, 10.0);
-	
-	auto LitterCPRatio                = RegisterParameterDouble(Model, CNPPar, "C/P ratio of litter", Dimensionless, 0.1, 0.0001, 10.0);
+	//auto LitterCPRatio                = RegisterParameterDouble(Model, CNPPar, "C/P ratio of litter", Dimensionless, 0.1, 0.0001, 10.0);
 	auto MicrobeCPRatio               = RegisterParameterDouble(Model, CNPPar, "C/P ratio of soil microbial community", Dimensionless, 0.1, 0.0001, 10.0);
 	
-	auto InitialOrganicC              = RegisterParameterDouble(Model, CNPPar, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8);
 	auto InitialOrganicN              = RegisterParameterDouble(Model, CNPPar, "Initial organic N", MolPerM2, 0.0, 0.0, 1e8);
 	auto InitialOrganicP              = RegisterParameterDouble(Model, CNPPar, "Initial organic P", MolPerM2, 0.0, 0.0, 1e8);
 
@@ -55,9 +51,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 
 
 
-	auto InitialOrganicCScaled     = RegisterEquationInitialValue(Model, "Initial organic C", MMolPerM2);
-	auto OrganicC                  = RegisterEquation(Model, "Organic C", MMolPerM2);
-	SetInitialValue(Model, OrganicC, InitialOrganicCScaled);
+	//auto InitialOrganicCScaled     = RegisterEquationInitialValue(Model, "Initial organic C", MMolPerM2);
+	//auto OrganicC                  = RegisterEquation(Model, "Organic C", MMolPerM2);
+	//SetInitialValue(Model, OrganicC, InitialOrganicCScaled);
 	
 	auto InitialOrganicNScaled     = RegisterEquationInitialValue(Model, "Initial organic N", MMolPerM2);
 	auto OrganicN                  = RegisterEquation(Model, "Organic N", MMolPerM2);
@@ -71,13 +67,14 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto CPRatio                   = RegisterEquation(Model, "Pool C/P ratio", Dimensionless);
 
 	
-	auto OrganicCLitterEq         = RegisterEquation(Model, "Organic C litter", MMolPerM2PerTs);
-	auto OrganicCDecompositionEq  = RegisterEquation(Model, "Organic C decomposition", MMolPerM2PerTs);
-	auto OrganicCSolubilized      = RegisterEquation(Model, "Organic C solubilized", MMolPerM2PerTs);
-	auto OrganicCMineralized      = RegisterEquation(Model, "Organic C mineralized", MMolPerM2PerTs);
-	auto OrganicCInBiomass        = RegisterEquation(Model, "Organic C in soil microbial biomass", MMolPerM2PerTs);
+	//auto OrganicCLitterEq         = RegisterEquation(Model, "Organic C litter", MMolPerM2PerTs);
+	//auto OrganicCDecompositionEq  = RegisterEquation(Model, "Organic C decomposition", MMolPerM2PerTs);
+
+	//auto OrganicCSolubilized      = RegisterEquation(Model, "Organic C solubilized", MMolPerM2PerTs);
+	//auto OrganicCMineralized      = RegisterEquation(Model, "Organic C mineralized", MMolPerM2PerTs);
+	//auto OrganicCInBiomass        = RegisterEquation(Model, "Organic C in soil microbial biomass", MMolPerM2PerTs);
 	
-	auto OrganicNLitter           = RegisterEquation(Model, "Organic N litter", MMolPerM2PerTs);
+	//auto OrganicNLitter           = RegisterEquation(Model, "Organic N litter", MMolPerM2PerTs);
 	auto OrganicNDecomposition    = RegisterEquation(Model, "Organic N decomposition", MMolPerM2PerTs);
 	auto OrganicNSolubilized      = RegisterEquation(Model, "Organic N solubilized", MMolPerM2PerTs);
 	auto OrganicNMineralized      = RegisterEquation(Model, "Organic N mineralized", MMolPerM2PerTs);
@@ -101,7 +98,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto NitrificationEq          = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
 	auto DenitrificationEq        = RegisterEquation(Model, "Denitrification", MMolPerM2PerTs);
 	
-	auto OrganicPLitter           = RegisterEquation(Model, "Organic P litter", MMolPerM2PerTs);
+	//auto OrganicPLitter           = RegisterEquation(Model, "Organic P litter", MMolPerM2PerTs);
 	auto OrganicPDecomposition    = RegisterEquation(Model, "Organic P decomposition", MMolPerM2PerTs);
 	auto OrganicPSolubilized      = RegisterEquation(Model, "Organic P solubilized", MMolPerM2PerTs);
 	auto OrganicPMineralized      = RegisterEquation(Model, "Organic P mineralized", MMolPerM2PerTs);
@@ -121,10 +118,16 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto PO4ProcessesLoss         = RegisterEquation(Model, "PO4 processes loss", MMolPerM2PerTs);
 	
 	
-	auto OrganicCLitterIn          = RegisterInput(Model, "Organic C litter", MMolPerM2PerYear);
+	//From soil carbon module.
+	auto OrganicCDecompositionEq = GetEquationHandle(Model, "Organic C turnover");
+	auto OrganicC                = GetEquationHandle(Model, "Organic C");
+	auto OrganicCSolubilized     = GetEquationHandle(Model, "Organic C solubilized");
+	auto OrganicCInBiomass       = GetEquationHandle(Model, "Organic C in soil microbial biomass");
 	
+	auto Solubilization          = GetParameterDoubleHandle(Model, "Solubilization");
 	
-
+	//auto OrganicCLitterIn          = RegisterInput(Model, "Organic C litter", MMolPerM2PerYear);
+	
 	auto IsSoil                    = GetParameterBoolHandle(Model, "This is a soil compartment");
 	auto IsTop                     = GetParameterBoolHandle(Model, "This is a top compartment");
 	
@@ -141,10 +144,11 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto TotalTreeDecompNSource = GetEquationHandle(Model, "Total N source from tree decomposition");
 	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from tree decomposition");
 	
-	
+	/*
 	EQUATION(Model, InitialOrganicCScaled,
 		return PARAMETER(InitialOrganicC)*1000.0;
 	)
+	*/
 	
 	EQUATION(Model, InitialOrganicNScaled,
 		return PARAMETER(InitialOrganicN)*1000.0;
@@ -167,7 +171,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		return CP;
 	)
 	
-	
+	/*
 	EQUATION(Model, OrganicCLitterEq,
 		u64 type = PARAMETER(ComputeCLitterUsing);
 		double input  = RESULT(FractionOfYear) * IF_INPUT_ELSE_PARAMETER(OrganicCLitterIn, OrganicCLitter);
@@ -210,10 +214,11 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 			
 		return LAST_RESULT(OrganicC) + dCdt;
 	)
+	*/
 	
-	EQUATION(Model, OrganicNLitter,
-		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio);
-	)
+	//EQUATION(Model, OrganicNLitter,
+	//	return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio);
+	//)
 	
 	EQUATION(Model, OrganicNDecomposition,
 		return SafeDivide(RESULT(OrganicCDecompositionEq), RESULT(CNRatio));
@@ -365,7 +370,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
 	
 		double dNdt =
-			  RESULT(OrganicNLitter)
+			  //RESULT(OrganicNLitter)
 			+ forest
 			- RESULT(OrganicNSolubilized)
 			- RESULT(OrganicNMineralized)
@@ -378,9 +383,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		return LAST_RESULT(OrganicN) + dNdt;
 	)
 	
-	EQUATION(Model, OrganicPLitter,
-		return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio);
-	)
+	//EQUATION(Model, OrganicPLitter,
+	//	return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio);
+	//)
 	
 	EQUATION(Model, OrganicPDecomposition,
 		return SafeDivide(RESULT(OrganicCDecompositionEq), RESULT(CPRatio));
@@ -441,7 +446,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	EQUATION(Model, OrganicP,
 		double dPdt =
-			  RESULT(OrganicPLitter)
+			  //RESULT(OrganicPLitter)
 			- RESULT(OrganicPSolubilized)
 			- RESULT(OrganicPMineralized)
 			- RESULT(OrganicPUptake)

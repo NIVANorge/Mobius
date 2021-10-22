@@ -12,6 +12,7 @@
 #include "../../Modules/MAGIC/MagicForestDecompUptake.h"
 #include "../../Modules/MAGIC/MAGICForest.h"
 #include "../../Modules/MAGIC/ABCD.h"
+#include "../../Modules/MAGIC/MagicForestSoilCarbon.h"
 #include "../../Modules/MAGIC/MagicForestCNP.h"
 
 
@@ -25,6 +26,7 @@ DllBuildModel()
 	AddMagicCoreModel(Model);
 	AddMagicForestModule(Model);
 	AddMAGICForestDecompUptakeModel(Model);
+	AddMagicForestSoilCarbonModel(Model);
 	AddMagicForestCNPModel(Model);
 	
 
