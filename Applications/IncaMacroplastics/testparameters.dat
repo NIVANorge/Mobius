@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Macroplastics, containing modules (PERSiST V1.4, INCA-Macroplastics V_dev_0.1) at 2021-09-17 11:22:13
+# Parameter file generated for model INCA-Macroplastics, containing modules (PERSiST V1.4, INCA-Macroplastics V_dev_0.1) at 2021-10-25 11:57:24
 
 index_sets:
 "Landscape units" : {"Forest" "Agricultural"}
@@ -170,13 +170,13 @@ parameters:
 	# Overall parameters (no index sets) #
 
 	"Bank attachment rate tuning parameter" :     #(1/day) [0, 100] Reference banking rate for curving radius = 1000, width = 50, and c_d*A = 0.05
-	0.1
+	1
 
 	"Stress threshold tuning parameter" :     #(N) [0, 100] Force needed to detach a hard plastic item from a non-vegetation bank
 	1
 
 	"Detachment rate tuning parameter" :     #(1/(N day)) [0, 100] Detachment rate per unit of excess share force
-	1
+	0.01
 
 	"Bag tearing tuning parameter" :     #(1/(N day)) [0, 10] Bag breakdown rate as effect of drag forces
 	0.0001
@@ -193,10 +193,16 @@ parameters:
 	"Item major axis" :     #(m) [0, 1]
 	0.3 0.4
 
+	"Item average mass" :     #(kg) [0.001, 10]
+	0.1 0.1
+
+	"Propensity to stay stuck" :     #(dimensionless) [0, 100] Tuning parameter that makes it easier or harder for this item class to be remobilized
+	1 1
+
 
 	# Reach characteristics ("Reaches") #
 
-	"Average curving radius" :     #(m) [20, 10000000000]
+	"Average curving radius" :     #(m) [20, 10000000000] If the river is straight, just set this to a high number (e.g. 1e10)
 	1000
 
 	"Bank vegetation type" :     # [None, Bushes, Reeds, Grass]
@@ -211,18 +217,15 @@ parameters:
 	"River vegetation density" :     #(dimensionless) [0, 1]
 	0.001
 
+	"Shear stress coefficient" :     #(dimensionless) [0.01, 10] Tuning parameter to account for the shear stress not being the same as in ideal conditions
+	1
+
 
 	# Litter by reach and class ("Litter class" "Reaches") #
 
-	"Litter input to bank" :     #(kg/(m day)) [0, 100] Constant daily litter to the river bank from land sources
+	"Litter input to bank" :     #(items/(m day)) [0, 100] Constant daily litter to the river bank from land sources
 	0.01
 	0.01
-
-
-	# Reach shear stress ("Reaches") #
-
-	"Shear stress coefficient" :     #(dimensionless) [0.01, 10] Tuning parameter to account for the shear stress not being the same as in ideal conditions
-	1
 
 
 } # end of module "INCA-Macroplastics"

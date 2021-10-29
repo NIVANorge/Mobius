@@ -47,7 +47,6 @@ DynamicViscosity(double Temperature, double Salinity)
 	return eta_t_s * 1e-3;  //Convert centipoise -> Pa*s
 	
 #else
-	// Something is wrong with above implementation. Have to fall back to the simple one without salinity correction:
 	
 	return 2.414e-5*pow(10.0, 247.8 / (Temperature+273.15 - 140.0));
 #endif
