@@ -1,4 +1,4 @@
-# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2021-10-28 13:14:13
+# Parameter file generated for model Sediment oxygen, containing modules (Sediment oxygen V0.0) at 2020-10-06 12:02:31
 
 index_sets:
 
@@ -9,76 +9,74 @@ parameters:
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
 1970-01-01
 
-"Timesteps" :     #(hours) [0, 18446744073709551615]
+"Timesteps" :     #(days) [0, 18446744073709551615]
 1000
 
 
-{ module "Sediment oxygen" version "0.0"
+###################### Sediment oxygen V0.0 ######################
 
-	# Sediment oxygen (no index sets) #
+# Sediment oxygen (no index sets) #
 
-	"Atmospheric O2 partial pressure" :     #(% atm) [0, 100]
-	21
+"Atmospheric O2 partial pressure" :     #(% atm) [0, 100]
+21
 
-	"Temperature" :     #(°C) [-5, 40]
-	15
+"Temperature" :     #(°C) [-5, 40]
+15
 
-	"Salinity" :     #(PSS-78) [0, 1000]
-	17
+"Salinity" :     #(PSS-78) [0, 1000]
+35
 
-	"Latitude" :     #(°) [-90, 90]
-	30
+"Latitude" :     #(°) [-90, 90]
+30
 
-	"Year length" :     #(days) [200, 500]
-	430
+"Year length" :     #(days) [200, 500]
+430
 
-	"Day length" :     #(hours) [15, 30]
-	20
+"Day length" :     #(hours) [15, 30]
+20
 
-	"Average cloud cover" :     #(dimensionless) [0, 1]
-	0
+"Average cloud cover" :     #(dimensionless) [0, 1]
+0
 
-	"Sediment porosity" :     #(dimensionless) [0, 1]
-	0.6
+"Sediment porosity" :     #(dimensionless) [0, 1]
+0.6
 
-	"Attenuation coefficient" :     #(1/m) [0, 0.2]
-	0.5
+"Attenuation coefficient" :     #(1/m) [0, 0.2]
+0.5
 
-	"Luminosity conversion factor" :     #(dimensionless) [0, 5] µmol(photons)/s per W (depends on desired PAR spectrum)
-	4.1
+"Luminosity conversion factor" :     #(dimensionless) [0, 5] µmol(photons)/s per W (depends on desired PAR spectrum)
+4.1
 
-	"Maximum O2 production at 20°C" :     #(µmol(oxygen)/cm2/s) [0, 1000]
-	6e-05
+"Maximum O2 production at 20°C" :     #(µmol(oxygen)/cm2/s) [0, 1000]
+1.7e-05
 
-	"Maximum light utilization" :     #(µmol(oxygen)/µmol(photons)) [0, 10]
-	1e-09
+"Maximum light utilization" :     #(µmol(oxygen)/µmol(photons)) [0, 10]
+1.6e-09
 
-	"Production rate response to a 10° change in temperature (Q10)" :     #(dimensionless) [1, 4]
-	1.4
+"Production rate response to a 10° change in temperature (Q10)" :     #(dimensionless) [1, 4]
+2.5
 
-	"Respiration rate at 20°C" :     #(µmol(oxygen)/µmol(TOC)/s) [0, 0.01]
-	0.00011
+"Respiration rate at 20°C" :     #(µmol(oxygen)/µmol(TOC)/s) [0, 0.01]
+1.5e-06
 
-	"TOC concentration" :     #(µmol(TOC)/cm3) [0, 0.1]
-	1
+"TOC concentration" :     #(µmol(TOC)/cm3) [0, 0.1]
+1
 
-	"Respiration rate response to a 10° change in temperature (Q10)" :     #(dimensionless) [1, 4]
-	2.6
+"Respiration rate response to a 10° change in temperature (Q10)" :     #(dimensionless) [1, 4]
+2
 
-	"Respiration cutoff threshold" :     #(µmol(oxygen)/cm3) [0.01, 100]
-	0.001
+"Respiration cutoff threshold" :     #(µmol(oxygen)/cm3) [0.01, 100]
+0.001
 
-	"Ocean depth" :     #(m) [0, 200]
-	10
+"Ocean depth" :     #(m) [0, 200]
+10
 
-	"Upper layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the topmost one belonging to production zone
-	3
+"Upper layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the topmost one belonging to production zone
+3
 
-	"Lower layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the lowest one belonging to the production zone
-	4
+"Lower layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the lowest one belonging to the production zone
+4
 
-	"Z resolution" :     #(cm) [0.001, 1] Thickness of each computed layer
-	0.025
+"Z resolution" :     #(cm) [0.001, 1] Thickness of each computed layer
+0.025
 
-
-} # end of module "Sediment oxygen"
