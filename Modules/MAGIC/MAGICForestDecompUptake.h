@@ -38,7 +38,7 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	auto PatchArea            = RegisterParameterDouble(Model, PatchPars, "Patch relative area", Dimensionless, 1.0, 0.0, 1.0);
 	auto CarryingCapacity     = RegisterParameterDouble(Model, PatchPars, "Patch carrying capacity", TPerHa, 0.0, 0.0, 10000.0);
-	
+	auto MassAtFullCover      = RegisterParameterDouble(Model, PatchPars, "Biomass at full forest cover", TPerHa, 0.0, 0.0, 10000.0, "Biomass when dry deposition reaches its maximum");
 	
 	auto InitialForestPars    = RegisterParameterGroup(Model, "Initial tree mass", ForestPatch, TreeClass);
 	
@@ -56,7 +56,6 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
 	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
-	//auto InitialDeadTreeMass  = RegisterParameterDouble(Model, TreeDecomp, "Initial dead tree mass", TPerHa, 0.0, 0.0, 10000.0);
 	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100000.0);
 	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100000.0);
 	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MMolPerKg, 0.0, 0.0, 100000.0);
@@ -68,7 +67,10 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	auto ForestNetGrowth      = RegisterEquation(Model, "Tree net growth", TPerHaPerTs);
 	auto LiveTreeMass         = RegisterEquation(Model, "Live tree mass per species", TPerHa);
-	//auto TotalLiveTreeMass    = RegisterEquationCumulative(Model, "Total live tree mass", LiveTreeMass, TreeClass);
+	auto TotalLiveTreeMass    = RegisterEquationCumulative(Model, "Total live tree mass per patch", LiveTreeMass, TreeClass);
+	auto ForestCoverPatch     = RegisterEquation(Model, "Forest cover per patch", Dimensionless);
+	auto ForestCoverAvg       = RegisterEquationCumulative(Model, "Forest cover averaged over patches", ForestCoverPatch, ForestPatch, PatchArea);
+
 	auto CompartmentTurnover  = RegisterEquation(Model, "Compartment turnover", TPerHaPerTs);
 	
 	auto CompartmentTurnoverSummed = RegisterEquationCumulative(Model, "Compartment turnover averaged over patches", CompartmentTurnover, ForestPatch, PatchArea);
@@ -161,6 +163,10 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		double before_disturbance = LAST_RESULT(LiveTreeMass) + RESULT(ForestNetGrowth);
 		double after_disturbance = before_disturbance * (1.0 - INPUT(TreeDisturbance));
 		return std::max(0.0, after_disturbance);
+	)
+	
+	EQUATION(Model, ForestCoverPatch,
+		return std::min(1.0, RESULT(TotalLiveTreeMass) / PARAMETER(MassAtFullCover));
 	)
 
 	EQUATION(Model, CompartmentShare,

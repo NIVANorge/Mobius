@@ -14,14 +14,16 @@ def set_single_series_value(ds, name, year, value) :
 	ds.set_input_series(name, [], series.values)
 
 
-def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
+def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1) :
+	soilfile, lakefile1, lakefile2, depofile, seqfile = excelfiles
 	
-	soil_df = pd.read_excel(excelfile % 'soil', sheet_name='CCE-soil', header=16, skiprows=[17], index_col=1)
-	lake_df = pd.read_excel(excelfile % 'lake', sheet_name='CCE-lake', header=16, skiprows=[17], index_col=1)
-	depo_df = pd.read_excel(excelfile % 'depo', sheet_name='CCE-depo', header=16, skiprows=[17], index_col=1)
-	nh4_df  = pd.read_excel(excelfile % 'seqs', sheet_name='CCE-NH4', header=15, skiprows=[16,17], index_col=1)
-	no3_df  = pd.read_excel(excelfile % 'seqs', sheet_name='CCE-NO3', header=15, skiprows=[16,17], index_col=1)
-	so4_df  = pd.read_excel(excelfile % 'seqs', sheet_name='CCE-SO4', header=15, skiprows=[16,17], index_col=1)
+	soil_df = pd.read_excel(soilfile, sheet_name='CCE-soil', header=16, skiprows=[17], index_col=1)
+	lake_df = pd.read_excel(lakefile1, sheet_name='CCE-lake', header=16, skiprows=[17], index_col=1)
+	lake_df_2 = pd.read_excel(lakefile2, sheet_name='WRI-Lake 2019', header=16, skiprows=[17], index_col=1)   ##OOOOPS, hard coded sheet name..
+	depo_df = pd.read_excel(depofile, sheet_name='CCE-depo', header=16, skiprows=[17], index_col=1)
+	nh4_df  = pd.read_excel(seqfile, sheet_name='CCE-NH4', header=15, skiprows=[16,17], index_col=1)
+	no3_df  = pd.read_excel(seqfile, sheet_name='CCE-NO3', header=15, skiprows=[16,17], index_col=1)
+	so4_df  = pd.read_excel(seqfile, sheet_name='CCE-SO4', header=15, skiprows=[16,17], index_col=1)
 	
 	
 	#TODO: These should have been read in from the file!
@@ -40,9 +42,12 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		if limit_num >= 0 and loop_idx >= limit_num : break
 		loop_idx += 1
 	
+		if id not in lake_df_2.index : continue                        #TODO: maybe run 1-point sample then instead!
+	
 		print('Running lake %s (ID %d)\n' % (soil['*Name'], id))
 		
 		lake = lake_df.loc[id, :]
+		lake2 = lake_df_2.loc[id, :]
 		depo = depo_df.loc[id, :]
 		
 		nh4 = nh4_df.loc[id, :]
@@ -111,11 +116,10 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		#	set_single_series_value(ds, 'Observed %s'%elem, year, soil['Soil %s'%elem])
 		
 		
-		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
-		
-		
 		#### LAKE sheet:
 		
+		
+		# TODO: What to do about discharge when having two different values (for two different years)
 		ds.set_parameter_double('Discharge', ['Soil'], lake['Qs'])
 		ds.set_parameter_double('Discharge', ['Lake'], lake['Qs'])
 		
@@ -123,7 +127,7 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		
 		year = lake['Year']
 		for elem in elems :
-			set_single_series_value(ds, 'Observed %s'%elem, year, lake['%s'%elem])  #TODO: check that this works, or some columns have to be renamed
+			set_single_series_value(ds, 'Observed %s'%elem, year, lake['%s'%elem])
 			
 		set_single_series_value(ds, 'Observed lake pH', year, lake['pH'])
 		#set_single_series_value(ds, 'TotMon-Al', year, lake['TotMon-Al'])
@@ -140,8 +144,23 @@ def do_magic_loop(dataset, excelfile, loopfun, limit_num=-1, do_id=-1) :
 		
 		ds.set_parameter_double('Nitrification', ['Lake'], -lake['Nitrif'])
 		
+		#NOTE NO3 retention as in OKA's study.
 		S_N = 5.0
-		ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0 * S_N / (lake['Qs'] + S_N))
+		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0 * S_N / (lake['Qs'] + S_N))
+		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0 * S_N / (lake['Qs'] + S_N))
+		
+		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
+		
+		
+		#### LAKE sheet 2 :
+		
+		elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
+		
+		year = lake2['Year']
+		for elem in elems :
+			set_single_series_value(ds, 'Observed %s'%elem, year, lake2['%s'%elem])
+			
+		set_single_series_value(ds, 'Observed lake pH', year, lake2['pH'])
 		
 		
 		#### SEQUENCE sheet

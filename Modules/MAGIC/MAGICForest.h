@@ -54,6 +54,30 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto FWeathering             = RegisterParameterDouble(Model, Weathering, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WF");
 	auto PO4Weathering           = RegisterParameterDouble(Model, Weathering, "PO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WPO4");
 	
+	auto Deposition              = RegisterParameterGroup(Model, "Deposition");
+	
+	auto CaDepConc               = RegisterParameterDouble(Model, Deposition, "Ca conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DCa");
+	auto MgDepConc               = RegisterParameterDouble(Model, Deposition, "Mg conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DMg");
+	auto NaDepConc               = RegisterParameterDouble(Model, Deposition, "Na conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DNa");
+	auto KDepConc                = RegisterParameterDouble(Model, Deposition, "K conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DK");
+	auto NH4DepConc              = RegisterParameterDouble(Model, Deposition, "NH4 conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DNH4");
+	auto SO4DepConc              = RegisterParameterDouble(Model, Deposition, "SO4 conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DSO4");
+	auto ClDepConc               = RegisterParameterDouble(Model, Deposition, "Cl conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DCl");
+	auto NO3DepConc              = RegisterParameterDouble(Model, Deposition, "NO3 conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DNO3");
+	auto FDepConc                = RegisterParameterDouble(Model, Deposition, "F conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DF");
+	auto PO4DepConc              = RegisterParameterDouble(Model, Deposition, "PO4 conc in precipitation", MEqPerM3, 0.0, 0.0, 200.0, "Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element", "DPO4");
+	
+	auto CaDryDepFactor          = RegisterParameterDouble(Model, Deposition, "Ca dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFCa");
+	auto MgDryDepFactor          = RegisterParameterDouble(Model, Deposition, "Mg dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFMg");
+	auto NaDryDepFactor          = RegisterParameterDouble(Model, Deposition, "Na dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFNa");
+	auto KDryDepFactor           = RegisterParameterDouble(Model, Deposition, "K dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFK");
+	auto NH4DryDepFactor         = RegisterParameterDouble(Model, Deposition, "NH4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFNH4");
+	auto SO4DryDepFactor         = RegisterParameterDouble(Model, Deposition, "SO4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFSO4");
+	auto ClDryDepFactor          = RegisterParameterDouble(Model, Deposition, "Cl dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFCl");
+	auto NO3DryDepFactor         = RegisterParameterDouble(Model, Deposition, "NO3 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFNO3");
+	auto FDryDepFactor           = RegisterParameterDouble(Model, Deposition, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFF");
+	auto PO4DryDepFactor         = RegisterParameterDouble(Model, Deposition, "PO4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFPO4");
+	
 	
 
 	
@@ -65,26 +89,75 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto PartialPressureCO2In    = RegisterInput(Model, "CO2 partial pressure", Percent, true);           
 	auto OAConcentrationIn       = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);
 	
+	auto CaDepositionTot         = RegisterInput(Model, "Total Ca deposition", MEqPerM2PerTs);
+	auto MgDepositionTot         = RegisterInput(Model, "Total Mg deposition", MEqPerM2PerTs);
+	auto NaDepositionTot         = RegisterInput(Model, "Total Na deposition", MEqPerM2PerTs);
+	auto KDepositionTot          = RegisterInput(Model, "Total K deposition", MEqPerM2PerTs);
+	auto NH4DepositionTot        = RegisterInput(Model, "Total NH4 deposition", MEqPerM2PerTs);
+	auto SO4DepositionTot        = RegisterInput(Model, "Total SO4 deposition", MEqPerM2PerTs);
+	auto ClDepositionTot         = RegisterInput(Model, "Total Cl deposition", MEqPerM2PerTs);
+	auto NO3DepositionTot        = RegisterInput(Model, "Total NO3 deposition", MEqPerM2PerTs);
+	auto FDepositionTot          = RegisterInput(Model, "Total F deposition", MEqPerM2PerTs);
+	auto PO4DepositionTot        = RegisterInput(Model, "Total PO4 deposition", MEqPerM2PerTs);
 	
-	auto MgDeposition            = RegisterInput(Model, "Total Mg deposition", MEqPerM2PerTs);
-	auto NH4Deposition           = RegisterInput(Model, "Total NH4 deposition", MEqPerM2PerTs);
-	auto NO3Deposition           = RegisterInput(Model, "Total NO3 deposition", MEqPerM2PerTs);
-	auto ClDeposition            = RegisterInput(Model, "Total Cl deposition", MEqPerM2PerTs);
-	auto NaDeposition            = RegisterInput(Model, "Total Na deposition", MEqPerM2PerTs);
-	auto KDeposition             = RegisterInput(Model, "Total K deposition", MEqPerM2PerTs);
-	auto SO4Deposition           = RegisterInput(Model, "Total SO4 deposition", MEqPerM2PerTs);
-	auto CaDeposition            = RegisterInput(Model, "Total Ca deposition", MEqPerM2PerTs);
-	auto FDeposition             = RegisterInput(Model, "Total F deposition", MEqPerM2PerTs);
-	auto PO4Deposition           = RegisterInput(Model, "Total PO4 deposition", MEqPerM2PerTs);
+	auto CaWetDepositionIn       = RegisterInput(Model, "Wet Ca deposition", MEqPerM2PerTs);
+	auto MgWetDepositionIn       = RegisterInput(Model, "Wet Mg deposition", MEqPerM2PerTs);
+	auto NaWetDepositionIn       = RegisterInput(Model, "Wet Na deposition", MEqPerM2PerTs);
+	auto KWetDepositionIn        = RegisterInput(Model, "Wet K deposition", MEqPerM2PerTs);
+	auto NH4WetDepositionIn      = RegisterInput(Model, "Wet NH4 deposition", MEqPerM2PerTs);
+	auto SO4WetDepositionIn      = RegisterInput(Model, "Wet SO4 deposition", MEqPerM2PerTs);
+	auto ClWetDepositionIn       = RegisterInput(Model, "Wet Cl deposition", MEqPerM2PerTs);
+	auto NO3WetDepositionIn      = RegisterInput(Model, "Wet NO3 deposition", MEqPerM2PerTs);
+	auto FWetDepositionIn        = RegisterInput(Model, "Wet F deposition", MEqPerM2PerTs);
+	auto PO4WetDepositionIn      = RegisterInput(Model, "Wet PO4 deposition", MEqPerM2PerTs);
+	
+	auto CaWetDepositionScale    = RegisterInput(Model, "Wet Ca deposition scale", Dimensionless);
+	auto MgWetDepositionScale    = RegisterInput(Model, "Wet Mg deposition scale", Dimensionless);
+	auto NaWetDepositionScale    = RegisterInput(Model, "Wet Na deposition scale", Dimensionless);
+	auto KWetDepositionScale     = RegisterInput(Model, "Wet K deposition scale", Dimensionless);
+	auto NH4WetDepositionScale   = RegisterInput(Model, "Wet NH4 deposition scale", Dimensionless);
+	auto SO4WetDepositionScale   = RegisterInput(Model, "Wet SO4 deposition scale", Dimensionless);
+	auto ClWetDepositionScale    = RegisterInput(Model, "Wet Cl deposition scale", Dimensionless);
+	auto NO3WetDepositionScale   = RegisterInput(Model, "Wet NO3 deposition scale", Dimensionless);
+	auto FWetDepositionScale     = RegisterInput(Model, "Wet F deposition scale", Dimensionless);
+	auto PO4WetDepositionScale   = RegisterInput(Model, "Wet PO4 deposition scale", Dimensionless);
 	
 	
 	auto FractionOfYear          = RegisterEquation(Model, "Fraction of year", YearPerTs);
+	
+	auto ForestDryDepositionModifier = RegisterEquation(Model, "Forest cover modifier on dry deposition", Dimensionless);
+	
+	auto CaWetDeposition         = RegisterEquation(Model, "Ca wet deposition", MEqPerM2PerTs);
+	auto MgWetDeposition         = RegisterEquation(Model, "Mg wet deposition", MEqPerM2PerTs);
+	auto NaWetDeposition         = RegisterEquation(Model, "Na wet deposition", MEqPerM2PerTs);
+	auto KWetDeposition          = RegisterEquation(Model, "K wet deposition", MEqPerM2PerTs);
+	auto NH4WetDeposition        = RegisterEquation(Model, "NH4 wet deposition", MEqPerM2PerTs);
+	auto SO4WetDeposition        = RegisterEquation(Model, "SO4 wet deposition", MEqPerM2PerTs);
+	auto ClWetDeposition         = RegisterEquation(Model, "Cl wet deposition", MEqPerM2PerTs);
+	auto NO3WetDeposition        = RegisterEquation(Model, "NO3 wet deposition", MEqPerM2PerTs);
+	auto FWetDeposition          = RegisterEquation(Model, "F wet deposition", MEqPerM2PerTs);
+	auto PO4WetDeposition        = RegisterEquation(Model, "PO4 wet deposition", MEqPerM2PerTs);
+	
+	
+	auto CaDeposition            = RegisterEquation(Model, "Ca total deposition", MEqPerM2PerTs);
+	auto MgDeposition            = RegisterEquation(Model, "Mg total deposition", MEqPerM2PerTs);
+	auto NaDeposition            = RegisterEquation(Model, "Na total deposition", MEqPerM2PerTs);
+	auto KDeposition             = RegisterEquation(Model, "K total deposition", MEqPerM2PerTs);
+	auto NH4Deposition           = RegisterEquation(Model, "NH4 total deposition", MEqPerM2PerTs);
+	auto SO4Deposition           = RegisterEquation(Model, "SO4 total deposition", MEqPerM2PerTs);
+	auto ClDeposition            = RegisterEquation(Model, "Cl total deposition", MEqPerM2PerTs);
+	auto NO3Deposition           = RegisterEquation(Model, "NO3 total deposition", MEqPerM2PerTs);
+	auto FDeposition             = RegisterEquation(Model, "F total deposition", MEqPerM2PerTs);
+	auto PO4Deposition           = RegisterEquation(Model, "PO4 total deposition", MEqPerM2PerTs);
+	
+	
 	
 	// These are required by the MAGIC Core:
 	auto Discharge               = RegisterEquation(Model, "Discharge", MPerTs);
 	auto Temperature             = RegisterEquation(Model, "Temperature", DegreesCelsius);
 	auto PartialPressureCO2      = RegisterEquation(Model, "CO2 partial pressure", Percent);
 	auto OAConcentration         = RegisterEquation(Model, "Organic acid concentration", MMolPerM3);
+	
 	
 	auto CaExternalFlux          = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
 	auto MgExternalFlux          = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
@@ -110,7 +183,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto NH4BasicInputs          = RegisterEquation(Model, "NH4 non-process inputs", MMolPerM2PerTs);
 	auto PO4BasicInputs          = RegisterEquation(Model, "PO4 non-process inputs", MMolPerM2PerTs);
 	
-	// The following are re-registered and defined in the CNP module:
+	// The following are re-registered and defined in the decomp-uptake module:
 	auto TotalTreeDecompCaSource = RegisterEquation(Model, "Total Ca source from tree decomposition", MEqPerM2PerTs);
 	auto TotalTreeDecompMgSource = RegisterEquation(Model, "Total Mg source from tree decomposition", MEqPerM2PerTs);
 	auto TotalTreeDecompNaSource = RegisterEquation(Model, "Total Na source from tree decomposition", MEqPerM2PerTs);
@@ -119,13 +192,14 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto TotalTreeMgUptake       = RegisterEquation(Model, "Total tree Mg uptake", MEqPerM2PerTs);
 	auto TotalTreeNaUptake       = RegisterEquation(Model, "Total tree Na uptake", MEqPerM2PerTs);
 	auto TotalTreeKUptake        = RegisterEquation(Model, "Total tree K uptake", MEqPerM2PerTs);
-	
+	auto ForestCoverAvg          = RegisterEquation(Model, "Forest cover averaged over patches", Dimensionless);
 	
 	// From WASMOD:
 	auto Runoff                  = GetEquationHandle(Model, "Runoff");
 	
 	// From the core wrapper:
 	auto IsSoil                  = GetParameterBoolHandle(Model, "This is a soil compartment");
+	auto IsTop                   = GetParameterBoolHandle(Model, "This is a top compartment");
 	
 	auto ConcSO4                 = GetEquationHandle(Model, "SO4(2-) ionic concentration");
 	
@@ -172,22 +246,84 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	
+	//TODO: Should be computed in forest module instead. This is just to get it to run.
+	EQUATION(Model, ForestDryDepositionModifier,
+		double forest = RESULT(ForestCoverAvg);
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
+		return forest;
+	)
+	
+	
+#define WET_DEPOSITION(Elem) \
+	EQUATION(Model, Elem##WetDeposition, \
+		double precip = INPUT(Precipitation) * 1e-3; \
+		double conc = PARAMETER(Elem##DepConc); \
+		double wetin = INPUT(Elem##WetDepositionIn); \
+		double scale = INPUT(Elem##WetDepositionScale); \
+		if(!PARAMETER(IsTop)) return 0.0; \
+		if(!INPUT_WAS_PROVIDED(Elem##WetDepositionScale) || !std::isfinite(scale)) \
+			scale = 1.0; \
+		if(INPUT_WAS_PROVIDED(Elem##WetDepositionIn) && std::isfinite(wetin)) \
+			return wetin; \
+		return conc * precip * scale; \
+	)
+	
+	WET_DEPOSITION(Ca)
+	WET_DEPOSITION(Mg)
+	WET_DEPOSITION(Na)
+	WET_DEPOSITION(K)
+	WET_DEPOSITION(NH4)
+	WET_DEPOSITION(SO4)
+	WET_DEPOSITION(Cl)
+	WET_DEPOSITION(NO3)
+	WET_DEPOSITION(F)
+	WET_DEPOSITION(PO4)
+	
+	
+	#undef WET_DEPOSITION
+	
+#define TOTAL_DEPOSITION(Elem) \
+	EQUATION(Model, Elem##Deposition, \
+		double totalin = INPUT(Elem##DepositionTot); \
+		double wet = RESULT(Elem##WetDeposition); \
+		double ddf_max = PARAMETER(Elem##DryDepFactor); \
+		double forest_cover_mod = RESULT(ForestDryDepositionModifier); \
+		double ddf = 1.0 + (ddf_max - 1.0)*forest_cover_mod; \
+		if(!PARAMETER(IsTop)) return 0.0; \
+		if(INPUT_WAS_PROVIDED(Elem##DepositionTot) && std::isfinite(totalin)) \
+			return totalin; \
+		return wet * ddf; \
+	)
+	
+	TOTAL_DEPOSITION(Ca)
+	TOTAL_DEPOSITION(Mg)
+	TOTAL_DEPOSITION(Na)
+	TOTAL_DEPOSITION(K)
+	TOTAL_DEPOSITION(NH4)
+	TOTAL_DEPOSITION(SO4)
+	TOTAL_DEPOSITION(Cl)
+	TOTAL_DEPOSITION(NO3)
+	TOTAL_DEPOSITION(F)
+	TOTAL_DEPOSITION(PO4)
+	
+	#undef TOTAL_DEPOSITION
+	
 	EQUATION(Model, NO3BasicInputs,
-		double deposition = INPUT(NO3Deposition);
+		double deposition = RESULT(NO3Deposition);
 		double weathering = PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, NH4BasicInputs,
-		double deposition = INPUT(NH4Deposition);
+		double deposition = RESULT(NH4Deposition);
 		double weathering = PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, PO4BasicInputs,
-		double deposition = INPUT(PO4Deposition);
+		double deposition = RESULT(PO4Deposition);
 		double weathering = PARAMETER(PO4Weathering)*RESULT(FractionOfYear);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
@@ -196,7 +332,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	//TODO: The uptake should maybe be limited so that the mass never goes in the negative, but it may not be a problem
 	EQUATION(Model, CaExternalFlux,
-		double deposition = INPUT(CaDeposition);
+		double deposition = RESULT(CaDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(CaWeathering);
 		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -205,7 +341,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, MgExternalFlux,
-		double deposition = INPUT(MgDeposition);
+		double deposition = RESULT(MgDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(MgWeathering);
 		double forest     = RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -214,7 +350,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, NaExternalFlux,
-		double deposition = INPUT(NaDeposition);
+		double deposition = RESULT(NaDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(NaWeathering);
 		double forest     = RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeNaUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -223,7 +359,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, KExternalFlux,
-		double deposition = INPUT(KDeposition);
+		double deposition = RESULT(KDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering);
 		double forest     = RESULT(TotalTreeDecompKSource) - RESULT(TotalTreeKUptake);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -236,7 +372,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, SO4ExternalFlux,
-		double deposition = INPUT(SO4Deposition);
+		double deposition = RESULT(SO4Deposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(SO4Weathering);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
@@ -247,14 +383,14 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, ClExternalFlux,
-		double deposition = INPUT(ClDeposition);
+		double deposition = RESULT(ClDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(ClWeathering);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, FExternalFlux,
-		double deposition = INPUT(FDeposition);
+		double deposition = RESULT(FDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(FWeathering);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;

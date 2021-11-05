@@ -11,7 +11,7 @@ parameters:
 1800-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-1995-12-01
+2020-01-01
 
 
 { module "MAGIC Core" version "0.1"

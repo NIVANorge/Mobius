@@ -11,6 +11,7 @@ A soil carbon module for MAGIC Forest.
 	auto Dimensionless = RegisterUnit(Model);
 	auto MolPerM2      = RegisterUnit(Model, "mol/m2");
 	auto MMolPerM2     = RegisterUnit(Model, "mmol/m2");
+	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
 	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	auto PerYear       = RegisterUnit(Model, "1/year");
 
@@ -20,7 +21,8 @@ A soil carbon module for MAGIC Forest.
 	auto SoilCarbon = RegisterParameterGroup(Model, "Soil carbon", Compartment);
 	
 	auto InitialOrganicC              = RegisterParameterDouble(Model, SoilCarbon, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8);
-	auto OrganicCFastFraction         = RegisterParameterDouble(Model, SoilCarbon, "Relative size of fast C compartment", Dimensionless, 0.5, 0.0, 1.0);
+	auto OrganicCLitter               = RegisterParameterDouble(Model, SoilCarbon, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6, "Litter in addition to what is computed by the forest module");
+	auto OrganicCFastFraction         = RegisterParameterDouble(Model, SoilCarbon, "Initial relative size of fast C pool", Dimensionless, 0.5, 0.0, 1.0);
 	auto TurnoverRateFast             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of fast-decomposable C", PerYear, 0.1, 0.0, 1.0);
 	auto TurnoverRateSlow             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of slow-decomposable C", PerYear, 0.01, 0.0, 1.0);
 	auto FastSlowMassFlowRate         = RegisterParameterDouble(Model, SoilCarbon, "Mass flow rate from fast to slow C pool", PerYear, 0.01, 0.0, 1.0);
@@ -99,6 +101,7 @@ A soil carbon module for MAGIC Forest.
 		return
 			  LAST_RESULT(OrganicCFast)
 			+ forest
+			+ PARAMETER(OrganicCLitter)
 			- RESULT(TurnoverFast)
 			+ RESULT(OrganicCInBiomass)
 			- RESULT(FastSlowMassFlow);

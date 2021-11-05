@@ -20,18 +20,11 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto CNPPar                    = RegisterParameterGroup(Model, "C, N, and P", Compartment);
 	
 	
-	//auto OrganicCLitter               = RegisterParameterDouble(Model, CNPPar, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	//auto ComputeCLitterUsing          = RegisterParameterEnum(Model, CNPPar, "Compute C litter using", {"input", "steady_state", "scale_to_uptake"}, "input");
-	//auto OrganicCDecompositionR0      = RegisterParameterDouble(Model, CNPPar, "Organic C decomposition at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1e6);
-	//auto OrganicCDecompositionQ10     = RegisterParameterDouble(Model, CNPPar, "Decomposition Q10", Dimensionless, 1.0, 1.0, 5.0);
-	
 	auto NUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "N use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic N that becomes biomass and is returned to the organic N pool. The rest is mineralized as NH4.");
 	auto PUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "P use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic P that becomes biomass and is returned to the organic P pool. The rest is mineralized as PO4.");
 	
-	//auto LitterCNRatio                = RegisterParameterDouble(Model, CNPPar, "C/N ratio of litter", Dimensionless, 0.1, 0.0001, 10.0);
-	auto MicrobeCNRatio               = RegisterParameterDouble(Model, CNPPar, "C/N ratio of soil microbial community", Dimensionless, 0.1, 0.0001, 10.0);
-	//auto LitterCPRatio                = RegisterParameterDouble(Model, CNPPar, "C/P ratio of litter", Dimensionless, 0.1, 0.0001, 10.0);
-	auto MicrobeCPRatio               = RegisterParameterDouble(Model, CNPPar, "C/P ratio of soil microbial community", Dimensionless, 0.1, 0.0001, 10.0);
+	auto LitterCNRatio                = RegisterParameterDouble(Model, CNPPar, "C/N ratio of litter", Dimensionless, 0.1, 0.0001, 10.0, "Only for litter that is not computed by the forest module");
+	auto LitterCPRatio                = RegisterParameterDouble(Model, CNPPar, "C/P ratio of litter", Dimensionless, 0.1, 0.0001, 10.0, "Only for litter that is not computed by the forest module");
 	
 	auto InitialOrganicN              = RegisterParameterDouble(Model, CNPPar, "Initial organic N", MolPerM2, 0.0, 0.0, 1e8);
 	auto InitialOrganicP              = RegisterParameterDouble(Model, CNPPar, "Initial organic P", MolPerM2, 0.0, 0.0, 1e8);
@@ -40,20 +33,35 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto Nitrification                = RegisterParameterDouble(Model, CNPPar, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NH4->NO3. Negative rate sets value as % of inputs");
 	auto Denitrification              = RegisterParameterDouble(Model, CNPPar, "Denitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NO3->N2. Negative rate sets value as % of inputs");
 	
-	auto UptakeR0                     = RegisterParameterDouble(Model, CNPPar, "N uptake at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
-	auto PUptakeR0                    = RegisterParameterDouble(Model, CNPPar, "P uptake at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1000.0);
+	auto UptakeR0                     = RegisterParameterDouble(Model, CNPPar, "N uptake at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1000.0, "Uptake in addition to what is computed by the forest module");
+	auto PUptakeR0                    = RegisterParameterDouble(Model, CNPPar, "P uptake at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1000.0, "Uptake in addition to what is computed by the forest module");
 	auto UptakeQ10                    = RegisterParameterDouble(Model, CNPPar, "Uptake Q10", Dimensionless, 1.0, 1.0, 5.0);
-	auto NH4UptakeScale               = RegisterParameterDouble(Model, CNPPar, "NH4 uptake scale", Dimensionless, 1.0, 0.0, 10.0, "amount of NH4 uptake relative to amount of NO3 uptake");
+	auto NH4UptakeScale               = RegisterParameterDouble(Model, CNPPar, "NH4 uptake scale", Dimensionless, 1.0, 0.0, 1.0, "Proportion of NH4 uptake of total inorganic N uptake");
+
+	auto RetentionModel               = RegisterParameterEnum(Model, CNPPar, "Retention model", {"Simple", "Gundersen", "Microbial"}, "Microbial");
+	
+	
+	auto DesiredNO3Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NO3 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
+	auto DesiredNH4Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NH4 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
+	auto DesiredPO4Retention          = RegisterParameterDouble(Model, CNPPar, "Desired PO4 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
+	auto NMineralization              = RegisterParameterDouble(Model, CNPPar, "N mineralization", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Organic N -> NH4");
+	auto PMineralization              = RegisterParameterDouble(Model, CNPPar, "P mineralization", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Organic P -> PO4");
+	auto MicrobeCNRatio               = RegisterParameterDouble(Model, CNPPar, "C/N ratio of soil microbial community", Dimensionless, 0.1, 0.0001, 10.0, "Gundersen and microbial only.");
+	auto MicrobeCPRatio               = RegisterParameterDouble(Model, CNPPar, "C/P ratio of soil microbial community", Dimensionless, 0.1, 0.0001, 10.0, "Gundersen and microbial only.");
+	auto LowerCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CNPPar, "Lower C/N threshold for NO3 immobilisation", Dimensionless, 30.0, 0.0, 100.0,
+	"Gundersen only. C/N below this value - 0% NO3 immobilisation");
+	auto UpperCNThresholdForNO3Immobilisation = RegisterParameterDouble(Model, CNPPar, "Upper C/N threshold for NO3 immobilisation", Dimensionless, 30.0, 0.0, 100.0, "Gundersen only. C/N above this value - 100% NO3 immobilisation");
+	auto LowerCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CNPPar, "Lower C/N threshold for NH4 immobilisation", Dimensionless, 30.0, 0.0, 100.0,
+	"Gundersen only. C/N below this value - 0% NH4 immobilisation");
+	auto UpperCNThresholdForNH4Immobilisation = RegisterParameterDouble(Model, CNPPar, "Upper C/N threshold for NH4 immobilisation", Dimensionless, 30.0, 0.0, 100.0, "Gundersen only. C/N above this value - 100% NH4 immobilisation");
+	auto LowerCPThresholdForPO4Immobilisation = RegisterParameterDouble(Model, CNPPar, "Lower C/P threshold for PO4 immobilisation", Dimensionless, 30.0, 0.0, 100.0,
+	"Gundersen only. C/P below this value - 0% PO4 immobilisation");
+	auto UpperCPThresholdForPO4Immobilisation = RegisterParameterDouble(Model, CNPPar, "Upper C/P threshold for PO4 immobilisation", Dimensionless, 30.0, 0.0, 100.0, "Gundersen only. C/P above this value - 100% PO4 immobilisation");
 
 	auto DoImmobilisation             = RegisterParameterBool(Model, CNPPar, "Microbes immobilize inorganic N and P if necessary", true);
 	auto PlantsUseInorganicFirst      = RegisterParameterBool(Model, CNPPar, "Plants use inorganic N and P before soil microbes", true);
 	auto PlantsUseOrganic             = RegisterParameterBool(Model, CNPPar, "Plants have access to organic N and P", true);
 
-
-
-	//auto InitialOrganicCScaled     = RegisterEquationInitialValue(Model, "Initial organic C", MMolPerM2);
-	//auto OrganicC                  = RegisterEquation(Model, "Organic C", MMolPerM2);
-	//SetInitialValue(Model, OrganicC, InitialOrganicCScaled);
 	
 	auto InitialOrganicNScaled     = RegisterEquationInitialValue(Model, "Initial organic N", MMolPerM2);
 	auto OrganicN                  = RegisterEquation(Model, "Organic N", MMolPerM2);
@@ -66,19 +74,10 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto CNRatio                   = RegisterEquation(Model, "Pool C/N ratio", Dimensionless);
 	auto CPRatio                   = RegisterEquation(Model, "Pool C/P ratio", Dimensionless);
 
-	
-	//auto OrganicCLitterEq         = RegisterEquation(Model, "Organic C litter", MMolPerM2PerTs);
-	//auto OrganicCDecompositionEq  = RegisterEquation(Model, "Organic C decomposition", MMolPerM2PerTs);
-
-	//auto OrganicCSolubilized      = RegisterEquation(Model, "Organic C solubilized", MMolPerM2PerTs);
-	//auto OrganicCMineralized      = RegisterEquation(Model, "Organic C mineralized", MMolPerM2PerTs);
-	//auto OrganicCInBiomass        = RegisterEquation(Model, "Organic C in soil microbial biomass", MMolPerM2PerTs);
-	
-	//auto OrganicNLitter           = RegisterEquation(Model, "Organic N litter", MMolPerM2PerTs);
 	auto OrganicNDecomposition    = RegisterEquation(Model, "Organic N decomposition", MMolPerM2PerTs);
 	auto OrganicNSolubilized      = RegisterEquation(Model, "Organic N solubilized", MMolPerM2PerTs);
 	auto OrganicNMineralized      = RegisterEquation(Model, "Organic N mineralized", MMolPerM2PerTs);
-	auto DesiredNImmobilisation   = RegisterEquation(Model, "Desired N immobilization", MMolPerM2PerTs);
+	auto DesiredNImmobilisation   = RegisterEquation(Model, "Desired N immobilization (microbial model only)", MMolPerM2PerTs);
 	
 	
 	auto DesiredNO3Immobilisation = RegisterEquation(Model, "Desired NO3 immobilisation", MMolPerM2PerTs);
@@ -123,10 +122,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto OrganicC                = GetEquationHandle(Model, "Organic C");
 	auto OrganicCSolubilized     = GetEquationHandle(Model, "Organic C solubilized");
 	auto OrganicCInBiomass       = GetEquationHandle(Model, "Organic C in soil microbial biomass");
+	auto OrganicCLitter          = GetParameterDoubleHandle(Model, "Organic C litter");
 	
 	auto Solubilization          = GetParameterDoubleHandle(Model, "Solubilization");
-	
-	//auto OrganicCLitterIn          = RegisterInput(Model, "Organic C litter", MMolPerM2PerYear);
 	
 	auto IsSoil                    = GetParameterBoolHandle(Model, "This is a soil compartment");
 	auto IsTop                     = GetParameterBoolHandle(Model, "This is a top compartment");
@@ -144,11 +142,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto TotalTreeDecompNSource = GetEquationHandle(Model, "Total N source from tree decomposition");
 	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from tree decomposition");
 	
-	/*
-	EQUATION(Model, InitialOrganicCScaled,
-		return PARAMETER(InitialOrganicC)*1000.0;
-	)
-	*/
+
 	
 	EQUATION(Model, InitialOrganicNScaled,
 		return PARAMETER(InitialOrganicN)*1000.0;
@@ -171,55 +165,6 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		return CP;
 	)
 	
-	/*
-	EQUATION(Model, OrganicCLitterEq,
-		u64 type = PARAMETER(ComputeCLitterUsing);
-		double input  = RESULT(FractionOfYear) * IF_INPUT_ELSE_PARAMETER(OrganicCLitterIn, OrganicCLitter);
-		double steady = RESULT(OrganicCDecompositionEq) - RESULT(OrganicCInBiomass);
-		double uptake = (RESULT(DesiredNO3Uptake) + RESULT(DesiredNH4Uptake))*PARAMETER(LitterCNRatio);
-		
-		double result = input;
-		if(type == 1) result = steady;
-		if(type == 2) result = uptake;
-		return result;// + fromtrees;
-	)
-	
-	EQUATION(Model, OrganicCDecompositionEq,
-		return RESULT(FractionOfYear) * PARAMETER(OrganicCDecompositionR0) * std::pow(PARAMETER(OrganicCDecompositionQ10), RESULT(Temperature) * 0.1);;
-	)
-	
-	EQUATION(Model, OrganicCSolubilized,
-		return PARAMETER(Solubilization) * RESULT(OrganicCDecompositionEq);
-	)
-	
-	EQUATION(Model, OrganicCMineralized,
-		return (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(CUseEfficiency)) * RESULT(OrganicCDecompositionEq);
-	)
-	
-	EQUATION(Model, OrganicCInBiomass,
-		return (1.0 - PARAMETER(Solubilization)) * PARAMETER(CUseEfficiency) * RESULT(OrganicCDecompositionEq);
-	)
-	
-	EQUATION(Model, OrganicC,
-		double forest = RESULT(TotalTreeDecompCSource);
-		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
-	
-		double dCdt =
-			  RESULT(OrganicCLitterEq)
-			+ forest
-			- RESULT(OrganicCSolubilized)
-			- RESULT(OrganicCMineralized);
-		
-		if(!PARAMETER(IsSoil)) dCdt = 0.0; //TODO: make conditional exec instead?
-			
-		return LAST_RESULT(OrganicC) + dCdt;
-	)
-	*/
-	
-	//EQUATION(Model, OrganicNLitter,
-	//	return RESULT(OrganicCLitterEq) / PARAMETER(LitterCNRatio);
-	//)
-	
 	EQUATION(Model, OrganicNDecomposition,
 		return SafeDivide(RESULT(OrganicCDecompositionEq), RESULT(CNRatio));
 	)
@@ -229,11 +174,17 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, OrganicNMineralized,
-		double Value = (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(NUseEfficiency)) * RESULT(OrganicNDecomposition);
+		double microbial = (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(NUseEfficiency)) * RESULT(OrganicNDecomposition);
+		if(CURRENT_TIMESTEP()==-1) microbial = 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
-		if(CURRENT_TIMESTEP()==-1) Value = 0.0;  //NOTE: Stopgap because we don't compute uptake in the initial step to balance this..
+		double simple = PARAMETER(NMineralization)*RESULT(FractionOfYear);
 		
-		return Value;
+		u64 retmodel = PARAMETER(RetentionModel);
+		
+		if(retmodel == 0)
+			return simple;
+		else
+			return microbial;   // Gundersen and microbial
 	)
 	
 	EQUATION(Model, DesiredNImmobilisation,
@@ -242,6 +193,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		double potential = std::max(0.0, desired_n - available_n_in_decomp);
 		
 		if(!PARAMETER(DoImmobilisation))
+			potential = 0.0;
+		
+		if(PARAMETER(RetentionModel) != 2) //Microbial
 			potential = 0.0;
 		
 		return potential;
@@ -273,17 +227,14 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		double treeuptake = RESULT(TotalTreeNUptake);
 		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil) || CURRENT_TIMESTEP()==-1) treeuptake = 0.0;        //Hmm, plantuptake should maybe also be 0. But trees could have deep roots ideally
 		double plantuptake = RESULT(FractionOfYear) * PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
-		return (plantuptake + treeuptake) / (1.0 + PARAMETER(NH4UptakeScale));
+		return (plantuptake + treeuptake) * (1.0 - PARAMETER(NH4UptakeScale));
 	)
 	
 	EQUATION(Model, DesiredNH4Uptake,
-	/*
 		double treeuptake = RESULT(TotalTreeNUptake);
 		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil) || CURRENT_TIMESTEP()==-1) treeuptake = 0.0;        //Hmm, plantuptake should maybe also be 0. But trees could have deep roots ideally
 		double plantuptake = RESULT(FractionOfYear) * PARAMETER(UptakeR0) * std::pow(PARAMETER(UptakeQ10), RESULT(Temperature) * 0.1);
 		return (plantuptake + treeuptake) * PARAMETER(NH4UptakeScale);
-	*/
-		return RESULT(DesiredNO3Uptake) * PARAMETER(NH4UptakeScale);
 	)
 	
 	EQUATION(Model, NO3Inputs,
@@ -298,13 +249,48 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	EQUATION(Model, DesiredNO3Immobilisation,
 		double inno3 = RESULT(NO3Inputs) - RESULT(DenitrificationEq);
 		double innh4 = RESULT(NH4Inputs) - RESULT(NitrificationEq);
-		return inno3 * SafeDivide(RESULT(DesiredNImmobilisation), inno3 + innh4);
+		double microbial = inno3 * SafeDivide(RESULT(DesiredNImmobilisation), inno3 + innh4);
+		
+		double simple = PARAMETER(DesiredNO3Retention);
+		double result_simple = simple * RESULT(FractionOfYear);
+		if(simple < 0.0)
+			result_simple = -simple*0.01*inno3;
+		
+		double gundersen = inno3 * LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNO3Immobilisation), PARAMETER(UpperCNThresholdForNO3Immobilisation), 0.0, 1.0);
+		
+		if(!PARAMETER(DoImmobilisation)) return 0.0;
+		
+		u64 retmodel = PARAMETER(RetentionModel);
+		if(retmodel == 0)
+			return result_simple;
+		else if(retmodel == 1)
+			return gundersen;
+		else
+			return microbial;
 	)
 	
 	EQUATION(Model, DesiredNH4Immobilisation,
 		double inno3 = RESULT(NO3Inputs) - RESULT(DenitrificationEq);
 		double innh4 = RESULT(NH4Inputs) - RESULT(NitrificationEq);
-		return innh4 * SafeDivide(RESULT(DesiredNImmobilisation), inno3 + innh4);
+		double microbial = innh4 * SafeDivide(RESULT(DesiredNImmobilisation), inno3 + innh4);
+		
+		double simple = PARAMETER(DesiredNH4Retention);
+		double result_simple = simple * RESULT(FractionOfYear);
+		if(simple < 0.0)
+			result_simple = -simple*0.01*innh4;
+		
+		double gundersen = innh4 * LinearResponse(RESULT(CNRatio), PARAMETER(LowerCNThresholdForNH4Immobilisation), PARAMETER(UpperCNThresholdForNH4Immobilisation), 0.0, 1.0);
+		
+		u64 retmodel = PARAMETER(RetentionModel);
+		
+		if(!PARAMETER(DoImmobilisation)) return 0.0;
+		
+		if(retmodel == 0)
+			return result_simple;
+		else if(retmodel == 1)
+			return gundersen;
+		else
+			return microbial;
 	)
 	
 	
@@ -370,7 +356,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
 	
 		double dNdt =
-			  //RESULT(OrganicNLitter)
+			  PARAMETER(OrganicCLitter) / PARAMETER(LitterCNRatio)
 			+ forest
 			- RESULT(OrganicNSolubilized)
 			- RESULT(OrganicNMineralized)
@@ -383,10 +369,6 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		return LAST_RESULT(OrganicN) + dNdt;
 	)
 	
-	//EQUATION(Model, OrganicPLitter,
-	//	return RESULT(OrganicCLitterEq) / PARAMETER(LitterCPRatio);
-	//)
-	
 	EQUATION(Model, OrganicPDecomposition,
 		return SafeDivide(RESULT(OrganicCDecompositionEq), RESULT(CPRatio));
 	)
@@ -396,18 +378,43 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, OrganicPMineralized,
-		return (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(PUseEfficiency)) * RESULT(OrganicPDecomposition);
+		double microbial = (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(PUseEfficiency)) * RESULT(OrganicPDecomposition);
+		if(CURRENT_TIMESTEP()==-1) microbial = 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
+		
+		double simple = PARAMETER(PMineralization)*RESULT(FractionOfYear);
+		
+		u64 retmodel = PARAMETER(RetentionModel);
+		
+		if(retmodel == 0)
+			return simple;
+		else
+			return microbial;   // Gundersen and microbial
 	)
 	
 	EQUATION(Model, DesiredPImmobilisation,
 		double available_p_in_decomp = (1.0 - PARAMETER(Solubilization)) * PARAMETER(PUseEfficiency) * RESULT(OrganicPDecomposition);
 		double desired_p             = RESULT(OrganicCInBiomass) / PARAMETER(MicrobeCPRatio);
-		double potential = std::max(0.0, desired_p - available_p_in_decomp);
+		double microbial = std::max(0.0, desired_p - available_p_in_decomp);
 		
-		if(!PARAMETER(DoImmobilisation))
-			potential = 0.0;
-			
-		return potential;
+		double inpo4 = RESULT(PO4Inputs);
+		
+		double simple = PARAMETER(DesiredPO4Retention);
+		double result_simple = simple * RESULT(FractionOfYear);
+		if(simple < 0.0)
+			result_simple = -simple*0.01*inpo4;
+		
+		double gundersen = inpo4 * LinearResponse(RESULT(CNRatio), PARAMETER(LowerCPThresholdForPO4Immobilisation), PARAMETER(UpperCPThresholdForPO4Immobilisation), 0.0, 1.0);
+		
+		u64 retmodel = PARAMETER(RetentionModel);
+		
+		if(!PARAMETER(DoImmobilisation)) return 0.0;
+		
+		if(retmodel == 0)
+			return result_simple;
+		else if(retmodel == 1)
+			return gundersen;
+		else
+			return microbial;
 	)
 	
 	EQUATION(Model, DesiredPUptake,
@@ -446,7 +453,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	EQUATION(Model, OrganicP,
 		double dPdt =
-			  //RESULT(OrganicPLitter)
+			  PARAMETER(OrganicCLitter) / PARAMETER(LitterCPRatio)
 			- RESULT(OrganicPSolubilized)
 			- RESULT(OrganicPMineralized)
 			- RESULT(OrganicPUptake)
