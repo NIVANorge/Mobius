@@ -50,6 +50,7 @@ struct token_stream
 	{
 		FileData = 0;
 		FileDataLength = 0;
+		TokenQueue = 0;
 		this->Filename = Filename;
 		FILE *File;
 #ifdef _WIN32
@@ -101,18 +102,21 @@ struct token_stream
 		}
 		
 		StartLine = 0; StartColumn = 0; Line = 0; Column = 0; PreviousColumn = 0;
-		AtToken = -1;
+		Cursor_File = -1;
+		FurthestPeek_File = -1;
 		
-		Tokens.reserve(500); //NOTE: This will usually speed things up.
+		TokenQueueCapacity = 16;   //This is how far we can peek into the file from our current cursor position (without resizing the token queue)
+		TokenQueue = AllocClearedArray(token, TokenQueueCapacity);
 	}
 	
 	~token_stream()
 	{
-		if(FileData) free(FileData);
+		if(FileData)   free(FileData);
+		if(TokenQueue) free(TokenQueue);
 	}
 	
 	token ReadToken();
-	token PeekToken(size_t PeekAhead = 1);
+	token PeekToken(s64 PeekAhead = 1);
 	token ExpectToken(token_type);
 	
 	double       ExpectDouble();
@@ -144,10 +148,12 @@ private:
 	size_t FileDataLength;
 	s64    AtChar;
 	
-	std::vector<token> Tokens;   //TODO: It is not really necessary to store all the tokens we have read, only the ones that are "ahead" and have not been consumed yet.
-	s64 AtToken;
+	token  *TokenQueue;
+	size_t TokenQueueCapacity;
+	s64 Cursor_File;
+	s64 FurthestPeek_File;
 	
-	void ReadTokenInternal_();
+	void ReadTokenInternal_(token &Token);
 	
 };
 
@@ -160,21 +166,38 @@ token_stream::PrintErrorHeader(bool CurrentColumn)
 }
 
 token
-token_stream::ReadToken()
+token_stream::PeekToken(s64 PeekAhead)
 {
-	AtToken++;
-	if(AtToken >= (s64)Tokens.size())
-		ReadTokenInternal_();
-
-	return Tokens[AtToken];
+	if(PeekAhead < 1) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
+	
+	s64 CapacityNeed = (Cursor_File + PeekAhead) - FurthestPeek_File;
+	if(CapacityNeed > (s64)TokenQueueCapacity)    //NOTE: Resize the queue if we need more capacity. This will probably never happen since we don't peek that far ahead while parsing...
+	{
+		size_t NewCapacity = TokenQueueCapacity*2;
+		while(CapacityNeed > (s64)NewCapacity) NewCapacity *= 2;
+		token *NewQueue = AllocClearedArray(token, NewCapacity);
+		for(int TokenIdx = 0; TokenIdx < (int)TokenQueueCapacity; ++TokenIdx) NewQueue[(Cursor_File + TokenIdx) % NewCapacity] = TokenQueue[(Cursor_File + TokenIdx) % TokenQueueCapacity];
+		free(TokenQueue);
+		TokenQueue = NewQueue;
+		TokenQueueCapacity = NewCapacity;
+	}
+	
+	while(FurthestPeek_File < Cursor_File + PeekAhead)
+	{
+		FurthestPeek_File++;
+		token &Token = TokenQueue[FurthestPeek_File % TokenQueueCapacity];
+		ReadTokenInternal_(Token);
+	}
+	
+	return TokenQueue[(Cursor_File + PeekAhead) % TokenQueueCapacity];
 }
 
 token
-token_stream::PeekToken(size_t PeekAhead)
+token_stream::ReadToken()
 {
-	while(AtToken + PeekAhead >= Tokens.size())
-		ReadTokenInternal_();
-	return Tokens[AtToken + PeekAhead];
+	token Token = PeekToken();
+	Cursor_File++;
+	return Token;
 }
 
 token
@@ -217,12 +240,11 @@ MultiplyByTenAndAdd(s32 *Number, s32 Addendand)
 }
 
 void
-token_stream::ReadTokenInternal_()
+token_stream::ReadTokenInternal_(token &Token)
 {
 	//TODO: we should do heavy cleanup of this function, especially the floating point reading.
 	
-	Tokens.resize(Tokens.size()+1, {});
-	token &Token = Tokens[Tokens.size()-1];
+	Token = {}; // 0-initialize
 	
 	if(AtEnd)
 	{
@@ -432,12 +454,12 @@ token_stream::ReadTokenInternal_()
 				if(HasExponent)
 				{
 					PrintErrorHeader();
-					FatalError("Comma in exponent in numeric literal.\n");
+					FatalError("Decimal separator in exponent in numeric literal.\n");
 				}
 				if(HasComma)
 				{
 					PrintErrorHeader();
-					FatalError("More than one comma in a numeric literal.\n");
+					FatalError("More than one decimal separator in a numeric literal.\n");
 				}
 				NumericPos = 0;
 				HasComma = true;

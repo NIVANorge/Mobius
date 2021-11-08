@@ -194,7 +194,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto TotalTreeKUptake        = RegisterEquation(Model, "Total tree K uptake", MEqPerM2PerTs);
 	auto ForestCoverAvg          = RegisterEquation(Model, "Forest cover averaged over patches", Dimensionless);
 	
-	// From WASMOD:
+	// From ABCD:
 	auto Runoff                  = GetEquationHandle(Model, "Runoff");
 	
 	// From the core wrapper:

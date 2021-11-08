@@ -679,7 +679,7 @@ DllSetInputSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCoun
 }
 
 
-//TODO: Some of the following should be wrapped into accessors in mobius_data_set.cpp, because we are creating too many dependencies on implementation details here:
+//TODO: Some of the following should be wrapped into accessors in mobius_data_set.h, because we are creating too many dependencies on implementation details here:
 
 DLLEXPORT u64
 DllGetIndexSetsCount(void *DataSetPtr)

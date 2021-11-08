@@ -26,7 +26,7 @@ This is the ABCD hydrological model, with snow sub-model taken from WASMOD.
 	auto PropensityForDryRunoff = RegisterParameterDouble(Model, ABCDPars, "a (propensity for runoff below saturation)", Dimensionless, 1.0, 0.5, 1.0, "A value of 1 means no runoff when soil moisture is below field capacity");
 	auto FieldCapacity          = RegisterParameterDouble(Model, ABCDPars, "b (field capacity)", Mm, 150, 0.0, 500.0);
 	auto BaseflowIndex          = RegisterParameterDouble(Model, ABCDPars, "c (baseflow index)", Dimensionless, 0.5, 0.0, 1.0);
-	auto GroundwaterFlowRate    = RegisterParameterDouble(Model, ABCDPars, "d (groundwater flow rate)", PerMonth, 0.1, 0.0, 1.0);
+	auto GroundwaterFlowRate    = RegisterParameterDouble(Model, ABCDPars, "d (groundwater flow rate)", PerMonth, 0.1, 0.0, 20.0);
 	
 	auto SnowMeltsAbove         = RegisterParameterDouble(Model, ABCDPars, "Snow melts above this temperature", DegreesCelsius, 0.0, -4.0, 4.0);
 	auto SnowFallOffset         = RegisterParameterDouble(Model, ABCDPars, "Precipitation falls as snow below this temperature", DegreesCelsius, 0.1, 0.001, 10.0, "This is an offset from the snow melt temperature. Must be nonzero");
