@@ -100,16 +100,16 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto FDepositionTot          = RegisterInput(Model, "Total F deposition", MEqPerM2PerTs);
 	auto PO4DepositionTot        = RegisterInput(Model, "Total PO4 deposition", MEqPerM2PerTs);
 	
-	auto CaWetDepositionIn       = RegisterInput(Model, "Wet Ca deposition", MEqPerM2PerTs);
-	auto MgWetDepositionIn       = RegisterInput(Model, "Wet Mg deposition", MEqPerM2PerTs);
-	auto NaWetDepositionIn       = RegisterInput(Model, "Wet Na deposition", MEqPerM2PerTs);
-	auto KWetDepositionIn        = RegisterInput(Model, "Wet K deposition", MEqPerM2PerTs);
-	auto NH4WetDepositionIn      = RegisterInput(Model, "Wet NH4 deposition", MEqPerM2PerTs);
-	auto SO4WetDepositionIn      = RegisterInput(Model, "Wet SO4 deposition", MEqPerM2PerTs);
-	auto ClWetDepositionIn       = RegisterInput(Model, "Wet Cl deposition", MEqPerM2PerTs);
-	auto NO3WetDepositionIn      = RegisterInput(Model, "Wet NO3 deposition", MEqPerM2PerTs);
-	auto FWetDepositionIn        = RegisterInput(Model, "Wet F deposition", MEqPerM2PerTs);
-	auto PO4WetDepositionIn      = RegisterInput(Model, "Wet PO4 deposition", MEqPerM2PerTs);
+	auto CaWetDepositionIn       = RegisterInput(Model, "Ca conc in precipitation", MEqPerM2PerTs);
+	auto MgWetDepositionIn       = RegisterInput(Model, "Mg conc in precipitation", MEqPerM2PerTs);
+	auto NaWetDepositionIn       = RegisterInput(Model, "Na conc in precipitation", MEqPerM2PerTs);
+	auto KWetDepositionIn        = RegisterInput(Model, "K conc in precipitation", MEqPerM2PerTs);
+	auto NH4WetDepositionIn      = RegisterInput(Model, "NH4 conc in precipitation", MEqPerM2PerTs);
+	auto SO4WetDepositionIn      = RegisterInput(Model, "SO4 conc in precipitation", MEqPerM2PerTs);
+	auto ClWetDepositionIn       = RegisterInput(Model, "Cl conc in precipitation", MEqPerM2PerTs);
+	auto NO3WetDepositionIn      = RegisterInput(Model, "NO3 conc in precipitation", MEqPerM2PerTs);
+	auto FWetDepositionIn        = RegisterInput(Model, "F conc in precipitation", MEqPerM2PerTs);
+	auto PO4WetDepositionIn      = RegisterInput(Model, "PO4 conc in precipitation", MEqPerM2PerTs);
 	
 	auto CaWetDepositionScale    = RegisterInput(Model, "Wet Ca deposition scale", Dimensionless);
 	auto MgWetDepositionScale    = RegisterInput(Model, "Wet Mg deposition scale", Dimensionless);
@@ -246,7 +246,6 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	
-	//TODO: Should be computed in forest module instead. This is just to get it to run.
 	EQUATION(Model, ForestDryDepositionModifier,
 		double forest = RESULT(ForestCoverAvg);
 		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
@@ -258,13 +257,13 @@ Forest growth driver module developed as part of the CatchCAN project.
 	EQUATION(Model, Elem##WetDeposition, \
 		double precip = INPUT(Precipitation) * 1e-3; \
 		double conc = PARAMETER(Elem##DepConc); \
-		double wetin = INPUT(Elem##WetDepositionIn); \
+		double concin = INPUT(Elem##WetDepositionIn); \
 		double scale = INPUT(Elem##WetDepositionScale); \
 		if(!PARAMETER(IsTop)) return 0.0; \
 		if(!INPUT_WAS_PROVIDED(Elem##WetDepositionScale) || !std::isfinite(scale)) \
 			scale = 1.0; \
-		if(INPUT_WAS_PROVIDED(Elem##WetDepositionIn) && std::isfinite(wetin)) \
-			return wetin; \
+		if(INPUT_WAS_PROVIDED(Elem##WetDepositionIn) && std::isfinite(concin)) \
+			conc = concin; \
 		return conc * precip * scale; \
 	)
 	

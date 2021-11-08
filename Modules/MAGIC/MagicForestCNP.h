@@ -175,11 +175,12 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	EQUATION(Model, OrganicNMineralized,
 		double microbial = (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(NUseEfficiency)) * RESULT(OrganicNDecomposition);
-		if(CURRENT_TIMESTEP()==-1) microbial = 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
 		double simple = PARAMETER(NMineralization)*RESULT(FractionOfYear);
 		
 		u64 retmodel = PARAMETER(RetentionModel);
+		
+		if(CURRENT_TIMESTEP()==-1) return 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
 		if(retmodel == 0)
 			return simple;
@@ -379,11 +380,12 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	EQUATION(Model, OrganicPMineralized,
 		double microbial = (1.0 - PARAMETER(Solubilization)) * (1.0 - PARAMETER(PUseEfficiency)) * RESULT(OrganicPDecomposition);
-		if(CURRENT_TIMESTEP()==-1) microbial = 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
 		double simple = PARAMETER(PMineralization)*RESULT(FractionOfYear);
 		
 		u64 retmodel = PARAMETER(RetentionModel);
+		
+		if(CURRENT_TIMESTEP()==-1) return 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
 		if(retmodel == 0)
 			return simple;
