@@ -315,6 +315,9 @@ GroupPreBatches(mobius_model *Model, std::vector<equation_h> &Equations, std::ve
 		if(IsValid(Solver) && IsValid(Spec.Conditional))
 			FatalError("The equation \"", GetName(Model, Equation), "\" was registered with both a solver and a conditional execution. For solvers, the conditional execution should be put on the solver instead of on the equation directly.\n");
 		
+		if(IsValid(Spec.IsComputedBy) && (IsValid(Solver) || IsValid(Conditional)))
+			FatalError("The equation \"", GetName(Model, Equation), "\" was registered with an IsComputedBy and either a conditional execution or a solver. The IsComputedBy functionality can't be combined with these.\n");
+		
 		if(Spec.Type == EquationType_InitialValue) continue; //NOTE: initial value equations should not be a part of the result structure.
 		
 		pre_batch *Batch;
@@ -781,8 +784,16 @@ EndModelDefinition(mobius_model *Model)
 			continue;
 		}
 		
+		if(IsValid(Spec.IsComputedBy))
+		{
+			//NOTE: If an equation is declared as IsComputedBy, the index set dependencies were declared in that call, and will not be found out using the method below.
+			Spec.IndexSetDependencies.insert(Spec.IndexSetDependencies_ComputedBy.begin(), Spec.IndexSetDependencies_ComputedBy.end());
+			continue;
+		}
+		
 		if(!Spec.EquationIsSet)
 			FatalError("ERROR: The equation body for the registered equation \"", GetName(Model, Equation), "\" has not been defined.\n");
+		
 		
 		// Clear dependency registrations from evaluation of previous equation.
 		RunState.Clear();
@@ -1523,22 +1534,30 @@ INNER_LOOP_BODY(RunInnerLoop)
 			}
 			
 			if(!IsValid(Batch.Solver))
-			{
+			{	
 				//NOTE: Basic discrete timestep evaluation of equations.
 				for(equation_h Equation : Batch.Equations) 
-				{	
-					double ResultValue = CallEquation(Model, RunState, Equation);
+				{
+					double ResultValue;
+					//TODO: This is very inefficient, but we can't remove them from the equation batches since that would screw up the storage structure... Is there a better way to do this?
+					const equation_spec &Spec = Model->Equations[Equation];
+					if(!IsValid(Spec.IsComputedBy))
+					{
+						ResultValue = CallEquation(Model, RunState, Equation);
+						*RunState->AtResult = ResultValue;
+					}
+					else
+						ResultValue = *RunState->AtResult;
+					
+					RunState->CurResults[Equation.Handle] = ResultValue;
 #if MOBIUS_TEST_FOR_NAN
 					NaNTest(Model, RunState, ResultValue, Equation);
 #endif
-					*RunState->AtResult = ResultValue;
-					++RunState->AtResult;
-					RunState->CurResults[Equation.Handle] = ResultValue;
-				
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
 					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
 					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
 #endif
+					++RunState->AtResult;
 				}
 			}
 			else // IsValid(Batch.Solver)

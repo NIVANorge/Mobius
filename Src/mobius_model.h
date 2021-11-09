@@ -287,7 +287,9 @@ struct equation_spec
 	
 	solver_h Solver;
 	conditional_h Conditional;
-		
+	
+	equation_h IsComputedBy;         //NOTE: Special functionality for when one result series is computed by another equation using SET_RESULT
+	std::set<index_set_h>  IndexSetDependencies_ComputedBy;
 		
 	//NOTE: It would be nice to remove the following from the equation_spec and instead just store it in a temporary structure in EndModelDefinition, however it is reused in debug printouts etc. in the model run, so we have to store it in the model object somewhere anyway.
 	
@@ -1255,6 +1257,26 @@ ResetEveryTimestep(mobius_model *Model, equation_h Equation)
 		FatalError("ERROR: Called ResetEveryTimestep on the equation \"", Spec.Name, "\", but this functionality is only available for ODE equations.\n");
 	}
 	Spec.ResetEveryTimestep = true;
+}
+
+template <typename... T>
+inline void
+EquationIsComputedBy(mobius_model *Model, equation_h Computed, equation_h ComputedBy, T... IndexSets)
+{
+	REGISTRATION_BLOCK(Model);
+	equation_spec &Spec = Model->Equations[Computed];
+	if(Spec.Type != EquationType_Basic)
+	{
+		PrintRegistrationErrorHeader(Model);
+		FatalError("ERROR: Only basic equations can be computed using IsComputedBy, ", Spec.Name, " is not a basic equation.\n");
+	}
+	if(IsValid(Spec.Solver) || IsValid(Spec.Conditional))
+	{
+		PrintRegistrationErrorHeader(Model);
+		FatalError("ERROR: Equations that are put on a solver or a conditional can't be computed using IsComputedBy. ", Spec.Name, " was registered with one of these.\n");
+	}
+	Spec.IsComputedBy = ComputedBy;
+	Spec.IndexSetDependencies_ComputedBy = {IndexSets...};
 }
 
 #define MOBIUS_SOLVER_SETUP_FUNCTION(Name) void Name(solver_spec *SolverSpec)

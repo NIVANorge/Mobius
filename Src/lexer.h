@@ -90,7 +90,7 @@ struct token_stream
 		
 		AtChar = -1;
 		
-		//NOTE: In case the file has a BOM mark
+		//NOTE: In case the file has a BOM mark, which Notepad tends to do on Windows.
 		if(FileDataLength >= 3)
 		{
 			if(
@@ -170,11 +170,10 @@ token_stream::PeekToken(s64 PeekAhead)
 {
 	if(PeekAhead < 1) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
 	
-	s64 CapacityNeed = (Cursor_File + PeekAhead) - FurthestPeek_File;
-	if(CapacityNeed > (s64)TokenQueueCapacity)    //NOTE: Resize the queue if we need more capacity. This will probably never happen since we don't peek that far ahead while parsing...
+	if(PeekAhead > (s64)TokenQueueCapacity)    //NOTE: Resize the queue if we need more capacity. This will probably never happen since we don't peek that far ahead while parsing...
 	{
 		size_t NewCapacity = TokenQueueCapacity*2;
-		while(CapacityNeed > (s64)NewCapacity) NewCapacity *= 2;
+		while(PeekAhead > (s64)NewCapacity) NewCapacity *= 2;
 		token *NewQueue = AllocClearedArray(token, NewCapacity);
 		for(int TokenIdx = 0; TokenIdx < (int)TokenQueueCapacity; ++TokenIdx) NewQueue[(Cursor_File + TokenIdx) % NewCapacity] = TokenQueue[(Cursor_File + TokenIdx) % TokenQueueCapacity];
 		free(TokenQueue);
