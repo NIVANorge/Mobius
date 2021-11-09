@@ -1,0 +1,15 @@
+SedFlex depends on the armadillo C++ linear algebra library
+http://arma.sourceforge.net/
+Which again depends on openBLAS
+
+The following instructions are for 64bit Windows. Other platforms are not yet tested.
+
+To compile SedFlex, you need to download armadillo from here:
+http://arma.sourceforge.net/download.html
+Then put the contents of the include directory (inside the download) in the include directory of your compiler
+
+Next, you need to copy the folder (not just its contents)
+examples/lib_win64
+to this SedFlex folder, so that the file SedFlex/lib_win64/libopenblas.lib exists.
+
+To run SedFlex, you also need to copy lib_win64/libopenblas.dll to the same folder as your running .exe (this is typically MobiView.exe).

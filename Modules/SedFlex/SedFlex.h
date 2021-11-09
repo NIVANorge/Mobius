@@ -212,9 +212,9 @@ AddSedFlexModel(mobius_model *Model)
 	auto WaterConc                = RegisterEquation(Model, "Total concentration in water", GPerM3);
 	auto SedConc                  = RegisterEquation(Model, "Total concentration in sediments", GPerM3);
 	auto WaterConcParticulate     = RegisterEquation(Model, "Particulate concentration in water", GPerM3);
-	auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sdeiments", GPerM3);
-	auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", PGPerM3);
-	auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments", PGPerM3);
+	//auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sediments", GPerM3);
+	//auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", GPerM3);
+	//auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments", GPerM3);
 	
 	
 	auto SolveSedFlex = RegisterEquation(Model, "SedFlex solver code", Dimensionless);
@@ -534,24 +534,6 @@ AddSedFlexModel(mobius_model *Model)
 		return adv*86400.0/PARAMETER(MolecularWeight); //((24*3600 s/day) * (mol/g) * (g/m3) * (m3/s) = mol/d)
 	)
 	
-	EQUATION(Model, WaterConc,
-		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
-		
-		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
-	)
-	
-	EQUATION(Model, SedConc,
-		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
-		
-		return RESULT(FugacityInSed)*RESULT(TotalFCSed)*PARAMETER(MolecularWeight);
-	)
-	
-	EQUATION(Model, WaterConcParticulate,
-		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
-		
-		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
-	)
-	
 	EQUATION(Model, SolveSedFlex,
 		u32 N = INDEX_COUNT(Compartment).Index;
 		u32 N2 = N*2;
@@ -562,6 +544,9 @@ AddSedFlexModel(mobius_model *Model)
 		arma::vec b(N2, arma::fill::zeros);        // Sources
 		
 		
+		//NOTE: This is a stopgap to get those in the right batch to not screw up initial values. Eventually we should fix the initial value system.
+		RESULT(FugacityInWater, FIRST_INDEX(Compartment));
+		RESULT(FugacityInSed,   FIRST_INDEX(Compartment));
 		
 		double MW = PARAMETER(MolecularWeight);
 		
@@ -651,15 +636,27 @@ AddSedFlexModel(mobius_model *Model)
 		
 		/*
 		NOTE: the linear system
-			dA/dt = A*x + b
+			dx/dt = A*x + b
 		has solution
 			x(t) = exp(A*t)x(0) + A^-1(exp(A*t) - I)b
 		*/
 		
+		
 		double dt = (double)CURRENT_TIME().StepLengthInSeconds / 86400.0;  // Step length in days
-		arma::mat expAdt = arma::expmat(dt*A);
-		arma::vec x  = expAdt*x0 + arma::solve(A, expAdt*b - b);
-		//NOTE: In exact math, The image (colspace) of exp(A*t)-I will always be in the image of A, so the is well defined, but there could be numerical errors in the computation of expAdt, or it could be ill-conditioned? Is there a better way to do this that computes A^-1(exp(At)-I) directly, and which doesn't involve using ODE solvers (which is slow) ?
+
+		arma::mat expAdt(N2, N2, arma::fill::none);
+		bool Success = arma::expmat(expAdt, dt*A);
+		if(!Success) FatalError("ERROR(SedFlex): Failed to exponentiate matrix");
+		arma::vec x(N2, arma::fill::none);
+		Success  = arma::solve(x, A, expAdt*b - b);
+		if(!Success) FatalError("ERROR(SedFlex): Failed to solve linear system");
+		x += expAdt*x0;
+		
+		//arma::mat expAdt = arma::expmat(dt*A);
+		//arma::vec x  = expAdt*x0 + arma::solve(A, expAdt*b - b);
+		//NOTE: In exact math, The image (colspace) of exp(A*t)-I will always be in the image of A, so the result is well defined, 
+		// but there could be numerical errors in the computation of expAdt, or it could be ill-conditioned?
+		// Is there a better way to do this that computes A^-1(exp(At)-I) directly, and which doesn't involve using ODE solvers (which is slow) ?
 		
 		// Write the results back out
 		for(index_t Comp = FIRST_INDEX(Compartment); Comp < INDEX_COUNT(Compartment); ++Comp)
@@ -675,16 +672,45 @@ AddSedFlexModel(mobius_model *Model)
 	)
 	
 	
+	
+	EquationIsComputedBy(Model, FugacityInWater, SolveSedFlex, Chemical, Compartment);
+	EquationIsComputedBy(Model, FugacityInSed,   SolveSedFlex, Chemical, Compartment);
 	//NOTE: Just make sure that these two don't overwrite their values.
 	//TODO: We should eventually have some kind of IsComputedBy functionality that makes sure we don't have to use this hack here...
-	
+	/*
 	EQUATION(Model, FugacityInWater,
-		return RESULT(FugacityInWater, CURRENT_INDEX(Compartment));
+		return RESULT(FugacityInWater, CURRENT_INDEX(Chemical), CURRENT_INDEX(Compartment));
 	)
 	
 	EQUATION(Model, FugacityInSed,
-		return RESULT(FugacityInSed, CURRENT_INDEX(Compartment));
+		return RESULT(FugacityInSed, CURRENT_INDEX(Chemical), CURRENT_INDEX(Compartment));
 	)
+	*/
+	
+	
+	
+	EQUATION(Model, WaterConc,
+		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
+		
+		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
+	)
+	
+	EQUATION(Model, SedConc,
+		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
+		
+		return RESULT(FugacityInSed)*RESULT(TotalFCSed)*PARAMETER(MolecularWeight);
+	)
+	
+	EQUATION(Model, WaterConcParticulate,
+		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
+		
+		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
+	)
+	
+	//TODO
+	//EQUATION(Model, SedConcParticulate,
+//	
+//	)
 
 	
 	EndModule(Model);
