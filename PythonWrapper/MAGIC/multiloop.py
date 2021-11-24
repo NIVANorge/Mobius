@@ -14,7 +14,7 @@ def set_single_series_value(ds, name, year, value) :
 	ds.set_input_series(name, [], series.values)
 
 
-def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1) :
+def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year=True) :
 	soilfile, lakefile1, lakefile2, depofile, seqfile = excelfiles
 	
 	soil_df = pd.read_excel(soilfile, sheet_name='CCE-soil', header=16, skiprows=[17], index_col=1)
@@ -154,13 +154,14 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1) :
 		
 		#### LAKE sheet 2 :
 		
-		elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
-		
-		year = lake2['Year']
-		for elem in elems :
-			set_single_series_value(ds, 'Observed %s'%elem, year, lake2['%s'%elem])
+		if two_year :
+			elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
 			
-		set_single_series_value(ds, 'Observed lake pH', year, lake2['pH'])
+			year = lake2['Year']
+			for elem in elems :
+				set_single_series_value(ds, 'Observed %s'%elem, year, lake2['%s'%elem])
+				
+			set_single_series_value(ds, 'Observed lake pH', year, lake2['pH'])
 		
 		
 		#### SEQUENCE sheet

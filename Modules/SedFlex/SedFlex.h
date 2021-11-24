@@ -675,17 +675,7 @@ AddSedFlexModel(mobius_model *Model)
 	
 	EquationIsComputedBy(Model, FugacityInWater, SolveSedFlex, Chemical, Compartment);
 	EquationIsComputedBy(Model, FugacityInSed,   SolveSedFlex, Chemical, Compartment);
-	//NOTE: Just make sure that these two don't overwrite their values.
-	//TODO: We should eventually have some kind of IsComputedBy functionality that makes sure we don't have to use this hack here...
-	/*
-	EQUATION(Model, FugacityInWater,
-		return RESULT(FugacityInWater, CURRENT_INDEX(Chemical), CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, FugacityInSed,
-		return RESULT(FugacityInSed, CURRENT_INDEX(Chemical), CURRENT_INDEX(Compartment));
-	)
-	*/
+
 	
 	
 	

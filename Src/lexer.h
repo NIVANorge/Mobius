@@ -208,7 +208,7 @@ token_stream::ExpectToken(token_type Type)
 		PrintErrorHeader();
 		ErrorPrint("Expected a token of type ", TokenNames[Type], ", got a(n) ", TokenNames[Token.Type]);
 		if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_UnquotedString)
-			ErrorPrint(" (", Token.StringValue, ")");
+			ErrorPrint(" \"", Token.StringValue, "\"");
 		FatalError('\n');
 	}
 	return Token;
@@ -350,9 +350,6 @@ token_stream::ReadTokenInternal_(token &Token)
 			if(c == '"' && Token.StringValue.Length > 0)
 			{
 				Token.StringValue.Length--; //NOTE: Don't record the " in the string value.
-				
-				//std::cout << Token.StringValue << std::endl;
-				
 				return;
 			}
 			else if (c != '"' && c == '\n')

@@ -1693,8 +1693,17 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 	else if(IsValid(Spec.InitialValueEquation))
 		Initial = Model->EquationBodies[Spec.InitialValueEquation.Handle](RunState);
 	else
+	{
 		//NOTE: Equations without any type of initial value act as their own initial value equation
-		Initial = Model->EquationBodies[Equation.Handle](RunState);
+		if(IsValid(Spec.IsComputedBy))
+		{
+			//NOTE: In this case, this equation doesn't have an equation body of its own..
+			WarningPrint("WARNING: The equation \"", Spec.Name, "\" is called during the initial value setup, but it does not have an equation body since it is set to be computed by a separate equation. You should set an intial value equation or parameter as the initial value of this equation.\n");
+			Initial = 0.0;
+		}
+		else
+			Initial = Model->EquationBodies[Equation.Handle](RunState);
+	}
 	
 	size_t ResultStorageLocation = DataSet->ResultStorageStructure.LocationOfHandleInUnit[Equation.Handle];
 	

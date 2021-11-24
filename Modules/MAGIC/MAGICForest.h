@@ -158,6 +158,8 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto PartialPressureCO2      = RegisterEquation(Model, "CO2 partial pressure", Percent);
 	auto OAConcentration         = RegisterEquation(Model, "Organic acid concentration", MMolPerM3);
 	
+	SetInitialValue(Model, OAConcentration, OAConcentrationPar);
+	
 	
 	auto CaExternalFlux          = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
 	auto MgExternalFlux          = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
@@ -202,7 +204,6 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto IsTop                   = GetParameterBoolHandle(Model, "This is a top compartment");
 	
 	auto ConcSO4                 = GetEquationHandle(Model, "SO4(2-) ionic concentration");
-	
 
 	
 	EQUATION(Model, FractionOfYear,

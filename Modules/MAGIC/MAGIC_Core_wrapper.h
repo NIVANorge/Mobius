@@ -435,7 +435,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	
 	
 	EQUATION(Model, InitialF,
-		double initconc        = RESULT(ConcF);
+		double initconc        = RESULT(ConcAllF);
 		double porosity        = PARAMETER(Porosity);
 		double WaterVolume     = PARAMETER(Depth);
 		if(PARAMETER(IsSoil)) WaterVolume *= porosity;
@@ -753,196 +753,43 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		return Result.conc_H;
 	)
 	
-	//TODO: We should maybe have a way to tell the model that this is not computed "Mobius style" so that we don't need to provide the dummy equations.
-	//      Alternatively, make a "multi-equation" that can just take the result of the struct and write it directly into memory in the right place (would be way more efficient...)
-	
-	EQUATION(Model, ConcCa,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcCa, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcMg,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcMg, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcNa,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcNa, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcK,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcK, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcNH4,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcNH4, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcSO4,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcSO4, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcAllSO4,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcAllSO4, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcCl,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcCl, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcNO3,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcNO3, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcF,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcF, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcAllF,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcAllF, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcPO4,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcPO4, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, PH,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(PH, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, SumBaseCationConc,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(SumBaseCationConc, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, SumAcidAnionConc,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(SumAcidAnionConc, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ChargeBalanceAlk,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ChargeBalanceAlk, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, WeakAcidAlk,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(WeakAcidAlk, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ExchangeableCa,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ExchangeableCa, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ExchangeableMg,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ExchangeableMg, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ExchangeableNa,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ExchangeableNa, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ExchangeableK,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ExchangeableK, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ExchangeableSO4,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ExchangeableSO4, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, BaseSaturationSoil,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(BaseSaturationSoil, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcHCO3,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcHCO3, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcCO3,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcCO3, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcAl,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcAl, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcAllAl,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcAllAl, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcOrgAl,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcOrgAl, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcH2AM,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcH2AM, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcHA2M,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcHA2M, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcA3M,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcA3M, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, SumPositive,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(SumPositive, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, SumNegative,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(SumNegative, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcAllDOC,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcAllDOC, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, ConcAllDIC,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(ConcAllDIC, CURRENT_INDEX(Compartment));
-	)
-	
-	EQUATION(Model, CaAlRatio,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(CaAlRatio, CURRENT_INDEX(Compartment));
-	)
-	
+	EquationIsComputedBy(Model, ConcCa,  ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcMg,  ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcNa,  ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcK,   ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcNH4, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcSO4, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcAllSO4, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcCl,  ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcNO3, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcF,   ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcAllF, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcPO4, ConcH, Compartment);
+	EquationIsComputedBy(Model, PH,  ConcH, Compartment);
+	EquationIsComputedBy(Model, SumBaseCationConc, ConcH, Compartment);
+	EquationIsComputedBy(Model, SumAcidAnionConc, ConcH, Compartment);
+	EquationIsComputedBy(Model, ChargeBalanceAlk, ConcH, Compartment);
+	EquationIsComputedBy(Model, WeakAcidAlk, ConcH, Compartment);
+	EquationIsComputedBy(Model, ExchangeableCa, ConcH, Compartment);
+	EquationIsComputedBy(Model, ExchangeableMg, ConcH, Compartment);
+	EquationIsComputedBy(Model, ExchangeableNa, ConcH, Compartment);
+	EquationIsComputedBy(Model, ExchangeableK, ConcH, Compartment);
+	EquationIsComputedBy(Model, ExchangeableSO4, ConcH, Compartment);
+	EquationIsComputedBy(Model, BaseSaturationSoil, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcHCO3, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcCO3, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcAl, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcAllAl, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcOrgAl, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcH2AM, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcHA2M, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcA3M, ConcH, Compartment);
+	EquationIsComputedBy(Model, SumPositive, ConcH, Compartment);
+	EquationIsComputedBy(Model, SumNegative, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcAllDOC, ConcH, Compartment);
+	EquationIsComputedBy(Model, ConcAllDIC, ConcH, Compartment);
+	EquationIsComputedBy(Model, CaAlRatio, ConcH, Compartment);
+	EquationIsComputedBy(Model, IonicStrength, ConcH, Compartment);
 
-	
-	EQUATION(Model, IonicStrength,
-		// Dummy, this is set in the ConcH equation
-		return RESULT(IonicStrength, CURRENT_INDEX(Compartment));
-	)
-	
-	
 	EndModule(Model);
 }
