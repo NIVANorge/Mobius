@@ -212,9 +212,9 @@ AddSedFlexModel(mobius_model *Model)
 	auto WaterConc                = RegisterEquation(Model, "Total concentration in water", GPerM3);
 	auto SedConc                  = RegisterEquation(Model, "Total concentration in sediments", GPerM3);
 	auto WaterConcParticulate     = RegisterEquation(Model, "Particulate concentration in water", GPerM3);
-	//auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sediments", GPerM3);
-	//auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", GPerM3);
-	//auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments", GPerM3);
+	auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sediments (dry only)", GPerM3);
+	auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", GPerM3);
+	auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments (water only)", GPerM3);
 	
 	
 	auto SolveSedFlex = RegisterEquation(Model, "SedFlex solver code", Dimensionless);
@@ -694,13 +694,26 @@ AddSedFlexModel(mobius_model *Model)
 	EQUATION(Model, WaterConcParticulate,
 		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
 		
-		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
+		return RESULT(FugacityInWater)*RESULT(SolidFCWater)*PARAMETER(MolecularWeight);
 	)
 	
-	//TODO
-	//EQUATION(Model, SedConcParticulate,
-//	
-//	)
+	EQUATION(Model, SedConcParticulate,
+		RESULT(SolveSedFlex);
+		
+		return RESULT(FugacityInSed)*RESULT(SolidFCSed)*PARAMETER(MolecularWeight);
+	)
+	
+	EQUATION(Model, ApparentDissolvedConcWater,
+		RESULT(SolveSedFlex);
+		
+		return RESULT(FugacityInWater)*RESULT(WaterAndDOCFCWater)*PARAMETER(MolecularWeight);
+	)
+	
+	EQUATION(Model, ApparentDissolvedConcSed,
+		RESULT(SolveSedFlex);
+		
+		return RESULT(FugacityInSed)*RESULT(PorewaterFCSed)*PARAMETER(MolecularWeight);
+	)
 
 	
 	EndModule(Model);

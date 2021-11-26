@@ -579,6 +579,9 @@ Currently in early development.
 		return PARAMETER(DOCSettlingVelocity) * RESULT(LakeSurfaceArea) * RESULT(HypolimnionDOCConcentration) * 1e-3;
 	)
 	
+	
+	//TODO: Look at this one: https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2427.2007.01862.x
+	
 
 	EndModule(Model);
 }

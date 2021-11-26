@@ -75,13 +75,29 @@ INCA-Macroplastics is in early development
 	auto SetDragCoefficient = RegisterEquationInitialValue(Model, "Set drag coefficient", Dimensionless);
 	ParameterIsComputedBy(Model, DragCoefficient, SetDragCoefficient, true);
 	
+	
+	/*
+		NOTE: Drag coefficients are roughly based on common values for shapes https://en.wikipedia.org/wiki/Drag_coefficient
+	
+		Capped bottle:
+			Long cylinder : From top: 0.82, from the side (cube/rectangle): 1.05
+		Open bottle:
+			Like capped bottle, but a little higher to accomodate for the extra drag from the hole (if it is aligned against the flow)
+		Bag:
+			Something close to a flat plane (1.17) or a curved plane. (1.2 - 2.2 depending on facing).
+		MargarineTub:
+			Curved plane, between 1.2 and 2.2 depending on facing, but could also be a rectangle (1.05) if aligned sideways
+		PVC piece:
+			We just assume it is a cube/rectangle.
+	*/
+	
 	EQUATION(Model, SetDragCoefficient,
-		//NOTE: These values are just based on common values for shapes https://en.wikipedia.org/wiki/Drag_coefficient
+		
 		auto type = PARAMETER(LitterType);
 		if(     type == OpenBottle)
-			return 0.85;         //TODO: get a good value here
+			return 0.95;         //TODO: get a good value here
 		else if(type == CappedBottle)
-			return 0.82;
+			return 0.9;
 		else if(type == Bag)
 			return 1.2;
 		else if(type == MargarineTub)
@@ -97,8 +113,13 @@ INCA-Macroplastics is in early development
 	auto SetDragArea = RegisterEquationInitialValue(Model, "Set drag area", M2);
 	ParameterIsComputedBy(Model, DragArea, SetDragArea, true);
 	
+	
+	/*
+		The drag area could be higly dependent on facing for the different items. For bags it is even more complicated since they could bend with the flow. This is why you are
+		allowed to do separate tuning of the "propensity to get stuck".
+	*/
+	
 	EQUATION(Model, SetDragArea,
-		//TODO: Should this be different per item class?
 		return PARAMETER(ItemDim)*PARAMETER(ItemDim)*0.5;
 	)
 	
