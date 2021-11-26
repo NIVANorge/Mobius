@@ -84,7 +84,7 @@ INCA-Macroplastics is in early development
 		Open bottle:
 			Like capped bottle, but a little higher to accomodate for the extra drag from the hole (if it is aligned against the flow)
 		Bag:
-			Something close to a flat plane (1.17) or a curved plane. (1.2 - 2.2 depending on facing).
+			Something close to a flat plane (1.17) or a curved plane. (1.2 - 2.2 depending on facing). Though it is complicated because it could bend to align with the flow.
 		MargarineTub:
 			Curved plane, between 1.2 and 2.2 depending on facing, but could also be a rectangle (1.05) if aligned sideways
 		PVC piece:
