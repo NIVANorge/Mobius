@@ -189,9 +189,7 @@ Computation of reach flow based on the Manning flow equations.
 	EQUATION(Model, EvapoTranspirationX4,
 		double evapotranspirationadjustment = PARAMETER(EvapotranspirationAdjustment);
 		if(RESULT(WaterDepth2) < PARAMETER(RetainedWaterDepth))
-		{
 			return pow(RESULT(WaterDepth2) / PARAMETER(RetainedWaterDepth), evapotranspirationadjustment);
-		}
 		return 1.0;
 	)
 

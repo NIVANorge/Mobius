@@ -3,6 +3,21 @@
 #include "../../Src/boost_solvers.h"
 
 
+inline double
+Sigmoid(double X)
+{
+	return 1.0 / (1.0 + std::exp(-X));
+}
+
+inline double
+WaningExcess(double X, double Threshold)
+{
+	constexpr double P = 0.1;
+	constexpr double Q = 10.0;
+	return std::max(X - Threshold, P*Threshold) * Sigmoid(Q*(X / Threshold - 1.0));
+}
+
+
 static void
 AddINCAMacroplasticsModel(mobius_model *Model)
 {
@@ -43,7 +58,7 @@ INCA-Macroplastics is in early development
 	auto GrindingRate         = RegisterParameterDouble(Model, OverallParameters, "Micro-grinding tuning parameter", SPerMDay, 1e-6, 0.0, 1.0, "Grinding of plastic into microplastic by river sediments relative to flow velocity.");
 	
 	
-	auto ClassParameters = RegisterParameterGroup(Model, "Litter class", Class);
+	auto ClassParameters      = RegisterParameterGroup(Model, "Litter class", Class);
 
 	//TODO: it should be unnecessary to provide the list of strings in the registration of the enum (?).
 	auto LitterType                    = RegisterParameterEnum(Model, ClassParameters, "Litter type", {"Open_bottle", "Capped_bottle", "Bag", "Margarine_tub", "PVC_piece"}, "Open_bottle");
@@ -125,16 +140,9 @@ INCA-Macroplastics is in early development
 	
 	//auto WindSpeed                     = RegisterInput(Model, "Wind speed");
 	
-
-
-	//auto SubcatchmentArea = GetParameterDoubleHandle(Model, "Terrestrial catchment area");
 	auto ReachLength      = GetParameterDoubleHandle(Model, "Reach length");
-	//auto Percent          = GetParameterDoubleHandle(Model, "%");
 	auto MeanChannelSlope = GetParameterDoubleHandle(Model, "Reach slope");
 	auto ReachBottomWidth = GetParameterDoubleHandle(Model, "Reach bottom width");
-	
-	//auto Rainfall      = GetEquationHandle(Model, "Rainfall");
-	//auto RunoffToReach = GetEquationHandle(Model, "Runoff to reach");
 	auto ReachHydraulicRadius = GetEquationHandle(Model, "Reach hydraulic radius");
 	auto ReachVelocity        = GetEquationHandle(Model, "Reach velocity");
 	
@@ -175,14 +183,12 @@ INCA-Macroplastics is in early development
 	auto VegLitterBreakdown    = RegisterEquation(Model, "River vegetation litter breakdown", KgPerDay, PlasticSolver);
 	
 	auto RiverBankLitter       = RegisterEquationODE(Model, "River bank litter", ItemsPerM, PlasticSolver);
-	auto RiverBankLitterMass   = RegisterEquation(Model, "River bank litter (mass)", KgPerM, PlasticSolver);
 	auto FloatingLitter        = RegisterEquationODE(Model, "Floating litter", ItemsPerM, PlasticSolver);
-	auto FloatingLitterMass    = RegisterEquation(Model, "Floating litter (mass)", KgPerM, PlasticSolver);
 	auto RiverVegetationLitter = RegisterEquationODE(Model, "River vegetation litter", ItemsPerM, PlasticSolver);
+	
+	auto RiverBankLitterMass   = RegisterEquation(Model, "River bank litter (mass)", KgPerM, PlasticSolver);
+	auto FloatingLitterMass    = RegisterEquation(Model, "Floating litter (mass)", KgPerM, PlasticSolver);
 	auto RiverVegetationLitterMass = RegisterEquation(Model, "River vegetation litter (mass)", KgPerM, PlasticSolver);
-	
-	
-	
 	
 	
 	EQUATION(Model, BankAttachment,
@@ -198,16 +204,14 @@ INCA-Macroplastics is in early development
 		
 		double curvature = 1.0 / R;
 		double curv_contrib = 1.0;
-		if(!std::isfinite(curvature)) curv_contrib = std::min(curv_contrib, curvature*1000.0);
+		if(!std::isfinite(curvature)) curv_contrib = std::max(0.01, std::min(curv_contrib, curvature*1000.0));
 		double width_contrib = std::max(0.01, 1.0 - (w-50.0)/300.0);
 		double drag_contrib = std::max(0.01, C_DA);
 		
 		return PARAMETER(BankAttachmentTuning)*curv_contrib*width_contrib*drag_contrib*RESULT(FloatingLitter);
 	)
 	
-	
-	//TODO: Detachment thresholds have to be modified by item total mass...
-	
+		
 	double ThresholdModBank[4] = {1.0, 3.0, 1.5, 1.2}; // none, bushes, reeds, grass..  //TODO: arbitrary numbers...
 	
 	EQUATION(Model, BankDragForce,
@@ -218,10 +222,12 @@ INCA-Macroplastics is in early development
 	EQUATION(Model, BankDetachmentRate,
 		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck);
 		double threshold2 = threshold * ThresholdModBank[(int)PARAMETER(BankVegetationType)];
-		threshold = threshold + (threshold2 - threshold)*PARAMETER(BankVegetationDensity);
 		
-		double excess = std::max(0.0, RESULT(BankDragForce) - threshold);
-		return excess * PARAMETER(DetachmentRateTuning) / PARAMETER(ItemMass);
+		double excess1 = WaningExcess(RESULT(BankDragForce), threshold);
+		double excess2 = WaningExcess(RESULT(BankDragForce), threshold2);
+		
+		return
+			(PARAMETER(DetachmentRateTuning) / PARAMETER(ItemMass)) * LinearInterpolate(PARAMETER(BankVegetationDensity), 0.0, 1.0, excess1, excess2);
 	)
 	
 	EQUATION(Model, BankDetachment,
@@ -250,10 +256,11 @@ INCA-Macroplastics is in early development
 	EQUATION(Model, RiverVegDetachment,
 		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck);
 		double threshold2 = threshold * ThresholdModRiver[(int)PARAMETER(RiverVegetationType)];
-		threshold = threshold + (threshold2 - threshold)*PARAMETER(RiverVegetationDensity);
 		
-		double excess = std::max(0.0, RESULT(RiverVegDragForce) - threshold);
-		return excess * PARAMETER(DetachmentRateTuning) * RESULT(RiverVegetationLitter) / PARAMETER(ItemMass);
+		double excess1 = WaningExcess(RESULT(RiverVegDragForce), threshold);
+		double excess2 = WaningExcess(RESULT(RiverVegDragForce), threshold2);
+		
+		return LinearInterpolate(PARAMETER(RiverVegetationDensity), 0.0, 1.0, excess1, excess2) * PARAMETER(DetachmentRateTuning) * RESULT(RiverVegetationLitter) / PARAMETER(ItemMass);
 	)
 	
 	// open bottle, capped bottle, bag, margarine tub, pvc piece
@@ -343,13 +350,6 @@ INCA-Macroplastics is in early development
 		return sum;
 	)
 
-
-	
-	
-	
-	
-	
-	
 	EndModule(Model);
 }
 
