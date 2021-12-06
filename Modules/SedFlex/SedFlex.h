@@ -675,7 +675,6 @@ AddSedFlexModel(mobius_model *Model)
 	
 	EquationIsComputedBy(Model, FugacityInWater, SolveSedFlex, Chemical, Compartment);
 	EquationIsComputedBy(Model, FugacityInSed,   SolveSedFlex, Chemical, Compartment);
-
 	
 	
 	

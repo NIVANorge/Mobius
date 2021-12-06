@@ -11,8 +11,8 @@ parameters:
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
 2004-01-01
 
-"Timesteps" :     #(days) [0, 18446744073709551615]
-485
+"End date" :     #(days) [0, 18446744073709551615]
+2005-05-30
 
 
 { module "Degree-day PET" version "0.1"

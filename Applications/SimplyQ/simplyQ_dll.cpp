@@ -17,7 +17,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyQ");
+	mobius_model *Model = BeginModelDefinition("SimplyQ", true);
 	
 	//AddThornthwaitePETModule(Model);
 	AddDegreeDayPETModule(Model);
