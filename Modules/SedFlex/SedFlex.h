@@ -679,38 +679,26 @@ AddSedFlexModel(mobius_model *Model)
 	
 	
 	EQUATION(Model, WaterConc,
-		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
-		
 		return RESULT(FugacityInWater)*RESULT(TotalFCWater)*PARAMETER(MolecularWeight);
 	)
 	
 	EQUATION(Model, SedConc,
-		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
-		
 		return RESULT(FugacityInSed)*RESULT(TotalFCSed)*PARAMETER(MolecularWeight);
 	)
 	
 	EQUATION(Model, WaterConcParticulate,
-		RESULT(SolveSedFlex); //NOTE: Force this to be evaluated after the fugacities are computed
-		
 		return RESULT(FugacityInWater)*RESULT(SolidFCWater)*PARAMETER(MolecularWeight);
 	)
 	
 	EQUATION(Model, SedConcParticulate,
-		RESULT(SolveSedFlex);
-		
 		return RESULT(FugacityInSed)*RESULT(SolidFCSed)*PARAMETER(MolecularWeight);
 	)
 	
 	EQUATION(Model, ApparentDissolvedConcWater,
-		RESULT(SolveSedFlex);
-		
 		return RESULT(FugacityInWater)*RESULT(WaterAndDOCFCWater)*PARAMETER(MolecularWeight);
 	)
 	
 	EQUATION(Model, ApparentDissolvedConcSed,
-		RESULT(SolveSedFlex);
-		
 		return RESULT(FugacityInSed)*RESULT(PorewaterFCSed)*PARAMETER(MolecularWeight);
 	)
 

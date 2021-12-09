@@ -859,7 +859,15 @@ EndModelDefinition(mobius_model *Model)
 				FatalError("ERROR: The equation \"", GetName(Model, Equation), "\" depends explicitly on the result of the equation \"", GetName(Model, DepResult), "\" which is an EquationInitialValue. This is not allowed, instead it should depend on the result of the equation that \"", GetName(Model, DepResult), "\" is an initial value for.\n");
 			
 			if(ResultDependency.Indexes.size() == 0)
+			{
+				//NOTE: This is a bit hacky, since the DepResult should really depend directly on it's IsComputedBy, but that screws up the initial value system at least for SedFlex.
+				//   We should really improve the initial value system...
+				equation_spec &DepSpec = Model->Equations[DepResult];
+				if(IsValid(DepSpec.IsComputedBy))
+					Spec.DirectResultDependencies.insert(DepSpec.IsComputedBy);
+				
 				Spec.DirectResultDependencies.insert(DepResult);
+			}
 			else
 			{
 				Spec.CrossIndexResultDependencies.insert(DepResult); //TODO: Do we really need to keep this separately?
