@@ -448,7 +448,7 @@ Let $\{o_i\}_i$ and $\{m_i\}_i$ be observed and modeled series respectively, and
 \item {\bf Normal}. This assumes that the $\epsilon_i$'s are independent and normally distributed with mean 0 and standard deviation $\sigma$. The error parameter is $\sigma$.
 \item {\bf Normal hetereoskedastic (1)}. This assumes that the $\epsilon_i$'s are independent and normally distributed with mean 0 and standard deviation $\sigma m_i$. The error parameter is $\sigma$.
 \item {\bf WLS}. The $\epsilon_i$'s are independent and normally distributed with mean 0 and standard deviation $\mu + \sigma m_i$ \cite{evin-et-al14}. $\mu$ and $\sigma$ are error parameters.
-\item {\bf WLS-AR1}. As in WLS, but the $\epsilon_i$'s are no longer independent. Instead we have $\epsilon_i = (\mu + \sigma m_i)\eta_i$ and $\eta_i = \phi\eta_{i-1} + y_i$ where the $y_i$'s are independently drawn from a standard normal distribution. Error parameters are $\mu, \sigma$ and $\phi$. This is usually very good at eliminating residual autocorrelation, but could be a bit heavier to run due to the larger parameter space.
+\item {\bf WLS-AR1}. As in WLS \cite{evin-et-al14}, but the $\epsilon_i$'s are no longer independent. Instead we have $\epsilon_i = (\mu + \sigma m_i)\eta_i$ and $\eta_i = \phi\eta_{i-1} + y_i$ where the $y_i$'s are independently drawn from a standard normal distribution. Error parameters are $\mu, \sigma$ and $\phi$. This is usually very good at eliminating residual autocorrelation, but could be a bit heavier to run due to the larger parameter space.
 \end{enumerate}
 
 You can select between the following samplers (MCMC algorithms). In the first three you need a high number of walkers to get good performance (think 50-100 or more depending on parameter space complexity).
