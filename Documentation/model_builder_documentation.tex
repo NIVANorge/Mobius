@@ -394,7 +394,7 @@ Note that the "Timesteps" and "Start date" parameters are automatically register
 
 \subsubsection{A note on visualisation of model results}
 
-During model development it can be pretty unsatisfactory to just look at the numbers printed out by {\tt PrintResultSeries} in order to determine if the model performs as expected. It can be a good idea to set up an MobiView (or python wrapper) - compatible model application early. We will not provide an in-depth description of how to do that in this document, but it should not be too difficult to follow the example of existing model applications. See also some notes about this on the front page of the Mobius github repository.
+During model development it can be pretty unsatisfactory to just look at the numbers printed out by {\tt PrintResultSeries} in order to determine if the model performs as expected. It can be a good idea to set up an MobiView (or python wrapper) - compatible model application early. We will not provide an in-depth description of how to do that in this document, but you can look at Tutorial 3 in the Mobius github repository.
 
 \subsection{Entity registration, handles, and equation bodies}\label{sec:registrationandhandles}
 
@@ -784,6 +784,7 @@ The framework lets you access a few additional variables that tell you something
 	\item {\tt StepLengthInSeconds}. The number of seconds that the current timestep spans.
 	\end{enumerate}
 Some of these are more relevant than others, depending on the timestep size of the model. See section \ref{sec:timestepsize}.
+\item {\tt UNIFORM\_RANDOM\_UINT(Low, High)} and {\tt UNIFORM\_RANDOM\_DOUBLE(Low, High)}. Gives you a uniformly distributed random number (of the given type) between the given bounds (inclusive). The random generator is seeded based on the system time at model run start, so it will usually be different every time you run the model.
 \end{enumerate}
 
 \begin{example}
