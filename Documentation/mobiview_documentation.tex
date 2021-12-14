@@ -401,9 +401,7 @@ If an index set was checked as "locked" in the main window, all values across th
 
 You can also select a statistic to plot in the rightmost plot, with the perturbed parameter as the x axis and the statistic as the y axis. If you want to plot a goodness-of-fit statistic (these are documented in section \ref{sec:gof}, you must have an input series selected that will be used as the comparison series. The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
 
-
-\subsection{Optimization and Monte-Carlo sensitivity and uncertainty analysis}\label{sec:optimization}
-
+\subsection{Optimizer, MCMC and sensitivity general setup}
 \begin{center}
 \includegraphics[width=\linewidth]{img/mobiview_optimizer}
 \captionof{figure}{Optimization and MCMC setup}
@@ -423,7 +421,7 @@ If you need a more complex setup than the one you can make here, we recommend th
 
 In the toolbar of the optimization setup window you can click buttons to save the current setup for future use, or load it again.
 
-\subsubsection{Optimizer}
+\subsection{Optimizer}
 All the GOF statistics (section \ref{sec:gof}) are available for optimization. The statistics MAE and RMSE will be minimized, the others maximized. You can not mix targets that should be minimized with targets that should be maximized. All targets have to have an input comparison series for it to be able to evaluate the error of the modeled series compared to the observed series.
 
 You can also optimize the likelihood functions described in section \ref{sec:mcmc} and use that as a starting point for a MCMC run. Unless you use a likelihood function, you should ignore the "error param(s)" field in the target setup.
@@ -436,27 +434,39 @@ We use the dlib global optimization algorithm from \url{http://dlib.net/optimiza
 
 If you have the "show progress" box ticked, it will periodically show how many evaluations it has done and what is the best current value of the (compound) target statistic compared to the initial value of the statistic. If you additionally have the additional plot view open with the targeted time series
 
-\subsubsection{MCMC}\label{sec:mcmc}
-You can sample the posterior distribution of the parameter space using Markov Chain Monte Carlo methods (MCMC). See \url{https://github.com/JamesSample/enviro_mod_notes} for a more detailed introduction to MCMC on environmental models.
+\subsection{MCMC}\label{sec:mcmc}
+You can sample the posterior distribution of the parameter space using Markov Chain Monte Carlo methods (MCMC). This is one of the best ways to sample both uncertainty and sensitivity of the parameters. See \url{https://github.com/JamesSample/enviro_mod_notes} for a more detailed introduction to running MCMC with environmental models.
 
-For this the targets have to be set up as a formal Bayesian likelihood structure. Each of the likelihood structures require one or more error parameters that are sampled along with the model parameters. The error parameters have to be manually added in the parameter view using "add virtual". You can give the error parameters what symbol you like, but have to list what symbol is the error parameter for what likelihood structure in the "error param(s)" field in the target setup. If a target requires more than one error parameter, you have to list the symbols as a comma-separated list.
+For this the targets have to be set up as a formal Bayesian likelihood structure. Each of the likelihood structures require one or more error parameters that are sampled along with the model parameters. The error parameters have to be manually added in the parameter view using "add virtual". You can give the error parameters what symbol you like, but have to list what symbol is the error parameter for what likelihood structure in the "error param(s)" field in the target setup. If a target requires more than one error parameter, you have to list the symbols as a comma-separated list (they have to be in the same order as given in Table \ref{tab:errstruct}).
 
 The prior distribution of each parameter is assumed to be uniform over the min-max interval. The parameters can be initialized either uniformly or using a small gaussian ball around the current parameter values (in the main dataset). The MCMC run usually performs better if you use the optimizer (or hand calibration) to find an optimal starting place, then initiate the MCMC using the gaussian ball.
 
-Let $\{o_i\}_i$ and $\{m_i\}_i$ be observed and modeled series respectively, and let $\epsilon_i=o_i-m_i$ be the error at point $i$. The available error structures are
-\begin{enumerate}
-\item {\bf Normal}. This assumes that the $\epsilon_i$'s are independent and normally distributed with mean 0 and standard deviation $\sigma$. The error parameter is $\sigma$.
-\item {\bf Normal hetereoskedastic (1)}. This assumes that the $\epsilon_i$'s are independent and normally distributed with mean 0 and standard deviation $\sigma m_i$. The error parameter is $\sigma$.
-\item {\bf WLS}. The $\epsilon_i$'s are independent and normally distributed with mean 0 and standard deviation $\mu + \sigma m_i$ \cite{evin-et-al14}. $\mu$ and $\sigma$ are error parameters.
-\item {\bf WLS-AR1}. As in WLS \cite{evin-et-al14}, but the $\epsilon_i$'s are no longer independent. Instead we have $\epsilon_i = (\mu + \sigma m_i)\eta_i$ and $\eta_i = \phi\eta_{i-1} + y_i$ where the $y_i$'s are independently drawn from a standard normal distribution. Error parameters are $\mu, \sigma$ and $\phi$. This is usually very good at eliminating residual autocorrelation, but could be a bit heavier to run due to the larger parameter space.
-\end{enumerate}
+Let $\{o_i\}_i$ and $\{m_i\}_i$ be observed and modeled series respectively, and let $\epsilon_i=o_i-m_i$ be the residual at point $i$. Let $\{y_i\}_i$ be a series of (assumed) independent normally distributed standard normals called the \emph{standard residuals}.
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{c  c  c}
+\hline
+{\bf Name } & {\bf Error structure} & {\bf Error params} \\
+\hline
+{\bf Normal} & $\epsilon_i = \sigma y_i$ & $\sigma$ \\
+{\bf Normal hetereoskedastic (1)} & $\epsilon_i = (\sigma m_i) y_i$ & $\sigma$ \\
+{\bf WLS} \cite{evin-et-al14} & $\epsilon_i = (\mu + \sigma m_i) y_i$ & $\mu$, $\sigma$ \\
+{\bf WLS-AR1} \cite{evin-et-al14} & $\epsilon_i = (\mu + \sigma m_i)\eta_i,\, \eta_i = \phi\eta_{i-1}+y_i$ & $\mu$, $\sigma$, $\phi$ \\
+\hline
+\end{tabular}
+\caption{Error structures available in MobiView.}
+\label{tab:errstruct}
+\end{center}
+\end{table}
+
+The available error structures are shown in Table \ref{tab:errstruct}. In Normal hetereoskedastic, WLS and WLS-AR1 the residuals are assumed to have a standard deviation that is proportional to the modeled value (called hetereoskedasticity) (see \cite{evin-et-al14} for the latter two). WLS-AR1 adds autoregression so that the residuals are no longer independent. This is because an error at one point in time usually is correlated with the error in the previous time step. It is usually very good at eliminating autocorrelation in the standard residuals, but could be a bit heavier to run due to the larger parameter space.
 
 You can select between the following samplers (MCMC algorithms). In the first three you need a high number of walkers to get good performance (think 50-100 or more depending on parameter space complexity).
 \begin{enumerate}
-\item {\bf Affine stretch}. This is the sampler that (in our experience) performs best on these types of models. The main affine-invariant ensemble sampler described in \cite{goodman-weare10} and \cite{foreman-mackey-et-al13}.
-\item {\bf Affine walk} \cite{goodman-weare10}.
-\item {\bf Differential evolution}. See \cite{ter-braak06}.
-\item {\bf Metropolis-Hastings}. This is the original MCMC algorithm \cite{hastings70}. If you run multiple chains, they will be independent of one another (but this still allows you to leverage parallellism for a speedup). In this implementation the standard deviation of each step is proportional to the length of each parameter interval. This means that you have to do some fine tuning of these intervals to get a good acceptance rate.
+\item {\bf Affine stretch}. The main affine-invariant ensemble sampler described in \cite{goodman-weare10} and \cite{foreman-mackey-et-al13}. This is the sampler that (in our experience) performs best on these types of models. 
+\item {\bf Affine walk} Another affine-invariant sampler from \cite{goodman-weare10}.
+\item {\bf Differential evolution}. See \cite{ter-braak06}. This is historically another popular choice for environmental models.
+\item {\bf Metropolis-Hastings}. This is the original MCMC algorithm \cite{hastings70}. It is included mostly for comparison. If you run multiple chains, they will be independent of one another (but this still allows you to leverage parallellism for a speedup). In this implementation the standard deviation of each step is proportional to the length of each parameter interval. This means that you have to do some fine tuning of these intervals to get a good acceptance rate.
 \end{enumerate}
 There is not always a simple formula to determine how best to tune the samplers, so you should just try things out.
 
@@ -469,7 +479,7 @@ The result view allows you to
 \end{enumerate}
 More detailed documentation of the result view is forthcoming.
 
-\subsubsection{Variance based sensitivity}
+\subsection{Variance based sensitivity}
 We compute two statistics that say something about how much of the variance of the (compound) target statistic (over the given parameter space) is accounted for by each individual parameter.
 
 We compute the first-order sensitivity coefficient (main effect index) and total effect index of the listed parameters on the chosen (compound) target statistic. The algorithms used for computation are based on the ones suggested in \cite{saltelli-et-al10}.

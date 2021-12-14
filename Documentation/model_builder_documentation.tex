@@ -651,7 +651,7 @@ A cumulative equation will get the same unit as the equation it cumulates. It wi
 
 \subsubsection{ODE equations and solvers}
 
-A solver is a model entity of its own. A solver is registered with an integration method and some configuration values to the integration method. One can then add an equation to the solver batch using {\tt SetSolver} (see example below). All equations with the same solver will be treated as one batch. This means that the solver inherits all the index set dependencies of all the equations in the solver. All the equations will then be evaluated for all of these indexes regardless of whether they had all the index sets as dependencies individually. The solver can (and usually will) evaluate the entire set of equations more than one time per timestep (and index combination). For instance it is not uncommon that a solver evaluates all the equations for 10 or more sub-timesteps per timestep. Moreover, some integration methods (like higher-order Runge-Kutta methods) require multiple evaluations per sub-timestep.
+A solver is a model entity of its own. A solver is registered with an integration method and some configuration values to the integration method. One can then add an equation to the solver batch by providing the solver as an additional argument to the equation registration (or using {\tt SetSolver}); see example below. All equations with the same solver will be treated as one batch. This means that the solver inherits all the index set dependencies of all the equations in the solver. All the equations will then be evaluated for all of these indexes regardless of whether they had all the index sets as dependencies individually. The solver can (and usually will) evaluate the entire set of equations more than one time per timestep (and index combination). For instance it is not uncommon that a solver evaluates all the equations for 10 or more sub-timesteps per timestep. Moreover, some integration methods (like higher-order Runge-Kutta methods) require multiple evaluations per sub-timestep.
 
 In the next example we have a predator-prey system subject to the Lotka-Volterra equations
 \begin{align*}
@@ -664,15 +664,12 @@ Where $x$ is the prey population, $y$ is the predator population and $\alpha$, $
 Implementing the Lotka-Volterra system in Mobius. Parameter and unit registration is omitted.
 \begin{lstlisting}[style=mycpp]
 auto LVSolver = RegisterSolver(Model, "Lotka-Volterra solver", 0.1, IncaDascru); //It is not important what you name the solver.
-auto Predation = RegisterEquation(Model, "Predation", Individuals);
-SetSolver(Model, Predation, LVSolver);
-auto PredatorGrowth = RegisterEquation(Model, "Predator growth", Individuals);
-SetSolver(Model, PredatorGrowth, LVSolver);
-auto PreyPopulation = RegisterEquationODE(Model, "Prey population", Individuals);
-SetSolver(Model, PreyPopulation, LVSolver);
+auto Predation = RegisterEquation(Model, "Predation", Individuals, LVSolver);
+auto PredatorGrowth = RegisterEquation(Model, "Predator growth", Individuals, LVSolver);
+auto PreyPopulation = RegisterEquationODE(Model, "Prey population", Individuals, LVSolver);
+auto PredatorPopulation = RegisterEquationODE(Model, "Predator population", Individuals, LVSolver);
+
 SetInitialValue(Model, PreyPopulation, InitialPreyPopulation); //InitialPreyPopulation is a parameter
-auto PredatorPopulation = RegisterEquationODE(Model, "Predator population", Individuals);
-SetSolver(Model, PredatorPopulation, LVSolver);
 SetInitialValue(Model, PredatorPopulation, InitialPredatorPopulation); //InitialPredatorPopulation is a parameter
 
 EQUATION(Model, Predation,
@@ -733,7 +730,7 @@ Initial value equations can also reference the result of other equations. What t
 \begin{example}
 Another initial value equation that references the initial value computed in Example \ref{ex:initialvalue}.
 \begin{lstlisting}[style=mycpp]
-auto InitialSoilPMass = RegisterEquation(Model, "Initial soil P mass", Kg);
+auto InitialSoilPMass = RegisterEquationInitialValue(Model, "Initial soil P mass", Kg);
 
 EQUATION(Model, InitialSoilPMass,
 	return PARAMETER(InitialSoilPConcentration) * RESULT(SoilVolume); //NOTE: we have to reference SoilVolume rather than InitialSoilVolume here.
@@ -932,7 +929,7 @@ One important thing you can do is to turn on the {\tt MOBIUS\_EQUATION\_PROFILIN
 
 The following things are common causes of slow equations:
 \begin{enumerate}[i]
-\item Calling transcendental functions from the C++ (C) standard math library, like {\tt exp}, {\tt pow} or {\tt sin}. The standard implementation of these is often slow because they have to satisfy a large range of criteria. If you know that you only need implementations that are correct in a short value range (i.e. $[0, 2\pi)$) or need a smaller precisional correctness (say only 4 digits), then you may be able to find implementations that are much faster. You could also look into implementing that yourself, but this is a big topic of its own, and will not be covered here. Of course, it may often not be worth it going into the trouble of replacing the implementation of these.
+\item Calling math functions from the C++ (C) standard math library, like {\tt exp}, {\tt pow} or {\tt sin}. The standard implementation of these is often slow because they have to satisfy a large range of criteria. If you know that you only need implementations that are correct in a short value range (i.e. $[0, 2\pi)$) or need a smaller precisional correctness (say only 4 digits), then you may be able to find implementations that are much faster. You could also look into implementing that yourself, but this is a big topic of its own, and will not be covered here. Of course, it may often not be worth it going into the trouble of replacing the implementation of these.
 \item Explicit indexing (e.g. calling {\tt RESULT(Handle, Index)}) is always slower than implicit indexing (e.g. {\tt RESULT(Handle)}). This is because the model keeps all the values you need for implicitly indexed values in a quick buffer that it updates for you using a heavily optimized system. On the other hand, if you explicitly index a value, the model has to first determine where that value is stored using an index calculation, and then go back to main storage to retrieve it (risking cache misses).
 \end{enumerate}
 
@@ -1099,8 +1096,6 @@ We logically separate application building and model interaction from model buil
 \apipar{mobius\_data\_set *DataSet}{Pointer to the dataset object.}
 \apidesc{Attempts to run the model (that the dataset was generated from) with the parameter and input values given in this dataset. The start date is read from the "Start date" parameter, and the number of timesteps is read from the "Timesteps" parameter. All result timeseries are stored in the dataset.}
 }
-
-There are a few more procedures that we will try to document soon.
 
 \apientry{CopyDataSet}{Model interaction procedure}{
 \apipar{mobius\_data\_set *DataSet}{Pointer to a dataset object.}
@@ -1269,6 +1264,7 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apipar{double Min}{(optional) The minimum value of the parameter.}
 \apipar{double Max}{(optional) The maximum value of the parameter.}
 \apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apipar{const char *Symbol}{(optional) A short symbol to be used to refer to the parameter in the autocalibration and sensitivity analysis in the python wrapper and MobiView.}
 \apiret{A {\tt parameter\_double\_h} handle to the newly registered parameter.}
 \apidesc{Register a new parameter of type double with the model.}
 }
@@ -1282,6 +1278,7 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apipar{u64 Min}{(optional) The minimum value of the parameter.}
 \apipar{u64 Max}{(optional) The maximum value of the parameter.}
 \apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apipar{const char *Symbol}{(optional) A short symbol to be used to refer to the parameter in the autocalibration and sensitivity analysis in the python wrapper and MobiView.}
 \apiret{A {\tt parameter\_uint\_h} handle to the newly registered parameter.}
 \apidesc{Register a new parameter of type uint with the model.}
 }
@@ -1292,6 +1289,7 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apipar{const char *Name}{The full name of the parameter}
 \apipar{bool Default}{The default value of the parameter}
 \apipar{const char *Description}{(optional) A long-form description of the parameter}
+\apipar{const char *Symbol}{(optional) A short symbol to be used to refer to the parameter in the autocalibration and sensitivity analysis in the python wrapper and MobiView.}
 \apiret{A {\tt parameter\_bool\_h} handle to the newly registered parameter.}
 \apidesc{Register a new parameter of type bool with the model}
 }
@@ -1304,14 +1302,36 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apipar{const char *Min}{(optional) The minimum value of the parameter. Must be on the form "y-m-d".}
 \apipar{const char *Max}{(optional) The maximum value of the parameter. Must be on the form "y-m-d".}
 \apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apipar{const char *Symbol}{(optional) A short symbol to be used to refer to the parameter in the autocalibration and sensitivity analysis in the python wrapper and MobiView.}
 \apiret{A {\tt parameter\_time\_h} handle to the newly registered parameter.}
 \apidesc{Register a new parameter of type date(time) with the model.}
+}
+
+\apientry{RegisterParameterEnum}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{parameter\_group\_h ParameterGroup}{Handle to the parameter group that the parameter should be put in.}
+\apipar{const char *Name}{The full name of the parameter.}
+\apipar{std::initializer\_list<const char *> \&EnumNames}{List of the possible values of the parameter.}
+\apipar{const char *Default}{The default value of the parameter. Must be one of the values in the list.}
+\apipar{const char *Description}{(optional) A long-form description of the parameter.}
+\apipar{const char *Symbol}{(optional) A short symbol to be used to refer to the parameter in the autocalibration and sensitivity analysis in the python wrapper and MobiView.}
+\apiret{A {\tt parameter\_enum\_h} handle to the newly registered parameter.}
+\apidesc{Register a new parameter of type enum with the model.}
+}
+
+\apientry{EnumValue}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{parameter\_enum\_h ParameterHandle}{Handle to a registered Enum parameter.}
+\apipar{const char *StringValue}{The string value of one of the possible values of the Enum.}
+\apiret{A {\tt u64} integer value of the enum corresponding to the string value.}
+\apidesc{This gives you an integer value that can be used inside equations to compare against what is returned by {\tt PARAMETER(ParameterHandle)}.}
 }
 
 \apientry{RegisterEquation}{Registration procedure}{
 \apipar{mobius\_model *Model}{Pointer to the model object.}
 \apipar{const char *Name}{The full name of the equation.}
 \apipar{unit\_h Unit}{Handle to the unit of the equation.}
+\apipar{solver\_h Solver}{(optional). A handle to a solver to put this equation on.}
 \apiret{A {\tt equation\_h} handle to the newly registered equation.}
 \apidesc{Register a new equation with the model. The is is a basic equation. The equation body has to be provided separately using the {\tt EQUATION} macro.}
 }
@@ -1320,6 +1340,7 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apipar{mobius\_model *Model}{Pointer to the model object.}
 \apipar{const char *Name}{The full name of the equation.}
 \apipar{unit\_h Unit}{Handle to the unit of the equation.}
+\apipar{solver\_h Solver}{(optional). A handle to a solver to put this equation on.}
 \apiret{A {\tt equation\_h} handle to the newly registered equation.}
 \apidesc{Register a new equation of type ODE with the model. The equation body has to be provided separately using the {\tt EQUATION} macro.}
 }
