@@ -127,7 +127,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto CaAlRatio         = RegisterEquation(Model, "Ca ion to aqueous Al molar ratio", Dimensionless);
 	
 	auto ConcH         = RegisterEquation(Model, "H(+) ionic concentration", MMolPerM3, CompartmentSolver);
-	//SetInitialValue(Model, ConcH, 1.0); //NOTE: This is computed in the initial value step instead.
+	SetInitialValue(Model, ConcH, 0.0); //NOTE: This is overwritten by InitialSO4, but we have to set this because the initial value system doesn't understand complexities related to EquationIsComputedBy (sigh!)
 	auto IonicStrength = RegisterEquation(Model, "Ionic strength", Dimensionless);
 	//SetInitialValue(Model, IonicStrength, 0.0); //NOTE: This is computed in the initial value step instead.
 	

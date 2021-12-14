@@ -354,6 +354,21 @@ DllGetResultSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCou
 	CHECK_ERROR_END
 }
 
+DLLEXPORT double
+DllGetResultInitialValue(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCount)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	double Initial;
+	GetResultSeries(DataSet, Name, IndexNames, (size_t)IndexCount, &Initial, 1, true);
+	return Initial;
+	
+	CHECK_ERROR_END
+	return 0.0;
+}
+
 DLLEXPORT void
 DllGetInputSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCount, double *WriteTo, bool AlignWithResults)
 {

@@ -39,6 +39,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto NH4UptakeScale               = RegisterParameterDouble(Model, CNPPar, "NH4 uptake scale", Dimensionless, 1.0, 0.0, 1.0, "Proportion of NH4 uptake of total inorganic N uptake");
 
 	auto RetentionModel               = RegisterParameterEnum(Model, CNPPar, "Retention model", {"Simple", "Gundersen", "Microbial"}, "Microbial");
+	auto Simple          = EnumValue(Model, RetentionModel, "Simple");
+	auto Gundersen       = EnumValue(Model, RetentionModel, "Gundersen");
+	auto Microbial       = EnumValue(Model, RetentionModel, "Microbial");
 	
 	
 	auto DesiredNO3Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NO3 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
@@ -182,10 +185,10 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		
 		if(CURRENT_TIMESTEP()==-1) return 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
-		if(retmodel == 0)
+		if(retmodel == Simple)
 			return simple;
 		else
-			return microbial;   // Gundersen and microbial
+			return microbial;   // Gundersen and microbial are the same for this value
 	)
 	
 	EQUATION(Model, DesiredNImmobilisation,
@@ -196,7 +199,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		if(!PARAMETER(DoImmobilisation))
 			potential = 0.0;
 		
-		if(PARAMETER(RetentionModel) != 2) //Microbial
+		if(PARAMETER(RetentionModel) != Microbial)
 			potential = 0.0;
 		
 		return potential;
@@ -262,9 +265,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		if(!PARAMETER(DoImmobilisation)) return 0.0;
 		
 		u64 retmodel = PARAMETER(RetentionModel);
-		if(retmodel == 0)
+		if(retmodel == Simple)
 			return result_simple;
-		else if(retmodel == 1)
+		else if(retmodel == Gundersen)
 			return gundersen;
 		else
 			return microbial;
@@ -286,9 +289,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		
 		if(!PARAMETER(DoImmobilisation)) return 0.0;
 		
-		if(retmodel == 0)
+		if(retmodel == Simple)
 			return result_simple;
-		else if(retmodel == 1)
+		else if(retmodel == Gundersen)
 			return gundersen;
 		else
 			return microbial;
@@ -387,10 +390,10 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		
 		if(CURRENT_TIMESTEP()==-1) return 0.0;  //NOTE: Stopgap because we don't compute forest uptake in the initial step to balance this..
 		
-		if(retmodel == 0)
+		if(retmodel == Simple)
 			return simple;
 		else
-			return microbial;   // Gundersen and microbial
+			return microbial;   // Gundersen and microbial are the same for this value
 	)
 	
 	EQUATION(Model, DesiredPImmobilisation,
@@ -411,9 +414,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 		
 		if(!PARAMETER(DoImmobilisation)) return 0.0;
 		
-		if(retmodel == 0)
+		if(retmodel == Simple)
 			return result_simple;
-		else if(retmodel == 1)
+		else if(retmodel == Gundersen)
 			return gundersen;
 		else
 			return microbial;

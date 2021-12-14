@@ -1099,7 +1099,7 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<con
 // MyResults.resize(DataSet->TimestepsLastRun);
 // GetResultSeries(DataSet, "Percolation input", {"Reach 1", "Forest", "Groundwater"}, MyResult.data(), MyResult.size());
 static void
-GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* IndexNames, size_t IndexCount, double *WriteTo, size_t WriteSize)
+GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* IndexNames, size_t IndexCount, double *WriteTo, size_t WriteSize, bool IncludeInitial = false)
 {	
 	if(!DataSet->HasBeenRun || !DataSet->ResultData)
 		FatalError("ERROR: Tried to extract result series before the model was run at least once.\n");
@@ -1129,17 +1129,20 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Equation);
 	double *Lookup = DataSet->ResultData + Offset;
 	
+	if(!IncludeInitial)
+		Lookup += DataSet->ResultStorageStructure.TotalCount;
+	
 	for(size_t Idx = 0; Idx < NumToWrite; ++Idx)
 	{
-		Lookup += DataSet->ResultStorageStructure.TotalCount; //NOTE: We do one initial time advancement before the lookup since the first set of values are just the initial values, which we want to skip.
 		WriteTo[Idx] = *Lookup;
+		Lookup += DataSet->ResultStorageStructure.TotalCount;
 	}
 }
 
 inline void
-GetResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize)
+GetResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &IndexNames, double *WriteTo, size_t WriteSize, bool IncludeInitial = false)
 {
-	GetResultSeries(DataSet, Name, IndexNames.data(), IndexNames.size(), WriteTo, WriteSize);
+	GetResultSeries(DataSet, Name, IndexNames.data(), IndexNames.size(), WriteTo, WriteSize, IncludeInitial);
 }
 
 static void
