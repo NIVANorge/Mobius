@@ -103,7 +103,7 @@ The toolbar has the following buttons.
 \item Save baseline. Saves a background copy of the current dataset. This is used in the "Compare baseline" plot mode. See Section \ref{sec:comparebaseline}.
 \item Revert to baseline. Restores the baseline parameters and result series to the main dataset if a baseline was saved earlier.
 \item Perturbation view. Allows you to see the effect on one time series of perturbing a single parameter. See Section \ref{sec:sensitivity}
-\item Optimization view. Allows you to autocalibrate the model. Documentation of this feature is forthcoming. See Section \ref{sec:optimization}
+\item Optimization view. Allows you to autocalibrate the model and run MCMC and variance-based sensitivity analysis. See Section \ref{sec:optimization}
 
 \item Edit statistics settings. Here you can turn on or off what statistics you want displayed in the timeseries info box, and also choose percentiles for the Q-Q plot mode.
 \item View model equation batch structure. This displays the equation batch structure, as described in the Mobius model builder documentation. This is mostly interesting if you are a model developer, as it can provide some debug information for your work-in-progress model.
@@ -401,7 +401,7 @@ If an index set was checked as "locked" in the main window, all values across th
 
 You can also select a statistic to plot in the rightmost plot, with the perturbed parameter as the x axis and the statistic as the y axis. If you want to plot a goodness-of-fit statistic (these are documented in section \ref{sec:gof}, you must have an input series selected that will be used as the comparison series. The GOF-interval from the main window will be used (section \ref{sec:gofint}, you need to be in residual plot mode in the main window to access it for editing).
 
-\subsection{Optimizer, MCMC and sensitivity general setup}
+\subsection{Optimizer, MCMC and sensitivity general setup}\label{sec:optimization}
 \begin{center}
 \includegraphics[width=\linewidth]{img/mobiview_optimizer}
 \captionof{figure}{Optimization and MCMC setup}
