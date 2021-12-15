@@ -1211,6 +1211,12 @@ The registration procedures can only be called on a {\tt mobius\_model} object t
 \apidesc{Closes the current module. If you need to you can reopen it later using the same name.}
 }
 
+\apientry{SetModuleDescription}{Registration procedure}{
+\apipar{mobius\_model *Model}{Pointer to the model object.}
+\apipar{const char *Description}{A description of the module in the MarkDown format.}
+\apidesc{Sets a description that can be viewed from the model info window in MobiView.}
+}
+
 \apientry{RegisterUnit}{Registration procedure}{
 \apipar{mobius\_model *Model}{Pointer to the model object.}
 \apipar{const char *Name}{(optional) The name of the unit.}

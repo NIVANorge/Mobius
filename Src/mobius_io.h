@@ -564,10 +564,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 	while(true)
 	{
 		token Token = Stream.ReadToken();
-		if(Token.Type == TokenType_EOF)
-		{
-			return;
-		}
+		if(Token.Type == TokenType_EOF)	return;
 		
 		if(Token.Type == TokenType_UnquotedString)
 		{
