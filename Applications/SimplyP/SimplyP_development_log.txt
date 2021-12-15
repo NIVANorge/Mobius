@@ -1,6 +1,17 @@
 SimplyP summary of development history
 
 ###############################################################################################
+Version 0.4
+
+Updates:
+- Landscape units are dynamic and user-specified instead of hardcoded. It is now possible, for example, for the semi-natural (or low soil P) land class to have >0 soil water TDP concentration, and >0 labile P. However, unless this is really required, we strongly recommend that the user keeps just two land use classes, and if appropriate sets the labile soil P and initial EPC0 for the semi-natural class to 0.
+- Initial soil total P and inactive P must now be specified for all land clases
+- The newly-converted land class no longer exists as a hard-coded default. Instead, if the user wants to explore land use change, they must set this up themselves. However, we strongly urge that you do so whilst taking careful care of legacy soil P (see the model documentation how the newly converted land class used to operate for guidance)
+- Groundwater TDP concentration can now vary between subcatchments, so that the model can be applied in larger river systems
+- The hydrology and sediment equations have been factored out into separate modules (SimplyQ, SimplySed)
+- Soil P is computed 1/km2, so the units in the parametrization (and state variables in the soil) have changed somewhat
+
+###############################################################################################
 08/05/2019	Release of version 0.3 (alpha)
 
 This version is only available in the mobius version. Further development of the Python version is not planned.

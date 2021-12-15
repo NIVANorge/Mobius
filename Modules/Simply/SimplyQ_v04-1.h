@@ -31,15 +31,12 @@ static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplyQ", "0.4.2");
+	BeginModule(Model, "SimplyQ", "0.4.1");
 	
 	SetModuleDescription(Model, R""""(
 This is an adaption of a hydrology module originally implemented in Python as a part of the model SimplyP, which was published as
 
 [Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132](https://doi.org/10.1002/2016WR020132)
-
-New to version 0.4.2:
-- Removed minimum groundwater flow parameter, to maintain mass balance
 )"""");
 	
 	auto Degrees           = RegisterUnit(Model, "°C");
@@ -74,6 +71,7 @@ New to version 0.4.2:
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0, "", "Tg");
+	auto MinimumGroundwaterFlow  = RegisterParameterDouble(Model, Hydrology, "Minimum groundwater flow", MmPerDay, 0.40, 0.0, 10.0, "", "Qgwmin");
 #endif
 	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRouteM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types", "Cmann") ;
 	
@@ -260,7 +258,10 @@ New to version 0.4.2:
 	
 #ifdef SIMPLYQ_GROUNDWATER
 	EQUATION(Model, GroundwaterFlow,
-		return RESULT(GroundwaterVolume) / PARAMETER(GroundwaterTimeConstant);
+		double flow0   = RESULT(GroundwaterVolume) / PARAMETER(GroundwaterTimeConstant);
+		double flowmin = PARAMETER(MinimumGroundwaterFlow);
+		double t = ActivationControl(flow0, flowmin, 0.01);
+		return (1.0 - t)*flowmin + t*flow0;
 	)
 	
 	EQUATION(Model, GroundwaterVolume,		
