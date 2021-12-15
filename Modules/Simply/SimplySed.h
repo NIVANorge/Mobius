@@ -31,9 +31,9 @@ This is a simple sediment transport module created as a part of SimplyP.
 	// Global sediment parameters (don't vary by land use/sub-catchment/reach
 	auto Sediment = RegisterParameterGroup(Model, "Erodibility and sediments");
 	
-	auto DynamicErodibility                      = RegisterParameterBool(Model, Sediment, "Dynamic erodibility", true, "If true, simulate the change in erodibility on arable land through the year due to cropping and harvesting practices");
+	auto DynamicErodibility                      = RegisterParameterBool(Model, Sediment, "Dynamic erodibility", true, "Requires one of your land use classes to be 'Arable' (exact name match). If set to 'true', the model simulates the change in erodibility on arable land through the year due to cropping and harvesting");
 	
-	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 150.0, 0.0, 1000.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land", "ksed");
+	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 15.0, 0.0, 100.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land", "Ksed");
 	auto SedimentInputNonlinearCoefficient = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0, "", "psed"); 
 	auto DayOfYearWhenSoilErodibilityIsMaxSpring = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for spring-grown crops", JulianDay, 60, 30, 335, "Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment");
 	auto DayOfYearWhenSoilErodibilityIsMaxAutumn = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for autumn-grown crops", JulianDay, 304, 30, 335, "Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment");
@@ -41,7 +41,7 @@ This is a simple sediment transport module created as a part of SimplyP.
 
 	auto ReachParams = RegisterParameterGroup(Model, "Seasonal erodibility by subcatchment", Reach);
 	
-	auto ProportionOfSpringGrownCrops            = RegisterParameterDouble(Model, ReachParams, "Proportion of spring grown crops", Dimensionless, 0.65, 0.0, 1.0, "Proportion spring-sown crops to make total arable land area (assume rest is autumn-sown). Only needed if Dynamic erodibility is true");
+	auto ProportionOfSpringGrownCrops            = RegisterParameterDouble(Model, ReachParams, "Proportion of spring grown crops", Dimensionless, 0.65, 0.0, 1.0, "Proportion of total arable land that is spring-sown crops. Only needed if Dynamic erodibility is set to true and one of your land use classes is Arable");
 	
 	// Params that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land slope", Reach, LandscapeUnits);
