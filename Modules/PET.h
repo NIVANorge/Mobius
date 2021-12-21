@@ -46,17 +46,17 @@ Linear interpolation is used to convert monthly to daily values.
 static void
 AddDegreeDayPETModule(mobius_model *Model)
 {
-	BeginModule(Model, "Degree-day PET", "0.1");
+	BeginModule(Model, "Degree-day PET", "0.2");
 	
 	SetModuleDescription(Model, R""""(
 This is a very simple potential evapotranspiration model using a linear relationship between PET and air temperature.
 )"""");
-	
 	auto MmPerDay        = RegisterUnit(Model, "mm/day");
 	auto MmPerDegCPerDay = RegisterUnit(Model, "mm/°C/day");
-	auto Degrees  = RegisterUnit(Model, "°C");
+	auto Degrees         = RegisterUnit(Model, "°C");
 	
 	auto AirTemperature  = RegisterInput(Model, "Air temperature", Degrees);
+	auto PETIn           = RegisterInput(Model, "Potential evapotranspiration", MmPerDay);
 	
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
 	auto PETParams      = RegisterParameterGroup(Model, "Potential evapotranspiration", LandscapeUnits);
@@ -67,7 +67,10 @@ This is a very simple potential evapotranspiration model using a linear relation
 	auto PotentialEvapotranspiration = RegisterEquation(Model, "Potential evapotranspiration", MmPerDay);
 	
 	EQUATION(Model, PotentialEvapotranspiration,
-		return PARAMETER(DegreeDayEvapotranspiration) * Max(0.0, INPUT(AirTemperature) - PARAMETER(EtpTemperatureMin));
+		double PET_in = INPUT(PETIn);
+		double DDET = PARAMETER(DegreeDayEvapotranspiration) * Max(0.0, INPUT(AirTemperature) - PARAMETER(EtpTemperatureMin));
+		if(INPUT_WAS_PROVIDED(PETIn)) return PET_in;
+		return DDET;
 	)
 	
 	EndModule(Model);

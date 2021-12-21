@@ -283,7 +283,7 @@ parameters:
 	-0.002
 
 	"Groundwater TDP concentration" :     #(mg/l) [0, 10] 
-	0.016
+	0.016 0.016 0.016 0.016
 
 	"Particulate P enrichment factor" :     #(dimensionless) [1, 5] P content of eroded material compared to P content of bulk soils
 	1.51
@@ -292,7 +292,7 @@ parameters:
 	0.26
 
 	"Inactive soil P content" :     #(mg/kg) [0, 10000] Is recommended to be about the same as the Initial total soil P content of seminatural land, but a little lower.
-	873
+	873 873
 
 
 	# Phosphorous reach ("Reaches") #
