@@ -16,7 +16,7 @@ static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplyQ", "0.4.2");
+	BeginModule(Model, "SimplyQ", "0.4.2 Ballycanew");
 	
 	SetModuleDescription(Model, R""""(
 This is an adaption of a hydrology module originally implemented in Python as a part of the model SimplyP, which was published as
@@ -151,9 +151,19 @@ New to version 0.4.2:
 	
 	EQUATION(Model, QuickFlow,
 		double flow = RESULT(HydrologicalInputToSoilBox);
-		double proportion = SCurveResponse(flow, 0.0, PARAMETER(FlowAtMaxQuickFlow), 0.0, PARAMETER(ProportionToQuickFlow));
+		double a    = PARAMETER(FlowAtMaxQuickFlow);
+		
 		double dryness_factor = SCurveResponse(LAST_RESULT(SoilWaterVolume), PARAMETER(QuickFlowDrynessLimit)*PARAMETER(SoilFieldCapacity), PARAMETER(SoilFieldCapacity), 0.0, 1.0);
+		
+		return dryness_factor * flow * std::atan(flow/a)*2.0/Pi;
+		
+		
+		
+		/*
+		double proportion = SCurveResponse(flow, 0.0, PARAMETER(FlowAtMaxQuickFlow), 0.0, PARAMETER(ProportionToQuickFlow));
+		
 		return flow * proportion * dryness_factor; 
+		*/
 	)
 	
 	EQUATION(Model, Infiltration,
