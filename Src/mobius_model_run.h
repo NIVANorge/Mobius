@@ -980,7 +980,7 @@ EndModelDefinition(mobius_model *Model)
 		{
 			DependenciesWereResolved = true;
 #if MOBIUS_PRINT_TIMING_INFO
-			std::cout << "Dependencies resolved at " << It + 1 << " iterations.\n";
+			WarningPrint("Dependencies resolved at ", It + 1, " iterations.\n");
 #endif
 			break;
 		}
@@ -1307,7 +1307,7 @@ EndModelDefinition(mobius_model *Model)
 	
 #if MOBIUS_PRINT_TIMING_INFO
 	u64 Duration = GetTimerMilliseconds(&Model->DefinitionTimer);
-	std::cout << "Model definition time: " << Duration << " milliseconds." << std::endl;
+	WarningPrint("Model definition time: ", Duration, " milliseconds.\n");
 #endif
 }
 
@@ -1505,9 +1505,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 	if(CurrentLevel >= 0)
 	{
 		index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-		for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
+		for(size_t Lev = 0; Lev < CurrentLevel; ++Lev) WarningPrint("\t");
 		index_t CurrentIndex = RunState->CurrentIndexes[CurrentIndexSet.Handle];
-		std::cout << "*** " << GetName(Model, CurrentIndexSet) << ": " << DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex] << std::endl;
+		WarningPrint("*** ", GetName(Model, CurrentIndexSet), ": ", DataSet->IndexNames[CurrentIndexSet.Handle][CurrentIndex], "\n");
 	}
 #endif
 	
@@ -1562,8 +1562,8 @@ INNER_LOOP_BODY(RunInnerLoop)
 					NaNTest(Model, RunState, ResultValue, Equation);
 #endif
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
+					for(int Lev = 0; Lev < CurrentLevel; ++Lev) WarningPrint("\t");
+					WarningPrint("\t", GetName(Model, Equation), " = ", ResultValue, "\n");
 #endif
 					++RunState->AtResult;
 				}
@@ -1602,8 +1602,8 @@ INNER_LOOP_BODY(RunInnerLoop)
 					*RunState->AtResult = ResultValue;
 					++RunState->AtResult;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
+					for(int Lev = 0; Lev < CurrentLevel; ++Lev) WarningPrint("\t");
+					WarningPrint("\t", GetName(Model, Equation), " = ", ResultValue, "\n");
 #endif
 				}
 				EquationIdx = 0;
@@ -1618,8 +1618,8 @@ INNER_LOOP_BODY(RunInnerLoop)
 					++RunState->AtResult;
 					++EquationIdx;
 #if MOBIUS_TIMESTEP_VERBOSITY >= 3
-					for(int Lev = 0; Lev < CurrentLevel; ++Lev) std::cout << "\t";
-					std::cout << "\t" << GetName(Model, Equation) << " = " << ResultValue << std::endl;
+					for(int Lev = 0; Lev < CurrentLevel; ++Lev) WarningPrint("\t");
+					WarningPrint("\t", GetName(Model, Equation), " = ", ResultValue, "\n");
 #endif
 				}
 			}
@@ -1830,6 +1830,10 @@ RunModel(mobius_data_set *DataSet)
 
 	const mobius_model *Model = DataSet->Model;
 	
+	// NOTE: in case there is an error later, these have to have been cleared.
+	DataSet->HasBeenRun = false;
+	DataSet->TimestepsLastRun = 0;
+	
 	//NOTE: Check that all the index sets have at least one index.
 	for(index_set_h IndexSet : Model->IndexSets)
 	{
@@ -1845,25 +1849,25 @@ RunModel(mobius_data_set *DataSet)
 	}
 	
 	
-	u64 Timesteps           = GetTimesteps(DataSet);
+	u64 Timesteps           = GetTimesteps(DataSet); //NOTE: Reads either the "Timesteps" or the "End date" parameter and computes accordingly.
 	datetime ModelStartTime = GetStartDate(DataSet); //NOTE: This reads the "Start date" parameter.
 	
 	//TODO: Should we put a restriction on ModelStartTime so that it is "round" with respect to the Model->TimestepSize ?
 	
 #if MOBIUS_PRINT_TIMING_INFO
-	std::cout << "Running model " << Model->Name;
+	WarningPrint("Running model ", Model->Name);
 	if(Model->Modules.Count() > 1)
 	{
-		std::cout << " with modules (";
+		WarningPrint(" with modules (");
 		for(module_h Module : Model->Modules)
 		{
 			const module_spec &ModuleSpec = Model->Modules[Module];
-			std::cout << ModuleSpec.Name << " V" << ModuleSpec.Version;
-			if(Module.Handle != Model->Modules.Count()-1) std::cout << ", ";
+			WarningPrint(ModuleSpec.Name, " V", ModuleSpec.Version);
+			if(Module.Handle != Model->Modules.Count()-1) WarningPrint(", ");
 		}
-		std::cout << ")";
+		WarningPrint(")");
 	}
-	std::cout << " for " << Timesteps << " timesteps starting at " << ModelStartTime.ToString() << std::endl;
+	WarningPrint(" for ", Timesteps, " timesteps starting at ", ModelStartTime.ToString(), "\n");
 #endif
 	
 	//NOTE: Allocate input storage in case it was not allocated during setup.
@@ -1914,19 +1918,6 @@ RunModel(mobius_data_set *DataSet)
 	
 	AllocateResultStorage(DataSet, Timesteps);
 	
-	//NOTE: The following have to be set here, because in case there is an error later, TimestepsLastRun must have been recorded correctly.
-	//TODO: Maybe we should have a separate number that denotes the size of the ResultData allocation just to be safe.
-	DataSet->HasBeenRun = true;
-	DataSet->TimestepsLastRun = Timesteps;
-	DataSet->StartDateLastRun = ModelStartTime;
-	
-	
-	model_run_state RunState(DataSet);
-	
-	ProcessComputedParameters(DataSet, &RunState);
-	
-	RunState.Clear();
-	
 	
 	for(const mobius_preprocessing_step &PreprocessingStep : Model->PreprocessingSteps)
 		PreprocessingStep(DataSet);
@@ -1956,6 +1947,20 @@ RunModel(mobius_data_set *DataSet)
 		if(!Correct)
 			FatalError("ERROR: The solver \"", SolverSpec.Name, "\" was given a step that is not in the range (0,1]\n");
 	}
+	
+	//NOTE: The following have to be set here, because in case there is an error later, TimestepsLastRun must have been recorded correctly.
+	//TODO: Maybe we should have a separate number that denotes the size of the ResultData allocation just to be safe.
+	DataSet->HasBeenRun = true;
+	DataSet->TimestepsLastRun = Timesteps;
+	DataSet->StartDateLastRun = ModelStartTime;
+	
+	
+	model_run_state RunState(DataSet);
+	
+	ProcessComputedParameters(DataSet, &RunState);
+	
+	RunState.Clear();
+	
 	
 	///////////// Setting up fast lookup ////////////////////
 	
@@ -2052,7 +2057,7 @@ RunModel(mobius_data_set *DataSet)
 		}
 	}
 #if MOBIUS_TIMESTEP_VERBOSITY >= 1
-	std::cout << "Initial value step:" << std::endl;
+	WarningPrint("Initial value step:\n");
 #endif
 	RunState.Timestep = -1;
 	ModelLoop(DataSet, &RunState, InitialValueSetupInnerLoop);
@@ -2080,7 +2085,7 @@ RunModel(mobius_data_set *DataSet)
 	{
 		
 #if MOBIUS_TIMESTEP_VERBOSITY >= 1
-		std::cout << "Timestep: " << RunState.Timestep << std::endl;
+		WarningPrint("Timestep: ", RunState.Timestep, "\n");
 		//std::cout << "Day of year: " << RunState.DayOfYear << std::endl;
 #endif
 		
@@ -2117,11 +2122,11 @@ RunModel(mobius_data_set *DataSet)
 	u64 RunDuration = GetTimerMilliseconds(&RunTimer);
 	u64 RunDurationCycles = AfterC - BeforeC;
 
-	std::cout << "Model execution setup time: " << SetupDuration << " milliseconds" << std::endl;
-	std::cout << "Model execution time: " << RunDuration << " milliseconds" << std::endl;
-	std::cout << "Model execution processor cycles: " << RunDurationCycles << std::endl;
-	std::cout << "Average cycles per result instance including overhead: " << (RunDurationCycles / (Timesteps * DataSet->ResultStorageStructure.TotalCount)) << std::endl;
-	std::cout << "(Note: one instance can be the result of several equation evaluations in the case of solvers)" << std::endl;
+	WarningPrint("Model execution setup time: ", SetupDuration, " milliseconds\n");
+	WarningPrint("Model execution time: ", RunDuration, " milliseconds\n");
+	WarningPrint("Model execution processor cycles: ", RunDurationCycles, "\n");
+	WarningPrint("Average cycles per result instance including overhead: ", (RunDurationCycles / (Timesteps * DataSet->ResultStorageStructure.TotalCount)), "\n");
+	WarningPrint("(Note: one instance can be the result of several equation evaluations in the case of solvers)\n");
 #endif
 
 #if MOBIUS_EQUATION_PROFILING
@@ -2140,13 +2145,13 @@ PrintEquationDependencies(mobius_model *Model)
 	
 	//Ooops, this one may not be correct for equations that are on solvers!!
 	
-	std::cout << std::endl << "**** Equation Dependencies ****" << std::endl;
+	WarningPrint("**** Equation Dependencies ****\n");
 	for(equation_h Equation : Model->Equations)
 	{
-		std::cout << GetName(Model, Equation) << "\n\t";
+		WarningPrint(GetName(Model, Equation), "\n\t");
 		for(index_set_h IndexSet : Model->Equations[Equation].IndexSetDependencies)
-			std::cout << "[" << GetName(Model, IndexSet) << "]";
-		std::cout << std::endl;
+			WarningPrint("[", GetName(Model, IndexSet), "]");
+		WarningPrint("\n");
 	}
 }
 
@@ -2242,20 +2247,20 @@ PrintParameterStorageStructure(mobius_data_set *DataSet)
 	
 	const mobius_model *Model = DataSet->Model;
 	
-	std::cout << std::endl << "**** Parameter storage structure ****" << std::endl;
+	WarningPrint("\n**** Parameter storage structure ****\n");
 	size_t StorageCount = DataSet->ParameterStorageStructure.Units.Count;
 	for(size_t StorageIdx = 0; StorageIdx < StorageCount; ++StorageIdx)
 	{
 		array<index_set_h> &IndexSets = DataSet->ParameterStorageStructure.Units[StorageIdx].IndexSets;
 		if(IndexSets.Count == 0)
-			std::cout << "[]";
+			WarningPrint("[]");
 		for(index_set_h IndexSet : IndexSets)
-			std::cout << "[" << GetName(Model, IndexSet) << "]";
+			WarningPrint("[", GetName(Model, IndexSet), "]");
 		for(parameter_h Parameter : DataSet->ParameterStorageStructure.Units[StorageIdx].Handles)
-			std::cout << "\n\t" << GetName(Model, Parameter);
-		std::cout << std::endl;
+			WarningPrint("\n\t", GetName(Model, Parameter));
+		WarningPrint("\n");
 	}
-	std::cout << std::endl;
+	WarningPrint("\n");
 }
 
 static void
@@ -2269,20 +2274,20 @@ PrintInputStorageStructure(mobius_data_set *DataSet)
 	
 	const mobius_model *Model = DataSet->Model;
 	
-	std::cout << std::endl << "**** Input storage structure ****" << std::endl;
+	WarningPrint("\n**** Input storage structure ****\n");
 	size_t StorageCount = DataSet->InputStorageStructure.Units.Count;
 	for(size_t StorageIdx = 0; StorageIdx < StorageCount; ++StorageIdx)
 	{
 		array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageIdx].IndexSets;
 		if(IndexSets.Count == 0)
-			std::cout << "[]";
+			WarningPrint("[]");
 		for(index_set_h IndexSet : IndexSets)
-			std::cout << "[" << GetName(Model, IndexSet) << "]";
+			WarningPrint("[", GetName(Model, IndexSet), "]");
 		for(input_h Handle : DataSet->InputStorageStructure.Units[StorageIdx].Handles)
-			std::cout << "\n\t" << GetName(Model, Handle);
-		std::cout << std::endl;
+			WarningPrint("\n\t", GetName(Model, Handle));
+		WarningPrint("\n");
 	}
-	std::cout << std::endl;
+	WarningPrint("\n");
 }
 
 static void

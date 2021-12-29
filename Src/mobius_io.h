@@ -270,6 +270,12 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	fclose(File);
 }
 
+static bool
+CouldBeParameterValue(token_type Type)
+{
+	return (Type == TokenType_Numeric) || (Type == TokenType_Bool) || (Type == TokenType_Date) || (Type == TokenType_UnquotedString);
+}
+
 static void
 ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool IgnoreUnknown=false)
 {
@@ -457,19 +463,19 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				{
 					//TODO: Is this the best way to do warnings. What if a valid parameter name is grouped in the file under an invalid module?
 					if(!ValidModule)
-						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to the module \"", ModuleName, "\", which is not currently loaded. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n");
+						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to the module \"", ModuleName, "\", which is not currently loaded. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n\n");
 					else if(!ValidVersion)
 					{
 						const module_spec &ModuleSpec = Model->Modules[CurrentModule];
-						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to version \"", ModuleVersion, "\" of module \"", GetName(Model, CurrentModule), "\". The version of this module in the current loaded model is \"", ModuleSpec.Version, "\", and does not have this parameter. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n");
+						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to version \"", ModuleVersion, "\" of module \"", GetName(Model, CurrentModule), "\". The version of this module in the current loaded model is \"", ModuleSpec.Version, "\", and does not have this parameter. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n\n");
 					}
 					
 					if(IgnoreUnknown || !ValidModule || !ValidVersion)
 					{
-						while(true) // Just skip through
+						while(true) // Just skip through the values
 						{
 							Token = Stream.PeekToken();
-							if(Token.Type == TokenType_QuotedString) break;
+							if(!CouldBeParameterValue(Token.Type)) break;
 							Stream.ReadToken();
 						}
 					}
@@ -499,8 +505,9 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 					Values.reserve(ExpectedCount);
 					Stream.ReadParameterSeries(Values, Spec);
 					if(Values.size() != ExpectedCount)                                                                   
-					{                                                                                                    
-						Stream.PrintErrorHeader();                                                                       
+					{
+						//NOTE: Ideally we want to detect here if the version of the module changed, but there could also be other reasons for this error, so it is tricky
+						Stream.PrintErrorHeader();
 						FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
 					}                                                                                                    
 					SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
