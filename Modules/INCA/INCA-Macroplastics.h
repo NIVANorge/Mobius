@@ -75,7 +75,7 @@ INCA-Macroplastics is in early development
 	auto ReachParameters      = RegisterParameterGroup(Model, "Reach characteristics", Reach);
 	
 	auto AverageCurvingRadius          = RegisterParameterDouble(Model, ReachParameters, "Average curving radius", Metres, 1000.0, 20.0, 1e10, "If the river is straight, just set this to a high number (e.g. 1e10)");
-	auto BankVegetationType            = RegisterParameterEnum(Model, ReachParameters, "Bank vegetation type", {"None", "Bushes", "Reeds", "Grass"}, "None");
+	auto BankVegetationType            = RegisterParameterEnum(Model, ReachParameters, "Bank vegetation type", {"Bushes", "Reeds", "Grass"}, "Grass");
 	auto BankVegetationDensity         = RegisterParameterDouble(Model, ReachParameters, "Bank vegetation density", Dimensionless, 0.0, 0.0, 1.0);
 	auto RiverVegetationType           = RegisterParameterEnum(Model, ReachParameters, "River vegetation type", {"None", "Reeds", "Mangrove"}, "None");
 	auto RiverVegetationDensity        = RegisterParameterDouble(Model, ReachParameters, "River vegetation density", Dimensionless, 0.0, 0.0, 1.0);
@@ -167,9 +167,11 @@ INCA-Macroplastics is in early development
 	auto FloatingLitterUpstream = RegisterEquation(Model, "Floating litter input from upstream", ItemsPerDay);
 	
 	auto BankDragForce        = RegisterEquation(Model, "Drag force on banked items", Newton, PlasticSolver);
-	auto BankDetachmentRate   = RegisterEquation(Model, "Bank detachment rate", PerDay, PlasticSolver);
+	auto BankDetachmentRate   = RegisterEquation(Model, "Bank detachment rate (not stuck)", PerDay, PlasticSolver);
+	auto BankDetachmentRateStuck = RegisterEquation(Model, "Bank detachment rate (stuck)", PerDay, PlasticSolver);
 	auto BankAttachment       = RegisterEquation(Model, "Banking", ItemsPerMPerDay, PlasticSolver);
-	auto BankDetachment       = RegisterEquation(Model, "Bank detachment", ItemsPerMPerDay, PlasticSolver);
+	auto BankDetachment       = RegisterEquation(Model, "Bank detachment (not stuck)", ItemsPerMPerDay, PlasticSolver);
+	auto BankDetachmentStuck  = RegisterEquation(Model, "Bank detachment (stuck)", ItemsPerMPerDay, PlasticSolver);
 	
 	auto RiverVegDragForce    = RegisterEquation(Model, "Drag force on in-river vegetation-attached items", Newton, PlasticSolver);
 	auto RiverVegAttachment   = RegisterEquation(Model, "In-river vegetation attachment", ItemsPerMPerDay, PlasticSolver);
@@ -182,11 +184,14 @@ INCA-Macroplastics is in early development
 	auto BankLitterBreakdown   = RegisterEquation(Model, "Bank litter breakdown", KgPerDay, PlasticSolver);
 	auto VegLitterBreakdown    = RegisterEquation(Model, "River vegetation litter breakdown", KgPerDay, PlasticSolver);
 	
-	auto RiverBankLitter       = RegisterEquationODE(Model, "River bank litter", ItemsPerM, PlasticSolver);
+	auto RiverBankLitter       = RegisterEquationODE(Model, "River bank litter (not stuck)", ItemsPerM, PlasticSolver);
+	auto RiverBankLitterStuck  = RegisterEquationODE(Model, "River bank litter (stuck)", ItemsPerM, PlasticSolver);
 	auto FloatingLitter        = RegisterEquationODE(Model, "Floating litter", ItemsPerM, PlasticSolver);
 	auto RiverVegetationLitter = RegisterEquationODE(Model, "River vegetation litter", ItemsPerM, PlasticSolver);
 	
-	auto RiverBankLitterMass   = RegisterEquation(Model, "River bank litter (mass)", KgPerM, PlasticSolver);
+	auto RiverBankLitterMass   = RegisterEquation(Model, "River bank litter (not stuck) (mass)", KgPerM, PlasticSolver);
+	auto RiverBankLitterStuckMass = RegisterEquation(Model, "River bank litter (stuck) (mass)", KgPerM, PlasticSolver);
+	auto RiverBankLitterMassTotal = RegisterEquation(Model, "River bank litter (total) (mass)", KgPerM, PlasticSolver);
 	auto FloatingLitterMass    = RegisterEquation(Model, "Floating litter (mass)", KgPerM, PlasticSolver);
 	auto RiverVegetationLitterMass = RegisterEquation(Model, "River vegetation litter (mass)", KgPerM, PlasticSolver);
 	
@@ -212,7 +217,7 @@ INCA-Macroplastics is in early development
 	)
 	
 		
-	double ThresholdModBank[4] = {1.0, 3.0, 1.5, 1.2}; // none, bushes, reeds, grass..  //TODO: arbitrary numbers...
+	double ThresholdModBank[3] = {3.0, 1.5, 1.2}; // bushes, reeds, grass..  //TODO: arbitrary numbers...
 	
 	EQUATION(Model, BankDragForce,
 		double C_DA = PARAMETER(DragCoefficient)*PARAMETER(DragArea);
@@ -220,6 +225,7 @@ INCA-Macroplastics is in early development
 	)
 	
 	EQUATION(Model, BankDetachmentRate,
+		/*
 		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck);
 		double threshold2 = threshold * ThresholdModBank[(int)PARAMETER(BankVegetationType)];
 		
@@ -228,10 +234,22 @@ INCA-Macroplastics is in early development
 		
 		return
 			(PARAMETER(DetachmentRateTuning) / PARAMETER(ItemMass)) * LinearInterpolate(PARAMETER(BankVegetationDensity), 0.0, 1.0, excess1, excess2);
+			*/
+		return (PARAMETER(DetachmentRateTuning) / PARAMETER(ItemMass)) * RESULT(BankDragForce);
+	)
+	
+	EQUATION(Model, BankDetachmentRateStuck,
+		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck) * ThresholdModBank[(int)PARAMETER(BankVegetationType)];
+		
+		return (PARAMETER(DetachmentRateTuning) / PARAMETER(ItemMass)) * WaningExcess(RESULT(BankDragForce), threshold);
 	)
 	
 	EQUATION(Model, BankDetachment,
 		return RESULT(BankDetachmentRate) * RESULT(RiverBankLitter);
+	)
+	
+	EQUATION(Model, BankDetachmentStuck,
+		return RESULT(BankDetachmentRateStuck) * RESULT(RiverBankLitterStuck);
 	)
 	
 	EQUATION(Model, RiverVegAttachment,
@@ -254,13 +272,9 @@ INCA-Macroplastics is in early development
 	)
 	
 	EQUATION(Model, RiverVegDetachment,
-		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck);
-		double threshold2 = threshold * ThresholdModRiver[(int)PARAMETER(RiverVegetationType)];
+		double threshold = PARAMETER(DetachmentThresholdBase) * PARAMETER(PropensityToStayStuck) * ThresholdModRiver[(int)PARAMETER(RiverVegetationType)];
 		
-		double excess1 = WaningExcess(RESULT(RiverVegDragForce), threshold);
-		double excess2 = WaningExcess(RESULT(RiverVegDragForce), threshold2);
-		
-		return LinearInterpolate(PARAMETER(RiverVegetationDensity), 0.0, 1.0, excess1, excess2) * PARAMETER(DetachmentRateTuning) * RESULT(RiverVegetationLitter) / PARAMETER(ItemMass);
+		return WaningExcess(RESULT(RiverVegDragForce), threshold) * PARAMETER(DetachmentRateTuning) * RESULT(RiverVegetationLitter) / PARAMETER(ItemMass);
 	)
 	
 	// open bottle, capped bottle, bag, margarine tub, pvc piece
@@ -277,7 +291,7 @@ INCA-Macroplastics is in early development
 		double drag_force = RESULT(BankDragForce);
 		if(type == Bag) breakdown_rate += PARAMETER(BagTearing) * drag_force;
 			
-		return RESULT(RiverBankLitterMass) * breakdown_rate;
+		return RESULT(RiverBankLitterMassTotal) * breakdown_rate;
 	)
 	
 	EQUATION(Model, VegLitterBreakdown,
@@ -297,11 +311,19 @@ INCA-Macroplastics is in early development
 	)
 	
 	EQUATION(Model, RiverBankLitter,
+		double ratio = SafeDivide(RESULT(RiverBankLitterMass), RESULT(RiverBankLitterMassTotal) );
 		return
-		  RESULT(BankLitterInputs)
-		+ RESULT(BankAttachment)
+		(  RESULT(BankLitterInputs) + RESULT(BankAttachment) ) * (1.0 - PARAMETER(BankVegetationDensity))   //TODO: Make smaller items less likely to be stuck in the first place?
 		- RESULT(BankDetachment)
-		- RESULT(BankLitterBreakdown)/PARAMETER(ItemMass);
+		- ratio * RESULT(BankLitterBreakdown)/PARAMETER(ItemMass);
+	)
+	
+	EQUATION(Model, RiverBankLitterStuck,
+		double ratio = SafeDivide(RESULT(RiverBankLitterStuckMass), RESULT(RiverBankLitterMassTotal) );
+		return
+		(  RESULT(BankLitterInputs) + RESULT(BankAttachment) ) * PARAMETER(BankVegetationDensity)
+		- RESULT(BankDetachmentStuck)
+		- ratio * RESULT(BankLitterBreakdown)/PARAMETER(ItemMass);
 	)
 	
 	EQUATION(Model, RiverVegetationLitter,
@@ -323,6 +345,14 @@ INCA-Macroplastics is in early development
 	
 	EQUATION(Model, RiverBankLitterMass,
 		return RESULT(RiverBankLitter) * PARAMETER(ItemMass);
+	)
+	
+	EQUATION(Model, RiverBankLitterStuckMass,
+		return RESULT(RiverBankLitterStuck) * PARAMETER(ItemMass);
+	)
+	
+	EQUATION(Model, RiverBankLitterMassTotal,
+		return RESULT(RiverBankLitterMass) + RESULT(RiverBankLitterStuckMass);
 	)
 	
 	EQUATION(Model, FloatingLitterMass,
