@@ -64,7 +64,7 @@ There is [documentation](Documentation/mobiview_documentation.pdf) for MobiView.
 
 ### Getting MobiView
 
-You can download a compiled version of MobiView from ftp://mobiserver.niva.no/ (downloadable binary is Windows only). If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++.
+You can download a compiled Windows version of MobiView from ftp://mobiserver.niva.no/ . You can also [build it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) if you are on Linux.
 
 ### Creating MobiView compatible .dlls
 
