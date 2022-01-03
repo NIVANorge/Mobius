@@ -33,7 +33,7 @@ See [usage and attribution](https://github.com/NIVANorge/Mobius#usage-and-attrib
 
 The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
- * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP/README.md), SimplyQ, SimplyC)
+ * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP), SimplyQ, SimplyC)
  * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), [INCA-C](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaC), [INCA-P](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaP), INCA-Sed, INCA-Microplastics, INCA-Tox(INCA-Contaminants), [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
  * [MAGIC](https://github.com/NIVANorge/Mobius/tree/master/Applications/MAGIC)
  * HBV
@@ -161,10 +161,9 @@ We have also started making a simple wrapper of Mobius to the R language, but th
 
 ## Navigating around the repository
 
-- The main model definition files are within the 'Modules' folder. This is where the meat is in terms of parameter definitions, equations, etc. All these files have a .h file extension.
-- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders typically also have a few example parameter and input files.
-- For now all the source code of the main Mobius functionality is in the base folder. The models rely on this base functionality to organize data in memory and execute the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier for non-experts. Beware however that you should make sure not to include mobius.h into several different compilation units in your project if you need to have more than one compilation unit.
-- The 'Calibration' folder contains some experiments with setting up Mobius with C++ calibration software. Right now this is experimental and not completely supported since we have found Python calibration packages easier to use. They may be revisited in the future.
+- The main module definition files for existing models are within the 'Modules' folder. This is where the meat is in terms of model definitions (parameter definitions, equations, etc.). All these files have a .h file extension.
+- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders also have a few example parameter and input files.
+- Most of the core framework is in the 'Src' folder (except for the two files that you can include in your projects - mobius.h and mobius_dll.h). The models rely on this base functionality to organize data in memory and execute the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier for non-experts. Beware however that you should make sure not to include mobius.h (or mobius_dll.h) into several different compilation units in your project if you need to have more than one compilation unit.
 
 
 ## Dependencies
