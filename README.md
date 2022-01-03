@@ -58,7 +58,7 @@ Stable releases of compiled models are available for download from ftp://mobiser
 
 MobiView now also includes auto-calibration algorithms and more advanced algorithms for sampling of the parameter space like Markov Chain Monte Carlo.
 
-![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
+![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the INCA-N model in MobiView.")
 
 There is [documentation](Documentation/mobiview_documentation.pdf) for MobiView. Below is a quick start guide.
 
