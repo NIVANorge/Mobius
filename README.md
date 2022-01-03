@@ -1,11 +1,13 @@
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
 
-Mobius is a general framework for running large sets of equations, both discrete-timestep equations and ordinary differential equations, that model biogeochemical systems. Typically each equation can be evaluated over many indexes, representing e.g. geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
+Mobius is a general modelling framework for model biogeochemical systems.
 
 Primarily Mobius was developed to model catchments (routing of precipitation through soil and groundwater into rivers and streams and assorted transport and reactions of chemical compounds and sediments), but can also be used to build e.g. biological population models.
 
 The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written in a managed language like Matlab or python, and is close to the speed of models hard coded in C++ or Fortran.
+
+The framework allows the model creator to easily specify large numbers of equations, both discrete time step equations and ordinary differential equations. Typically each equation can be evaluated over many indexes, representing e.g. geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
 
 Mobius can produce standalone executables. There is also the option to compile the models to .dll's that can be loaded in the graphical user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) or be called and interacted with from Python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots. We are also developing an [R wrapper](https://github.com/NIVANorge/Mobius/tree/master/RWrapper).
 
@@ -18,13 +20,14 @@ See [usage and attribution](https://github.com/NIVANorge/Mobius#usage-and-attrib
 * [Documentation](https://github.com/NIVANorge/Mobius#documentation)
 * [Quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide)
   - [Running existing compiled models (e.g. INCA and Simply models)](https://github.com/NIVANorge/Mobius#use-existing-compiled-mobius-models-eg-inca-and-simply-models)
+  - [The MobiView graphical user interface](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)
   - [Download the repository](https://github.com/NIVANorge/Mobius#download-the-repository)
   - [Compile a model, run it, and make some changes](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes)
   - [Python wrapper](https://github.com/NIVANorge/Mobius#python-wrapper)
   - [Navigating around the repository](https://github.com/NIVANorge/Mobius#navigating-around-the-repository)
-  - [The MobiView graphical user interface](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)
 * [Dependencies](https://github.com/NIVANorge/Mobius#dependencies)
 * [Authors and acknowledgements](https://github.com/NIVANorge/Mobius#authors-and-acknowledgements)
+* [Usage and attribution](https://github.com/NIVANorge/Mobius#usage-and-attribution) for how to cite the use of a Mobius model in a publication.
 
 ## Available models
 
