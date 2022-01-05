@@ -16,7 +16,15 @@ logKxxT(double Log10RefCoef, double RefTempDegC, double TempDegC, double Interna
 static void
 AddSedFlexModel(mobius_model *Model)
 {
-	BeginModule(Model, "SedFlex", "0.1");
+	BeginModule(Model, "SedFlex abiotic", "0.1");
+	
+	SetModuleDescription(Model, R""""(
+SedFlex is flexible water-sediment fugacity model code for simulating the sources, sinks and transports of persistent organic pollutants (POPs) in a fjord, estuary or lake system.
+
+SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mobius by Magnus Dahler Norling.
+
+[Saloranta, T.; Armitage, J.; Næs, K.; Cousins, I.; Barton, D. *SF-tool multimedia model package: Model code description and application examples from the Grenland fjords*, NIVA-rapport;5216 (2006)](http://hdl.handle.net/11250/213237 )
+)"""");
 	
 	auto Dimensionless = RegisterUnit(Model);
 	auto Days          = RegisterUnit(Model, "day");
