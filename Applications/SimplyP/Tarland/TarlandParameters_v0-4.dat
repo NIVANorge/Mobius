@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.2, SimplySed V0.4, SimplyP V0.4) at 2021-12-15 13:11:53
+# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplyQ V0.4.2, SimplySed V0.4, SimplyP V0.4) at 2022-01-05 14:20:57
 
 index_sets:
 "Reaches" : {"Coull"}
@@ -9,10 +9,10 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-2004-01-01
+1981-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2006-01-01
+2010-01-01
 
 
 { module "Thornthwaite PET" version "1.0"
@@ -173,7 +173,7 @@ parameters:
 	0.1 0.1 0
 
 	"Initial total soil P content" :     #(mg/kg) [0, 10000] 
-	1458 1458 850
+	1458 1458 873
 
 	"Inactive soil P content" :     #(mg/kg) [0, 10000] For both semi-natural (or low-P) and agricultural (high-P) land, we recommend using the initial total soil P content of semi-natural (or low-P land), unless the soil types are very different
 	873 873 873

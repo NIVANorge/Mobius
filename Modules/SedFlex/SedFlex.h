@@ -16,12 +16,15 @@ logKxxT(double Log10RefCoef, double RefTempDegC, double TempDegC, double Interna
 static void
 AddSedFlexModel(mobius_model *Model)
 {
-	BeginModule(Model, "SedFlex abiotic", "0.1");
+	BeginModule(Model, "SedFlex abiotic", "0.2");
 	
 	SetModuleDescription(Model, R""""(
 SedFlex is flexible water-sediment fugacity model code for simulating the sources, sinks and transports of persistent organic pollutants (POPs) in a fjord, estuary or lake system.
 
-SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mobius by Magnus Dahler Norling.
+SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mobius and development past v0.1 by Magnus Dahler Norling.
+
+New to version 2.0:
+- Adding partitioning with inorganic sediments.
 
 [Saloranta, T.; Armitage, J.; Næs, K.; Cousins, I.; Barton, D. *SF-tool multimedia model package: Model code description and application examples from the Grenland fjords*, NIVA-rapport;5216 (2006)](http://hdl.handle.net/11250/213237 )
 )"""");
@@ -37,6 +40,7 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	auto M3PerS        = RegisterUnit(Model, "m3/s");
 	auto MgPerM3       = RegisterUnit(Model, "mg/m3");
 	auto LPerKgOC      = RegisterUnit(Model, "log10(L/kg(OC))");
+	auto LPerKgMin     = RegisterUnit(Model, "log10(L/kg(min)");
 	auto KPaM3PerMol   = RegisterUnit(Model, "-log10(kPa m3/mol)");
 	auto MolM3PerPa    = RegisterUnit(Model, "mol m3/Pa");
 	auto MolPerPaM3    = RegisterUnit(Model, "mol/(m3 Pa)");
@@ -59,7 +63,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	constexpr double ln2 = 0.69314718056;
 	
 	constexpr double rho_oc = 1.0;      //Density of organic carbon [kg/L]
-	constexpr double rho_bc = 1.0;      //Density of black carbon (soot) [kg/L] 
+	constexpr double rho_bc = 1.0;      //Density of black carbon (soot) [kg/L]
+	constexpr double rho_min = 2.6;     //Density of mineral sediments [kg/L]
 	
 	auto Compartment         = RegisterIndexSet(Model, "Compartment");
 	auto BoundaryCompartment = RegisterIndexSet(Model, "Boundary compartment");
@@ -102,7 +107,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	auto ConcPOC                    = RegisterParameterDouble(Model, WaterPars, "POC concentration", MgPerM3, 100.0, 0.0, 1000.0, "Particulate organic carbon concentration");  // C_POC
 	auto ConcDOC                    = RegisterParameterDouble(Model, WaterPars, "DOC concentration", MgPerM3, 3000.0, 0.0, 10000.0, "Dissolved organic carbon concentration");  // C_DOC
 	auto ConcBC                     = RegisterParameterDouble(Model, WaterPars, "BC concentration", MgPerM3, 10.0, 0.0, 100.0, "Black carbon (soot) concentration");  // C_BC
-	auto POCSettlingVelocity        = RegisterParameterDouble(Model, WaterPars, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC");  // U_POC
+	auto ConcMin                    = RegisterParameterDouble(Model, WaterPars, "Mineral concentration", MgPerM3, 0.0, 0.0, 1000.0, "Particulate inorganic concentration");
+	auto POCSettlingVelocity        = RegisterParameterDouble(Model, WaterPars, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC and mineral particles");  // U_POC
 	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Whether or not chemicals can react/degrade in this water compartment");
 	auto IsBelow                    = RegisterParameterUInt(Model, WaterPars, "Is below", Dimensionless, 10000, 0, 9999, "The numerical index of the other water compartment that this water compartment is below. If this is a surface layer, set the number to 10000");
 	
@@ -111,6 +117,7 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	auto Porosity                   = RegisterParameterDouble(Model, SedPars, "Sediment porosity", Dimensionless, 0.86, 0.0, 1.0);
 	auto SedPOCVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment POC volume fraction", Dimensionless, 0.0825, 0.0, 0.2, "Fraction of solid sediments that is particulate organic carbon"); // f_POC
 	auto SedBCVolumeFraction        = RegisterParameterDouble(Model, SedPars, "Sediment BC volume fraction", Dimensionless, 0.01, 0.0, 0.1, "Fraction of solid sediments that is black carbon (soot)"); // f_BC
+	auto SedMinVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment mineral volume fraction", Dimensionless, 0.01, 0.0, 1.0, "Fraction of solid sediments that are inorganic");
 	auto SedConcDOC                 = RegisterParameterDouble(Model, SedPars, "Sediment DOC concentration", MgPerM3, 78000.0, 0.0, 1e6, "Concentration in pore water");
 	auto POCMineralizationHL        = RegisterParameterDouble(Model, SedPars, "POC mineralization half-life", Days, 32613.0, 0.0, 100000.0);
 	auto BurialVelocity             = RegisterParameterDouble(Model, SedPars, "Burial velocity", MPerDay, 5e-7, 0.0, 5e-6);
@@ -123,6 +130,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	auto MinusLogH25                = RegisterParameterDouble(Model, ChemPars, "(-log10) Henry's law constant", KPaM3PerMol, 3.0, -5.0, 10.0, "Reference value at 25°C");
 	auto LogKOCObsWater             = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficient in water", LPerKgOC, 8.0, -3.0, 12.0);
 	auto LogKOCObsSed               = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficent in sediments", LPerKgOC, 8.0, -3.0, 12.0);
+	auto LogKdObsWater              = RegisterParameterDouble(Model, ChemPars, "(log10) inorganic-water partitioning coefficient (Kd) in water", LPerKgMin, 8.0, -3.0, 12.0); 
+	auto LogKdObsSed                = RegisterParameterDouble(Model, ChemPars, "(log10) inorganic-water partitioning coefficient (Kd) in sediments", LPerKgMin, 8.0, -3.0, 12.0);
 	auto EstLogKOCWater             = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in water", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto EstLogKOCSed               = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in sediments", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto MolecularWeight            = RegisterParameterDouble(Model, ChemPars, "Molecular weight", GPerMol, 400.0, 0.0, 10000.0);
@@ -176,6 +185,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	auto DOCFCSed                 = RegisterEquation(Model, "DOC FC in sediments", MolPerPaM3);
 	auto BCFCWater                = RegisterEquation(Model, "BC FC in water", MolPerPaM3);
 	auto BCFCSed                  = RegisterEquation(Model, "BC FC in sediments", MolPerPaM3);
+	auto MineralFCWater           = RegisterEquation(Model, "Mineral FC in water", MolPerPaM3);
+	auto MineralFCSed             = RegisterEquation(Model, "Mineral FC in sediments", MolPerPaM3);
 	
 	auto SolidFCWater             = RegisterEquation(Model, "Solids FC in water", MolPerPaM3);
 	auto WaterAndDOCFCWater       = RegisterEquation(Model, "Water+DOC FC in water", MolPerPaM3);
@@ -367,6 +378,16 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 		return Zw_sed*K_BC*rho_bc;
 	)
 	
+	EQUATION(Model, MineralFCWater,
+		double Kd = std::pow(10.0, PARAMETER(LogKdObsWater));
+		return RESULT(WaterFCWater)*Kd*rho_min;
+	)
+	
+	EQUATION(Model, MineralFCSed,
+		double Kd = std::pow(10.0, PARAMETER(LogKdObsSed));
+		return RESULT(WaterFCSed)*Kd*rho_min;
+	)
+	
 	EQUATION(Model, DOCFCWater,
 		double Zw_wat = RESULT(WaterFCWater);
 		double logKOW = RESULT(LogKOWWater);
@@ -387,7 +408,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	
 	EQUATION(Model, SolidFCWater,
 		//factor 1e-9/rho_oc for mg/m3 to mass fraction
-		return (1e-9/rho_oc)*(PARAMETER(ConcPOC)*RESULT(POCFCWater)) + (1e-9/rho_bc)*(PARAMETER(ConcBC)*RESULT(BCFCWater));
+		return (1e-9/rho_oc)*(PARAMETER(ConcPOC)*RESULT(POCFCWater)) + (1e-9/rho_bc)*(PARAMETER(ConcBC)*RESULT(BCFCWater))
+			+ (1e-9/rho_min)*(PARAMETER(ConcMin)*RESULT(MineralFCWater));
 	)
 	
 	EQUATION(Model, WaterAndDOCFCWater,
@@ -403,12 +425,12 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 		return RESULT(WaterFCSed) + (1e-9/rho_oc)*PARAMETER(SedConcDOC)*RESULT(DOCFCSed);
 	)
 	
-	EQUATION(Model, SolidFCSedExclSoot,
+	EQUATION(Model, SolidFCSedExclSoot,   //TODO: rename to excl soot and min or just POCFCSed
 		return PARAMETER(SedPOCVolumeFraction)*RESULT(POCFCSed);
 	)
 	
 	EQUATION(Model, SolidFCSed,
-		return RESULT(SolidFCSedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFCSed);
+		return RESULT(SolidFCSedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFCSed) + PARAMETER(SedMinVolumeFraction)*RESULT(MineralFCSed);
 	)
 	
 	EQUATION(Model, TotalFCSed,
@@ -448,7 +470,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 		
 		return
 		    RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_oc)
-		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_bc); 
+		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_bc)
+		  + RESULT(MineralFCWater)*1e-3*PARAMETER(ConcMin)*PARAMETER(POCSettlingVelocity)/(1e6*rho_min); 
 	)
 	
 	EQUATION(Model, ReactionTCWater,
@@ -520,6 +543,8 @@ SedFlex was originally developed in MatLab by Tuomo Saloranta. Translation to Mo
 	EQUATION(Model, MineralizationTC,
 		return (ln2*PARAMETER(SedHeight)/PARAMETER(POCMineralizationHL))*PARAMETER(SedSurfaceArea)*RESULT(SolidFCSedExclSoot);
 	)
+	
+	// TODO: Take a look at this and see if mineralization should just go to the mineral sediments (and thus not be a sink for pollutants that bind to minerals?)
 	
 	EQUATION(Model, GrossSedimentationTC,
 		return RESULT(ResuspensionTC) + RESULT(BurialTC) + RESULT(MineralizationTC);

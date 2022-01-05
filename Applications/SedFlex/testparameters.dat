@@ -1,4 +1,4 @@
-# Parameter file generated for model SedFlex, containing modules (SedFlex V0.1) at 2022-01-05 12:26:06
+# Parameter file generated for model SedFlex, containing modules (SedFlex abiotic V0.2) at 2022-01-05 14:48:15
 
 index_sets:
 "Compartment" : {"River_surf" "River_comp_curr" "Heroya_surf" "Heroya_imd" "Heroya_deep" "Frier_surf" "Frier_imd" "Frier_deep" "Outer_surf" "Outer_imd" "Outer_deep" "Skager_surf" "Skager_deep"}
@@ -16,7 +16,7 @@ parameters:
 2010-12-01
 
 
-{ module "SedFlex" version "0.1"
+{ module "SedFlex abiotic" version "0.2"
 
 	# Atmosphere (no index sets) #
 
@@ -59,7 +59,10 @@ parameters:
 	"BC concentration" :     #(mg/m3) [0, 100] Black carbon (soot) concentration
 	10 10 10 10 10 10 10 10 10 10 10 10 10
 
-	"POC settling velocity" :     #(m/day) [0, 20] Also applies to BC
+	"Mineral concentration" :     #(mg/m3) [0, 1000] Particulate inorganic concentration
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"POC settling velocity" :     #(m/day) [0, 20] Also applies to BC and mineral particles
 	0.525 0 1.157 8.467 0 1.157 5.095 0 0.466 0.466 0 0.466 0
 
 	"Degradation in water" :     # Whether or not chemicals can react/degrade in this water compartment
@@ -84,6 +87,9 @@ parameters:
 	0.0825 0.0825 0.065 0.09175 0.09175 0.065 0.06525 0.10975 0.05 0.05 0.07975 0.05 0.07975
 
 	"Sediment BC volume fraction" :     #(dimensionless) [0, 0.1] Fraction of solid sediments that is black carbon (soot)
+	0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01
+
+	"Sediment mineral volume fraction" :     #(dimensionless) [0, 1] Fraction of solid sediments that are inorganic
 	0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01
 
 	"Sediment DOC concentration" :     #(mg/m3) [0, 1000000] Concentration in pore water
@@ -121,6 +127,12 @@ parameters:
 
 	"(log10) POC-water partitioning coefficent in sediments" :     #(log10(L/kg(OC))) [-3, 12]
 	8.72 9.2 9.93 9.83 10.16 10.45 10.6 7.86 8.66 8.66 9.5 9.58 10.34 9.67 10.18 10.74 11.01
+
+	"(log10) inorganic-water partitioning coefficient (Kd) in water" :     #(log10(L/kg(min)) [-3, 12]
+	8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+
+	"(log10) inorganic-water partitioning coefficient (Kd) in sediments" :     #(log10(L/kg(min)) [-3, 12]
+	8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
 
 	"Estimate the POC-water partitioning coefficent in water" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
 	false false false false false false false false false false false false false false false false false
@@ -297,4 +309,4 @@ parameters:
 	0 216
 
 
-} # end of module "SedFlex"
+} # end of module "SedFlex abiotic"
