@@ -1,23 +1,17 @@
-# Recent significant changes
-
-**(2020-08-11):** You can now use special (non-ascii) characters in paths for input and parameter files (at least on Windows, and probably on other platforms too).
-
-**(2020-06-23):** You can now make your model use an "End date" parameter instead of a "Timesteps" parameter.
-
-**(2020-05-04):** Simplified the way one sets up new model .dlls, making it more efficient and flexible.
-
-
-
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
 
-Mobius is a general framework for running large sets of equations, both discrete-timestep equations and ordinary differential equations, that model biogeochemical systems. Typically each equation can be evaluated over many indexes, representing e.g. geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
+Mobius is a general modelling framework for model biogeochemical systems.
 
 Primarily Mobius was developed to model catchments (routing of precipitation through soil and groundwater into rivers and streams and assorted transport and reactions of chemical compounds and sediments), but can also be used to build e.g. biological population models.
 
 The framework lets you focus on specifying parameters, input timeseries (forcings) and equations for your model and it will set up the structure of the model and handle input/output file formats for you. The run speed of the models is typically very fast compared to something that is written in a managed language like Matlab or python, and is close to the speed of models hard coded in C++ or Fortran.
 
+The framework allows the model creator to easily specify large numbers of equations, both discrete time step equations and ordinary differential equations. Typically each equation can be evaluated over many indexes, representing e.g. geographical locations, such as river segments and land use classes, or size classes and age classes, and over many timesteps. Mobius is modular, allowing you to combine models of various subsystems into larger models.
+
 Mobius can produce standalone executables. There is also the option to compile the models to .dll's that can be loaded in the graphical user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) or be called and interacted with from Python using our [python wrapper interface](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper). The python wrapper is great for writing your own calibration systems or for making your own post-processing and plots. We are also developing an [R wrapper](https://github.com/NIVANorge/Mobius/tree/master/RWrapper).
+
+See [usage and attribution](https://github.com/NIVANorge/Mobius#usage-and-attribution) for how to cite the use of a Mobius model in a publication.
 
 ![Alt text](Documentation/img/plots.png?raw=true "Example of some plots made using Mobius and the python wrapper.")
 
@@ -26,20 +20,21 @@ Mobius can produce standalone executables. There is also the option to compile t
 * [Documentation](https://github.com/NIVANorge/Mobius#documentation)
 * [Quick start guide](https://github.com/NIVANorge/Mobius#quick-start-guide)
   - [Running existing compiled models (e.g. INCA and Simply models)](https://github.com/NIVANorge/Mobius#use-existing-compiled-mobius-models-eg-inca-and-simply-models)
+  - [The MobiView graphical user interface](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)
   - [Download the repository](https://github.com/NIVANorge/Mobius#download-the-repository)
   - [Compile a model, run it, and make some changes](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes)
   - [Python wrapper](https://github.com/NIVANorge/Mobius#python-wrapper)
   - [Navigating around the repository](https://github.com/NIVANorge/Mobius#navigating-around-the-repository)
-  - [The MobiView graphical user interface](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)
 * [Dependencies](https://github.com/NIVANorge/Mobius#dependencies)
 * [Authors and acknowledgements](https://github.com/NIVANorge/Mobius#authors-and-acknowledgements)
+* [Usage and attribution](https://github.com/NIVANorge/Mobius#usage-and-attribution) for how to cite the use of a Mobius model in a publication.
 
 ## Available models
 
 The following models are already implemented using the Mobius framework (see the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for details):
 
- * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP/README.md), SimplyQ, SimplyC)
- * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), [INCA-C](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaC), [INCA-P](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaP), INCA-Sed, INCA-Microplastics, [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
+ * "Simply" models ([SimplyP](https://github.com/NIVANorge/Mobius/blob/master/Applications/SimplyP), SimplyQ, SimplyC)
+ * "INCA" models ([INCA-N](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaN), [INCA-C](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaC), [INCA-P](https://github.com/NIVANorge/Mobius/tree/master/Applications/IncaP), INCA-Sed, INCA-Microplastics, INCA-Tox(INCA-Contaminants), [PERSiST](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist)) 
  * [MAGIC](https://github.com/NIVANorge/Mobius/tree/master/Applications/MAGIC)
  * HBV
  
@@ -47,7 +42,7 @@ Simply models have been ported from [here](https://github.com/LeahJB/SimplyP); t
 
 ## Documentation
 
-Documentation can be found in the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) folder. This is still under development, and will be added to gradually. See also the quick start guide below and the tutorials.
+Documentation can be found in the [Documentation](https://github.com/NIVANorge/Mobius/tree/master/Documentation) folder. See also the quick start guide below and the tutorials.
 
 
 # Quick start guide
@@ -57,8 +52,44 @@ Documentation can be found in the [Documentation](https://github.com/NIVANorge/M
 
 Stable releases of compiled models are available for download from ftp://mobiserver.niva.no/ (downloadable binaries are Windows only at the moment; you should open the address in a file explorer rather than in a browser). See the model-specific folders and associated readmes [here](https://github.com/NIVANorge/Mobius/tree/master/Applications) for for further instructions on setting up and running individual models. We also recommend downloading [MobiView]((https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface)), a graphical user interface for interacting with Mobius models. A compiled version of MobiView is also available from ftp://mobiserver.niva.no/ (downloadable binary is Windows only).
 
-## Download the repository
+## The MobiView graphical user interface
 
+[MobiView](https://github.com/NIVANorge/MobiView) is a GUI designed to provide a quick way of running Mobius models, calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model dlls that are compatible with MobiView.
+
+MobiView now also includes auto-calibration algorithms and more advanced algorithms for sampling of the parameter space like Markov Chain Monte Carlo.
+
+![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the INCA-N model in MobiView.")
+
+There is [documentation](Documentation/mobiview_documentation.pdf) for MobiView. Below is a quick start guide.
+
+### Getting MobiView
+
+You can download a compiled Windows version of MobiView from ftp://mobiserver.niva.no/ . You can also [build it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) if you are on Linux.
+
+### Creating MobiView compatible .dlls
+
+MobiView can load the same .dlls as the python wrapper. Most models now have batch files set up to compile such dlls. The script that compiles them is usually called compile.bat or compile_wrapper.bat. If you want to set up your own model for use with MobiView or the python wrapper, try to follow one of the existing examples. If you just want to use existing models, you can download them from the ftp server mentioned above.
+
+### Load a model and run it
+
+- Double click MobiView.exe
+- Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in .dat formats). Almost all the pre-built models have example input files that you can use to get you started. Input file formats are documented [here](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf), and for some pre-built models, model-specific information is available [here](https://github.com/NIVANorge/Mobius/tree/master/Documentation/ModelInputRequirements).
+- **To create a new parameter file with your own index sets**, you can now resize index sets inside MobiView. Just start with an example parameter file and edit its index sets. Old method: take an existing parameter file (e.g. any parameter.dat file from within the 'Applications' folder) and delete everything except the index set setup. Set up the index sets however you want (following the [file format guide](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf)). Once you load this file from MobiView and save it again (disk icon), the parameter file will contain default values for all the parameters, which you can then edit.
+- Click the little runner in the top bar or (F7) to run the model.
+- Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
+- When viewing input series with sparse values, check the 'Scatter inputs' box to plot them as scatter plots instead of line plots.
+- **Ctrl-click** to select multiple timeseries or to **deselect** a timeseries.
+- Some timeseries exist for multiple indexes. You can choose the indexes to show in the views below the plot. Multiselection is possible here too.
+- If you want to calibrate the model and view **goodness of fit** statistics: Make sure your observation timeseries is in the input file as an 'additional timeseries' (see file format docs). Select the result series you want to calibrate for and your observation timeseries, and don't have any other timeseries selected. Also make sure you have only one index combination selected at a time. Select the 'Residuals' plot mode. The goodness of fit stats are displayed in the Results info text box.
+- Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
+- Right click the plot for options to change text, formatting and to export it to an image or pdf.
+
+There is a **known issue** with MobiView, relating to window scaling on some Windows 10 computers. See [here](https://github.com/NIVANorge/MobiView#needed-improvements-todo-list) for further details and possible workarounds. 
+
+# Changing and compiling models, or using the python wrapper
+If you want to work with the source code and not just use finished models, you need to download this repository and set up a compiler in order to compile the source code to runnable files (.exe or .dll).
+
+## Download the repository
 First, download the entire Mobius repository. It is recommended that you keep your copy up to date, so it is probably a good idea to clone it and keep it updated using git, to save you having to re-download the repository whenever files are changed. There are several tutorials online on how to do that. One option, using GitHub desktop for a friendly user interface, is:
 
 -	Download GitHub Desktop (https://desktop.github.com/)
@@ -68,8 +99,6 @@ First, download the entire Mobius repository. It is recommended that you keep yo
 - Open GitHub Desktop whenever you want to check for updates. Any changes you make to the files should be saved somewhere else locally on your machine (unless you are an active mobius contributor with permission to commit changes). If files have changed online, you can update the repository on your computer by hitting the blue 'pull origin' box in the right panel.
 
 ## Compile a model, run it, and make some changes
-
-If the idea of compiling is offputting, and you want to just have a go with one of the pre-existing models, you can download them from ftp://mobiserver.niva.no/ (downloadable binaries are Windows only at the moment).
 
 ### First download a compiler
 
@@ -132,42 +161,9 @@ We have also started making a simple wrapper of Mobius to the R language, but th
 
 ## Navigating around the repository
 
-- The main model definition files are within the 'Modules' folder. This is where the meat is in terms of parameter definitions, equations, etc. All these files have a .h file extension.
-- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders typically also have a few example parameter and input files.
-- For now all the source code of the main Mobius functionality is in the base folder. The models rely on this base functionality to organize data in memory and execute the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier for non-experts. Beware however that you should make sure not to include mobius.h into several different compilation units in your project if you need to have more than one compilation unit.
-- The 'Calibration' folder contains some experiments with setting up Mobius with C++ calibration software. Right now this is experimental and not completely supported since we have found Python calibration packages easier to use. They may be revisited in the future.
-
-## The MobiView graphical user interface
-
-[MobiView](https://github.com/NIVANorge/MobiView) is a GUI designed to provide a quick way of running models, manually calibrating them, and exploring model output. If you are just a user of existing models, or if you want to use an interface to quickly get visual results out of your own models, you can make model dlls that are compatible with MobiView.
-
-![Alt text](Documentation/img/mobiviewpersist.png?raw=true "Example of running the PERSiST model in MobiView.")
-
-There is [documentation](Documentation/mobiview_documentation.pdf) for MobiView. Below is a quick start guide.
-
-### Getting MobiView
-
-You can download a compiled version of MobiView from ftp://mobiserver.niva.no/ (downloadable binary is Windows only). If you want to [compile it yourself](https://github.com/NIVANorge/MobiView#building-mobiview-yourself) feel free, you need to install Ultimate++.
-
-### Creating MobiView compatible .dlls
-
-MobiView can load the same .dlls as the python wrapper. Most models now have applications set up to compile such dlls. The script that compiles them is usually called compile.bat or compile_wrapper.bat. If you want to set up your own model for use with MobiView or the python wrapper, try to follow one of the existing examples.
-
-### Load a model and run it
-
-- Double click MobiView.exe
-- Click the 'open' icon in the top left, then select a model dll. Next, select an input file and then a parameter file (both in .dat formats). Almost all the pre-built models have example input files that you can use to get you started. Input file formats are documented [here](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf), and for some pre-built models, model-specific information is available [here](https://github.com/NIVANorge/Mobius/tree/master/Documentation/ModelInputRequirements).
-- **To create a new parameter file with your own index sets**, you can now resize index sets inside MobiView. Just start with an example parameter file and edit its index sets. Old method: take an existing parameter file (e.g. any parameter.dat file from within the 'Applications' folder) and delete everything except the index set setup. Set up the index sets however you want (following the [file format guide](https://github.com/NIVANorge/Mobius/blob/master/Documentation/file_format_documentation.pdf)). Once you load this file from MobiView and save it again (disk icon), the parameter file will contain default values for all the parameters, which you can then edit.
-- Click the little runner or (F7) to run the model.
-- Click the name of a result or input series to plot it. There are a lot of different (combinations) of plot modes to select between.
-- When viewing input series with sparse values, check the 'Scatter inputs' box to plot them as scatter plots instead of line plots.
-- **Ctrl-click** to select multiple timeseries or to **deselect** a timeseries.
-- Some timeseries exist for multiple indexes. You can choose the indexes to show in the views below the plot. Multiselection is possible here too.
-- If you want to calibrate the model and view **goodness of fit** statistics: Make sure your observation timeseries is in the input file as an 'additional timeseries' (see file format docs). Select the result series you want to calibrate for and your observation timeseries, and don't have any other timeseries selected. Also make sure you have only one index combination selected at a time. Select the 'Residuals' plot mode. The goodness of fit stats are displayed in the Results info text box.
-- Click the name of a parameter group to see the parameters in that group. You can click a parameter value to edit it. Then you can re-run the model and see the effect. Some parameter groups index over multiple indexes. These indexes can be chosen above the parameter view. If 'lock' is checked, any edits will apply to all values across that index set.
-- Right click the plot for options to change text, formatting and to export it to an image or pdf.
-
-There is a **known issue** with MobiView, relating to window scaling on some Windows 10 computers. See [here](https://github.com/NIVANorge/MobiView#needed-improvements-todo-list) for further details and possible workarounds. 
+- The main module definition files for existing models are within the 'Modules' folder. This is where the meat is in terms of model definitions (parameter definitions, equations, etc.). All these files have a .h file extension.
+- The 'Applications' folder is where the .cpp files for each model live, as well as the .bat files for compling them. Each model typically includes and uses one or more of the modules that are in the 'Modules' folder. The application folders also have a few example parameter and input files.
+- Most of the core framework is in the 'Src' folder (except for the two files that you can include in your projects - mobius.h and mobius_dll.h). The models rely on this base functionality to organize data in memory and execute the equations in the right order etc. Mobius is designed to be compiled as a unity build. This means that instead of compiling various .cpp files into separate object files and linking them as is common in C++ projects, all the source files for Mobius are included into mobius.h, and so you can just include mobius.h in your model.cpp and compile everything as a single unit. This was done to speed up development (not having to forward-declare functions), and make compilation easier for non-experts. Beware however that you should make sure not to include mobius.h (or mobius_dll.h) into several different compilation units in your project if you need to have more than one compilation unit.
 
 
 ## Dependencies
