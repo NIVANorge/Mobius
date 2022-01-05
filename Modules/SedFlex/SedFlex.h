@@ -35,6 +35,7 @@ AddSedFlexModel(mobius_model *Model)
 	auto GPerMol       = RegisterUnit(Model, "g/mol");
 	auto KJPerMol      = RegisterUnit(Model, "kJ/mol");
 	auto MolPerDayPa   = RegisterUnit(Model, "mol/(day Pa)");
+	auto MolPerDayPaM2 = RegisterUnit(Model, "mol/(day Pa m2)");
 	auto Pa            = RegisterUnit(Model, "Pa");
 	auto GPerM3        = RegisterUnit(Model, "g/m3");
 	auto MolPerDay     = RegisterUnit(Model, "mol/day");
@@ -180,7 +181,7 @@ AddSedFlexModel(mobius_model *Model)
 	auto ReactionRateSed          = RegisterEquation(Model, "Reaction rate in sediments", PerDay);
 	
 	auto FlowTCOut                = RegisterEquation(Model, "Flow to boundary TC", MolPerDayPa);
-	auto PotentialSettlingTCOut   = RegisterEquation(Model, "Potential downward settling TC", MolPerDayPa);
+	auto PotentialSettlingTCOut   = RegisterEquation(Model, "Potential downward settling TC", MolPerDayPaM2);
 	auto ReactionTCWater          = RegisterEquation(Model, "Reaction (degradation) TC in water", MolPerDayPa);
 	auto ReactionTCSed            = RegisterEquation(Model, "Reaction (degradation) TC in sediments", MolM3PerPa);
 	auto VolVaporTC               = RegisterEquation(Model, "Volatilisation to and vapor adsorption to water surface TC", MolPerDayPa);
@@ -436,8 +437,6 @@ AddSedFlexModel(mobius_model *Model)
 			RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_oc)
 		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_bc);
 		*/
-		
-		//TODO: multiply 1/m2  to unit of this one
 		
 		return
 		    RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_oc)
