@@ -884,7 +884,7 @@ Iterating over all the branch inputs to the current index of the branched index 
 \begin{lstlisting}[style=mycpp]
 EQUATION(Model, ReachUpstreamFlow,
 	double upstreamflow = 0.0;
-	for(index\_t Input : BRANC\_INPUTS(Reach))
+	for(index_t Input : BRANCH_INPUTS(Reach))
 		upstreamflow += RESULT(ReachFlow, Input);
 	return upstreamflow;
 )

@@ -9,8 +9,9 @@ logKxxT(double Log10RefCoef, double RefTempDegC, double TempDegC, double Interna
 {
 	const double R = 8.314462618; //Gas constant [J/(mol K)]
 	const double Ln10 = 2.30258509299;
-	return Log10RefCoef - (InternalEnergyChange/(R*Ln10))*(1.0/(TempDegC+273.15) + 1.0/(RefTempDegC+273.15));
+	return Log10RefCoef - (InternalEnergyChange/(1e-3*R*Ln10))*(1.0/(TempDegC+273.15) - 1.0/(RefTempDegC+273.15));
 }
+
 
 static void
 AddSedFlexModel(mobius_model *Model)
@@ -42,14 +43,14 @@ AddSedFlexModel(mobius_model *Model)
 	
 	
 	//TODO: Some of these could be parametrized
-	constexpr double R = 8.314462618;   // Ideal gas constant [J/(mol K)]
+	//constexpr double R = 8.314462618;   // Ideal gas constant [J/(mol K)]
+	constexpr double R = 8.314;  //NOTE: Same as in Matlab model.
 	constexpr double RefTemp = 25.0;    // Reference temperature for various constants (deg C)
 	constexpr double Ea = 30000.0;      // Activation energy (J/mol)
 	constexpr double ln2 = 0.69314718056;
 	
 	constexpr double rho_oc = 1.0;      //Density of organic carbon [kg/L]
 	constexpr double rho_bc = 1.0;      //Density of black carbon (soot) [kg/L] 
-	constexpr double Offset = -std::log10(1e3*R*(RefTemp+273.15));
 	
 	auto Compartment         = RegisterIndexSet(Model, "Compartment");
 	auto BoundaryCompartment = RegisterIndexSet(Model, "Boundary compartment");
@@ -111,12 +112,12 @@ AddSedFlexModel(mobius_model *Model)
 	auto LogKOW25                   = RegisterParameterDouble(Model, ChemPars, "(log10) Octanol-water partitioning coefficient", Dimensionless, 6.0, -3.0, 10.0, "Reference value at 25°C");
 	auto LogKOA25                   = RegisterParameterDouble(Model, ChemPars, "(log10) Octanol-air partitioning coefficient", Dimensionless, 12.0, -3.0, 14.0, "Reference value at 25°C");
 	auto MinusLogH25                = RegisterParameterDouble(Model, ChemPars, "(-log10) Henry's law constant", KPaM3PerMol, 3.0, -5.0, 10.0, "Reference value at 25°C");
-	auto LogKOCObsWater             = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficient in open water", LPerKgOC, 8.0, -3.0, 12.0);
+	auto LogKOCObsWater             = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficient in water", LPerKgOC, 8.0, -3.0, 12.0);
 	auto LogKOCObsSed               = RegisterParameterDouble(Model, ChemPars, "(log10) POC-water partitioning coefficent in sediments", LPerKgOC, 8.0, -3.0, 12.0);
-	auto EstLogKOCWater             = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in open water", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
+	auto EstLogKOCWater             = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in water", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto EstLogKOCSed               = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in sediments", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto MolecularWeight            = RegisterParameterDouble(Model, ChemPars, "Molecular weight", GPerMol, 400.0, 0.0, 10000.0);
-	auto DegradHLWater25            = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in open water", Days, 1e3, 1.0, 1e5, "Reference value at 25°C");
+	auto DegradHLWater25            = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in water", Days, 1e3, 1.0, 1e5, "Reference value at 25°C");
 	auto DegradHLSed25              = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in sediments", Days, 4.17e8, 1.0, 1e10, "Reference value at 25°C");
 	auto InternalEnergyChangeOA     = RegisterParameterDouble(Model, ChemPars,"Internal energy change of the OA phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
 	auto InternalEnergyChangeOW     = RegisterParameterDouble(Model, ChemPars, "Internal energy change of the OW phase", KJPerMol, -100.0, -300.0, 300.0, "Often equivalent to enthalpy of phase change");
@@ -147,40 +148,40 @@ AddSedFlexModel(mobius_model *Model)
 	
 	
 	
-	auto LogKOWWater              = RegisterEquation(Model, "(log10) Octanol-water partitioning coefficient in open water (temperature adjusted)", Dimensionless);
+	auto LogKOWWater              = RegisterEquation(Model, "(log10) Octanol-water partitioning coefficient in water (temperature adjusted)", Dimensionless);
 	auto LogKOWSed                = RegisterEquation(Model, "(log10) Octanol-water partitioning coefficient in sediments (temperature adjusted)", Dimensionless);
 	auto LogKOA                   = RegisterEquation(Model, "(log10) Octanol-air partitioning coefficient (temperature adjusted)", Dimensionless);
 	auto MinusLogHAir             = RegisterEquation(Model, "(-log10) Henry's law constant in atmoshpere (temperature adjusted)", KPaM3PerMol);
-	auto MinusLogHWater           = RegisterEquation(Model, "(-log10) Henry's law constant in open water (temperature adjusted)", KPaM3PerMol);
+	auto MinusLogHWater           = RegisterEquation(Model, "(-log10) Henry's law constant in water (temperature adjusted)", KPaM3PerMol);
 	auto MinusLogHSed             = RegisterEquation(Model, "(-log10) Henry's law constant in sediments (temperature adjusted)", KPaM3PerMol);
 	
 	auto WaterFCAir               = RegisterEquation(Model, "Water FC in atmosphere", MolPerPaM3);
-	auto WaterFCWater             = RegisterEquation(Model, "Water FC in open water", MolPerPaM3);
+	auto WaterFCWater             = RegisterEquation(Model, "Water FC in water", MolPerPaM3);
 	auto WaterFCSed               = RegisterEquation(Model, "Water FC in sediments", MolPerPaM3);
 	auto AirFC                    = RegisterEquation(Model, "Air FC", MolPerPaM3);
 	auto AerosolFC                = RegisterEquation(Model, "Aerosol FC", MolPerPaM3);
 	auto TotalFCAir               = RegisterEquation(Model, "Total FC in atmosphere", MolPerPaM3);
-	auto POCFCWater               = RegisterEquation(Model, "POC FC in open water", MolPerPaM3);
+	auto POCFCWater               = RegisterEquation(Model, "POC FC in water", MolPerPaM3);
 	auto POCFCSed                 = RegisterEquation(Model, "POC FC in sediments", MolPerPaM3);
-	auto DOCFCWater               = RegisterEquation(Model, "DOC FC in open water", MolPerPaM3);
+	auto DOCFCWater               = RegisterEquation(Model, "DOC FC in water", MolPerPaM3);
 	auto DOCFCSed                 = RegisterEquation(Model, "DOC FC in sediments", MolPerPaM3);
-	auto BCFCWater                = RegisterEquation(Model, "BC FC in open water", MolPerPaM3);
+	auto BCFCWater                = RegisterEquation(Model, "BC FC in water", MolPerPaM3);
 	auto BCFCSed                  = RegisterEquation(Model, "BC FC in sediments", MolPerPaM3);
 	
-	auto SolidFCWater             = RegisterEquation(Model, "Solids FC in open water", MolPerPaM3);
-	auto WaterAndDOCFCWater       = RegisterEquation(Model, "Water+DOC FC in open water", MolPerPaM3);
-	auto TotalFCWater             = RegisterEquation(Model, "Total FC in open water", MolPerPaM3);
+	auto SolidFCWater             = RegisterEquation(Model, "Solids FC in water", MolPerPaM3);
+	auto WaterAndDOCFCWater       = RegisterEquation(Model, "Water+DOC FC in water", MolPerPaM3);
+	auto TotalFCWater             = RegisterEquation(Model, "Total FC in water", MolPerPaM3);
 	auto PorewaterFCSed           = RegisterEquation(Model, "Water+DOC FC in sediments", MolPerPaM3);
 	auto SolidFCSedExclSoot       = RegisterEquation(Model, "Solids FC in sediments excluding soot", MolPerPaM3);
 	auto SolidFCSed               = RegisterEquation(Model, "Solids FC in sediments", MolPerPaM3);
 	auto TotalFCSed               = RegisterEquation(Model, "Total FC in sediments", MolPerPaM3);
 	
-	auto ReactionRateWater        = RegisterEquation(Model, "Reaction rate in open water", PerDay);
+	auto ReactionRateWater        = RegisterEquation(Model, "Reaction rate in water", PerDay);
 	auto ReactionRateSed          = RegisterEquation(Model, "Reaction rate in sediments", PerDay);
 	
 	auto FlowTCOut                = RegisterEquation(Model, "Flow to boundary TC", MolPerDayPa);
 	auto PotentialSettlingTCOut   = RegisterEquation(Model, "Potential downward settling TC", MolPerDayPa);
-	auto ReactionTCWater          = RegisterEquation(Model, "Reaction (degradation) TC in open water", MolPerDayPa);
+	auto ReactionTCWater          = RegisterEquation(Model, "Reaction (degradation) TC in water", MolPerDayPa);
 	auto ReactionTCSed            = RegisterEquation(Model, "Reaction (degradation) TC in sediments", MolM3PerPa);
 	auto VolVaporTC               = RegisterEquation(Model, "Volatilisation to and vapor adsorption to water surface TC", MolPerDayPa);
 	auto RainDissTC               = RegisterEquation(Model, "Rain dissolution to water surface TC", MolPerDayPa);
@@ -242,6 +243,8 @@ AddSedFlexModel(mobius_model *Model)
 		return logKxxT(PARAMETER(LogKOA25), RefTemp, INPUT(AirTemperature), PARAMETER(InternalEnergyChangeOA));
 	)
 	
+	constexpr double Offset = -std::log10(1e-3*R*(RefTemp+273.15));
+	
 	EQUATION(Model, MinusLogHAir,
 		double logKAW_ref = -PARAMETER(MinusLogH25) + Offset;
 		double logKAW_air = logKxxT(logKAW_ref, RefTemp, INPUT(AirTemperature), PARAMETER(InternalEnergyChangeAW));
@@ -251,6 +254,8 @@ AddSedFlexModel(mobius_model *Model)
 	EQUATION(Model, MinusLogHWater,
 		double logKAW_ref = -PARAMETER(MinusLogH25) + Offset;
 		double logKAW_water = logKxxT(logKAW_ref, RefTemp, INPUT(WaterTemperature), PARAMETER(InternalEnergyChangeAW));
+		//if(CURRENT_INDEX(Compartment) == FIRST_INDEX(Compartment) && CURRENT_INDEX(Chemical) == FIRST_INDEX(Chemical))
+		//	WarningPrint("LogKAW_water ", logKAW_water, "\n", "LogKAW_ref ", logKAW_ref, "\n", "Offset ", Offset, "\n");
 		return -logKAW_water + Offset;
 	)
 	
@@ -425,9 +430,18 @@ AddSedFlexModel(mobius_model *Model)
 	
 	EQUATION(Model, PotentialSettlingTCOut,
 		// D value for poc and bc settling: (mol/(m3 oc*Pa))*(g oc/m3 w)*(m/d)*m2*(m3 oc/g oc) = mol/(Pa d)
+		
+		/*
 		return
 			RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_oc)
 		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_bc);
+		*/
+		
+		//TODO: multiply 1/m2  to unit of this one
+		
+		return
+		    RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_oc)
+		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_bc); 
 	)
 	
 	EQUATION(Model, ReactionTCWater,
@@ -493,7 +507,7 @@ AddSedFlexModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, BurialTC,
-		return PARAMETER(BurialVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFCWater);
+		return PARAMETER(BurialVelocity)*PARAMETER(SedSurfaceArea)*RESULT(SolidFCSed);
 	)
 	
 	EQUATION(Model, MineralizationTC,
@@ -558,6 +572,7 @@ AddSedFlexModel(mobius_model *Model)
 			x0(Wat) = LAST_RESULT(FugacityInWater, Comp);
 			x0(Sed) = LAST_RESULT(FugacityInSed, Comp);
 			
+			double Area = PARAMETER(WaterSurfaceArea, Comp);
 			
 			// Settling between water compartments
 			u64 Below = PARAMETER(IsBelow, Comp);
@@ -566,7 +581,7 @@ AddSedFlexModel(mobius_model *Model)
 				index_t BelowThat = INDEX_NUMBER(Compartment, (u32)Below);
 				u32 FromWat = BelowThat.Index;
 				
-				double Settling = RESULT(PotentialSettlingTCOut, BelowThat);
+				double Settling = RESULT(PotentialSettlingTCOut, BelowThat) * Area;
 				
 				A(Wat, FromWat) += Settling;
 				A(FromWat, FromWat) -= Settling;
@@ -588,14 +603,13 @@ AddSedFlexModel(mobius_model *Model)
 			A(Wat, Wat) -= IntoSed;
 			A(Wat, Sed) += OutofSed;
 			A(Sed, Sed) -= OutofSed;
-			
+
 			double TotFCWat = RESULT(TotalFCWater, Comp);
 			
-			// Flow between water compartments, and final unit adjustment
+			// Flow between water compartments
 			for(index_t ToComp = FIRST_INDEX(Compartment); ToComp < INDEX_COUNT(Compartment); ++ToComp)
 			{
 				u32 ToWat = ToComp.Index;
-				u32 ToSed = ToWat + N;
 				
 				double Flow = 86400.0*PARAMETER(FlowRate, Comp, ToComp)*TotFCWat;
 				A(ToWat, Wat) += Flow;
@@ -641,6 +655,8 @@ AddSedFlexModel(mobius_model *Model)
 			x(t) = exp(A*t)x(0) + A^-1(exp(A*t) - I)b
 		*/
 		
+		//if(CURRENT_INDEX(Chemical) == FIRST_INDEX(Chemical) && CURRENT_TIMESTEP() == 0)
+		//	WarningPrint("\nA = \n", A, "\n\n\n");
 		
 		double dt = (double)CURRENT_TIME().StepLengthInSeconds / 86400.0;  // Step length in days
 

@@ -1,4 +1,4 @@
-# Parameter file generated for model SedFlex, containing modules (SedFlex V0.1) at 2021-07-02 13:47:13
+# Parameter file generated for model SedFlex, containing modules (SedFlex V0.1) at 2022-01-05 12:26:06
 
 index_sets:
 "Compartment" : {"River_surf" "River_comp_curr" "Heroya_surf" "Heroya_imd" "Heroya_deep" "Frier_surf" "Frier_imd" "Frier_deep" "Outer_surf" "Outer_imd" "Outer_deep" "Skager_surf" "Skager_deep"}
@@ -13,7 +13,7 @@ parameters:
 1950-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2010-12-31
+2010-12-01
 
 
 { module "SedFlex" version "0.1"
@@ -47,7 +47,7 @@ parameters:
 	"Water surface area" :     #(m2) [0, 361900000000000] Surface area covered by water compartment
 	2810000 2190000 2960000 2870000 2330000 18000000 17300000 12500000 41900000 38000000 13300000 22400000 9700000
 
-	"Water effective height" :     #(m) [0, 10.984] Vertical thickness of water compartment
+	"Water effective height" :     #(m) [0, 10984] Vertical thickness of water compartment
 	4.85847 6.25533 4.97616 17.0593 20.0097 4.96264 16.5966 47.4046 3 18.4 35.6 22 41.3
 
 	"POC concentration" :     #(mg/m3) [0, 1000] Particulate organic carbon concentration
@@ -65,14 +65,14 @@ parameters:
 	"Degradation in water" :     # Whether or not chemicals can react/degrade in this water compartment
 	true true true false false true false false true false false true false
 
-	"Is below" :     #(dimensionless) [0, 9999] The numerical index of the other water compartment that this water compartment is below. If this is a top layer, set the number to 10000
+	"Is below" :     #(dimensionless) [0, 9999] The numerical index of the other water compartment that this water compartment is below. If this is a surface layer, set the number to 10000
 	10000 0 10000 2 3 10000 5 6 10000 8 9 10000 10
 
 
 	# Sediment compartment ("Compartment") #
 
 	"Sediment surface area" :     #(m2) [0, 361900000000000] Surface area covered by the sediments of this compartment
-	620000 2190000 93300 541000 2330000 717000 4770000 12500000 3900000 24700000 13300000 12700000 9700000
+	619600 2189200 93300 541400 2325600 716600 4770900 12519600 3900000 24700000 13300000 12700000 9700000
 
 	"Sediment effective height" :     #(m) [0, 10] Thickness of the sediment layer
 	0.05 0.05 0.05 0.05 0.005 0.05 0.05 0.005 0.05 0.05 0.02 0.05 0.02
@@ -96,7 +96,7 @@ parameters:
 	3.29e-07 3.29e-07 7.12e-07 1.64e-06 1.97e-06 7.12e-07 1.64e-06 1.97e-06 7.12e-07 1.1e-06 1.32e-06 1.1e-06 1.32e-06
 
 	"Resuspension velocity" :     #(m/day) [0, 3e-05]
-	2.09e-06 2.09e-06 3.09e-06 3.89e-06 3.4e-07 3.09e-06 1.28e-06 3.24e-07 3.7e-06 1.22e-06 2.92e-07 1.22e-06 2.92e-07
+	2.087e-06 2.087e-06 3.091e-06 3.893e-06 3.4e-07 3.091e-06 1.279e-06 3.24e-07 3.698e-06 1.223e-06 2.92e-07 1.223e-06 2.92e-07
 
 	"Sediment-water mass transfer coeffcient" :     #(m/day) [0, 0.05] Also applies to DOC
 	0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024
@@ -116,13 +116,13 @@ parameters:
 	"(-log10) Henry's law constant" :     #(-log10(kPa m3/mol)) [-5, 10] Reference value at 25°C
 	2.79 2.83 2.84 2.84 3.08 3.08 3.29 2.56 2.73 2.59 2.88 2.72 3.02 2.75 2.85 3 3.11
 
-	"(log10) POC-water partitioning coefficient in open water" :     #(log10(L/kg(OC))) [-3, 12]
+	"(log10) POC-water partitioning coefficient in water" :     #(log10(L/kg(OC))) [-3, 12]
 	8.72 9.2 9.93 9.83 10.16 10.45 10.6 7.86 8.66 8.66 9.5 9.58 10.34 9.67 10.18 10.74 11.01
 
 	"(log10) POC-water partitioning coefficent in sediments" :     #(log10(L/kg(OC))) [-3, 12]
 	8.72 9.2 9.93 9.83 10.16 10.45 10.6 7.86 8.66 8.66 9.5 9.58 10.34 9.67 10.18 10.74 11.01
 
-	"Estimate the POC-water partitioning coefficent in open water" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
+	"Estimate the POC-water partitioning coefficent in water" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
 	false false false false false false false false false false false false false false false false false
 
 	"Estimate the POC-water partitioning coefficent in sediments" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
@@ -131,7 +131,7 @@ parameters:
 	"Molecular weight" :     #(g/mol) [0, 10000]
 	322 356.4 391 391 425.2 460 306 340.4 340.4 374.9 374.9 374.9 374.9 374.9 374.9 374.9 443.8
 
-	"Degradation half-life in open water" :     #(day) [1, 100000] Reference value at 25°C
+	"Degradation half-life in water" :     #(day) [1, 100000] Reference value at 25°C
 	167 300 617 617 617 1250 267 550 550 1170 1170 1170 1170 1170 2670 2670 8000
 
 	"Degradation half-life in sediments" :     #(day) [1, 10000000000] Reference value at 25°C
@@ -144,7 +144,7 @@ parameters:
 	-18 -17 3 3 3 30 30 -18 -17 -17 3 3 3 3 30 30 30
 
 	"Internal energy change of the AW phase" :     #(kJ/mol) [-300, 300] Often equivalent to enthalpy of phase change
-	74 88 102 102 102 115 115 74 88 88 102 102 102 102 115 115 115
+	74.44 87.53 101.73 101.73 101.73 115.1 115.1 74.44 87.53 87.53 101.73 101.73 101.73 101.73 115.1 115.1 115.1
 
 	"Toxic equivalent factor" :     #(dimensionless) [0, 50]
 	1 1 0.1 0.1 0.1 0.01 0.0001 0.1 0.05 0.5 0.1 0.1 0.1 0.1 0.01 0.01 0.0001
