@@ -13,7 +13,7 @@
 //#include "../../../Modules/Simply/SimplyQ_Ballycanew.h"
 #include "../../../Modules/Simply/SimplySed.h"
 //#include "../../../Modules/Simply/SimplySed_Ballycanew.h"
-#include "../../../Modules/Simply/SimplyP_v04.h"
+#include "../../../Modules/Simply/SimplyP.h"   //NOTE: can change this again when starting a new version
 
 
 mobius_model *
