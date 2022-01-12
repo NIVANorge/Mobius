@@ -52,7 +52,7 @@ New to version 2.0:
 	auto GPerM3        = RegisterUnit(Model, "g/m3");
 	auto MolPerDay     = RegisterUnit(Model, "mol/day");
 	auto GPerDay       = RegisterUnit(Model, "g/day");
-	
+	auto KgPerL        = RegisterUnit(Model, "kg/L");
 	
 	
 	//TODO: Some of these could be parametrized
@@ -64,7 +64,6 @@ New to version 2.0:
 	
 	constexpr double rho_oc = 1.0;      //Density of organic carbon [kg/L]
 	constexpr double rho_bc = 1.0;      //Density of black carbon (soot) [kg/L]
-	constexpr double rho_min = 2.6;     //Density of mineral sediments [kg/L]
 	
 	auto Compartment         = RegisterIndexSet(Model, "Compartment");
 	auto BoundaryCompartment = RegisterIndexSet(Model, "Boundary compartment");
@@ -107,7 +106,8 @@ New to version 2.0:
 	auto ConcPOC                    = RegisterParameterDouble(Model, WaterPars, "POC concentration", MgPerM3, 100.0, 0.0, 1000.0, "Particulate organic carbon concentration");  // C_POC
 	auto ConcDOC                    = RegisterParameterDouble(Model, WaterPars, "DOC concentration", MgPerM3, 3000.0, 0.0, 10000.0, "Dissolved organic carbon concentration");  // C_DOC
 	auto ConcBC                     = RegisterParameterDouble(Model, WaterPars, "BC concentration", MgPerM3, 10.0, 0.0, 100.0, "Black carbon (soot) concentration");  // C_BC
-	auto ConcMin                    = RegisterParameterDouble(Model, WaterPars, "Mineral concentration", MgPerM3, 0.0, 0.0, 1000.0, "Particulate inorganic concentration");
+	auto ConcMin                    = RegisterParameterDouble(Model, WaterPars, "Inorganic concentration", MgPerM3, 0.0, 0.0, 1000.0, "Particulate inorganic concentration");
+	auto MinDensity                 = RegisterParameterDouble(Model, WaterPars, "Density of suspended inorganic", KgPerL, 2.6, 0.0, 10.0, "Mass density of dry material");
 	auto POCSettlingVelocity        = RegisterParameterDouble(Model, WaterPars, "POC settling velocity", MPerDay, 1.0, 0.0, 20.0, "Also applies to BC and mineral particles");  // U_POC
 	auto HasWaterDegrad             = RegisterParameterBool(Model, WaterPars, "Degradation in water", true, "Whether or not chemicals can react/degrade in this water compartment");
 	auto IsBelow                    = RegisterParameterUInt(Model, WaterPars, "Is below", Dimensionless, 10000, 0, 9999, "The numerical index of the other water compartment that this water compartment is below. If this is a surface layer, set the number to 10000");
@@ -115,6 +115,7 @@ New to version 2.0:
 	auto SedSurfaceArea             = RegisterParameterDouble(Model, SedPars, "Sediment surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by the sediments of this compartment");
 	auto SedHeight                  = RegisterParameterDouble(Model, SedPars, "Sediment effective height", M, 0.5, 0.0, 10.0, "Thickness of the sediment layer");
 	auto Porosity                   = RegisterParameterDouble(Model, SedPars, "Sediment porosity", Dimensionless, 0.86, 0.0, 1.0);
+	auto SedDensity                 = RegisterParameterDouble(Model, SedPars, "Sediment density", KgPerL, 2.6, 0.0, 10.0, "Density of inorganic material");
 	auto SedPOCVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment POC volume fraction", Dimensionless, 0.0825, 0.0, 0.2, "Fraction of solid sediments that is particulate organic carbon"); // f_POC
 	auto SedBCVolumeFraction        = RegisterParameterDouble(Model, SedPars, "Sediment BC volume fraction", Dimensionless, 0.01, 0.0, 0.1, "Fraction of solid sediments that is black carbon (soot)"); // f_BC
 	auto SedMinVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment mineral volume fraction", Dimensionless, 0.01, 0.0, 1.0, "Fraction of solid sediments that are inorganic");
@@ -380,12 +381,12 @@ New to version 2.0:
 	
 	EQUATION(Model, MineralFCWater,
 		double Kd = std::pow(10.0, PARAMETER(LogKdObsWater));
-		return RESULT(WaterFCWater)*Kd*rho_min;
+		return RESULT(WaterFCWater)*Kd*PARAMETER(MinDensity);
 	)
 	
 	EQUATION(Model, MineralFCSed,
 		double Kd = std::pow(10.0, PARAMETER(LogKdObsSed));
-		return RESULT(WaterFCSed)*Kd*rho_min;
+		return RESULT(WaterFCSed)*Kd*PARAMETER(SedDensity);
 	)
 	
 	EQUATION(Model, DOCFCWater,
@@ -409,7 +410,7 @@ New to version 2.0:
 	EQUATION(Model, SolidFCWater,
 		//factor 1e-9/rho_oc for mg/m3 to mass fraction
 		return (1e-9/rho_oc)*(PARAMETER(ConcPOC)*RESULT(POCFCWater)) + (1e-9/rho_bc)*(PARAMETER(ConcBC)*RESULT(BCFCWater))
-			+ (1e-9/rho_min)*(PARAMETER(ConcMin)*RESULT(MineralFCWater));
+			+ (1e-9/PARAMETER(MinDensity))*(PARAMETER(ConcMin)*RESULT(MineralFCWater));
 	)
 	
 	EQUATION(Model, WaterAndDOCFCWater,
@@ -453,9 +454,7 @@ New to version 2.0:
 	EQUATION(Model, FlowTCOut,
 		double SumFlowOut = 0.0;
 		for(index_t Bound = FIRST_INDEX(BoundaryCompartment); Bound < INDEX_COUNT(BoundaryCompartment); ++Bound)
-		{
 			SumFlowOut += PARAMETER(FlowOut, Bound);
-		}
 		return 86400.0*SumFlowOut*RESULT(TotalFCWater);
 	)
 	
@@ -468,10 +467,11 @@ New to version 2.0:
 		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)*PARAMETER(WaterSurfaceArea)/(1e6*rho_bc);
 		*/
 		
+		//NOTE: Changed this value to be 1/m2. It is multiplied by area later when it is used. Reason: should use area of receiving compartment, not source compartment.
 		return
 		    RESULT(POCFCWater)*1e-3*PARAMETER(ConcPOC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_oc)
 		  + RESULT(BCFCWater)*1e-3*PARAMETER(ConcBC)*PARAMETER(POCSettlingVelocity)/(1e6*rho_bc)
-		  + RESULT(MineralFCWater)*1e-3*PARAMETER(ConcMin)*PARAMETER(POCSettlingVelocity)/(1e6*rho_min); 
+		  + RESULT(MineralFCWater)*1e-3*PARAMETER(ConcMin)*PARAMETER(POCSettlingVelocity)/(1e6*PARAMETER(MinDensity)); 
 	)
 	
 	EQUATION(Model, ReactionTCWater,
