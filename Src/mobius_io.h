@@ -533,8 +533,15 @@ FillConstantInputValues(mobius_data_set *DataSet, double *Base, double Value, s6
 	}
 }
 
+enum interpolation_type
+{
+	InterpolationType_None,
+	InterpolationType_Step,
+	InterpolationType_Linear,
+};
+
 static void
-LinearInterpolateInputValues(mobius_data_set *DataSet, double *Base, double FirstValue, double LastValue, datetime FirstDate, datetime LastDate)
+InterpolateInputValues(mobius_data_set *DataSet, double *Base, double FirstValue, double LastValue, datetime FirstDate, datetime LastDate, interpolation_type Type)
 {
 	size_t Stride = DataSet->InputStorageStructure.TotalCount;
 	
@@ -552,9 +559,16 @@ LinearInterpolateInputValues(mobius_data_set *DataSet, double *Base, double Firs
 	{
 		if(Step >= 0)
 		{
-			double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
-			double Value = FirstValue + XX*YRange;
-			*WriteTo = Value;
+			if(Type == InterpolationType_Step)
+				*WriteTo = FirstValue;
+			else if(Type == InterpolationType_Linear)
+			{
+				double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
+				double Value = FirstValue + XX*YRange;
+				*WriteTo = Value;
+			}
+			else
+				FatalError("ERROR (internal): Received invalid interpolation type in input reading.\n");
 		}
 		
 		Date.Advance();
@@ -691,33 +705,26 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The last provided series will overwrite the earlier ones.\n");
 		}
 		
-		bool LinearInterpolate = false;
+		interpolation_type InterpolationType = InterpolationType_None;
 		bool InterpInsideOnly = false;
 		bool RepeatYearly = false;
 		Token = Stream.PeekToken();
 		while(Token.Type == TokenType_UnquotedString)
 		{
 			if(Token.StringValue.Equals("linear_interpolate"))
-			{
-				LinearInterpolate = true;
-				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
-			}
-			else if(Token.StringValue.Equals("linear_interpolate_inside"))
-			{
-				LinearInterpolate = true;
+				InterpolationType = InterpolationType_Linear;
+			else if(Token.StringValue.Equals("step_interpolate"))
+				InterpolationType = InterpolationType_Step;
+			else if(Token.StringValue.Equals("inside"))
 				InterpInsideOnly  = true;
-				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
-			}
 			else if(Token.StringValue.Equals("repeat_yearly"))
-			{
 				RepeatYearly = true;
-				Stream.ReadToken(); // Consume it to position correctly for the rest of the routine
-			}
 			else
 			{
 				Stream.PrintErrorHeader();
 				FatalError("unexpected command word ", Token.StringValue, ".\n");
 			}
+			Stream.ReadToken(); // Consume the current token to position for the next one.
 			Token = Stream.PeekToken();
 		}
 		
@@ -744,20 +751,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			FatalError("Inputs are to be provided either as a series of numbers or a series of dates (or date ranges) together with numbers.\n");
 		}
 		
-		/*   NOTE: Clearing to NaN is now done inside AllocateInputStorage
-		if(Model->Inputs[Input].ClearToNaN)
-		{
-			//NOTE: Additional timeseries are by default cleared to NaN instead of 0.
-			//TODO: This makes us only clear the ones that are provided in the file... Whe should really also clear ones that are not provided..
-			for(size_t Offset : Offsets)
-			{
-				double *Base = DataSet->InputData + Offset;
-				FillConstantInputValues(DataSet, Base, std::numeric_limits<double>::quiet_NaN(), 0, (s64)Timesteps-1);
-			}
-		}
-		*/
-		
-		if(!LinearInterpolate)
+		if(InterpolationType == InterpolationType_None)
 		{
 			if(FormatType == 0)
 			{
@@ -849,12 +843,12 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				}
 			}
 		}
-		else  // if LinearInterpolate
+		else  // if we use some kind of interpolation
 		{
 			if(FormatType != 1)
 			{
 				Stream.PrintErrorHeader();
-				FatalError("when linear interpolation is specified, the input format has to be: date (time) value.\n");
+				FatalError("when interpolation is specified, the input format has to be: date (time) value.\n");
 			}
 			
 			datetime PrevDate = DataSet->InputDataStartDate;
@@ -915,7 +909,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					for(size_t Offset : Offsets)
 					{
 						double *Base = DataSet->InputData + Offset;
-						LinearInterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate);
+						InterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate, InterpolationType);
 					}
 				}
 				
