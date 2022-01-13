@@ -1,4 +1,4 @@
-# Parameter file generated for model SedFlex, containing modules (SedFlex abiotic V0.2) at 2022-01-12 12:48:12
+# Parameter file generated for model SedFlex, containing modules (SedFlex abiotic V0.2) at 2022-01-13 12:07:55
 
 index_sets:
 "Compartment" : {"River_surf" "River_comp_curr" "Heroya_surf" "Heroya_imd" "Heroya_deep" "Frier_surf" "Frier_imd" "Frier_deep" "Outer_surf" "Outer_imd" "Outer_deep" "Skager_surf" "Skager_deep"}
@@ -86,7 +86,7 @@ parameters:
 	"Sediment porosity" :     #(dimensionless) [0, 1]
 	0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86
 
-	"Sediment density" :     #(kg/L) [0, 10] Density of inorganic material
+	"Sediment inorganic density" :     #(kg/L) [0, 10] Mass density of dry material
 	2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6
 
 	"Sediment POC volume fraction" :     #(dimensionless) [0, 0.2] Fraction of solid sediments that is particulate organic carbon
@@ -94,9 +94,6 @@ parameters:
 
 	"Sediment BC volume fraction" :     #(dimensionless) [0, 0.1] Fraction of solid sediments that is black carbon (soot)
 	0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01
-
-	"Sediment mineral volume fraction" :     #(dimensionless) [0, 1] Fraction of solid sediments that are inorganic
-	0 0 0 0 0 0 0 0 0 0 0 0 0
 
 	"Sediment DOC concentration" :     #(mg/m3) [0, 1000000] Concentration in pore water
 	78000 78000 78000 78000 78000 78000 78000 78000 78000 78000 78000 78000 78000
@@ -135,10 +132,10 @@ parameters:
 	8.72 9.2 9.93 9.83 10.16 10.45 10.6 7.86 8.66 8.66 9.5 9.58 10.34 9.67 10.18 10.74 11.01
 
 	"(log10) inorganic-water partitioning coefficient (Kd) in water" :     #(log10(L/kg(min)) [-3, 12]
-	8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+	-100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100
 
 	"(log10) inorganic-water partitioning coefficient (Kd) in sediments" :     #(log10(L/kg(min)) [-3, 12]
-	8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+	-100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100 -100
 
 	"Estimate the POC-water partitioning coefficent in water" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
 	false false false false false false false false false false false false false false false false false

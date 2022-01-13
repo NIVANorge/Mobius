@@ -53,6 +53,7 @@ New to version 2.0:
 	auto MolPerDay     = RegisterUnit(Model, "mol/day");
 	auto GPerDay       = RegisterUnit(Model, "g/day");
 	auto KgPerL        = RegisterUnit(Model, "kg/L");
+	auto MuGPerKg      = RegisterUnit(Model, "µg/kg");
 	
 	
 	//TODO: Some of these could be parametrized
@@ -115,10 +116,9 @@ New to version 2.0:
 	auto SedSurfaceArea             = RegisterParameterDouble(Model, SedPars, "Sediment surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by the sediments of this compartment");
 	auto SedHeight                  = RegisterParameterDouble(Model, SedPars, "Sediment effective height", M, 0.5, 0.0, 10.0, "Thickness of the sediment layer");
 	auto Porosity                   = RegisterParameterDouble(Model, SedPars, "Sediment porosity", Dimensionless, 0.86, 0.0, 1.0);
-	auto SedDensity                 = RegisterParameterDouble(Model, SedPars, "Sediment density", KgPerL, 2.6, 0.0, 10.0, "Density of inorganic material");
+	auto SedDensity                 = RegisterParameterDouble(Model, SedPars, "Sediment inorganic density", KgPerL, 2.6, 0.0, 10.0, "Mass density of dry material");
 	auto SedPOCVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment POC volume fraction", Dimensionless, 0.0825, 0.0, 0.2, "Fraction of solid sediments that is particulate organic carbon"); // f_POC
 	auto SedBCVolumeFraction        = RegisterParameterDouble(Model, SedPars, "Sediment BC volume fraction", Dimensionless, 0.01, 0.0, 0.1, "Fraction of solid sediments that is black carbon (soot)"); // f_BC
-	auto SedMinVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment mineral volume fraction", Dimensionless, 0.01, 0.0, 1.0, "Fraction of solid sediments that are inorganic");
 	auto SedConcDOC                 = RegisterParameterDouble(Model, SedPars, "Sediment DOC concentration", MgPerM3, 78000.0, 0.0, 1e6, "Concentration in pore water");
 	auto POCMineralizationHL        = RegisterParameterDouble(Model, SedPars, "POC mineralization half-life", Days, 32613.0, 0.0, 100000.0);
 	auto BurialVelocity             = RegisterParameterDouble(Model, SedPars, "Burial velocity", MPerDay, 5e-7, 0.0, 5e-6);
@@ -193,7 +193,7 @@ New to version 2.0:
 	auto WaterAndDOCFCWater       = RegisterEquation(Model, "Water+DOC FC in water", MolPerPaM3);
 	auto TotalFCWater             = RegisterEquation(Model, "Total FC in water", MolPerPaM3);
 	auto PorewaterFCSed           = RegisterEquation(Model, "Water+DOC FC in sediments", MolPerPaM3);
-	auto SolidFCSedExclSoot       = RegisterEquation(Model, "Solids FC in sediments excluding soot", MolPerPaM3);
+	auto SolidFCSedExclSoot       = RegisterEquation(Model, "Solids FC in sediments excl soot and inorganic", MolPerPaM3);
 	auto SolidFCSed               = RegisterEquation(Model, "Solids FC in sediments", MolPerPaM3);
 	auto TotalFCSed               = RegisterEquation(Model, "Total FC in sediments", MolPerPaM3);
 	
@@ -237,6 +237,7 @@ New to version 2.0:
 	auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sediments (dry only)", GPerM3);
 	auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", GPerM3);
 	auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments (water only)", GPerM3);
+	auto SedimentToxicity         = RegisterEquation(Model, "Sediment toxicity equivalent", MuGPerKg);
 	
 	
 	auto SolveSedFlex = RegisterEquation(Model, "SedFlex solver code", Dimensionless);
@@ -431,7 +432,8 @@ New to version 2.0:
 	)
 	
 	EQUATION(Model, SolidFCSed,
-		return RESULT(SolidFCSedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFCSed) + PARAMETER(SedMinVolumeFraction)*RESULT(MineralFCSed);
+		double f_min = 1.0 - PARAMETER(SedBCVolumeFraction) - PARAMETER(SedPOCVolumeFraction);
+		return RESULT(SolidFCSedExclSoot) + PARAMETER(SedBCVolumeFraction)*RESULT(BCFCSed) + f_min*RESULT(MineralFCSed);
 	)
 	
 	EQUATION(Model, TotalFCSed,
@@ -750,6 +752,12 @@ New to version 2.0:
 		return RESULT(FugacityInSed)*RESULT(PorewaterFCSed)*PARAMETER(MolecularWeight);
 	)
 
+	EQUATION(Model, SedimentToxicity,
+		double f_min = 1.0 - PARAMETER(SedPOCVolumeFraction) - PARAMETER(SedBCVolumeFraction);
+		double sediment_dry_density = (rho_oc*PARAMETER(SedPOCVolumeFraction) + rho_bc*PARAMETER(SedBCVolumeFraction) + PARAMETER(SedDensity)*f_min)*1e6; // kg(dry)/L -> kg(dry)/m3
+		double conc = RESULT(SedConcParticulate)*1e6; // g(pop)/m3 -> µg(pop)/m3
+		return PARAMETER(ToxicEquivalentFactor)*(conc / sediment_dry_density);
+	)
 	
 	EndModule(Model);
 }
