@@ -215,7 +215,7 @@ TopologicalSortEquationsInitialValueVisit(mobius_model *Model, equation_h Equati
 		//NOTE: In an initial value setting, a LAST_RESULT is the same time step as a RESULT
 		for(equation_h Dependency : Spec.DirectLastResultDependencies)
 		{
-			if(Dependency == Equation) continue; //It doesn't matter if we depend on ourselves.
+			if(Dependency == Equation) continue; //We don't care if we depend on ourselves.
 			
 			bool Success = TopologicalSortEquationsInitialValueVisit(Model, Dependency, PushTo);
 			if(!Success)
@@ -1103,7 +1103,6 @@ EndModelDefinition(mobius_model *Model)
 		}
 		
 		//NOTE: In this setup of initial values, we get a problem if an initial value of an equation in batch group A depends on the (initial) value of an equation in batch group B and batch group A != B. If we want to allow this, we need a completely separate batch structure for the initial value equations....
-		//TODO: We should report an error if that happens!
 
 #if 0		
 		std::cout << "***************** Initial value order pre\n";
@@ -1119,28 +1118,17 @@ EndModelDefinition(mobius_model *Model)
 			std::cout << GetName(Model, Equation) << "\n";
 #endif
 
-		//TODO: This fixup is not entirely failsafe because two equations that are removed could have an out-of-order dependency
-		// on one another that is now not detected. We should instead rewrite the initial value system to have its own batch group structure!
-		/*
-		std::vector<equation_h> ToRemove;
-		
+	
+		//TODO: There could also be problems if BelongsTo > BatchGroupIdx. This is because values may not be properly loaded into the buffers.
 		for(auto Equation : InitialValueOrder)
 		{
 			s64 BelongsTo = EquationBelongsToBatchGroup[Equation.Handle];
-			if(Model->Equations[Equation].Type != EquationType_InitialValue && BelongsTo != BatchGroupIdx)
+			if(BelongsTo == -1)
 			{
-				ToRemove.push_back(Equation);
-				//WarningPrint("WARNING: An equation has an initial value dependency to an equation that is in a different batch group. That will currently not work correctly!\n");
-				//TODO: The warning should say what depends on what.
+				WarningPrint("WARNING: The value of the equation \"", GetName(Model, Equation), "\" in batch group ", BelongsTo, " is depended on by an equation in the other batch group ", BatchGroupIdx, ". This may cause unreliable behaviour.\n");
 			}
 		}
 		
-		for(equation_h Eq : ToRemove)
-		{
-			auto It = std::find(InitialValueOrder.begin(), InitialValueOrder.end(), Eq);
-			InitialValueOrder.erase(It);
-		}
-		*/
 		
 		++BatchGroupIdx;
 	}
