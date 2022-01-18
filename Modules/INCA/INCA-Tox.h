@@ -460,7 +460,6 @@ New to V0.3: Multiple contaminants at a time.
 	auto DiffusiveAirReachExchangeFlux            = RegisterEquation(Model, "Diffusive air reach exchange flux", NgPerDay, ReachSolver);
 	
 	auto ReachWaterContaminantConcentration = RegisterEquation(Model, "Reach water contaminant concentration", NgPerM3, ReachSolver);
-	auto ReachWaterContaminantConcentrationNgL = RegisterEquation(Model, "Reach water contaminant concentration ng/l", NgPerL);
 	auto ReachDOCContaminantConcentration   = RegisterEquation(Model, "Reach DOC contaminant concentration", NgPerKg, ReachSolver);
 	auto ReachSOCContaminantConcentration = RegisterEquation(Model, "Reach SOC contaminant concentration", NgPerKg, ReachSolver);
 	
@@ -706,10 +705,6 @@ New to V0.3: Multiple contaminants at a time.
 			  (RESULT(ReachWaterDOCPartitioningCoefficient)*RESULT(ReachDOCMass) + RESULT(ReachWaterSOCPartitioningCoefficient)*RESULT(TotalSuspendedSOCMass) + RESULT(ReachVolume));
 	)
 	
-	EQUATION(Model, ReachWaterContaminantConcentrationNgL,
-		return 1e-3 * RESULT(ReachWaterContaminantConcentration);
-	)
-	
 	EQUATION(Model, ReachDOCContaminantConcentration,
 		return RESULT(ReachWaterContaminantConcentration) * RESULT(ReachWaterDOCPartitioningCoefficient);
 	)
@@ -770,12 +765,26 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	auto GrainSOCDensity = GetParameterDoubleHandle(Model, "Grain SOC density");
+	auto ReachDOCConcentration = GetEquationHandle(Model, "Reach DOC concentration");
+	
+	auto ReachWaterContaminantConcentrationNgL = RegisterEquation(Model, "Reach water contaminant concentration ng/l", NgPerL);
 	auto ReachSPMContaminantConcentration = RegisterEquation(Model, "Reach suspended particulate matter contaminant concentration", NgPerKg);
+	auto ApparentDissolvedConcentration   = RegisterEquation(Model, "Reach apparent dissolved contaminant concentration (water + DOC)", NgPerL);
+	
+	EQUATION(Model, ReachWaterContaminantConcentrationNgL,
+		return 1e-3 * RESULT(ReachWaterContaminantConcentration);
+	)
 	
 	EQUATION(Model, ReachSPMContaminantConcentration,
 		auto conc = RESULT(ReachSOCContaminantConcentration);  //ng(contaminant) / kg(SOC)
 		auto dens = PARAMETER(GrainSOCDensity);                //kg(SOC) / kg(suspended_solid)
 		return conc * dens;
+	)
+	
+	EQUATION(Model, ApparentDissolvedConcentration,
+		return 
+			  RESULT(ReachWaterContaminantConcentrationNgL) 
+			+ RESULT(ReachDOCContaminantConcentration)*RESULT(ReachDOCConcentration)*1e-6; // kg(DOC)/L * ng(contaminant)/kg(DOC) -> ng(contaminant)/L
 	)
 
 	EndModule(Model);

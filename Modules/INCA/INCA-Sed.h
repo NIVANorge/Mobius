@@ -245,9 +245,11 @@ A notable difference with this implementation is that it is rigged to be run in 
 	)
 	
 	EQUATION(Model, ReachUpstreamSuspendedSediment,
+		index_t SedClass = CURRENT_INDEX(SizeClass);
+		
 		double sum = 0.0;
 		for(index_t Input : BRANCH_INPUTS(Reach))
-			sum += RESULT(ReachSuspendedSedimentOutput, Input);
+			sum += RESULT(ReachSuspendedSedimentOutput, Input, SedClass);
 		
 		return sum;
 	)
