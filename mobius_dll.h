@@ -117,6 +117,72 @@ DllSetupModelBlankIndexSets(char *InputFilename)
 	return nullptr;
 }
 
+DLLEXPORT void *
+DllSetupModelBlank(char **InputNames, u64 NInputs, char ***InputIndexSets, u64 *IndexSetCounts)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_model *Model = DllBuildModel();
+	
+	for(int In = 0; In < NInputs; ++In)
+	{
+		const char *Name = InputNames[In];
+		if(!Model->Inputs.Has(Name))
+			RegisterInput(Model, Name, {}, true, true);
+	
+		if(IndexSetCounts && InputIndexSets)
+		{
+			input_h Input = GetInputHandle(Model, Name);
+			for(int Ix = 0; Ix < IndexSetCounts[In]; ++Ix)
+			{
+				const char *Idx = InputIndexSets[In][Ix];
+				index_set_h IndexSet = GetIndexSetHandle(Model, Idx);
+				AddInputIndexSetDependency(Model, Input, IndexSet);
+			}
+		}
+	}
+	
+	EndModelDefinition(Model);
+	
+	mobius_data_set *DataSet = GenerateDataSet(Model);
+	
+	return (void *)DataSet;
+	
+	CHECK_ERROR_END
+	
+	return nullptr;
+}
+
+DLLEXPORT void
+DllSetInputSpan(void *DataSetPtr, char *StartDate, char *EndDate)
+{
+	CHECK_ERROR_BEGIN
+	
+	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	if(DataSet->InputData)
+		FatalError("Tried to set date range for inputs after input data was allocated.\n");
+	
+	bool Success;
+	datetime Start(StartDate, &Success);
+	if(!Success)
+		FatalError("The input start date \"", StartDate, "\" is not on the right format.\n");
+	datetime End(EndDate, &Success);
+	if(!Success)
+		FatalError("The input end date \"", EndDate, "\" is not on the right format.\n");
+	
+	DataSet->InputDataStartDate = Start;
+	DataSet->InputDataHasSeparateStartDate = true;
+	
+	//TODO: This is a bit of code duplication from mobius_io.h
+	s64 Step = FindTimestep(DataSet->InputDataStartDate, End, DataSet->Model->TimestepSize);
+	Step += 1;    //NOTE: Because the end date is inclusive. 
+	if(Step <= 0)
+		FatalError("The input data end date was set to be earlier than the input data start date.\n");
+	AllocateInputStorage(DataSet, (u64)Step);
+	
+	CHECK_ERROR_END
+}
+
 DLLEXPORT void
 DllReadInputs(void *DataSetPtr, char *InputFilename)
 {
@@ -436,7 +502,7 @@ DllSetParameterTime(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	bool ParseSuccess;
 	Value.ValTime = datetime(Val, &ParseSuccess);
 	if(!ParseSuccess)
-		FatalError("ERROR: Unrecognized date/time format \"", Val, "\" provided for the value of the parameter ", Name, '\n');
+		FatalError("Unrecognized date/time format \"", Val, "\" provided for the value of the parameter ", Name, '\n');
 
 	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_Time);
 	
@@ -449,7 +515,7 @@ DllSetParameterEnum(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	CHECK_ERROR_BEGIN
 	
 	if(!Val || !strlen(Val))
-		FatalError("ERROR: Got a value string for the parameter \"", Name, "\" with length 0.\n");
+		FatalError("Got a value string for the parameter \"", Name, "\" with length 0.\n");
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	parameter_value Value;
@@ -458,7 +524,7 @@ DllSetParameterEnum(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	if(Find != Spec.EnumNameToValue.end())
 		Value.ValUInt = Find->second;
 	else
-		FatalError("ERROR: The parameter \"", Name, "\" does not take the value \"", Val, "\".\n");
+		FatalError("The parameter \"", Name, "\" does not take the value \"", Val, "\".\n");
 
 	SetParameterValue(DataSet, Name, IndexNames, IndexCount, Value, ParameterType_Enum);
 	

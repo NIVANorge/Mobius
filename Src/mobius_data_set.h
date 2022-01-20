@@ -4,9 +4,8 @@ static mobius_data_set *
 GenerateDataSet(mobius_model *Model)
 {
 	if(!Model->Finalized)
-	{
 		FatalError("ERROR: Attempted to generate a data set before the model was finalized using an EndModelDefinition call.\n");
-	}
+	
 	mobius_data_set *DataSet = new mobius_data_set {};  //NOTE: The {} ensures that all member pointers are initialized to 0. This is important.
 	
 	DataSet->Model = Model;
@@ -21,9 +20,7 @@ GenerateDataSet(mobius_model *Model)
 	DataSet->BranchInputs = DataSet->BucketMemory.Allocate<array<index_t> *>(Model->IndexSets.Count());
 	
 	if(Model->IndexSets.Count() == 1) // NOTE: In case there are no index sets, all index sets have had their indexes set.
-	{
 		DataSet->AllIndexesHaveBeenSet = true;
-	}
 	
 	DataSet->ParameterStorageStructure.Model = Model;
 	DataSet->InputStorageStructure.Model     = Model;
@@ -452,7 +449,7 @@ GetTimesteps(mobius_data_set *DataSet)
 		//TODO: We should chech for and have a warning if the EndDate is not a whole number of steps away from the start date. Right now it just rounds down!
 		
 		if(Step <= 0)
-			FatalError("The model run start date was set to be later than the model run end date.\n");
+			FatalError("ERROR: The model run start date was set to be later than the model run end date.\n");
 		
 		return (u64)Step;
 	}
@@ -611,6 +608,7 @@ SetBranchIndexes(mobius_data_set *DataSet, token_string IndexSetName, const std:
 	DataSet->AllIndexesHaveBeenSet = AllSet;
 }
 
+/*
 static void
 ErrorPrintUnfilledIndexSets(mobius_data_set *DataSet)
 {
@@ -624,17 +622,39 @@ ErrorPrintUnfilledIndexSets(mobius_data_set *DataSet)
 	}
 	FatalError("\n");
 }
+*/
+
+static void
+EnsureIndexesHaveBeenSet(mobius_data_set *DataSet)
+{
+	if(DataSet->AllIndexesHaveBeenSet) return;
+	
+	//ErrorPrint("ERROR: Tried to allocate storage before all index sets were filled.\n");
+	WarningPrint("WARNING: Tried to allocate storage before all index sets were filled.\n");
+	
+	const mobius_model *Model = DataSet->Model;
+	
+	//ErrorPrint("The following index sets are empty:");
+	WarningPrint("The following index sets are empty and will receive a single generated index:");
+	for(index_set_h IndexSet : Model->IndexSets)
+	{
+		if(DataSet->IndexCounts[IndexSet.Handle] == 0)
+		{
+			//ErrorPrint(" \"", GetName(Model, IndexSet), "\"");
+			WarningPrint(" \"", GetName(Model, IndexSet), "\"");
+			
+			SetIndexes(DataSet, GetName(Model, IndexSet), {"(generated)"});
+		}
+	}
+	WarningPrint("\n");
+}
 
 static void
 AllocateParameterStorage(mobius_data_set *DataSet)
 {
 	const mobius_model *Model = DataSet->Model;
 	
-	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		ErrorPrint("ERROR: Tried to allocate parameter storage before all index sets were filled.\n");
-		ErrorPrintUnfilledIndexSets(DataSet);
-	}
+	EnsureIndexesHaveBeenSet(DataSet);
 	
 	if(DataSet->ParameterData)
 		FatalError("ERROR: Tried to allocate parameter storage twice.\n");
@@ -693,11 +713,7 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 {
 	const mobius_model *Model = DataSet->Model;
 	
-	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		ErrorPrint("ERROR: Tried to allocate input storage before all index sets were filled.\n");
-		ErrorPrintUnfilledIndexSets(DataSet);
-	}
+	EnsureIndexesHaveBeenSet(DataSet);
 	
 	if(DataSet->InputData)
 		FatalError("ERROR: Tried to allocate input storage twice.\n");
@@ -756,11 +772,7 @@ SetupResultStorageStructure(mobius_data_set *DataSet)
 {
 	const mobius_model *Model = DataSet->Model;
 	
-	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		ErrorPrint("ERROR: Tried to set up result storage structure before all index sets were filled.\n");
-		ErrorPrintUnfilledIndexSets(DataSet);
-	}
+	EnsureIndexesHaveBeenSet(DataSet);
 	
 	//NOTE: We set up a storage structure for results that mirrors the equation batch group structure. This simplifies things a lot in other code.
 	
@@ -846,11 +858,13 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName,
 static void
 SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_value Value, parameter_type Type)
 {
+	/*
 	if(!DataSet->AllIndexesHaveBeenSet)
 	{
 		ErrorPrint("ERROR: Tried to set a parameter value before all index sets have been filled with indexes.\n");
 		ErrorPrintUnfilledIndexSets(DataSet);
 	}
+	*/
 
 	if(DataSet->ParameterData == 0)
 		AllocateParameterStorage(DataSet);

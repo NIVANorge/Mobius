@@ -14,7 +14,7 @@ DlmWriteResultSeriesToFile(mobius_data_set *DataSet, const char *Filename, std::
 	
 	FILE *File = fopen(Filename, "w");
 	if(!File)
-		FatalError("Tried to open file \"", Filename, "\", but was not able to.\n");
+		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\n");
 	else
 	{
 		for(size_t Timestep = 0; Timestep < WriteSize; ++Timestep)
@@ -1103,6 +1103,8 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 					
 					std::vector<token_string> IndexSetNames;
 					Stream.ReadQuotedStringList(IndexSetNames);
+					
+					//TODO: Why not use AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h IndexSet) ?
 					
 					for(token_string IndexSetName : IndexSetNames)
 					{
