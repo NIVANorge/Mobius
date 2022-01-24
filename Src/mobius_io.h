@@ -975,9 +975,29 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 	}
 }
 
+static const char *
+GetExtension(const char *Filename, bool *Success)
+{
+	int Len = strlen(Filename);
+	const char *C = Filename+(Len-1);
+	while(*C != '.' && C != Filename) --C;
+	*Success = !(C == Filename && *C != '.');
+	return C;
+}
+
 static void
 ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 {
+#ifdef _WIN32
+	bool FoundExtension;
+	const char *Extension = GetExtension(Filename, &FoundExtension);
+	if(FoundExtension && ((strcmp(Extension, ".xls") == 0) || (strcmp(Extension, ".xlsx") == 0)))
+	{
+		ReadInputsFromSpreadsheet(DataSet, Filename);
+		return;
+	} //Otherwise, assume we use the .dat format
+#endif
+	
 	const mobius_model *Model = DataSet->Model;
 	
 	token_stream Stream(Filename);
@@ -1063,6 +1083,16 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 static void
 ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 {
+#ifdef _WIN32
+	bool FoundExtension;
+	const char *Extension = GetExtension(Filename, &FoundExtension);
+	if(FoundExtension && ((strcmp(Extension, ".xls") == 0) || (strcmp(Extension, ".xlsx") == 0)))
+	{
+		ReadInputDependenciesFromSpreadsheet(Model, Filename);
+		return;
+	} //Otherwise, assume we use the .dat format
+#endif
+	
 	if(!Filename || strlen(Filename)==0) return;
 	
 	token_stream Stream(Filename);

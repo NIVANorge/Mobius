@@ -13,10 +13,6 @@ void ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 
 #else
 
-#include <windows.h>
-#include <oleauto.h>
-
-
 
 static bool
 OLEAutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, const wchar_t *Name, int cArgs, ...)
@@ -151,7 +147,12 @@ OLEGetValue(IDispatch *From, const wchar_t *Which)
 	return Result;
 }
 
-
+static bool
+OLEMethod(IDispatch *From, const wchar_t *Which) {
+	VARIANT Result;
+	VariantInit(&Result);
+	return OLEAutoWrap(DISPATCH_METHOD, &Result, From, Which, 0);
+}
 
 static bool
 OLESetValue(IDispatch *From, const wchar_t *Which, VARIANT *Value)
@@ -203,7 +204,16 @@ OLEDestroyMatrix(VARIANT *Matrix)
 	return Success;
 }
 
-char *
+static void
+OLEDestroyString(VARIANT *String)
+{
+	SysFreeString(String->bstrVal);
+	String->bstrVal = nullptr;
+}
+
+//TODO: Make OLEDestroyString, and use it where needed!!
+
+static char *
 ColRowToCell(int Col, int Row, char *Buf) {
 	int NumAZ = 'Z' - 'A' + 1;
 	int NCol = Col;
@@ -224,12 +234,15 @@ ColRowToCell(int Col, int Row, char *Buf) {
 			Buf++;
 		}
 	}
-	return itoa(Row, Buf, 10)+1;
+	itoa(Row, Buf, 10)+1;
+	while(*Buf != 0) ++Buf;
+	return Buf;
 }
 
 static VARIANT
-OLEGetRangeMatrix(int FromRow, int ToRow, int FromCol, int ToCol, IDispatch *Sheet, IDispatch **Range)
+OLEGetRangeMatrix(int FromRow, int ToRow, int FromCol, int ToCol, IDispatch *Sheet)
 {
+	IDispatch *Range;
 	char RangeBuf[256];
 	char *Range0 = &RangeBuf[0];
 	Range0 = ColRowToCell(FromCol, FromRow, Range0);
@@ -238,11 +251,15 @@ OLEGetRangeMatrix(int FromRow, int ToRow, int FromCol, int ToCol, IDispatch *She
 	//WarningPrint("Range is ", RangeBuf, "\n");
 	
 	VARIANT RangeString = OLEStringVariant(RangeBuf);
-	*Range = OLEGetObject(Sheet, L"Range", &RangeString);
+	Range = OLEGetObject(Sheet, L"Range", &RangeString);
 	if(!Range)
 		FatalError("ERROR(internal, excel): Failed to select range.\n");
 	
-	VARIANT Matrix = OLEGetValue(*Range, L"Value");
+	VARIANT Matrix = OLEGetValue(Range, L"Value");
+	
+	OLEDestroyString(&RangeString);
+	
+	Range->Release();
 	
 	return Matrix;
 }
@@ -278,152 +295,325 @@ OLEGetDate(VARIANT *Var, datetime *DateOut)
 		WideCharToMultiByte(CP_ACP, 0, Var->bstrVal, -1, Buf, 256, NULL, NULL);
 		bool Success;
 		*DateOut = datetime(Buf, &Success);
+		OLEDestroyString(Var);
 		return Success;
 	}
 	return false;
 }
 
-
-static void
-ReadInputDependenciesFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
+static double
+OLEGetDouble(VARIANT *Var)
 {
+	double Result = std::numeric_limits<double>::quiet_NaN();
 	
+	//TODO: Do we need to handle other types?
+	if(Var->vt == VT_I2)
+		Result = (double) Var->iVal;
+	else if(Var->vt == VT_I4)
+		Result = (double) Var->lVal;
+	else if(Var->vt == VT_R4)
+		Result = (double) Var->fltVal;
+	else if(Var->vt == VT_R8)
+		Result = Var->dblVal;
+	else if(Var->vt == VT_BSTR)
+	{
+		char Buf[256];
+		WideCharToMultiByte(CP_ACP, 0, Var->bstrVal, -1, Buf, 256, NULL, NULL);
+		char *C = &Buf[0];
+		while(*C != 0)
+		{
+			if(*C == ',') *C = '.';   //NOTE: Replace ',' with '.' in case of nonstandard formats.
+			++C;
+		}
+		int Count = sscanf(Buf, "%f", &Result);
+		if(Count != 1) Result = std::numeric_limits<double>::quiet_NaN();
+		OLEDestroyString(Var);
+	}
+	else if(Var->vt != 0)
+		WarningPrint("Got number format ", Var->vt, "\n");
+	return Result;
 }
 
-static void
-ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
+struct ole_handles
 {
-	//TODO: This needs an absolute path for the file name, so we need to get that!
+	IDispatch *App = nullptr;
+	IDispatch *Books = nullptr;
+	IDispatch *Book = nullptr;
+	IDispatch *Sheet = nullptr;
+};
+
+static void
+OLEOpenSpreadsheet(const char *Filepath, ole_handles *Handles)
+{
+	char FullPath[_MAX_PATH];
+	if(_fullpath(FullPath, Filepath, _MAX_PATH ) == NULL)
+		FatalError("ERROR(excel): Can't convert the relative path \"", Filepath, "\" to a full path.\n");
 	
 	OleInitialize(NULL);
 	//Initialize COM for this thread
 	CoInitialize(NULL);
 	
-	IDispatch *App = OLECreateObject(L"Excel.Application");
+	Handles->App = OLECreateObject(L"Excel.Application");
+	
+	VARIANT FileVar = OLEStringVariant(FullPath);
+	
+	Handles->Books = OLEGetObject(Handles->App, L"Workbooks");
+	if(!Handles->Books)
+		FatalError("ERROR(excel): Failed to initialize excel workbooks.\n");
+	
+	Handles->Book = OLEGetObject(Handles->Books, L"Open", &FileVar);
+	if(!Handles->Book)
+		FatalError("ERROR(excel): Failed to open file \"", Filepath, "\".\n");
+	
+	Handles->Sheet = OLEGetObject(Handles->Book, L"ActiveSheet");
+	if(!Handles->Sheet)
+		FatalError("ERROR(excel): Failed to open excel sheet.\n");
+	
+	OLEDestroyString(&FileVar);
 	
 	//Don't make this open the excel application in a way that is visible to the user.
 	VARIANT Visible = OLEInt4Variant(0);
-	OLESetValue(App, L"Visible", &Visible);
-	
-	VARIANT FileVar = OLEStringVariant(Inputfile);
-	
-	IDispatch *Books = OLEGetObject(App, L"Workbooks");
-	if(!Books)
-		FatalError("ERROR(excel): Failed to initialize excel workbooks.\n");
-	
-	IDispatch *Book = OLEGetObject(Books, L"Open", &FileVar);
-	if(!Book)
-		FatalError("ERROR(excel): Failed to open file \"", Inputfile, "\".\n");
-	
-	IDispatch *Sheet = OLEGetObject(Book, L"ActiveSheet");
-	if(!Sheet)
-		FatalError("ERROR(excel): Failed to open excel sheet.\n");
-	
-	IDispatch *Range = nullptr;
-	
-	
-	//NOTE: Ideally there would be a way to get the number of nonempty rows directly, but it doesn't seem so (??)
-	
-	
-	constexpr int RowsAtATime = 1024;
-	std::vector<datetime> Dates;
-	Dates.reserve(RowsAtATime);
-	
-	int SuperRow = 2;  //TODO: Why doesn't it work with SuperRow = 2?
-	bool FoundFirst = false;
-	while(true)
-	{
-		bool BreakOut = false;
-		VARIANT Matrix = OLEGetRangeMatrix(SuperRow, SuperRow + RowsAtATime - 1, 1, 1, Sheet, &Range);
-		for(int R = 0; R < RowsAtATime; ++R)
-		{
-			int Row = 1 + R;
-			VARIANT Var = OLEGetMatrixValue(&Matrix, Row, 1);
-			
-			datetime Date;
-			bool Success = OLEGetDate(&Var, &Date);
-			
-			if(Success)
-			{
-				Dates.push_back(Date);
-				WarningPrint(Date.ToString(), "\n");
-			}
-			
-			if(!FoundFirst && Success) FoundFirst = true;
-			if(FoundFirst && !Success)
-			{
-				BreakOut = true;
-				break;
-			}
-		}
-		
-		if(BreakOut) break;
-		
-		if(!FoundFirst)
-			FatalError("ERROR(excel): Not able to find a date among the first ", RowsAtATime, " cells of column A.\n");
-		
-		OLEDestroyMatrix(&Matrix);
-		if(Range) Range->Release();
-	}
-	
-	//TODO: Find first and last date and allocate accordingly.
-	
-	std::vector<std::string> InputNames;
-	InputNames.reserve(100);
-	VARIANT Matrix = OLEGetRangeMatrix(1, 1, 2, 128, Sheet, &Range); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
-	
-	for(int Col = 1; Col <= 127; ++Col)
-	{
-		VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col);
-		//TODO: Do a OLEGetString instead in case they are misformatted
-		if(Name.vt == VT_BSTR)
-		{
-			char Buf[512];
-			WideCharToMultiByte(CP_ACP, 0, Name.bstrVal, -1, Buf, 512, NULL, NULL);
-			if(strlen(Buf) > 0)
-			{
-				InputNames.push_back(std::string(Buf));
-				WarningPrint(Buf, "\n");
-			}
-			else
-				break;
-		}
-		else
-			break;
-	}
-	
-	OLEDestroyMatrix(&Matrix);
-	if(Range) Range->Release();
-	
-	/*
-	VARIANT x = OLEInt4Variant(1);
-	VARIANT y = OLEInt4Variant(1);
-	
-	IDispatch *Cell = OLEGetObject(Sheet, L"Cells", &x, &y);
-	VARIANT Result = OLEGetValue(Cell, L"value");
-	
-	WarningPrint("Type of result is ", Result.vt, "\n");
-	if(Result.vt == VT_BSTR)
-	{
-		char OutVal[512];
-		WideCharToMultiByte(CP_ACP, 0, Result.bstrVal, -1, OutVal, 512, NULL, NULL);
-		WarningPrint("String value is ", OutVal, "\n");
-	}
-	*/
-	
+	OLESetValue(Handles->App, L"Visible", &Visible);
+}
+
+static void
+OLECloseSpreadsheet(ole_handles *Handles)
+{
 	//TODO: This is not called if we error out, leaving the excel app running in memory!
-	OLEAutoWrap(DISPATCH_METHOD, NULL, App, L"Quit", 0);
+	OLEAutoWrap(DISPATCH_METHOD, NULL, Handles->App, L"Quit", 0);
 	
-	
-	Sheet->Release();
-	Book->Release();
-	Books->Release();
-	App->Release();
-	//VariantClear(&arr);
+	Handles->Sheet->Release();
+	Handles->Book->Release();
+	Handles->Books->Release();
+	Handles->App->Release();
 
 	OleUninitialize();
 	// Uninitialize COM for this thread...
 	CoUninitialize();
+}
+
+static int
+OLEGetNumTabs(ole_handles *Handles)
+{
+	IDispatch *Sheets = OLEGetObject(Handles->App, L"Sheets");
+	VARIANT Count = OLEGetValue(Sheets, L"Count");
+	Sheets->Release();
+	return Count.lVal;
+}
+
+static void
+OLEChooseTab(ole_handles *Handles, int Tab)
+{
+	VARIANT VarID = OLEInt4Variant(Tab + 1);
+	Handles->Sheet = OLEGetObject(Handles->App, L"Sheets", &VarID);
+	if(!Handles->Sheet)
+		FatalError("ERROR(excel, internal): Failed to get Sheet object for tab ", Tab, ".\n");
+	bool Success = OLEMethod(Handles->Sheet, L"Select");
+	if(!Success)
+		FatalError("ERROR(excel, internal): Failed to select tab ", Tab, ".\n");
+}
+
+static void
+ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
+{
+	//TODO: We do a lot of unnecessary work by scanning the file twice. We should find a way to keep the structure instead...
+	
+	ole_handles Handles = {};
+	OLEOpenSpreadsheet(Inputfile, &Handles);
+	
+	int NTabs = OLEGetNumTabs(&Handles);
+	
+	std::vector<std::string> InputNames;
+	InputNames.reserve(100);
+	
+	for(int Tab = 0; Tab < NTabs; ++Tab)
+	{
+		OLEChooseTab(&Handles, Tab);
+		
+		VARIANT Matrix = OLEGetRangeMatrix(1, 1, 2, 128, Handles.Sheet); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
+		
+		for(int Col = 1; Col <= 127; ++Col)
+		{
+			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col);
+			//TODO: Do a OLEGetString instead in case they are misformatted
+			if(Name.vt == VT_BSTR)
+			{
+				char Buf[512];
+				WideCharToMultiByte(CP_ACP, 0, Name.bstrVal, -1, Buf, 512, NULL, NULL);
+				if(strlen(Buf) > 0)
+					InputNames.push_back(std::string(Buf));
+				else
+					break;
+			}
+			else
+				break;
+		}
+		
+		OLEDestroyMatrix(&Matrix);
+	}
+	
+	if(InputNames.size() == 0)
+		return;
+	
+	// Register "additional inputs".
+	for(std::string &InputName : InputNames)
+	{
+		const char *InName = InputName.data();
+		//WarningPrint(InputName, "\n");
+		if(!Model->Inputs.Has(InName))
+		{
+			token_string InputName = token_string(InName).Copy(&Model->BucketMemory);
+			RegisterInput(Model, InputName.Data, {}, true, true);   //TODO: should we allow provision of units?
+		}
+	}
+	
+	
+	OLECloseSpreadsheet(&Handles);
+}
+
+static void
+ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
+{
+	ole_handles Handles = {};
+	OLEOpenSpreadsheet(Inputfile, &Handles);
+	
+	//NOTE: Ideally there would be a way to get the number of nonempty rows directly, but it doesn't seem so (??)
+	
+	int NTabs = OLEGetNumTabs(&Handles);
+	
+	constexpr int RowsAtATime = 1024;
+	std::vector<std::vector<datetime>> Dates(NTabs);
+	std::vector<int> FirstDateRow(NTabs);
+	
+	for(int Tab = 0; Tab < NTabs; ++Tab)
+	{
+		OLEChooseTab(&Handles, Tab);
+		
+		Dates[Tab].reserve(RowsAtATime);
+		
+		int SuperRow = 2;
+		
+		FirstDateRow[Tab] = -1;
+		bool FoundFirst = false;
+		while(true)
+		{
+			bool BreakOut = false;
+			VARIANT Matrix = OLEGetRangeMatrix(SuperRow, SuperRow + RowsAtATime - 1, 1, 1, Handles.Sheet);
+			for(int R = 0; R < RowsAtATime; ++R)
+			{
+				int MatRow = 1 + R;
+				int Row = SuperRow + R;
+				VARIANT Var = OLEGetMatrixValue(&Matrix, MatRow, 1);
+				
+				datetime Date;
+				bool Success = OLEGetDate(&Var, &Date);
+				
+				if(Success)
+				{
+					Dates[Tab].push_back(Date);
+					//WarningPrint(Date.ToString(), "\n");
+					
+					if(!FoundFirst)
+					{
+						FoundFirst = true;
+						FirstDateRow[Tab] = Row;
+					}
+				}
+				else if(FoundFirst) //We are at the end of the set of valid dates.
+				{
+					BreakOut = true;
+					break;
+				}
+			}
+			
+			SuperRow += RowsAtATime;
+			
+			if(BreakOut) break;
+			
+			if(!FoundFirst)
+				FatalError("ERROR(excel): Not able to find a date among the first ", RowsAtATime, " cells of column A.\n");
+			
+			OLEDestroyMatrix(&Matrix);
+		}
+	}
+	
+	if(Dates.size() == 0)
+		return;
+	
+	//WarningPrint("Dates size ", Dates.size(), "\n");
+	
+	std::vector<datetime> DatesSort;
+	for(int Tab = 0; Tab < NTabs; ++Tab)
+		DatesSort.insert(DatesSort.end(), Dates[Tab].begin(), Dates[Tab].end());
+	std::sort(DatesSort.begin(), DatesSort.end());
+	
+	DataSet->InputDataStartDate = DatesSort[0];
+	DataSet->InputDataHasSeparateStartDate = true;
+
+	s64 Step = FindTimestep(DataSet->InputDataStartDate, DatesSort[DatesSort.size()-1], DataSet->Model->TimestepSize);
+	Step += 1;    //NOTE: Because the end date is inclusive. 
+	if(Step <= 0)
+		FatalError("The input data end date was set to be earlier than the input data start date.\n");
+	
+	u64 Timesteps = (u64)Step;
+	AllocateInputStorage(DataSet, Timesteps);
+		
+	for(int Tab = 0; Tab < NTabs; ++Tab)
+	{
+		std::vector<size_t> Offsets;
+		
+		OLEChooseTab(&Handles, Tab);
+		
+		VARIANT Matrix = OLEGetRangeMatrix(1, 1, 2, 128, Handles.Sheet); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
+		
+		for(int Col = 1; Col <= 127; ++Col)
+		{
+			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col);
+			//TODO: Do a OLEGetString instead in case they are misformatted
+			if(Name.vt == VT_BSTR)
+			{
+				char Buf[512];
+				WideCharToMultiByte(CP_ACP, 0, Name.bstrVal, -1, Buf, 512, NULL, NULL);
+				if(strlen(Buf) > 0)
+				{
+					input_h Input = GetInputHandle(DataSet->Model, Buf);
+					size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
+					Offsets.push_back(Offset);
+					DataSet->InputTimeseriesWasProvided[Offset] = true;
+				}
+				else
+					break;
+			}
+			else
+				break;
+		}
+		
+		OLEDestroyMatrix(&Matrix);
+
+		// Select the rest of the data!
+		Matrix = OLEGetRangeMatrix(FirstDateRow[Tab], FirstDateRow[Tab]-1 + Dates[Tab].size(), 2, 1+Offsets.size(), Handles.Sheet);
+		
+		double *WriteToBase = DataSet->InputData;
+		for(int Row = 0; Row < Dates[Tab].size(); ++Row)
+		{
+			s64 Timestep = FindTimestep(DataSet->InputDataStartDate, Dates[Tab][Row], DataSet->Model->TimestepSize);
+			if(Timestep < 0 || Timestep >= DataSet->InputDataTimesteps)
+				FatalError("ERROR(internal): Something went wrong with setting the input data timesteps in the spreadsheet reader.\n"); //NOTE: this should not happen unless the code above is worng
+			double *WriteTo = WriteToBase + Timestep*DataSet->InputStorageStructure.TotalCount;
+			for(int Col = 0; Col < Offsets.size(); ++Col)
+			{
+				VARIANT Value = OLEGetMatrixValue(&Matrix, Row+1, Col+1);
+				double Val = OLEGetDouble(&Value);
+				
+				*(WriteTo + Offsets[Col]) = Val;
+			}
+		}
+		
+		OLEDestroyMatrix(&Matrix);
+	}
+	
+	
+	OLECloseSpreadsheet(&Handles);
 }
 
 #endif //_WIN32

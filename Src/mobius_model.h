@@ -1429,12 +1429,12 @@ AddInputIndexSetDependency(mobius_model *Model, input_h Input, index_set_h Index
 
 
 inline const expanded_datetime &
-GetCurrentTime(model_run_state *RunState)
+CurrentTime(model_run_state *RunState)
 {
 	return RunState->CurrentTime;
 }
 
-#define CURRENT_TIME() (GetCurrentTime(RunState__))
+#define CURRENT_TIME() (CurrentTime(RunState__))
 
 #define CURRENT_TIMESTEP() (RunState__->Timestep)
 

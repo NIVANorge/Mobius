@@ -4,4 +4,4 @@ REM g++ -O2 -I../../Calibration/MCMC/mcmc/include/ -I../../Calibration/MCMC/mcmc
 REM g++ incased.cpp -std=c++11 -O2 -Werror=return-type -o incaviewincased.exe ../../sqlite3/sqlite3.o -fmax-errors=5
 
 g++ -c -m64 -std=c++11 -O2 incased_dll.cpp -fexceptions -fmax-errors=5
-g++ -o incased.dll -static -static-libgcc -static-libstdc++ -s -shared incased_dll.o -Wl,--subsystem,windows
+g++ -o incased.dll -static -static-libgcc -static-libstdc++ -s -shared incased_dll.o -Wl,--subsystem,windows -luuid -lole32 -loleaut32

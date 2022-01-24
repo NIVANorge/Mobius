@@ -7,6 +7,12 @@
 #if !defined(MOBIUS_H)
 
 
+#ifdef _WIN32
+#include <windows.h>
+#include <oleauto.h>
+#endif
+
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <functional>
@@ -90,6 +96,7 @@ WarningPrint(t Value, v... Tail)
 #include "Src/jacobian.h"
 #include "Src/mobius_model_run.h"
 #include "Src/lexer.h"
+#include "Src/spreadsheet_io.h"
 #include "Src/mobius_io.h"
 #include "Src/mobius_solvers.h"
 
