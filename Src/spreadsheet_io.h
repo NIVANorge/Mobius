@@ -13,6 +13,14 @@ void ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 
 #else
 
+/*****
+
+MAJOR TODO:
+	If it has opened an Excel application then exits with an error, it doesn't close the Excel application, and it keeps running as a separate process even if this proces exits.
+	This has to be handled much better!
+*****/
+
+
 
 static bool
 OLEAutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, const wchar_t *Name, int cArgs, ...)
@@ -329,9 +337,19 @@ OLEGetDouble(VARIANT *Var)
 		if(Count != 1) Result = std::numeric_limits<double>::quiet_NaN();
 		OLEDestroyString(Var);
 	}
-	else if(Var->vt != 0)
-		WarningPrint("Got number format ", Var->vt, "\n");
+	
 	return Result;
+}
+
+static void
+OLEGetString(VARIANT *Var, char *BufOut, size_t BufLen)
+{
+	BufOut[0] = 0;
+	if(Var->vt == VT_BSTR)
+	{
+		WideCharToMultiByte(CP_ACP, 0, Var->bstrVal, -1, BufOut, BufLen, NULL, NULL);
+		OLEDestroyString(Var); //Hmm, do we want to do this here?
+	}
 }
 
 struct ole_handles
@@ -423,50 +441,79 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 	
 	int NTabs = OLEGetNumTabs(&Handles);
 	
-	std::vector<std::string> InputNames;
-	InputNames.reserve(100);
+	
+	char Buf[512];
 	
 	for(int Tab = 0; Tab < NTabs; ++Tab)
 	{
 		OLEChooseTab(&Handles, Tab);
 		
-		VARIANT Matrix = OLEGetRangeMatrix(1, 1, 2, 128, Handles.Sheet); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
 		
-		for(int Col = 1; Col <= 127; ++Col)
+		std::vector<index_set_h> IndexSets;
+		
+		VARIANT Matrix = OLEGetRangeMatrix(2, 1026, 1, 1, Handles.Sheet); //NOTE: We only search for index sets among the first 1024 rows since anything more than that would be ridiculous.
+		
+		for(int Row = 0; Row < 1024; ++Row)
 		{
-			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col);
-			//TODO: Do a OLEGetString instead in case they are misformatted
-			if(Name.vt == VT_BSTR)
+			VARIANT IdxSetName = OLEGetMatrixValue(&Matrix, Row+1, 1);
+
+			//TODO: Check if this is not just a date that was mis-formatted as a string
+
+			OLEGetString(&IdxSetName, Buf, 512);
+			//WarningPrint("Looking at index set at tab ", Tab, " row ", Row+2, " name ", Buf, "\n");
+			if(strlen(Buf) > 0)
 			{
-				char Buf[512];
-				WideCharToMultiByte(CP_ACP, 0, Name.bstrVal, -1, Buf, 512, NULL, NULL);
-				if(strlen(Buf) > 0)
-					InputNames.push_back(std::string(Buf));
-				else
-					break;
+				index_set_h IndexSet = GetIndexSetHandle(Model, Buf);
+				IndexSets.push_back(IndexSet);
 			}
 			else
 				break;
+			
+		}
+		
+		OLEDestroyMatrix(&Matrix);
+		
+		Matrix = OLEGetRangeMatrix(1, 1+IndexSets.size(), 2, 128, Handles.Sheet); //TODO: Ideally also do this in a loop in case there are more than 128 columns!
+		
+		input_h CurInput = {};
+		for(int Col = 0; Col < 127; ++Col)
+		{
+			
+			//TODO: There is a discrepancy here where it could find data after several blank columns, while in the input reading later, such columns will be ignored!
+			
+			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col+1);
+			
+			OLEGetString(&Name, Buf, 512);
+			if(strlen(Buf) > 0)
+			{
+				if(Model->Inputs.Has(Buf)) // Register as "additional input" if it was not already registered with the model
+					CurInput = GetInputHandle(Model, Buf);
+				else
+				{
+					token_string InputName = token_string(Buf).Copy(&Model->BucketMemory);
+					CurInput = RegisterInput(Model, InputName.Data, {}, true, true);   //TODO: should we allow provision of units?
+				}
+			}
+		
+			if(IsValid(CurInput))
+			{
+				//NOTE: We don't check subsequent columns of this input since if the format is correct, the first given column has to be indexed by all the indexes that are relevant.
+				if(Model->Inputs[CurInput].IndexSetDependencies.size() > 0)
+					continue;
+				
+				for(int Row = 0; Row < IndexSets.size(); ++Row)
+				{
+					VARIANT IndexName = OLEGetMatrixValue(&Matrix, Row+2, Col+1);
+					
+					OLEGetString(&IndexName, Buf, 512);
+					if(strlen(Buf) > 0)
+						AddInputIndexSetDependency(Model, CurInput, IndexSets[Row]);
+				}
+			}
 		}
 		
 		OLEDestroyMatrix(&Matrix);
 	}
-	
-	if(InputNames.size() == 0)
-		return;
-	
-	// Register "additional inputs".
-	for(std::string &InputName : InputNames)
-	{
-		const char *InName = InputName.data();
-		//WarningPrint(InputName, "\n");
-		if(!Model->Inputs.Has(InName))
-		{
-			token_string InputName = token_string(InName).Copy(&Model->BucketMemory);
-			RegisterInput(Model, InputName.Data, {}, true, true);   //TODO: should we allow provision of units?
-		}
-	}
-	
 	
 	OLECloseSpreadsheet(&Handles);
 }
@@ -553,39 +600,67 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 	s64 Step = FindTimestep(DataSet->InputDataStartDate, DatesSort[DatesSort.size()-1], DataSet->Model->TimestepSize);
 	Step += 1;    //NOTE: Because the end date is inclusive. 
 	if(Step <= 0)
-		FatalError("The input data end date was set to be earlier than the input data start date.\n");
+		FatalError("The input data end date was set to be earlier than the input data start date.\n"); //NOTE: Should technically not be possible.
 	
 	u64 Timesteps = (u64)Step;
 	AllocateInputStorage(DataSet, Timesteps);
-		
+	
+	char Buf[512];
 	for(int Tab = 0; Tab < NTabs; ++Tab)
 	{
 		std::vector<size_t> Offsets;
 		
 		OLEChooseTab(&Handles, Tab);
 		
-		VARIANT Matrix = OLEGetRangeMatrix(1, 1, 2, 128, Handles.Sheet); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
+		VARIANT Matrix = OLEGetRangeMatrix(1, FirstDateRow[Tab]-1, 2, 128, Handles.Sheet); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
 		
-		for(int Col = 1; Col <= 127; ++Col)
+		input_h CurInput = {};
+		for(int Col = 0; Col < 127; ++Col)
 		{
-			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col);
+			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col+1);
 			//TODO: Do a OLEGetString instead in case they are misformatted
-			if(Name.vt == VT_BSTR)
+			
+			bool GotNameThisColumn = false;
+			
+			OLEGetString(&Name, Buf, 512);
+			if(strlen(Buf) > 0)
 			{
-				char Buf[512];
-				WideCharToMultiByte(CP_ACP, 0, Name.bstrVal, -1, Buf, 512, NULL, NULL);
+				CurInput = GetInputHandle(DataSet->Model, Buf);
+				GotNameThisColumn = true;
+			}
+			else if(!IsValid(CurInput))
+				FatalError("ERROR(excel): In tab ", Tab, " there is no input name in cell B1.\n");
+			
+			size_t StorageUnitIndex = DataSet->InputStorageStructure.UnitForHandle[CurInput.Handle];
+			array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
+			
+			std::vector<index_t> Indexes;
+			
+			int IdxSetNum = 0;
+			for(int Row = 0; Row < IndexSets.size(); ++Row)
+			{
+				VARIANT IndexName = OLEGetMatrixValue(&Matrix, Row+2, Col+1);
+				
+				OLEGetString(&IndexName, Buf, 512);
 				if(strlen(Buf) > 0)
 				{
-					input_h Input = GetInputHandle(DataSet->Model, Buf);
-					size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
-					Offsets.push_back(Offset);
-					DataSet->InputTimeseriesWasProvided[Offset] = true;
+					//TODO: We should actually test that IndexSets[IdxSetNum] is the same as the index set given in cell A.Row.
+					index_t Index = GetIndex(DataSet, IndexSets[IdxSetNum], Buf);
+					Indexes.push_back(Index);
+					++IdxSetNum;
 				}
-				else
-					break;
 			}
-			else
+			
+			// An entirely blank column (in the header at least) signifies that we should ignore the rest of the columns;
+			if(!GotNameThisColumn && Indexes.empty())
 				break;
+			
+			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes.data(), Indexes.size(), DataSet->IndexCounts, CurInput);
+			//size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, CurInput);
+			Offsets.push_back(Offset);
+			DataSet->InputTimeseriesWasProvided[Offset] = true;
+			
+			//WarningPrint(GetName(DataSet->Model, CurInput), " ", Offset, "\n");
 		}
 		
 		OLEDestroyMatrix(&Matrix);
