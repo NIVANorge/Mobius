@@ -52,6 +52,7 @@ New to version 2.0:
 	auto GPerM3        = RegisterUnit(Model, "g/m3");
 	auto MolPerDay     = RegisterUnit(Model, "mol/day");
 	auto GPerDay       = RegisterUnit(Model, "g/day");
+	auto GPerM2PerDay  = RegisterUnit(Model, "g/m2/day");
 	auto KgPerL        = RegisterUnit(Model, "kg/L");
 	auto MuGPerKg      = RegisterUnit(Model, "µg/kg");
 	
@@ -90,7 +91,7 @@ New to version 2.0:
 	auto Precipitation       = RegisterInput(Model, "Precipitation", MPerDay);
 	auto EmissionToAir       = RegisterInput(Model, "Emission to air", GPerDay);
 	auto EmissionToWater     = RegisterInput(Model, "Emission to water", GPerDay);
-	
+	auto TotalDeposition     = RegisterInput(Model, "Total deposition", GPerM2PerDay);
 	
 	
 	auto AirSideMassTransferCoeff   = RegisterParameterDouble(Model, AirPars, "Air-side mass transfer coefficient", MPerDay, 100.0, 0.0, 1000.0);	// k_VA
@@ -505,7 +506,7 @@ New to version 2.0:
 		double Value = INPUT(Precipitation)*PARAMETER(VolumeFractionAerosols)*PARAMETER(ScavengingRatio)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
 		
 		// Exchange with air only occurs in surface compartments
-		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		if(PARAMETER(IsBelow) != 10000) return 0.0;
 		return Value;
 	)
 	
@@ -513,12 +514,13 @@ New to version 2.0:
 		double Value = PARAMETER(DryDepositionRate)*PARAMETER(VolumeFractionAerosols)*RESULT(AerosolFC)*PARAMETER(WaterSurfaceArea);
 		
 		// Exchange with air only occurs in surface compartments
-		if(PARAMETER(IsBelow)!=10000) return 0.0;
+		if(PARAMETER(IsBelow) != 10000) return 0.0;
 		return Value;
 	)
 	
 	EQUATION(Model, TotalAirWaterTC,
-		double Value = RESULT(VolVaporTC) + RESULT(RainDissTC) + RESULT(WetDepositionTC) + RESULT(DryDepositionTC);
+		double depositionTC = RESULT(WetDepositionTC) + RESULT(DryDepositionTC);
+		double Value = RESULT(VolVaporTC) + RESULT(RainDissTC) + depositionTC;
 		
 		// Exchange with air only occurs in surface compartments
 		if(PARAMETER(IsBelow)!=10000) return 0.0;
@@ -678,6 +680,10 @@ New to version 2.0:
 			b(Wat) += RESULT(EmissionToWaterEq, Comp) / MW;
 			b(Wat) += RESULT(TotalAirWaterTC, Comp)*fAir; //NOTE that TotalAirWaterTC is already 0 for non-surface compartments
 			b(Wat) += RESULT(AdvectionFromBoundary, Comp);
+			if(INPUT_WAS_PROVIDED(TotalDeposition) && PARAMETER(IsBelow, Comp) == 10000)
+			{
+				b(Wat) += INPUT(TotalDeposition) * PARAMETER(WaterSurfaceArea, Comp) / MW;
+			}
 			
 			b(Wat) /= WatCorr;  // mol/day -> Pa/day
 		}

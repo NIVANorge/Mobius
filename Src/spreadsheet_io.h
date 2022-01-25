@@ -589,6 +589,7 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 	
 	//WarningPrint("Dates size ", Dates.size(), "\n");
 	
+	//TODO: This is unnecessary work to just fid the min and max date...
 	std::vector<datetime> DatesSort;
 	for(int Tab = 0; Tab < NTabs; ++Tab)
 		DatesSort.insert(DatesSort.end(), Dates[Tab].begin(), Dates[Tab].end());
