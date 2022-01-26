@@ -299,14 +299,14 @@ OLEOpenSpreadsheet(const char *Filepath, ole_handles *Handles)
 	if(!Handles->Book)
 	{
 		OLECloseDueToError(Handles);
-		FatalError("Failed to open file \"", Filepath, "\".\n");
+		FatalError("Failed to open file.\n");
 	}
 	
 	Handles->Sheet = OLEGetObject(Handles->Book, L"ActiveSheet");
 	if(!Handles->Sheet)
 	{
 		OLECloseDueToError(Handles);
-		FatalError("ERROR(excel): Failed to open excel sheet.\n");
+		FatalError("Failed to open excel active sheet.\n");
 	}
 	
 	OLEDestroyString(&FileVar);
@@ -529,7 +529,13 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 			//WarningPrint("Looking at index set at tab ", Tab, " row ", Row+2, " name ", Buf, "\n");
 			if(strlen(Buf) > 0)
 			{
-				index_set_h IndexSet = GetIndexSetHandle(Model, Buf);
+				bool GetSuccess;
+				index_set_h IndexSet = GetIndexSetHandle(Model, Buf, GetSuccess);
+				if(!GetSuccess)
+				{
+					OLECloseDueToError(&Handles, Tab, 1, 2+Row);
+					FatalError("The index set ", Buf, " is not registered with the model.\n");
+				}
 				IndexSets.push_back(IndexSet);
 			}
 			else
@@ -553,7 +559,15 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 			if(strlen(Buf) > 0)
 			{
 				if(Model->Inputs.Has(Buf)) // Register as "additional input" if it was not already registered with the model
-					CurInput = GetInputHandle(Model, Buf);
+				{
+					bool GetSuccess;
+					CurInput = GetInputHandle(Model, Buf, GetSuccess);
+					if(!GetSuccess)
+					{
+						OLECloseDueToError(&Handles, Tab, Col+2, 1);
+						FatalError("The input ", Buf, " is not registered with the model.\n");
+					}
+				}
 				else
 				{
 					token_string InputName = token_string(Buf).Copy(&Model->BucketMemory);
@@ -603,6 +617,11 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 	constexpr size_t Bufsize = 512;
 	char Buf[Bufsize];
 	
+	std::vector<index_set_h> IndexSets;
+	std::vector<int>         IndexSetRow;
+	std::vector<bool>        LookForFlags(NTabs);
+	//for(bool &LookFor : LookForFlags) LookFor = false;
+	
 	for(int Tab = 0; Tab < NTabs; ++Tab)
 	{
 		OLEChooseTab(&Handles, Tab);
@@ -629,6 +648,23 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 				int Row = SuperRow + R;
 				VARIANT Var = OLEGetMatrixValue(&Matrix, MatRow, 1, &Handles);
 				
+				OLEGetString(&Var, Buf, Bufsize);
+				if(strlen(Buf) > 0)
+				{
+					bool GetSuccess;
+					index_set_h IndexSet = GetIndexSetHandle(DataSet->Model, Buf, GetSuccess);
+					if(!GetSuccess)
+					{
+						OLECloseDueToError(&Handles, 1, Row);
+						FatalError("The index set ", Buf, " was not registered with the model.\n");
+					}
+					IndexSets.push_back(IndexSet);
+					IndexSetRow.push_back(Row);
+					
+					//TODO: Again, as above, we should check that this is not a date that is misformatted as a string
+					continue;
+				}
+				
 				datetime Date;
 				bool Success = OLEGetDate(&Var, &Date);
 				
@@ -643,10 +679,16 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 						FirstDateRow[Tab] = Row;
 					}
 				}
-				else if(FoundFirst) //We are at the end of the set of valid dates.
+				else 
 				{
-					BreakOut = true;
-					break;
+					if(!FoundFirst)
+						LookForFlags[Tab] = true;   //NOTE:  We hit an empty cell before there are any dates. This means that there could be modifier flags in this row to the right, and we should look for them later.
+					
+					if(FoundFirst) //We are at the end of the set of valid dates.
+					{
+						BreakOut = true;
+						break;
+					}
 				}
 			}
 			
@@ -695,6 +737,8 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 		
 		std::vector<size_t> Offsets;
 		
+		std::vector<input_series_flags> Flags;
+		
 		OLEChooseTab(&Handles, Tab);
 		
 		VARIANT Matrix = OLEGetRangeMatrix(1, FirstDateRow[Tab]-1, 2, 128, &Handles); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
@@ -710,7 +754,13 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 			OLEGetString(&Name, Buf, Bufsize);
 			if(strlen(Buf) > 0)
 			{
-				CurInput = GetInputHandle(DataSet->Model, Buf);
+				bool GetSuccess;
+				CurInput = GetInputHandle(DataSet->Model, Buf, GetSuccess);
+				if(!GetSuccess)
+				{
+					OLECloseDueToError(&Handles, Tab, Col+1, 1);
+					FatalError("The input ", Buf, " is not registered with the model.\n");
+				}
 				GotNameThisColumn = true;
 			}
 			else if(!IsValid(CurInput))
@@ -720,24 +770,46 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 			}
 			
 			size_t StorageUnitIndex = DataSet->InputStorageStructure.UnitForHandle[CurInput.Handle];
-			array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
+			array<index_set_h> &InputIndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
 			
 			std::vector<index_t> Indexes;
 			
 			int IdxSetNum = 0;
-			for(int Row = 0; Row < IndexSets.size(); ++Row)
+			for(int Row = 0; Row < InputIndexSets.size(); ++Row)
 			{
+				int SheetRow = Row+2;
+				
 				VARIANT IndexName = OLEGetMatrixValue(&Matrix, Row+2, Col+1, &Handles);
 				
 				OLEGetString(&IndexName, Buf, Bufsize);
 				if(strlen(Buf) > 0)
 				{
-					//TODO: We should actually test that IndexSets[IdxSetNum] is the same as the index set given in cell A.Row.
-					index_t Index = GetIndex(DataSet, IndexSets[IdxSetNum], Buf);
+					for(int Ix = 0; Ix < IndexSets.size(); ++Ix)
+					{
+						if(SheetRow == IndexSetRow[Ix])
+						{
+							if(IndexSets[Ix] != InputIndexSets[IdxSetNum])
+							{
+								OLECloseDueToError(&Handles, Tab, Col+1, Row+2);
+								FatalError("There is a mismatch in the positioning of indexes and index sets. Make sure that there is no row with an empty A cell that still has a nonempty value in it except below all the index sets or at the end of the file.\n");
+							}
+							break;
+						}
+					}
+					//TODO: We should actually test that InputIndexSets[IdxSetNum] is the same as the index set given in cell A.Row.
+					bool GetSuccess;
+					index_t Index = GetIndex(DataSet, InputIndexSets[IdxSetNum], Buf, GetSuccess);
+					if(!GetSuccess)
+					{
+						OLECloseDueToError(&Handles, Tab, Col+1, Row+2);
+						FatalError("The index name ", Buf, " does not belong to the index set ", GetName(DataSet->Model, IndexSets[IdxSetNum]), ".\n");
+					}
 					Indexes.push_back(Index);
 					++IdxSetNum;
 				}
 			}
+			
+			
 			
 			// An entirely blank column (in the header at least) signifies that we should ignore the rest of the columns;
 			if(!GotNameThisColumn && Indexes.empty())
@@ -748,32 +820,52 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 			Offsets.push_back(Offset);
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
 			
+			// TODO: look for flags!
+			Flags.push_back({});
+			
 			//WarningPrint(GetName(DataSet->Model, CurInput), " ", Offset, "\n");
 		}
 		
 		OLEDestroyMatrix(&Matrix);
 
+		std::vector<mobius_input_reader> Readers;
+		Readers.reserve(Offsets.size());
+		
+		int ErrorRow = 0;
+		int ErrorCol = 0;
+		auto HandleError = [&Tab, &ErrorRow, &ErrorCol, &Handles]() { OLECloseDueToError(&Handles, Tab, ErrorCol, ErrorRow); };
+		
+		for(int Idx = 0; Idx < Offsets.size(); ++Idx)
+		{
+			//NOTE: We currently don't support setting multiple dataset series per excel column. Hence only one offset is passed to each Reader.
+			Readers.push_back(
+				mobius_input_reader	(
+					DataSet->InputData, DataSet->InputStorageStructure.TotalCount, Flags[Idx],
+					DataSet->Model->TimestepSize, {Offsets[Idx]}, GetInputStartDate(DataSet), DataSet->InputDataTimesteps, HandleError)
+			);
+		}
+		//static void
+		//InterpolateInputValues(mobius_data_set *DataSet, double *Base, double FirstValue, double LastValue, datetime FirstDate, datetime LastDate, interpolation_type Type)
+
 		// Select the rest of the data!
 		Matrix = OLEGetRangeMatrix(FirstDateRow[Tab], FirstDateRow[Tab]-1 + Dates[Tab].size(), 2, 1+Offsets.size(), &Handles);
 		
-		double *WriteToBase = DataSet->InputData;
 		for(int Row = 0; Row < Dates[Tab].size(); ++Row)
 		{
-			s64 Timestep = FindTimestep(DataSet->InputDataStartDate, Dates[Tab][Row], DataSet->Model->TimestepSize);
-			if(Timestep < 0 || Timestep >= DataSet->InputDataTimesteps)
-			{
-				OLECloseDueToError(&Handles);
-				FatalError("Internal error. Something went wrong with setting the input data timesteps in the spreadsheet reader.\n"); //NOTE: this should not happen unless the code above is worng
-			}
-			double *WriteTo = WriteToBase + Timestep*DataSet->InputStorageStructure.TotalCount;
+			ErrorRow = Row + FirstDateRow[Tab];
+			
 			for(int Col = 0; Col < Offsets.size(); ++Col)
 			{
+				ErrorCol = 2 + Col;
+				
 				VARIANT Value = OLEGetMatrixValue(&Matrix, Row+1, Col+1, &Handles);
 				double Val = OLEGetDouble(&Value);
 				
-				*(WriteTo + Offsets[Col]) = Val;
+				Readers[Col].AddValue(Dates[Tab][Row], Val);
 			}
 		}
+		for(int Col = 0; Col < Offsets.size(); ++Col)
+			Readers[Col].Finish();
 		
 		OLEDestroyMatrix(&Matrix);
 	}

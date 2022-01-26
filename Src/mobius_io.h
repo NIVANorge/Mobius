@@ -535,47 +535,227 @@ FillConstantInputValues(mobius_data_set *DataSet, double *Base, double Value, s6
 
 enum interpolation_type
 {
-	InterpolationType_None,
+	InterpolationType_None = 0,
 	InterpolationType_Step,
 	InterpolationType_Linear,
 };
 
-static void
-InterpolateInputValues(mobius_data_set *DataSet, double *Base, double FirstValue, double LastValue, datetime FirstDate, datetime LastDate, interpolation_type Type)
+struct input_series_flags
 {
-	size_t Stride = DataSet->InputStorageStructure.TotalCount;
-	
-	expanded_datetime Date(FirstDate, DataSet->Model->TimestepSize);
-	
-	double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
-	double YRange = LastValue - FirstValue;
-	
-	s64 Step     = FindTimestep(DataSet->InputDataStartDate, FirstDate, DataSet->Model->TimestepSize);
-	s64 LastStep = FindTimestep(DataSet->InputDataStartDate, LastDate, DataSet->Model->TimestepSize);
-	LastStep = Min(LastStep, DataSet->InputDataTimesteps-1);
-	
-	double *WriteTo = Base + Step*Stride;
-	while(Step <= LastStep)
+	interpolation_type InterpolationType;
+	bool InterpolateInsideOnly;
+	bool RepeatYearly;
+};
+
+inline bool
+PutFlag(input_series_flags *Flags, token_string Str)
+{
+	if(Str.Equals("linear_interpolate"))
 	{
-		if(Step >= 0)
+		Flags->InterpolationType = InterpolationType_Linear;
+		return true;
+	}
+	else if(Str.Equals("step_interpolate"))
+	{
+		Flags->InterpolationType = InterpolationType_Step;
+		return true;
+	}
+	else if(Str.Equals("inside"))
+	{
+		Flags->InterpolateInsideOnly = true;
+		return true;
+	}
+	else if(Str.Equals("repeat_yearly"))
+	{
+		Flags->RepeatYearly = true;
+		return true;
+	}
+	return false;
+}
+
+struct mobius_input_reader
+{
+	//TODO: Need some error printing context
+	double *InputBase;
+	std::vector<size_t> Offsets;
+	size_t StepStride;
+	input_series_flags Flags;
+	timestep_size TimestepSize;
+	datetime InputStartDate;
+	s64      InputDataTimesteps;
+	std::function<void(void)> ErrorCleanup;
+	
+	//Used if we do interpolation:
+	datetime PrevDate;
+	double PrevValue;
+	bool AtBeginning;
+	
+	mobius_input_reader(double *InputBase, size_t StepStride, input_series_flags Flags, timestep_size TimestepSize, 
+		const std::vector<size_t> &Offsets, datetime InputStartDate, s64 InputDataTimesteps, const std::function<void(void)> &ErrorCleanup) 
+		: InputBase(InputBase), StepStride(StepStride), Flags(Flags), TimestepSize(TimestepSize), Offsets(Offsets), InputStartDate(InputStartDate), InputDataTimesteps(InputDataTimesteps),
+		  PrevDate(InputStartDate), PrevValue(0.0), AtBeginning(true), ErrorCleanup(ErrorCleanup)
+	{
+	}
+	
+	void AddValue(s64 Timestep, double Value)
+	{
+		if(Timestep >= 0 && Timestep < InputDataTimesteps)
 		{
-			if(Type == InterpolationType_Step)
-				*WriteTo = FirstValue;
-			else if(Type == InterpolationType_Linear)
+			for(size_t Offset : Offsets)
+			{
+				double *WriteTo = InputBase + Offset + Timestep*StepStride;
+				*WriteTo = Value;
+			}
+		}
+	}
+	
+	void AddValue(datetime Date, double Value)
+	{
+		if(Flags.InterpolationType == InterpolationType_None)
+		{
+			s64 Timestep = FindTimestep(InputStartDate, Date, TimestepSize);
+			AddValue(Timestep, Value);
+		}
+		else
+		{
+			if(AtBeginning)
+			{
+				PrevValue = Value;
+				if(Date < PrevDate)
+				{
+					//NOTE: The first given date is before the start of the input series
+					PrevDate = Date;
+					AtBeginning = false;
+					return;
+				}
+			}
+			
+			if(Date < PrevDate)
+			{
+				ErrorCleanup();
+				FatalError("In interpolation mode, the dates have to be sequential.\n");
+			}
+
+			if(!AtBeginning || !Flags.InterpolateInsideOnly)    //If we interpolate inside given values only, we don't fill any values at the beginning
+			{
+				InterpolateValues(PrevDate, Date, PrevValue, Value, Flags.InterpolationType);
+			}
+			
+			PrevValue   = Value;
+			PrevDate    = Date;
+			AtBeginning = false;
+		}
+	}
+	
+	void FillConstantRange(s64 FirstStep, s64 LastStep, double Value)
+	{
+		FirstStep = std::max(FirstStep, (s64)0);
+		LastStep  = std::min(LastStep, InputDataTimesteps-1);
+		for(s64 Timestep = FirstStep; Timestep <= LastStep; ++Timestep)
+			AddValue(Timestep, Value);
+	}
+	
+	void FillConstantRange(datetime First, datetime Last, double Value)
+	{
+		if(Last < First)
+		{
+			ErrorCleanup();
+			FatalError("The end of the date range is earlier than the beginning.\n");
+		}
+		
+		s64 FirstStep = FindTimestep(InputStartDate, First, TimestepSize);
+		s64 LastStep  = FindTimestep(InputStartDate, Last,  TimestepSize);
+		FillConstantRange(FirstStep, LastStep, Value);
+	}
+	
+	void CopyValue(s64 FromStep, s64 ToStep)
+	{
+		for(size_t Offset : Offsets)
+		{
+			double *ReadFrom = InputBase + Offset + FromStep*StepStride;
+			double *WriteTo  = InputBase + Offset + ToStep*StepStride;
+			*WriteTo = *ReadFrom;
+		}
+	}
+	
+	void Finish()
+	{
+		if((Flags.InterpolationType != InterpolationType_None) && !Flags.InterpolateInsideOnly)
+		{
+			//NOTE: Fill the rest of the time series with the last value read
+			s64 FirstStep = FindTimestep(InputStartDate, PrevDate, TimestepSize);
+			s64 LastStep = InputDataTimesteps-1;
+			FillConstantRange(FirstStep, LastStep, PrevValue);
+		}
+		
+		if(Flags.RepeatYearly)
+		{
+			if(TimestepSize.Unit == Timestep_Month && (TimestepSize.Magnitude >= 12  || 12 % TimestepSize.Magnitude != 0))
+			{
+				ErrorCleanup();
+				FatalError("yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
+			}
+
+			expanded_datetime Year(InputStartDate, {Timestep_Month, 12});
+			Year.Advance();
+
+			bool Finished = false;
+			while(true)
+			{
+				s64 FromStep = 0;
+				s64 ToStep = FindTimestep(InputStartDate, Year.DateTime, TimestepSize);
+				
+				Year.Advance();
+				s64 YearEnd = FindTimestep(InputStartDate, Year.DateTime, TimestepSize);
+				
+				while(true)
+				{
+					CopyValue(FromStep, ToStep);
+					
+					++ToStep;
+					++FromStep;
+					
+					Finished = (ToStep >= InputDataTimesteps-1);
+					if(Finished) break;
+					if(ToStep >= YearEnd-1) break;
+				}
+				if(Finished) break;
+			}
+		}
+	}
+	
+	void InterpolateValues(datetime FirstDate, datetime LastDate, double FirstValue, double LastValue, interpolation_type Type)
+	{
+		if(Type == InterpolationType_Step)
+		{
+			FillConstantRange(FirstDate, LastDate, FirstValue);
+			return;
+		}
+		
+		expanded_datetime Date(FirstDate, TimestepSize);
+		
+		double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
+		double YRange = LastValue - FirstValue;
+		
+		s64 Step     = FindTimestep(InputStartDate, FirstDate, TimestepSize);
+		s64 LastStep = FindTimestep(InputStartDate, LastDate,  TimestepSize);
+		LastStep = std::min(LastStep, InputDataTimesteps-1);
+		
+		while(Step <= LastStep)
+		{
+			if(Step >= 0)
 			{
 				double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
 				double Value = FirstValue + XX*YRange;
-				*WriteTo = Value;
+				AddValue(Step, Value);
 			}
-			else
-				FatalError("ERROR (internal): Received invalid interpolation type in input reading.\n");
+			
+			Date.Advance();
+			++Step;
 		}
-		
-		Date.Advance();
-		WriteTo += Stride;
-		++Step;
 	}
-}
+};
+
 
 static void
 ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
@@ -705,21 +885,13 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The last provided series will overwrite the earlier ones.\n");
 		}
 		
-		interpolation_type InterpolationType = InterpolationType_None;
-		bool InterpInsideOnly = false;
-		bool RepeatYearly = false;
+		input_series_flags Flags = {};
+		
 		Token = Stream.PeekToken();
 		while(Token.Type == TokenType_UnquotedString)
 		{
-			if(Token.StringValue.Equals("linear_interpolate"))
-				InterpolationType = InterpolationType_Linear;
-			else if(Token.StringValue.Equals("step_interpolate"))
-				InterpolationType = InterpolationType_Step;
-			else if(Token.StringValue.Equals("inside"))
-				InterpInsideOnly  = true;
-			else if(Token.StringValue.Equals("repeat_yearly"))
-				RepeatYearly = true;
-			else
+			bool Found = PutFlag(&Flags, Token.StringValue);
+			if(!Found)
 			{
 				Stream.PrintErrorHeader();
 				FatalError("unexpected command word ", Token.StringValue, ".\n");
@@ -733,13 +905,20 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		for(size_t Offset : Offsets)
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
 		
+		
+		u64 Timesteps = DataSet->InputDataTimesteps;
+		
+		auto HandleError = [&Stream]() { Stream.PrintErrorHeader(); };
+		
+		mobius_input_reader Reader(
+			DataSet->InputData, DataSet->InputStorageStructure.TotalCount, Flags,
+			Model->TimestepSize, Offsets, GetInputStartDate(DataSet), Timesteps, HandleError);
+		
 		//NOTE: This reads the actual data after the header.
 		
 		//NOTE: For the first timestep, try to figure out what format the data was provided in.
 		int FormatType = -1;
 		Token = Stream.PeekToken();
-		
-		u64 Timesteps = DataSet->InputDataTimesteps;
 		
 		if(Token.Type == TokenType_Numeric)
 			FormatType = 0;
@@ -751,229 +930,76 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			FatalError("Inputs are to be provided either as a series of numbers or a series of dates (or date ranges) together with numbers.\n");
 		}
 		
-		if(InterpolationType == InterpolationType_None)
+
+		if(FormatType == 0)
 		{
-			if(FormatType == 0)
+			for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
 			{
-				for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
+				Token = Stream.ReadToken();
+				if(Token.Type != TokenType_Numeric)
 				{
-					//double Value = Stream.ExpectDouble();
-					Token = Stream.ReadToken();
-					if(Token.Type != TokenType_Numeric)
-					{
-						Stream.PrintErrorHeader();
-						FatalError("Only got ", Timestep, " values for series. Expected ", Timesteps, ".\n");
-					}
-					double Value = Token.DoubleValue;
-					
-					for(size_t Offset : Offsets)
-					{
-						double *WriteTo = DataSet->InputData + Offset + Timestep*DataSet->InputStorageStructure.TotalCount;
-						*WriteTo = Value;
-					}
+					Stream.PrintErrorHeader();
+					FatalError("Only got ", Timestep, " values for series. Expected ", Timesteps, ".\n");
 				}
-			}
-			else //FormatType == 1
-			{
-				datetime StartDate = DataSet->InputDataStartDate;
-				
-				while(true)
-				{
-					s64 CurTimestep;
-					
-					token Token = Stream.PeekToken();
-					
-					if(Token.Type == TokenType_Date)
-					{
-						datetime Date = Stream.ExpectDateTime();
-						CurTimestep = FindTimestep(StartDate, Date, Model->TimestepSize);
-					}
-					else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
-						break;
-					else
-					{
-						Stream.PrintErrorHeader();
-						FatalError("Expected either a date or the beginning of a new input series.\n");
-					}
-					
-					Token = Stream.PeekToken();
-					if(Token.Type == TokenType_UnquotedString)
-					{
-						Stream.ReadToken();
-						if(!Token.StringValue.Equals("to"))
-						{
-							Stream.PrintErrorHeader();
-							FatalError("Expected either a 'to' or a number.");
-						}
-						datetime EndDateRange = Stream.ExpectDateTime();
-						s64 EndTimestepRange = FindTimestep(StartDate, EndDateRange, Model->TimestepSize);
-						//s64 EndTimestepRange = StartDate.DaysUntil(EndDateRange); //NOTE: Only one-day timesteps currently supported.
-						
-						if(EndTimestepRange < CurTimestep)
-						{
-							Stream.PrintErrorHeader();
-							FatalError("The end of the date range is earlier than the beginning.\n");
-						}
-						
-						double Value = Stream.ExpectDouble();
-						
-						for(size_t Offset : Offsets)
-						{
-							double *Base = DataSet->InputData + Offset;
-							FillConstantInputValues(DataSet, Base, Value, CurTimestep, EndTimestepRange);
-						}
-					}
-					else if(Token.Type == TokenType_Numeric)
-					{
-						double Value = Stream.ExpectDouble();
-						if(CurTimestep >= 0 && CurTimestep < (s64)Timesteps)
-						{
-							for(size_t Offset : Offsets)
-							{
-								double *WriteTo = DataSet->InputData + Offset + CurTimestep*DataSet->InputStorageStructure.TotalCount;
-								*WriteTo = Value;
-							}
-						}
-					}
-					else
-					{
-						Stream.PrintErrorHeader();
-						FatalError("Expected either a 'to' or a number.");
-					}
-				}
+				double Value = Token.DoubleValue;
+				Reader.AddValue(Timestep, Value);
 			}
 		}
-		else  // if we use some kind of interpolation
+		else //FormatType == 1
 		{
-			if(FormatType != 1)
-			{
-				Stream.PrintErrorHeader();
-				FatalError("when interpolation is specified, the input format has to be: date (time) value.\n");
-			}
-			
-			datetime PrevDate = DataSet->InputDataStartDate;
-			double PrevValue = 0.0;
-			bool AtBeginning = true;
+			datetime StartDate = DataSet->InputDataStartDate;
 			
 			while(true)
 			{
-				datetime CurDate;
-				
+				datetime Date;
 				token Token = Stream.PeekToken();
+				
 				if(Token.Type == TokenType_Date)
-					CurDate = Stream.ExpectDateTime();
+					Date = Stream.ExpectDateTime();
 				else if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_EOF)
-				{
-					if(!InterpInsideOnly)
-					{
-						//NOTE: Fill the rest of the time series with the last value read
-						for(size_t Offset : Offsets)
-						{
-							double *Base = DataSet->InputData + Offset;
-							s64 BeginTimestep = FindTimestep(DataSet->InputDataStartDate, PrevDate, Model->TimestepSize);
-							s64 EndTimestep = (s64)DataSet->InputDataTimesteps-1;
-							FillConstantInputValues(DataSet, Base, PrevValue, BeginTimestep, EndTimestep);
-						}
-					}
-					
 					break;
-				}
 				else
 				{
 					Stream.PrintErrorHeader();
 					FatalError("Expected either a date or the beginning of a new input series.\n");
 				}
 				
-				double Value = Stream.ExpectDouble();
-				
-				if(AtBeginning)
+				Token = Stream.PeekToken();
+				if(Token.Type == TokenType_UnquotedString)
 				{
-					PrevValue = Value;
-					if(CurDate < PrevDate)
+					Stream.ReadToken();
+					if(!Token.StringValue.Equals("to"))
 					{
-						//NOTE: The first given date is before the start of the input series
-						PrevDate = CurDate;
-						AtBeginning = false;
-						continue;
+						Stream.PrintErrorHeader();
+						FatalError("Expected either a 'to' or a number.");
 					}
+					datetime EndDateRange = Stream.ExpectDateTime();
+					
+					double Value = Stream.ExpectDouble();
+					Reader.FillConstantRange(Date, EndDateRange, Value);
 				}
-				
-				if(CurDate < PrevDate)
+				else if(Token.Type == TokenType_Numeric)
+				{
+					double Value = Stream.ExpectDouble();
+					Reader.AddValue(Date, Value);
+				}
+				else
 				{
 					Stream.PrintErrorHeader();
-					FatalError("in linear interpolation mode, the dates have to be sequential.\n");
+					FatalError("Expected either a 'to' or a number.");
 				}
-
-				if(!AtBeginning || !InterpInsideOnly)    //If we interpolate inside given values only, we don't fill any values at the beginning
-				{
-					for(size_t Offset : Offsets)
-					{
-						double *Base = DataSet->InputData + Offset;
-						InterpolateInputValues(DataSet, Base, PrevValue, Value, PrevDate, CurDate, InterpolationType);
-					}
-				}
-				
-				PrevValue = Value;
-				PrevDate  = CurDate;
-				AtBeginning = false;
 			}
 		}
 		
-		if(RepeatYearly)
-		{
-			//NOTE: Copy the first year of the timeseries repeatedly for the rest of the allocated space.
-			//TODO: This behaves kind of weirdly when you have sub-monthly timesteps, esp. when there are leap years.. Also if the timestep does not divide a year.
-			
-			//Important note! This code may be volatile if we later add Timestep_Year and handle that differently to Timestep_Month!
-			
-			timestep_size ModelStep = Model->TimestepSize;
-			if(ModelStep.Unit == Timestep_Month && (ModelStep.Magnitude >= 12  || 12 % ModelStep.Magnitude != 0))
-			{
-				Stream.PrintErrorHeader();
-				FatalError("yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
-			}
-			
-			datetime BeginDate = DataSet->InputDataStartDate;
-			timestep_size YearStep = {Timestep_Month, 12};
-			
-			for(size_t Offset : Offsets)  //TODO: It is not the most efficient to have this as an outer loop..
-			{
-				expanded_datetime Year(BeginDate, YearStep);
-				
-				double *Base = DataSet->InputData + Offset;
-				
-				bool Finished = false;
-				while(true)
-				{
-					expanded_datetime CurDate(Year.DateTime, ModelStep);
-					
-					size_t YearStartTimestep = FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
-					double *ReadValue  = Base;
-					double *WriteValue = Base + DataSet->InputStorageStructure.TotalCount*YearStartTimestep;
-
-					Year.Advance();
-					size_t YearEnd = FindTimestep(DataSet->InputDataStartDate, Year.DateTime, ModelStep);
-					
-					while(true)
-					{
-						double Value = *ReadValue;
-						ReadValue += DataSet->InputStorageStructure.TotalCount;
-						*WriteValue = Value;
-						WriteValue += DataSet->InputStorageStructure.TotalCount;
-						
-						size_t Timestep = FindTimestep(DataSet->InputDataStartDate, CurDate.DateTime, ModelStep);
-						Finished = (Timestep >= DataSet->InputDataTimesteps-1);
-						if(Finished) break;
-						if(Timestep >= YearEnd-1) break;
-						
-						CurDate.Advance();
-					}
-					if(Finished) break;
-				}
-			}
-		}  //if RepeatYearly
+		Reader.Finish();
 	}
 }
+
+static void
+ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile);
+
+static void
+ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile);
 
 static const char *
 GetExtension(const char *Filename, bool *Success)
