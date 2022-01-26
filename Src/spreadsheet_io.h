@@ -545,11 +545,15 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 		
 		VARIANT Matrix = OLEGetRangeMatrix(2, 1026, 1, 1, &Handles); //NOTE: We only search for index sets among the first 1024 rows since anything more than that would be ridiculous.
 		
+		int PotentialFlagRow = -1;
+		
 		for(int Row = 0; Row < 1024; ++Row)
 		{
-			bool CellSuccess;
 			VARIANT IdxSetName = OLEGetMatrixValue(&Matrix, Row+1, 1, &Handles);
 
+			if(IdxSetName.vt == VT_DATE)
+				break;
+			
 			OLEGetString(&IdxSetName, Buf, Bufsize);
 			
 			//WarningPrint("Looking at index set at tab ", Tab, " row ", Row+2, " name ", Buf, "\n");
@@ -571,13 +575,16 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 				IndexSets.push_back(IndexSet);
 			}
 			else
+			{
+				PotentialFlagRow = Row+2;
 				break;
-			
+			}
 		}
 		
 		OLEDestroyMatrix(&Matrix);
 		
-		Matrix = OLEGetRangeMatrix(1, 1+IndexSets.size(), 2, 128, &Handles); //TODO: Ideally also do this in a loop in case there are more than 128 columns!
+		int RangeMax = std::max((int)(1+IndexSets.size()), PotentialFlagRow);
+		Matrix = OLEGetRangeMatrix(1, RangeMax, 2, 128, &Handles); //TODO: Ideally also do this in a loop in case there are more than 128 columns!
 		
 		input_h CurInput = {};
 		for(int Col = 0; Col < 127; ++Col)
@@ -600,7 +607,30 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 				else
 				{
 					token_string InputName = token_string(Buf).Copy(&Model->BucketMemory);
-					CurInput = RegisterInput(Model, InputName.Data, {}, true, true);   //TODO: should we allow provision of units?
+					unit_h Unit = {};
+					//Look for a unit among the flags
+					if(PotentialFlagRow > 0)
+					{
+						VARIANT FlagsVar = OLEGetMatrixValue(&Matrix, PotentialFlagRow, Col+1, &Handles);
+						OLEGetString(&FlagsVar, Buf, Bufsize);
+						if(strlen(Buf) > 0)
+						{
+							char *Buff = &Buf[0];
+							while(true)
+							{
+								token_string FlagStr = GetTokenWord(&Buff);
+								if(FlagStr.Length == 0) break;
+								if((FlagStr.Length >= 3) && (FlagStr.Data[0] == '[') && (FlagStr.Data[FlagStr.Length-1] == ']'))
+								{
+									FlagStr.Data++;
+									FlagStr.Length -= 2;
+									Unit = RegisterUnit(Model, FlagStr.Copy(&Model->BucketMemory).Data);
+								}
+							}
+						}
+					}
+					
+					CurInput = RegisterInput(Model, InputName.Data, Unit, true, true);
 				}
 			}
 		
@@ -873,7 +903,8 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 						token_string FlagStr = GetTokenWord(&Buff);
 						if(FlagStr.Length == 0) break;
 						bool FlagExists = PutFlag(&Flag, FlagStr);
-						if(!FlagExists)
+						//The condition checked is if this is a unit indicator on the form [unit]. In that case it was already processed in ReadInputDependenciesFromSpreadsheet
+						if(!FlagExists && !(FlagStr.Length >= 2 && FlagStr.Data[0] == '[' && FlagStr.Data[FlagStr.Length-1] == ']'))
 						{
 							OLECloseDueToError(&Handles, Tab, Col+2, FirstDateRow[Tab]-1);
 							FatalError("Unrecognized flag \"", FlagStr, "\".\n");
