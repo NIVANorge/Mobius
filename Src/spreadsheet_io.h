@@ -576,6 +576,11 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 			}
 			else
 			{
+				if(PotentialFlagRow > 0)
+				{
+					OLECloseDueToError(&Handles, Tab, 1, 2+Row);
+					FatalError("You should not have empty cells in column A except in row 1, potentially in the row right above the dates, or at the end.\n");
+				}
 				PotentialFlagRow = Row+2;
 				break;
 			}
@@ -861,7 +866,6 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 						FatalError("There is a mismatch in the positioning of indexes and index sets. Empty cells in column A except at row 1, the first row before the dates, or at the end of the column.\n");
 					}
 
-					//TODO: We should actually test that InputIndexSets[IdxSetNum] is the same as the index set given in cell A.Row.
 					bool GetSuccess;
 					index_t Index = GetIndex(DataSet, IndexSet, Buf, GetSuccess);
 					if(!GetSuccess)
@@ -879,7 +883,6 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 				break;
 			
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes.data(), Indexes.size(), DataSet->IndexCounts, CurInput);
-			//size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, CurInput);
 			Offsets.push_back(Offset);
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
 			
