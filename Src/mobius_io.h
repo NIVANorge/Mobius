@@ -618,6 +618,8 @@ struct mobius_input_reader
 		}
 		else
 		{
+			if(!std::isfinite(Value)) return;
+			
 			if(AtBeginning)
 			{
 				PrevValue = Value;
@@ -967,11 +969,17 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				Token = Stream.PeekToken();
 				if(Token.Type == TokenType_UnquotedString)
 				{
+					if(Flags.InterpolationType != InterpolationType_None)
+					{
+						Stream.PrintErrorHeader();
+						FatalError("Expected a number.\n");
+					}
+					
 					Stream.ReadToken();
 					if(!Token.StringValue.Equals("to"))
 					{
 						Stream.PrintErrorHeader();
-						FatalError("Expected either a 'to' or a number.");
+						FatalError("Expected either a 'to' or a number.\n");
 					}
 					datetime EndDateRange = Stream.ExpectDateTime();
 					
@@ -986,7 +994,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				else
 				{
 					Stream.PrintErrorHeader();
-					FatalError("Expected either a 'to' or a number.");
+					FatalError("Expected either a 'to' or a number.\n");
 				}
 			}
 		}

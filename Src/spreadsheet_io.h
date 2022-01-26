@@ -173,7 +173,7 @@ OLEStringVariant(const char *Name)
 
 	MultiByteToWideChar(CP_UTF8, 0, Name, -1, Name2, sizeof(Name2)/sizeof(Name2[0]));
 	Var.vt = VT_BSTR;
-	Var.bstrVal = SysAllocString(Name2);   //TODO: We need to free this later, but for now we leak it.
+	Var.bstrVal = SysAllocString(Name2);
 	
 	return Var;
 }
@@ -192,6 +192,17 @@ OLEInt4Variant(int Value)
 	Var.vt = VT_I4;
 	Var.lVal = Value;
 	return Var;
+}
+
+static void
+OLEGetString(VARIANT *Var, char *BufOut, size_t BufLen)
+{
+	BufOut[0] = 0;
+	if(Var->vt == VT_BSTR)
+	{
+		WideCharToMultiByte(CP_ACP, 0, Var->bstrVal, -1, BufOut, BufLen, NULL, NULL);
+		OLEDestroyString(Var); //Hmm, do we want to do this here?
+	}
 }
 
 static char *
@@ -254,8 +265,19 @@ static void
 OLECloseDueToError(ole_handles *Handles, int Tab = -1, int Col=-1, int Row=-1)
 {
 	ErrorPrint("ERROR(excel): in file \"", Handles->Filepath, "\"");
-	if(Tab >= 1)
-		ErrorPrint(" tab ", Tab);
+	if(Tab >= 0)
+	{
+		VARIANT VarID = OLEInt4Variant(Tab + 1);
+		IDispatch *Sheet = OLEGetObject(Handles->App, L"Sheets", &VarID);
+		if(Sheet)
+		{
+			VARIANT Name = OLEGetValue(Sheet, L"Name");
+			char Buf[512];
+			OLEGetString(&Name, Buf, 512);
+			ErrorPrint(" tab \"", Buf, "\"");
+			Sheet->Release();
+		}
+	}
 	if(Col >= 1 && Row >= 1)
 	{
 		char Buf[32];
@@ -438,17 +460,6 @@ OLEGetDouble(VARIANT *Var)
 	return Result;
 }
 
-static void
-OLEGetString(VARIANT *Var, char *BufOut, size_t BufLen)
-{
-	BufOut[0] = 0;
-	if(Var->vt == VT_BSTR)
-	{
-		WideCharToMultiByte(CP_ACP, 0, Var->bstrVal, -1, BufOut, BufLen, NULL, NULL);
-		OLEDestroyString(Var); //Hmm, do we want to do this here?
-	}
-}
-
 static int
 OLEGetNumTabs(ole_handles *Handles)
 {
@@ -491,6 +502,22 @@ OLEGetCellValue(ole_handles *Handles, int Col, int Row)
 	return Var;
 }
 
+token_string GetTokenWord(char **In)
+{
+	char *At = *In;
+	token_string Result = {};
+	while(std::isspace(*At) && *At != 0) ++At;
+	Result.Data = At;
+	while(!std::isspace(*At) && *At != 0)
+	{
+		++At;
+		++Result.Length;
+	}
+	*In = At;
+	return Result;
+}
+
+
 static void
 ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 {
@@ -523,12 +550,17 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 			bool CellSuccess;
 			VARIANT IdxSetName = OLEGetMatrixValue(&Matrix, Row+1, 1, &Handles);
 
-			//TODO: Check if this is not just a date that was mis-formatted as a string
-
 			OLEGetString(&IdxSetName, Buf, Bufsize);
+			
 			//WarningPrint("Looking at index set at tab ", Tab, " row ", Row+2, " name ", Buf, "\n");
 			if(strlen(Buf) > 0)
 			{
+				// Check if this is a date that was formatted as a string (especially important since Excel can't format dates before 1900 as other than strings).
+				bool IsDate;
+				datetime TestDate(Buf, &IsDate);
+				if(IsDate)
+					break;
+				
 				bool GetSuccess;
 				index_set_h IndexSet = GetIndexSetHandle(Model, Buf, GetSuccess);
 				if(!GetSuccess)
@@ -550,9 +582,6 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 		input_h CurInput = {};
 		for(int Col = 0; Col < 127; ++Col)
 		{
-			
-			//TODO: There is a discrepancy here where it could find data after several blank columns, while in the input reading later, such columns will be ignored!
-			
 			VARIANT Name = OLEGetMatrixValue(&Matrix, 1, Col+1, &Handles);
 			
 			OLEGetString(&Name, Buf, Bufsize);
@@ -649,7 +678,11 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 				VARIANT Var = OLEGetMatrixValue(&Matrix, MatRow, 1, &Handles);
 				
 				OLEGetString(&Var, Buf, Bufsize);
-				if(strlen(Buf) > 0)
+				
+				bool StringDate;
+				datetime TestDate(Buf, &StringDate);
+				
+				if(!StringDate && (strlen(Buf) > 0))
 				{
 					bool GetSuccess;
 					index_set_h IndexSet = GetIndexSetHandle(DataSet->Model, Buf, GetSuccess);
@@ -661,12 +694,18 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 					IndexSets.push_back(IndexSet);
 					IndexSetRow.push_back(Row);
 					
-					//TODO: Again, as above, we should check that this is not a date that is misformatted as a string
 					continue;
 				}
 				
+				bool Success;
 				datetime Date;
-				bool Success = OLEGetDate(&Var, &Date);
+				if(StringDate)
+				{
+					Date = TestDate;
+					Success = true;
+				}
+				else
+					Success = OLEGetDate(&Var, &Date);
 				
 				if(Success)
 				{
@@ -801,15 +840,13 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 					index_t Index = GetIndex(DataSet, InputIndexSets[IdxSetNum], Buf, GetSuccess);
 					if(!GetSuccess)
 					{
-						OLECloseDueToError(&Handles, Tab, Col+1, Row+2);
-						FatalError("The index name ", Buf, " does not belong to the index set ", GetName(DataSet->Model, IndexSets[IdxSetNum]), ".\n");
+						OLECloseDueToError(&Handles, Tab, Col+2, Row+2);
+						FatalError("The index name \"", Buf, "\" does not belong to the index set \"", GetName(DataSet->Model, IndexSets[IdxSetNum]), "\".\n");
 					}
 					Indexes.push_back(Index);
 					++IdxSetNum;
 				}
 			}
-			
-			
 			
 			// An entirely blank column (in the header at least) signifies that we should ignore the rest of the columns;
 			if(!GotNameThisColumn && Indexes.empty())
@@ -820,8 +857,33 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 			Offsets.push_back(Offset);
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
 			
-			// TODO: look for flags!
-			Flags.push_back({});
+			input_series_flags Flag = {};
+			if(LookForFlags[Tab])
+			{
+				// We look for flags in the last row before the dates (and values) begin.
+				VARIANT FlagsVar = OLEGetMatrixValue(&Matrix, FirstDateRow[Tab]-1, Col+1, &Handles);
+				OLEGetString(&FlagsVar, Buf, Bufsize);
+				
+				//WarningPrint("Flag string \"", Buf, "\" tab ", Tab, "\n");
+				if(strlen(Buf) > 0)
+				{
+					char *Buff = &Buf[0];
+					while(true)
+					{
+						token_string FlagStr = GetTokenWord(&Buff);
+						if(FlagStr.Length == 0) break;
+						bool FlagExists = PutFlag(&Flag, FlagStr);
+						if(!FlagExists)
+						{
+							OLECloseDueToError(&Handles, Tab, Col+2, FirstDateRow[Tab]-1);
+							FatalError("Unrecognized flag \"", FlagStr, "\".\n");
+						}
+						//WarningPrint("Found flag ", FlagStr, "\n");
+					}
+				}
+			}
+			
+			Flags.push_back(Flag);
 			
 			//WarningPrint(GetName(DataSet->Model, CurInput), " ", Offset, "\n");
 		}
@@ -861,7 +923,8 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 				VARIANT Value = OLEGetMatrixValue(&Matrix, Row+1, Col+1, &Handles);
 				double Val = OLEGetDouble(&Value);
 				
-				Readers[Col].AddValue(Dates[Tab][Row], Val);
+				if(std::isfinite(Val))
+					Readers[Col].AddValue(Dates[Tab][Row], Val);
 			}
 		}
 		for(int Col = 0; Col < Offsets.size(); ++Col)
