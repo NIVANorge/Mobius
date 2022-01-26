@@ -676,10 +676,10 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 	constexpr size_t Bufsize = 512;
 	char Buf[Bufsize];
 	
-	std::vector<index_set_h> IndexSets;
-	std::vector<int>         IndexSetRow;
+	std::vector<std::vector<int>>         IndexSetRow(NTabs);
 	std::vector<bool>        LookForFlags(NTabs);
-	//for(bool &LookFor : LookForFlags) LookFor = false;
+	
+	for(std::vector<int> &IndexSetMap : IndexSetRow) IndexSetMap.resize(DataSet->Model->IndexSets.Count(), -1);
 	
 	for(int Tab = 0; Tab < NTabs; ++Tab)
 	{
@@ -721,8 +721,7 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 						OLECloseDueToError(&Handles, 1, Row);
 						FatalError("The index set ", Buf, " was not registered with the model.\n");
 					}
-					IndexSets.push_back(IndexSet);
-					IndexSetRow.push_back(Row);
+					IndexSetRow[Tab][IndexSet.Handle] = Row;
 					
 					continue;
 				}
@@ -853,25 +852,22 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 				OLEGetString(&IndexName, Buf, Bufsize);
 				if(strlen(Buf) > 0)
 				{
-					for(int Ix = 0; Ix < IndexSets.size(); ++Ix)
+					index_set_h IndexSet = InputIndexSets[IdxSetNum];
+					int ExpectedRow = IndexSetRow[Tab][IndexSet.Handle];
+					
+					if(ExpectedRow != Row+2)
 					{
-						if(SheetRow == IndexSetRow[Ix])
-						{
-							if(IndexSets[Ix] != InputIndexSets[IdxSetNum])
-							{
-								OLECloseDueToError(&Handles, Tab, Col+1, Row+2);
-								FatalError("There is a mismatch in the positioning of indexes and index sets. Make sure that there is no row with an empty A cell that still has a nonempty value in it except below all the index sets or at the end of the file.\n");
-							}
-							break;
-						}
+						OLECloseDueToError(&Handles, Tab, Col+2, Row+2);
+						FatalError("There is a mismatch in the positioning of indexes and index sets. Empty cells in column A except at row 1, the first row before the dates, or at the end of the column.\n");
 					}
+
 					//TODO: We should actually test that InputIndexSets[IdxSetNum] is the same as the index set given in cell A.Row.
 					bool GetSuccess;
-					index_t Index = GetIndex(DataSet, InputIndexSets[IdxSetNum], Buf, GetSuccess);
+					index_t Index = GetIndex(DataSet, IndexSet, Buf, GetSuccess);
 					if(!GetSuccess)
 					{
 						OLECloseDueToError(&Handles, Tab, Col+2, Row+2);
-						FatalError("The index name \"", Buf, "\" does not belong to the index set \"", GetName(DataSet->Model, IndexSets[IdxSetNum]), "\".\n");
+						FatalError("The index name \"", Buf, "\" does not belong to the index set \"", GetName(DataSet->Model, IndexSet), "\".\n");
 					}
 					Indexes.push_back(Index);
 					++IdxSetNum;
