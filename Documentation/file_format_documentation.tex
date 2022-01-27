@@ -13,6 +13,9 @@
 
 \usepackage{natbib}
 
+\usepackage{hyperref}
+\usepackage{float}
+
 \setlength\parindent{0pt}
 \setlength\parskip{5pt}
 
@@ -325,7 +328,7 @@ false true
 \end{lstlisting}
 \end{example}
 
-\subsection{The input file}
+\subsection{The input file}\label{sec:datinput}
 
 \begin{example}\label{ex:inputfile}
 A shortened example of an input file
@@ -466,9 +469,9 @@ Combining various advanced formats.
 \end{lstlisting}
 \end{example}
 
-\subsubsection{Linear interpolation}
+\subsubsection{Interpolation}\label{sec:dat-interpolate}
 
-If you have a time series with missing values and you want the model to fill them with linearly interpolated values, you can specify that in the input file.
+If you have a time series with missing values and you want the model to fill them with interpolated values, you can specify that in the input file.
 
 \begin{example}
 Linear interpolation of time series.
@@ -481,9 +484,17 @@ Linear interpolation of time series.
 \end{lstlisting}
 \end{example}
 
-When you use linear interpolation, you can not use the {\tt to} directive to specify a constant interval, but you can instead do it by having two subsequent dates with the same value. Moreover, all dates in the list have to be sequentially increasing. Any dates before the first date in the provided list or after the last date will be given the constant value of the first date or the last date respectively.
+When you use interpolation, you can not use the {\tt to} directive to specify a constant interval, but you can instead do it by having two subsequent dates with the same value. Moreover, all dates in the list have to be sequentially increasing. Any dates before the first date in the provided list or after the last date will be given the constant value of the first date or the last date respectively unless the {\tt inside} flag is set.
 
-\subsubsection{Yearly repetition}
+The following flags are supported
+\begin{enumerate}
+\item {\tt step\_interpolate}. Fill each given value (as a constant) for all dates until the next date where a value is specified.
+\item {\tt linear\_interpolate}. Fill a linear interpolation of values between dates where values are specified.
+\item {\tt inside}. Only interpolate between given values. If this is flag is  {\bf not} specified, the dates up to the first given value are filled with the first given value, and the dates after the last given value are filled with the last given value. Can be combined with any of the interpolation types.
+\end{enumerate}
+If you want to set multiple flags, just put them after one another with a space in between.
+
+\subsubsection{Yearly repetition}\label{sec:dat-yearly-repeat}
 
 You can make an input time series repeat the same pattern each year. The data provided for the first year of the input data interval is repeated for all of the other years.
 
@@ -496,6 +507,8 @@ Yearly repetition.
 1990-09-01 to 1990-09-10	0.75
 \end{lstlisting}
 \end{example}
+
+The {\tt repeat\_yearly} flag can be combined with interpolation. In that case, the interpolation is applied first, then the resulting first year is repeated across the series.
 
 \subsubsection{Including multiple input files}
 
@@ -557,7 +570,7 @@ A Datetime can similarly be used for the model "Start date" parameter in the par
 \item The input start date and the model run start date have to be aligned so that the the model run start date is either zero or a full number of timesteps after the input start date.
 \item If a value in an input series is given a timestamp that is not perfectly aligned with the beginning of a timestep, it will be considered to belong to the timestep whose interval the timestamp is in. For instance, in a model with an hourly timestep, a value given a timestamp of 12:53:14 will be considered to belong to a timestep starting at 12:00:00 (given that the start date was at a whole hour).
 \item If more than one value is given for the same timestep, only the last one is used. This means that if you feed hourly data to a daily-timestep model, only the last value of each day is used.
-\item No processing, aggregation or interpolation is done to the data by Mobius (unless if you specify linear interpolation). This is because this is something that should be done with care by the researcher and often has to be done differently for different types of data. There is no one-size-fits-all way to automate it without potentially causing mistakes or confusion.
+\item No processing, aggregation or interpolation is done to the data by Mobius by default (unless if you specify interpolation). This is because this is something that should be done with care by the researcher and often has to be done differently for different types of data. There is no one-size-fits-all way to automate it without potentially causing mistakes or confusion.
 \item Timeseries given in the dense format are always considered to be aligned with the timesteps of the model.
 \end{enumerate}
 
@@ -626,11 +639,85 @@ The culprit line:
 In this case you have declared "Air temperature" to depend on the index set "Reaches", but "Bork" is not one of the indexes you provided for that index set in the parameter file.
 \end{example}
 
+\section{The spreadsheet format}
+
+\subsection{General}
+
+The spreadsheet format is very convenient to edit by hand, but is only available to users on a Windows machine who have Excel installed. This format only exists for input data, not for parameter data.
+
+\subsection{The input file}
+
+The input file has to be a single Excel .xlsx file. You can have as many tabs (sheets) as you want in the file, and all of them will be read in by default. If you want to make Mobius ignore a tab (useful if you want to keep a tab for documentation or as a scratchpad), put {\tt NOREAD} in cell A1 of that tab (apart from that it doesn't matter what you put in A1).
+
+\begin{note}
+The names of the tabs are ignored. Any color coding or borders are also ignored, so you can use these to enhance human readability if you want to.
+\end{note}
+
+Each sheet consists of a header and a data block. The header contains information about what time series the sheet contains (and any additional info about them), while the data block contains the actual values of the series.
+
+In the easiest example, the header is just the first row and contains the names of some input series. The names have to start in cell B1 and continue along row 1 with one column per name. All names should be formatted as text (this is usually automatic).
+
+In the data block, column A has to be filled with dates, and can not have any empty cells between dates.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{img/excel_simple}
+\caption{A simple spreadsheet example.}
+\end{figure}
+
+The dates have to be formatted as "Date" or "Text" (this is usually automatic, but if not you can select the column, right click, and choose "format cells"). If they are formatted as text, they have to be on the form {\tt YYYY-MM-DD} explained in the {\tt .dat} format. If they are formatted as dates, the format displayed in the Excel sheet can be whatever you want.
+
+\begin{note}
+Note that Exel does not support date formatting for dates earlier than 1900-1-1, so they have to be put as text. Moreover dates in the year 1900 can have a buggy internal format when formatted as a date, so it is safer to format them as text.
+\end{note}
+
+The range of input data that is allocated for the dataset will be the range of all dates given across all the tabs. This means that you can e.g. have a tab with observed data that has a shorter date range than the tab with the model inputs. Mobius will figure out how much space it needs to allocate for them. Date ranges can also have missing dates (but not empty cells).
+
+In the values block you can have empty cells, but this is (unless the model handles this specifically) only recommended for observed series, not for series required by the model. Missing values or entire missing time series are treated the same way as in the {\tt .dat} format (see Section \ref{sec:datinput}). Values should be formatted as Number or Text.
+
+Any input name that is not recognized as a model input by the model will be treated as an {\emph additional time series}, and will be loaded in so that you can e.g. use it as a comparison calibration series in MobiView.
+
+\begin{note}
+Cell values can be results of Excel formulas. Mobius will read the value resulting from the formula, not the literal formula.
+\end{note}
+
+\subsubsection{Indexing}
+
+If you want to index a time series over multiple indexes (for instance to provide a separate series per "Reach" or "Landscape unit"), must put one row below row 1 per index set you want to use . These rows have to have the name of the index set in cell A.
+
+\begin{figure}[h]\label{fig:excel-indexed}
+\centering
+\includegraphics[width=0.95\linewidth]{img/excel_indexes}
+\caption{A spreadsheet example with indexed inputs.}
+\end{figure}
+
+If you put an empty cell in the input name row, that column will be treated as belonging to the same input name as the last given input name before it on the row. For instance in Figure \ref{fig:excel-indexed}, both column B and C are "Air temperature" columns.
+
+If you put an index name in the header in the row belonging to an index set and a column belonging to an input name, that input is treated as indexing over that index set, and this particular column is assigned to that index. For instance in Figure \ref{fig:excel-indexed}, "Air temperature" is indexed over "Reaches", "Potential evapotranspiration" is indexed over "Landscape units", and "Precipitation" is not indexed over anything (just having one "global" series). You can also make a series index over multiple index sets by putting one index per set. Note that all instances of the same input name have to index over the same index sets.
+
+\subsubsection{Interpolation and other modifiers}
+
+In the header you can optionally put a {\emph flags} row below all the other header rows, right above the data block. The A cell of this row has to be empty (and has to be the only empty cell in column A except for potentially A1 and cells at the bottom of the document). In the flags row you can put modifier flags in the columns of the input series (you can have separate flags per series)
+
+The flags {\tt step\_interpolate}, {\tt linear\_interpolate}, {\tt inside} and {\tt repeat\_yearly} work exactly as in the {\tt .dat} format (Sections \ref{sec:dat-interpolate} and \ref{sec:dat-yearly-repeat}).
+
+If you want to combine multiple flags for the same series you provided them with spaces between them inside the same cell.
+
+For {\emph additional time series} you can also provide a unit in the flag cell by writing it as {\tt [unitname]} (the {\tt unitname} can not have spaces in it). (For model input series units are ignored since the model usually specifies the units of its input series, but you could put units there as documentation).
+
+\begin{figure}[h]\label{fig:excel-flags}
+\centering
+\includegraphics[width=0.6\linewidth]{img/excel_flags}
+\caption{A spreadsheet example with flags.}
+\end{figure}
+
+You can use flags also if you don't need indexing, in that case the flags row is the row right below the input name row (the flags row is row 2).
+
 \section{The Json format}
 
 \subsection{General}
 
-Json (Javascript object notation)  is another text format that follows a standard that is recognized by many programming language libraries and applications. This format is typically used to serialize the dataset, for instance in order to easily read it from other programs or send it over the web. The reason this is not used as the standard format is that it is less convenient for manual editing and does not support having comments.
+Json (Javascript object notation)  is another text format that follows a standard that is recognized by many programming language libraries and applications. This format is typically used to serialize the dataset, for instance in order to easily read it from other programs or send it over the web. The reason this is not used as the standard format is that it is less convenient for manual editing and does not support having comments. It is also much slower to load than the other formats, and does not support features like interpolation. Moreover, this is not included by default in builds of Mobius, and can only be used if you compile the models yourself.
 
 \subsection{The parameter file}
 The format of the parameter file is similar to the dat format. Apart from having to obey the json standard, the file has to obey a structure similar to that given in Example \ref{ex:jsonpar}
