@@ -665,7 +665,7 @@ In the data block, column A has to be filled with dates, and can not have any em
 \caption{A simple spreadsheet example.}
 \end{figure}
 
-The dates have to be formatted as "Date" or "Text" (this is usually automatic, but if not you can select the column, right click, and choose "format cells"). If they are formatted as text, they have to be on the form {\tt YYYY-MM-DD} explained in the {\tt .dat} format. If they are formatted as dates, the format displayed in the Excel sheet can be whatever you want.
+The dates have to be formatted as \emph{Date} or \emph{Text} (this is usually automatic, but if not you can select the column, right click, and choose "format cells"). If they are formatted as text, they have to be on the form {\tt YYYY-MM-DD} explained in the {\tt .dat} format. If they are formatted as dates, the format displayed in the Excel sheet can be whatever you want.
 
 \begin{note}
 Note that Exel does not support date formatting for dates earlier than 1900-1-1, so they have to be put as text. Moreover dates in the year 1900 can have a buggy internal format when formatted as a date, so it is safer to format them as text.
@@ -673,9 +673,9 @@ Note that Exel does not support date formatting for dates earlier than 1900-1-1,
 
 The range of input data that is allocated for the dataset will be the range of all dates given across all the tabs. This means that you can e.g. have a tab with observed data that has a shorter date range than the tab with the model inputs. Mobius will figure out how much space it needs to allocate for them. Date ranges can also have missing dates (but not empty cells).
 
-In the values block you can have empty cells, but this is (unless the model handles this specifically) only recommended for observed series, not for series required by the model. Missing values or entire missing time series are treated the same way as in the {\tt .dat} format (see Section \ref{sec:datinput}). Values should be formatted as Number or Text.
+In the values block you can have empty cells, but this is (unless the model handles this specifically) only recommended for observed series, not for series required by the model. Missing values or entire missing time series are treated the same way as in the {\tt .dat} format (see Section \ref{sec:datinput}). Values should be formatted as \emph{Number} or \emph{Text}.
 
-Any input name that is not recognized as a model input by the model will be treated as an {\emph additional time series}, and will be loaded in so that you can e.g. use it as a comparison calibration series in MobiView.
+Any input name that is not recognized as a model input by the model will be treated as an \emph{additional time series}, and will be loaded in so that you can e.g. use it as a comparison calibration series in MobiView.
 
 \begin{note}
 Cell values can be results of Excel formulas. Mobius will read the value resulting from the formula, not the literal formula.
@@ -703,7 +703,7 @@ The flags {\tt step\_interpolate}, {\tt linear\_interpolate}, {\tt inside} and {
 
 If you want to combine multiple flags for the same series you provided them with spaces between them inside the same cell.
 
-For {\emph additional time series} you can also provide a unit in the flag cell by writing it as {\tt [unitname]} (the {\tt unitname} can not have spaces in it). (For model input series units are ignored since the model usually specifies the units of its input series, but you could put units there as documentation).
+For \emph{additional time series} you can also provide a unit in the flag cell by writing it as {\tt [unitname]} (the {\tt unitname} can not have spaces in it). (For model input series units are ignored since the model usually specifies the units of its input series, but you could put units there as documentation).
 
 \begin{figure}[h]\label{fig:excel-flags}
 \centering
@@ -711,7 +711,7 @@ For {\emph additional time series} you can also provide a unit in the flag cell 
 \caption{A spreadsheet example with flags.}
 \end{figure}
 
-You can use flags also if you don't need indexing, in that case the flags row is the row right below the input name row (the flags row is row 2).
+You can use flags also if you don't need indexing, in that case the flags row is the row right below the input name row (the flags row in this case is row 2).
 
 \section{The Json format}
 
