@@ -338,6 +338,7 @@ INCA-Macroplastics is in early development
 		  RESULT(FloatingLitterUpstream) / PARAMETER(ReachLength)
 		- RESULT(FloatingLitterOutput) / PARAMETER(ReachLength)
 		+ RESULT(BankDetachment)
+		+ RESULT(BankDetachmentStuck)
 		- RESULT(BankAttachment)
 		+ RESULT(RiverVegDetachment)
 		- RESULT(RiverVegAttachment);
