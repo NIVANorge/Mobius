@@ -291,18 +291,6 @@ New to version 0.4.2:
 		
 		return avgupstreamvol;
 	)
-	
-	auto Control = RegisterEquation(Model, "Control", Dimensionless);
-	
-	EQUATION(Model, Control,
-		//NOTE: We create this equation to put in the code that allow us to "hack" certain values.
-		// The return value of this equation does not mean anything.
-		
-		double volume = RESULT(GroundwaterFlow)*PARAMETER(GroundwaterTimeConstant);  //Wow, somehow this does not register index sets correctly if it is passed directly inside the macro below! May want to debug that.
-		SET_RESULT(GroundwaterVolume, volume);
-		
-		return 0.0;
-	)
 #endif
 	
 	// In-stream equations
