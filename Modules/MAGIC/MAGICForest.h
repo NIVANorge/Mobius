@@ -13,6 +13,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto DegreesCelsius	 = RegisterUnit(Model, "°C");
 	//auto MgPerL          = RegisterUnit(Model, "mg/l");
 	auto MPerTs          = RegisterUnit(Model, "m/month");
+	auto MPerYear        = RegisterUnit(Model, "m/year");
 	auto MmPerTs         = RegisterUnit(Model, "mm/month");
 	auto MEqPerM3        = RegisterUnit(Model, "meq/m3");
 	auto MMolPerM3       = RegisterUnit(Model, "mmol/m3");
@@ -78,6 +79,18 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto FDryDepFactor           = RegisterParameterDouble(Model, Deposition, "F dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFF");
 	auto PO4DryDepFactor         = RegisterParameterDouble(Model, Deposition, "PO4 dry deposition factor", Dimensionless, 1.0, 1.0, 5.0, "Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element", "DDFPO4");
 	
+	auto Sedimentation           = RegisterParameterGroup(Model, "Sedimentation", Compartment);
+	
+	auto CaSedimentation         = RegisterParameterDouble(Model, Sedimentation, "Ca sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto MgSedimentation         = RegisterParameterDouble(Model, Sedimentation, "Mg sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto NaSedimentation         = RegisterParameterDouble(Model, Sedimentation, "Na sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto KSedimentation          = RegisterParameterDouble(Model, Sedimentation, "K sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto NH4Sedimentation        = RegisterParameterDouble(Model, Sedimentation, "NH4 sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto SO4Sedimentation        = RegisterParameterDouble(Model, Sedimentation, "SO4 sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto ClSedimentation         = RegisterParameterDouble(Model, Sedimentation, "Cl sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto NO3Sedimentation        = RegisterParameterDouble(Model, Sedimentation, "NO3 sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto FSedimentation          = RegisterParameterDouble(Model, Sedimentation, "F sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
+	auto PO4Sedimentation        = RegisterParameterDouble(Model, Sedimentation, "PO4 sedimentation", MPerYear, 0.0, 0.0, 10.0, "For lakes");
 	
 
 	
@@ -152,6 +165,32 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	
 	
+	auto CompartmentSolver = GetSolverHandle(Model, "Compartment solver");
+	
+	auto CaSedimentationEq       = RegisterEquation(Model, "Ca sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto MgSedimentationEq       = RegisterEquation(Model, "Mg sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto NaSedimentationEq       = RegisterEquation(Model, "Na sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto KSedimentationEq        = RegisterEquation(Model, "K sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto NH4SedimentationEq      = RegisterEquation(Model, "NH4 sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto SO4SedimentationEq      = RegisterEquation(Model, "SO4 sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto ClSedimentationEq       = RegisterEquation(Model, "Cl sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto NO3SedimentationEq      = RegisterEquation(Model, "NO3 sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto FSedimentationEq        = RegisterEquation(Model, "F sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	auto PO4SedimentationEq      = RegisterEquation(Model, "PO4 sedimentation", MEqPerM2PerTs, CompartmentSolver);
+	
+	SetInitialValue(Model, CaSedimentationEq, 0.0);
+	SetInitialValue(Model, MgSedimentationEq, 0.0);
+	SetInitialValue(Model, NaSedimentationEq, 0.0);
+	SetInitialValue(Model, KSedimentationEq, 0.0);
+	SetInitialValue(Model, NH4SedimentationEq, 0.0);
+	SetInitialValue(Model, SO4SedimentationEq, 0.0);
+	SetInitialValue(Model, ClSedimentationEq, 0.0);
+	SetInitialValue(Model, NO3SedimentationEq, 0.0);
+	SetInitialValue(Model, FSedimentationEq, 0.0);
+	SetInitialValue(Model, PO4SedimentationEq, 0.0);
+	
+	
+	
 	// These are required by the MAGIC Core:
 	auto Discharge               = RegisterEquation(Model, "Discharge", MPerTs);
 	auto Temperature             = RegisterEquation(Model, "Temperature", DegreesCelsius);
@@ -160,17 +199,16 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	SetInitialValue(Model, OAConcentration, OAConcentrationPar);
 	
-	
-	auto CaExternalFlux          = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
-	auto MgExternalFlux          = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
-	auto NaExternalFlux          = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MEqPerM2PerTs);
-	auto KExternalFlux           = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MEqPerM2PerTs);
-	auto NH4ExternalFlux         = RegisterEquation(Model, "Sum of NH4 fluxes not related to discharge", MEqPerM2PerTs);
-	auto SO4ExternalFlux         = RegisterEquation(Model, "Sum of SO4 fluxes not related to discharge", MEqPerM2PerTs);
-	auto ClExternalFlux          = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs);
-	auto NO3ExternalFlux         = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs);
-	auto FExternalFlux           = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs);
-	auto PO4ExternalFlux         = RegisterEquation(Model, "Sum of PO4 fluxes not related to discharge", MEqPerM2PerTs);
+	auto CaExternalFlux          = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto MgExternalFlux          = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto NaExternalFlux          = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto KExternalFlux           = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto NH4ExternalFlux         = RegisterEquation(Model, "Sum of NH4 fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto SO4ExternalFlux         = RegisterEquation(Model, "Sum of SO4 fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto ClExternalFlux          = RegisterEquation(Model, "Sum of Cl fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto NO3ExternalFlux         = RegisterEquation(Model, "Sum of NO3 fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto FExternalFlux           = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
+	auto PO4ExternalFlux         = RegisterEquation(Model, "Sum of PO4 fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
 	
 	
 	//The following four are re-registered and defined in the CNP module
@@ -203,7 +241,16 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto IsSoil                  = GetParameterBoolHandle(Model, "This is a soil compartment");
 	auto IsTop                   = GetParameterBoolHandle(Model, "This is a top compartment");
 	
+	auto ConcCa                  = GetEquationHandle(Model, "Ca(2+) ionic concentration");
+	auto ConcMg                  = GetEquationHandle(Model, "Mg(2+) ionic concentration");
+	auto ConcNa                  = GetEquationHandle(Model, "Na(+) ionic concentration");
+	auto ConcK                   = GetEquationHandle(Model, "K(+) ionic concentration");
+	auto ConcNH4                 = GetEquationHandle(Model, "NH4(+) ionic concentration");
 	auto ConcSO4                 = GetEquationHandle(Model, "SO4(2-) ionic concentration");
+	auto ConcCl                  = GetEquationHandle(Model, "Cl(-) ionic concentration");
+	auto ConcNO3                 = GetEquationHandle(Model, "NO3(-) ionic concentration");
+	auto ConcF                   = GetEquationHandle(Model, "F(-) ionic concentration");
+	auto ConcPO4                 = GetEquationHandle(Model, "PO4(3-) ionic concentration");
 
 	
 	EQUATION(Model, FractionOfYear,
@@ -308,6 +355,29 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	#undef TOTAL_DEPOSITION
 	
+#define SEDIMENTATION(Elem) \
+	EQUATION(Model, Elem##SedimentationEq, \
+		double sed = RESULT(Conc##Elem)*PARAMETER(Elem##Sedimentation)*RESULT(FractionOfYear); \
+		if(PARAMETER(IsSoil)) sed = 0.0; \
+		return sed; \
+	)
+	
+	SEDIMENTATION(Ca)
+	SEDIMENTATION(Mg)
+	SEDIMENTATION(Na)
+	SEDIMENTATION(K)
+	SEDIMENTATION(NH4)
+	SEDIMENTATION(SO4)
+	SEDIMENTATION(Cl)
+	SEDIMENTATION(NO3)
+	SEDIMENTATION(F)
+	SEDIMENTATION(PO4)
+	
+#undef SEDIMENTATION
+	
+	
+	
+	
 	EQUATION(Model, NO3BasicInputs,
 		double deposition = RESULT(NO3Deposition);
 		double weathering = PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
@@ -330,45 +400,52 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	
+	
+	
+	
 	//TODO: The uptake should maybe be limited so that the mass never goes in the negative, but it may not be a problem
 	EQUATION(Model, CaExternalFlux,
 		double deposition = RESULT(CaDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(CaWeathering);
 		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
+		double sed        = RESULT(CaSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
 		if(!PARAMETER(IsSoil)) forest = 0.0;
-		return deposition + weathering + forest;
+		return deposition + weathering + forest - sed;
 	)
 	
 	EQUATION(Model, MgExternalFlux,
 		double deposition = RESULT(MgDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(MgWeathering);
 		double forest     = RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
+		double sed        = RESULT(MgSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
 		if(!PARAMETER(IsSoil)) forest = 0.0;
-		return deposition + weathering + forest;
+		return deposition + weathering + forest - sed;
 	)
 	
 	EQUATION(Model, NaExternalFlux,
 		double deposition = RESULT(NaDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(NaWeathering);
 		double forest     = RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeNaUptake);
+		double sed        = RESULT(NaSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
 		if(!PARAMETER(IsSoil)) forest = 0.0;
-		return deposition + weathering + forest;
+		return deposition + weathering + forest - sed;
 	)
 	
 	EQUATION(Model, KExternalFlux,
 		double deposition = RESULT(KDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering);
 		double forest     = RESULT(TotalTreeDecompKSource) - RESULT(TotalTreeKUptake);
+		double sed        = RESULT(KSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
 		if(!PARAMETER(IsSoil)) forest = 0.0;
-		return deposition + weathering + forest;
+		return deposition + weathering + forest - sed;
 	)
 	
 	EQUATION(Model, NH4ExternalFlux,
-		return RESULT(NH4Inputs) - RESULT(NH4ProcessesLoss);
+		return RESULT(NH4Inputs) - RESULT(NH4ProcessesLoss) - RESULT(NH4SedimentationEq);
 	)
 	
 	EQUATION(Model, SO4ExternalFlux,
@@ -379,25 +456,27 @@ Forest growth driver module developed as part of the CatchCAN project.
 	)
 	
 	EQUATION(Model, NO3ExternalFlux,
-		return RESULT(NO3Inputs) - RESULT(NO3ProcessesLoss);
+		return RESULT(NO3Inputs) - RESULT(NO3ProcessesLoss) - RESULT(NO3SedimentationEq);
 	)
 	
 	EQUATION(Model, ClExternalFlux,
 		double deposition = RESULT(ClDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(ClWeathering);
+		double sed        = RESULT(ClSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
-		return deposition + weathering;
+		return deposition + weathering - sed;
 	)
 	
 	EQUATION(Model, FExternalFlux,
 		double deposition = RESULT(FDeposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(FWeathering);
+		double sed        = RESULT(FSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
-		return deposition + weathering;
+		return deposition + weathering - sed;
 	)
 	
 	EQUATION(Model, PO4ExternalFlux,
-		return RESULT(PO4Inputs) - RESULT(PO4ProcessesLoss);
+		return RESULT(PO4Inputs) - RESULT(PO4ProcessesLoss) - RESULT(PO4SedimentationEq);
 	)
 	
 	

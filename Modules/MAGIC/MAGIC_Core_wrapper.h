@@ -173,7 +173,7 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto PartialPressureCO2 = RegisterEquation(Model, "CO2 partial pressure", Percent);
 	auto OAConcentration    = RegisterEquation(Model, "Organic acid concentration", MMolPerM3);
 	
-	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs);
+	auto CaExternalFlux     = RegisterEquation(Model, "Sum of Ca fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
 	auto MgExternalFlux     = RegisterEquation(Model, "Sum of Mg fluxes not related to discharge", MEqPerM2PerTs);
 	auto NaExternalFlux     = RegisterEquation(Model, "Sum of Na fluxes not related to discharge", MEqPerM2PerTs);
 	auto KExternalFlux      = RegisterEquation(Model, "Sum of K fluxes not related to discharge", MEqPerM2PerTs);

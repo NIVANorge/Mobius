@@ -119,6 +119,10 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto NH4ProcessesLoss         = RegisterEquation(Model, "NH4 processes loss", MMolPerM2PerTs);	
 	auto PO4ProcessesLoss         = RegisterEquation(Model, "PO4 processes loss", MMolPerM2PerTs);
 	
+	auto NO3Inflow                = GetEquationHandle(Model, "NO3 input from other compartments");
+	auto NH4Inflow                = GetEquationHandle(Model, "NH4 input from other compartments");
+	auto PO4Inflow                = GetEquationHandle(Model, "PO4 input from other compartments");
+	
 	
 	//From soil carbon module.
 	auto OrganicCDecompositionEq = GetEquationHandle(Model, "Organic C turnover");
@@ -251,8 +255,8 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	
 	EQUATION(Model, DesiredNO3Immobilisation,
-		double inno3 = RESULT(NO3Inputs) - RESULT(DenitrificationEq);
-		double innh4 = RESULT(NH4Inputs) - RESULT(NitrificationEq);
+		double inno3 = RESULT(NO3Inputs) - RESULT(DenitrificationEq) + RESULT(NO3Inflow);
+		double innh4 = RESULT(NH4Inputs) - RESULT(NitrificationEq)   + RESULT(NH4Inflow);
 		double microbial = inno3 * SafeDivide(RESULT(DesiredNImmobilisation), inno3 + innh4);
 		
 		double simple = PARAMETER(DesiredNO3Retention);
@@ -274,8 +278,8 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, DesiredNH4Immobilisation,
-		double inno3 = RESULT(NO3Inputs) - RESULT(DenitrificationEq);
-		double innh4 = RESULT(NH4Inputs) - RESULT(NitrificationEq);
+		double inno3 = RESULT(NO3Inputs) - RESULT(DenitrificationEq) + RESULT(NO3Inflow);
+		double innh4 = RESULT(NH4Inputs) - RESULT(NitrificationEq)   + RESULT(NH4Inflow);
 		double microbial = innh4 * SafeDivide(RESULT(DesiredNImmobilisation), inno3 + innh4);
 		
 		double simple = PARAMETER(DesiredNH4Retention);
@@ -299,7 +303,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	
 	EQUATION(Model, NO3Uptake,
-		double in             = RESULT(NO3Inputs) - RESULT(DenitrificationEq);
+		double in             = RESULT(NO3Inputs) - RESULT(DenitrificationEq) + RESULT(NO3Inflow);
 		double desired_uptake = RESULT(DesiredNO3Uptake);
 		double desired_immob  = std::min(in, RESULT(DesiredNO3Immobilisation));
 		if(!PARAMETER(PlantsUseInorganicFirst))
@@ -308,7 +312,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, NH4Uptake,
-		double in             = RESULT(NH4Inputs) - RESULT(NitrificationEq);
+		double in             = RESULT(NH4Inputs) - RESULT(NitrificationEq) + RESULT(NH4Inflow);
 		double desired_uptake = RESULT(DesiredNH4Uptake);
 		double desired_immob  = std::min(in, RESULT(DesiredNH4Immobilisation));
 		if(!PARAMETER(PlantsUseInorganicFirst))
@@ -317,7 +321,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, NO3Immobilisation,
-		double in             = RESULT(NO3Inputs) - RESULT(DenitrificationEq);
+		double in             = RESULT(NO3Inputs) - RESULT(DenitrificationEq) + RESULT(NO3Inflow);
 		double desired_immob  = RESULT(DesiredNO3Immobilisation);
 		double desired_uptake = std::min(in, RESULT(DesiredNO3Uptake));
 		if(PARAMETER(PlantsUseInorganicFirst))
@@ -326,7 +330,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, NH4Immobilisation,
-		double in             = RESULT(NH4Inputs) - RESULT(NitrificationEq);
+		double in             = RESULT(NH4Inputs) - RESULT(NitrificationEq) + RESULT(NH4Inflow);
 		double desired_immob  = RESULT(DesiredNH4Immobilisation);
 		double desired_uptake = std::min(in, RESULT(DesiredNH4Uptake));
 		if(PARAMETER(PlantsUseInorganicFirst))
@@ -430,7 +434,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, PO4Uptake,
-		double in             = RESULT(PO4Inputs);
+		double in             = RESULT(PO4Inputs) + RESULT(PO4Inflow);
 		double desired_uptake = RESULT(DesiredPUptake);
 		double desired_immob  = std::min(in, RESULT(DesiredPImmobilisation));
 		if(!PARAMETER(PlantsUseInorganicFirst))
@@ -439,7 +443,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	)
 	
 	EQUATION(Model, PO4Immobilisation,
-		double in             = RESULT(PO4Inputs);
+		double in             = RESULT(PO4Inputs) + RESULT(PO4Inflow);
 		double desired_immob  = RESULT(DesiredPImmobilisation);
 		double desired_uptake = std::min(in, RESULT(DesiredPUptake));
 		if(PARAMETER(PlantsUseInorganicFirst))

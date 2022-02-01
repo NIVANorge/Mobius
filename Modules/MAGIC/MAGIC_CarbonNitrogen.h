@@ -191,8 +191,8 @@ AddRatioMagicCarbonNitrogenModel(mobius_model *Model)
 	
 	//NOTE: The following is provided by the driver
 	auto FractionOfYear      = GetEquationHandle(Model, "Fraction of year");
-	auto NO3BasicInputs      = GetEquationHandle(Model, "NO3 basic inputs");
-	auto NH4BasicInputs      = GetEquationHandle(Model, "NH4 basic inputs");  
+	auto NO3BasicInputs      = GetEquationHandle(Model, "NO3 non-process inputs");
+	auto NH4BasicInputs      = GetEquationHandle(Model, "NH4 non-process inputs");  
 	
 	auto IsSoil = GetParameterDoubleHandle(Model, "This is a soil compartment");
 	
@@ -440,7 +440,7 @@ AddMicrobialMagicCarbonNitrogenModel(mobius_model *Model)
 	auto OrganicNUptake           = GetEquationHandle(Model, "Organic N uptake");
 	auto NO3Inputs                = GetEquationHandle(Model, "NO3 inputs");
 	auto NH4Inputs                = GetEquationHandle(Model, "NH4 inputs");
-	auto NO3BasicInputs           = GetEquationHandle(Model, "NO3 basic inputs");
+	auto NO3BasicInputs           = GetEquationHandle(Model, "NO3 non-process inputs");
 	
 	auto OrganicCDecomposition    = GetParameterDoubleHandle(Model, "Organic C decomposition");
 	auto OrganicCInput            = GetParameterDoubleHandle(Model, "Organic C input");
