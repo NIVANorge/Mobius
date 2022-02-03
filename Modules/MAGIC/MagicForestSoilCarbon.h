@@ -20,9 +20,10 @@ A soil carbon module for MAGIC Forest.
 	
 	auto SoilCarbon = RegisterParameterGroup(Model, "Soil carbon", Compartment);
 	
-	auto InitialOrganicC              = RegisterParameterDouble(Model, SoilCarbon, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8);
+	auto InitialSteady                = RegisterParameterBool(Model, SoilCarbon, "Initial steady state", false);
+	auto InitialOrganicC              = RegisterParameterDouble(Model, SoilCarbon, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8, "Only used if not in steady state initially");
+	auto OrganicCFastFraction         = RegisterParameterDouble(Model, SoilCarbon, "Initial relative size of fast C pool", Dimensionless, 0.5, 0.0, 1.0, "Only used if not in steady state initially");
 	auto OrganicCLitter               = RegisterParameterDouble(Model, SoilCarbon, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6, "Litter in addition to what is computed by the forest module");
-	auto OrganicCFastFraction         = RegisterParameterDouble(Model, SoilCarbon, "Initial relative size of fast C pool", Dimensionless, 0.5, 0.0, 1.0);
 	auto TurnoverRateFast             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of fast-decomposable C", PerYear, 0.1, 0.0, 1.0);
 	auto TurnoverRateSlow             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of slow-decomposable C", PerYear, 0.01, 0.0, 1.0);
 	auto FastSlowMassFlowRate         = RegisterParameterDouble(Model, SoilCarbon, "Mass flow rate from fast to slow C pool", PerYear, 0.01, 0.0, 1.0);
@@ -49,19 +50,54 @@ A soil carbon module for MAGIC Forest.
 	SetInitialValue(Model, OrganicCSlow, InitialOrganicCSlow);
 	
 	
+	
+	auto TreeSpecies               = GetIndexSetHandle(Model, "Tree species");
+	auto TreeCompartment           = GetIndexSetHandle(Model, "Tree compartment");
 	auto TotalTreeDecompCSource    = GetEquationHandle(Model, "Total C source from tree decomposition");
+	auto CSourceTreeDecomp         = GetEquationHandle(Model, "C source from tree decomposition");
 	auto FractionOfYear            = GetEquationHandle(Model, "Fraction of year");
 	
 	auto IsSoil                    = GetParameterBoolHandle(Model, "This is a soil compartment");
 	auto IsTop                     = GetParameterBoolHandle(Model, "This is a top compartment");
 	
-	
 	EQUATION(Model, InitialOrganicCFast,
-		return PARAMETER(InitialOrganicC)*PARAMETER(OrganicCFastFraction)*1000.0; //mol->mmol
+		double provided = PARAMETER(InitialOrganicC)*PARAMETER(OrganicCFastFraction)*1000.0; //mol->mmol
+		
+		//TODO: Make cumulation equations work well with initial value system so that we don't have to do this:
+		double forest = 0.0;
+		for(index_t Species = FIRST_INDEX(TreeSpecies); Species < INDEX_COUNT(TreeSpecies); ++Species)
+		{
+			for(index_t Compartment = FIRST_INDEX(TreeCompartment); Compartment < INDEX_COUNT(TreeCompartment); ++Compartment)
+				forest += RESULT(CSourceTreeDecomp, Species, Compartment);
+		}
+		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
+		
+		double f = RESULT(FractionOfYear);
+		double In = forest + f*PARAMETER(OrganicCLitter);
+		double r_F = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), f);
+		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		double a = PARAMETER(Solubilization);
+		double b = PARAMETER(CUseEfficiency);
+		double steady = In / ((r_F + r_FS)*(1.0 - (1.0-a)*b));
+		
+		if(PARAMETER(InitialSteady))
+			return steady;
+		
+		return provided;
 	)
 	
 	EQUATION(Model, InitialOrganicCSlow,
-		return PARAMETER(InitialOrganicC)*(1.0 - PARAMETER(OrganicCFastFraction))*1000.0; //mol->mmol
+		double provided = PARAMETER(InitialOrganicC)*(1.0 - PARAMETER(OrganicCFastFraction))*1000.0; //mol->mmol
+		
+		double f = RESULT(FractionOfYear);
+		double r_S = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), f);
+		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		double steady = RESULT(OrganicCFast) * r_FS / r_S;
+		
+		if(PARAMETER(InitialSteady))
+			return steady;
+		
+		return provided;
 	)
 	
 	EQUATION(Model, TurnoverFast,

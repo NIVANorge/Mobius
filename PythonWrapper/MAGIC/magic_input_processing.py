@@ -181,7 +181,7 @@ def add_deposition_ts(
 	
 	obs_ss_conc = get_converted_conc(source_df, sea_salt_ref, source_is_mg_l)
 	
-	if sea_salt_ref is 'Cl' :
+	if sea_salt_ref == 'Cl' :
 		obs_cl_conc = obs_ss_conc
 	else :
 		obs_cl_conc = obs_ss_conc / sea_salt_ratio[sea_salt_ref]	
@@ -225,7 +225,7 @@ def add_deposition_ts(
 	
 	
 	add_single(obs_ss_conc*sea_salt_factor, sea_salt_ref)
-	if sea_salt_ref is not 'Cl' :
+	if sea_salt_ref != 'Cl' :
 		add_single(obs_cl_conc * sea_salt_factor, 'Cl')
 
 	for element in ['Ca', 'Mg', 'Na', 'K'] :
@@ -233,7 +233,7 @@ def add_deposition_ts(
 		
 		ss_conc = obs_cl_conc * sea_salt_factor * sea_salt_ratio[element]   #NOTE: The sea_salt_ratio is in eq/eq, so no need to use charge and molar mass here
 		
-		if (ca_ref_range is not None) and element is 'Ca' :
+		if (ca_ref_range is not None) and element == 'Ca' :
 			ca_range = year_range(ca_ref_range[0], ca_ref_range[1], monthly=True)
 		
 			ss_ca_dep = ss_conc * input_df['Precipitation'] * 1e-3

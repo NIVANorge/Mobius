@@ -119,6 +119,8 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TreeDecompNaSource   = RegisterEquation(Model, "Na source from tree decomposition", MEqPerM2PerTs);
 	auto TreeDecompKSource    = RegisterEquation(Model, "K source from tree decomposition", MEqPerM2PerTs);
 	
+	SetInitialValue(Model, TreeDecompCSource, TreeDecompCSource);
+	
 	auto TotalTreeDecompCSourceSpecies  = RegisterEquationCumulative(Model, "Total C source from tree decomposition per species", TreeDecompCSource, TreeCompartment);
 	auto TotalTreeDecompNSourceSpecies  = RegisterEquationCumulative(Model, "Total N source from tree decomposition per species", TreeDecompNSource, TreeCompartment);
 	auto TotalTreeDecompPSourceSpecies  = RegisterEquationCumulative(Model, "Total P source from tree decomposition per species", TreeDecompPSource, TreeCompartment);
