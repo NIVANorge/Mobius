@@ -114,7 +114,7 @@ INCA-Macroplastics is in early development
 		else if(type == CappedBottle)
 			return 0.9;
 		else if(type == Bag)
-			return 1.2;
+			return 2.0;
 		else if(type == MargarineTub)
 			return 1.2;
 		else if(type == PVCPiece)
@@ -217,7 +217,7 @@ INCA-Macroplastics is in early development
 	)
 	
 		
-	double ThresholdModBank[3] = {3.0, 1.5, 1.2}; // bushes, reeds, grass..  //TODO: arbitrary numbers...
+	double ThresholdModBank[3] = {4.0, 2.0, 1.0}; // bushes, reeds, grass. These are proportional to numbers in Table 3 of https://pubs.usgs.gov/wsp/2339/report.pdf . Scaled so that grass=1.
 	
 	EQUATION(Model, BankDragForce,
 		double C_DA = PARAMETER(DragCoefficient)*PARAMETER(DragArea);

@@ -38,9 +38,9 @@ A soil carbon module for MAGIC Forest.
 	auto FastSlowMassFlow       = RegisterEquation(Model, "Fast-slow mass flow", MMolPerM2PerTs);
 	auto OrganicCFast           = RegisterEquation(Model, "Organic C fast-decomposable pool", MMolPerM2);
 	auto OrganicCSlow           = RegisterEquation(Model, "Organic C slow-decomposable pool", MMolPerM2);
-	auto OrganicCSolubilized      = RegisterEquation(Model, "Organic C solubilized", MMolPerM2PerTs);
-	auto OrganicCMineralized      = RegisterEquation(Model, "Organic C mineralized", MMolPerM2PerTs);
-	auto OrganicCInBiomass        = RegisterEquation(Model, "Organic C in soil microbial biomass", MMolPerM2PerTs);
+	auto OrganicCSolubilized    = RegisterEquation(Model, "Organic C solubilized", MMolPerM2PerTs);
+	auto OrganicCMineralized    = RegisterEquation(Model, "Organic C mineralized", MMolPerM2PerTs);
+	auto OrganicCInBiomass      = RegisterEquation(Model, "Organic C in soil microbial biomass", MMolPerM2PerTs);
 	auto OrganicC               = RegisterEquation(Model, "Organic C", MMolPerM2);
 	
 	auto InitialOrganicCFast    = RegisterEquationInitialValue(Model, "Initial organic C fast-decomposable", MMolPerM2);
