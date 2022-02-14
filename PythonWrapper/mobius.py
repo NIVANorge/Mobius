@@ -38,7 +38,7 @@ def initialize(dllname) :
 
 	mobiusdll.DllRunModel.argtypes = [ctypes.c_void_p]
 
-	mobiusdll.DllCopyDataSet.argtypes = [ctypes.c_void_p, ctypes.c_bool]
+	mobiusdll.DllCopyDataSet.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_bool]
 	mobiusdll.DllCopyDataSet.restype  = ctypes.c_void_p
 
 	mobiusdll.DllDeleteDataSet.argtypes = [ctypes.c_void_p]
@@ -273,11 +273,15 @@ class DataSet :
 		mobiusdll.DllRunModel(self.datasetptr)
 		check_dll_error()
 	
-	def copy(self, copyresults=False) :
+	def copy(self, copyresults=False, borrowinputs=False) :
 		'''
-		Create a copy of the dataset that contains all the same parameter values and input series. Result series will not be copied.
+		Create a copy of the dataset that contains all the same parameter values and input series.
+		
+		Arguments
+			copyresults        -- bool. If you also want to copy over model result data.
+			borrowinputs       -- bool. If True, just keep a reference to the input data of the original data set. In this case you must not delete the original before you delete the copy. If False, copy over the entire set of input data to the new dataset.
 		'''
-		cp = DataSet(mobiusdll.DllCopyDataSet(self.datasetptr, copyresults))
+		cp = DataSet(mobiusdll.DllCopyDataSet(self.datasetptr, copyresults, borrowinputs))
 		check_dll_error()
 		return cp
 		

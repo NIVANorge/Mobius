@@ -26,6 +26,8 @@ GenerateDataSet(mobius_model *Model)
 	DataSet->InputStorageStructure.Model     = Model;
 	DataSet->ResultStorageStructure.Model    = Model;
 	
+	DataSet->OwnsInputs = true;
+	
 	DataSet->TimestepsLastRun = 0;
 	
 	return DataSet;
@@ -34,7 +36,7 @@ GenerateDataSet(mobius_model *Model)
 mobius_data_set::~mobius_data_set()
 {
 	if(ParameterData) free(ParameterData);
-	if(InputData) free(InputData);
+	if(InputData && OwnsInputs) free(InputData);
 	if(ResultData) free(ResultData);
 	
 	BucketMemory.DeallocateAll();
@@ -62,8 +64,9 @@ CopyStorageStructure(const storage_structure<handle_type> *Source, storage_struc
 	Dest->Model                  = Source->Model;
 }
 
+// If you don't BorrowInputs, you get a copy of them instead. If you BorrowInputs you should not delete the original data set before you stop using the copy.
 static mobius_data_set *
-CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
+CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false, bool BorrowInputs = false)
 {
 	const mobius_model *Model = DataSet->Model;
 	
@@ -77,8 +80,15 @@ CopyDataSet(mobius_data_set *DataSet, bool CopyResults = false)
 	CopyStorageStructure(&DataSet->ParameterStorageStructure, &Copy->ParameterStorageStructure, &Copy->BucketMemory);
 	
 	if(DataSet->InputData)
-		Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
-	
+	{
+		if(!BorrowInputs)
+			Copy->InputData = CopyArray(double, DataSet->InputStorageStructure.TotalCount * DataSet->InputDataTimesteps, DataSet->InputData);
+		else
+		{
+			Copy->InputData = DataSet->InputData;
+			Copy->OwnsInputs = false;
+		}
+	}
 	else Copy->InputData = nullptr; //Should not be necessary...
 	CopyStorageStructure(&DataSet->InputStorageStructure, &Copy->InputStorageStructure, &Copy->BucketMemory);
 	Copy->InputDataStartDate = DataSet->InputDataStartDate;
@@ -717,6 +727,8 @@ AllocateInputStorage(mobius_data_set *DataSet, u64 Timesteps)
 	
 	if(DataSet->InputData)
 		FatalError("ERROR: Tried to allocate input storage twice.\n");
+	
+	DataSet->OwnsInputs = true;
 
 	std::map<std::vector<index_set_h>, std::vector<input_h>> TransposedInputDependencies;
 	

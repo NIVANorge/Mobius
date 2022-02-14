@@ -493,6 +493,7 @@ struct mobius_data_set
 	datetime InputDataStartDate;
 	bool InputDataHasSeparateStartDate = false; //NOTE: Whether or not a start date was provided for the input data, which is potentially different from the start date of the model run.
 	u64 InputDataTimesteps;
+	bool OwnsInputs = true;     //NOTE: If this data set is a copy of another and only is set to reference the other's input data, this is set to false so that we don't delete the input data when deleting this set.
 	
 	double *ResultData;
 	storage_structure<equation_h> ResultStorageStructure;
