@@ -18,18 +18,29 @@ def empty_input_df(begin_year, end_year) :
 	return pd.DataFrame(index = year_range(begin_year, end_year))
 
 
-def add_ts(input_df, source, dest_name, aggr_method='mean', patch_ref_range = None) :
+def add_ts(input_df, source, dest_name, aggr_method='mean', patch_ref_range = None, source_freq='D') :
 	
-	if aggr_method == 'sum' :
-		monthly = source.resample('MS').sum(min_count=28)  #This min count is not ideal, we could also use mean, and multiply with length of month
-	elif aggr_method == 'mean' :
-		monthly = source.resample('MS').mean()
-		
-	distr = np.zeros(12)
-	count = np.zeros(12)
+	#TODO: Check if source_freq is D or M. (otherwise won't work)
+	
+	if source_freq == 'M' :
+		monthly = source
+	else :
+		if aggr_method == 'sum' :
+			monthly = source.resample('MS').sum(min_count=28)  #This min count is not ideal, we could also use mean, and multiply with length of month
+		elif aggr_method == 'mean' :
+			monthly = source.resample('MS').mean()
+	
+	for index, row in input_df.iterrows() :
+		if index in monthly.index :
+			input_df.loc[index, dest_name] = monthly[index]
+	
 	
 	if patch_ref_range is not None:
+		distr = np.zeros(12)
+		count = np.zeros(12)
+	
 		patch_range = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
+		
 	
 		for index, val in monthly.iteritems() :
 			if not np.isnan(val) :
@@ -43,25 +54,23 @@ def add_ts(input_df, source, dest_name, aggr_method='mean', patch_ref_range = No
 		elif aggr_method == 'mean' :
 			distr /= count
 	
-	#print('Monthly distribution:')
-	#print(distr)
-	#print('distr sum (should be 1) %g' % np.sum(distr))
-	
-	if aggr_method == 'sum' :
-		yearly = source.resample('AS').sum(min_count=365)
-	elif aggr_method == 'mean' :
-		yearly = source.resample('AS').sum(min_count=365)
+		min_count = 365
+		if source_freq=='M' : min_count = 12
+		
+		yearly = source.resample('AS').sum(min_count=min_count)
+		if aggr_method == 'mean' :
 		# We still want the min count to not get thrown off by a year where there are only december values. However, the mean() function does not provide this
-		#TODO: Does NOT work for time series that are not daily!!!!
-		yearly /= 365.0
-		#yearly = source.resample('AS').mean()
-	
-	all_mean = np.nanmean(yearly.values)
-	#print('all mean %g' % all_mean)
-	
-	yearly = yearly.reindex(year_range(input_df.index[0].year, input_df.index[-1].year, False))
-	
-	if patch_ref_range is not None :
+			yearly /= min_count
+		
+		all_mean = np.nanmean(yearly.values)
+		#print('all mean %g' % all_mean)
+		
+		yearly = yearly.reindex(year_range(input_df.index[0].year, input_df.index[-1].year, False))
+		
+		
+		#if dest_name=='Potential evapotranspiration' : 
+		#	print(yearly)
+		
 		ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=False)
 		ref_val = np.nanmean([yearly[ref_date] for ref_date in ref_dates])
 		
@@ -72,38 +81,42 @@ def add_ts(input_df, source, dest_name, aggr_method='mean', patch_ref_range = No
 		#TODO: Provide different methods for filling in holes
 		yearly = yearly.interpolate(limit_area=None, limit_direction='both')
 		#print(yearly)
-	
-	input_df[dest_name] = np.zeros(len(input_df.index))
-	for index, row in input_df.iterrows() :
-		if index in monthly.index :
-			input_df.loc[index, dest_name] = monthly[index]
-		else :
-			yr_val = yearly[pd.to_datetime('%s-1-1' % index.year, yearfirst=True)]
-			m_val  = distr[index.month-1]
-			if aggr_method == 'sum' :
-				input_df.loc[index, dest_name] = yr_val * m_val
-			elif aggr_method == 'mean' :
-				input_df.loc[index, dest_name] = m_val + yr_val - all_mean
+		
+		#input_df[dest_name] = np.zeros(len(input_df.index))
+		
+		for index, row in input_df.iterrows() :
+			if index not in monthly.index :
+				yr_val = yearly[pd.to_datetime('%s-1-1' % index.year, yearfirst=True)]
+				m_val  = distr[index.month-1]
+				if aggr_method == 'sum' :
+					input_df.loc[index, dest_name] = yr_val * m_val
+				elif aggr_method == 'mean' :
+					input_df.loc[index, dest_name] = m_val + yr_val - all_mean
 	
 
-def add_precip_ts(input_df, source, patch_ref_range=None) :#, source_is_mm=True) :
-	add_ts(input_df, source, 'Precipitation', 'sum', patch_ref_range)
+def add_precip_ts(input_df, source, patch_ref_range=None, source_freq='D') :#, source_is_mm=True) :
+	add_ts(input_df, source, 'Precipitation', 'sum', patch_ref_range, source_freq)
 	#if source_is_mm : input_df['Precipitation'] *= 1e-3     #NOTE MAGIC wants this in m/month instead of mm/month
 	
 
-def add_air_temperature_ts(input_df, source, patch_ref_range=None) :
-	add_ts(input_df, source, 'Air temperature', 'mean', patch_ref_range)
+def add_air_temperature_ts(input_df, source, patch_ref_range=None, source_freq='D') :
+	add_ts(input_df, source, 'Air temperature', 'mean', patch_ref_range, source_freq)
 	
-def add_runoff_ts(input_df, source) :
-	add_ts(input_df, source, 'Runoff', 'sum', patch_ref_range=None)
+def add_runoff_ts(input_df, source, source_freq='D', initial_value = None) :
+	add_ts(input_df, source, 'Runoff', 'sum', patch_ref_range=None, source_freq=source_freq)
+	if initial_value is not None :
+		input_df['Runoff'].values[0] = initial_value
+	
 	#TODO: Re-scale in case it is given in m3/s or something like that.
 	
+def add_pet_ts(input_df, source, patch_ref_range=None, source_freq='D') :
+	add_ts(input_df, source, 'Potential evapotranspiration', 'mean', patch_ref_range, source_freq)
 	
 def add_deposition_ts(
 	input_df, source_df, runoff_df, source_is_mg_l=True, runoff_is_mg_l=True, n_dep_given_as_n=True, s_dep_given_as_s=True,
 	sea_salt_ref='Cl', sea_salt_ref_range=None, 
 	patch_scale=None, patch_ref_range=(1989,1992), 
-	so4_weathering=0.0, ca_excess_weight=0.5, ca_ref_range=None, n_dry_deposition_factor=1.0) :
+	so4_weathering=0.0, ca_excess_weight=0.5, ca_ref_range=None, n_dry_deposition_factor=1.0, alt_runoff = None) :
 	'''
 	input_df  : The dataframe you want to write the inputs to. It must already have a 'Precipitation' and a 'Runoff' column
 	source_df : A date-indexed dataframe with observed concentrations in precipitation, with columns ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F']   F is optional
@@ -190,10 +203,13 @@ def add_deposition_ts(
 	
 	#print(obs_cl_dep.resample('AS').sum())
 	
+	Q = input_df['Runoff']*1e-3        # Convert mm to m
+	if alt_runoff is not None :
+		Q = alt_runoff['Runoff']*1e-3
 	
 	#TODO: This is probably correct, because we can't assume the sea salt ref runs straight through??
 	obs_cl_runoff_conc = get_converted_conc(runoff_df2, 'Cl', runoff_is_mg_l)
-	obs_cl_runoff = obs_cl_runoff_conc * input_df['Runoff'] * 1e-3             #TODO: Measured in mm or m?
+	obs_cl_runoff = obs_cl_runoff_conc * Q            
 	
 	sea_salt_factor = np.sum(obs_cl_runoff[cl_range].values) / np.sum(obs_cl_dep[cl_range].values)
 	
@@ -207,7 +223,7 @@ def add_deposition_ts(
 	obs_so4_dep = obs_so4_conc * input_df['Precipitation'] * 1e-3
 	
 	obs_so4_runoff_conc = get_converted_conc(runoff_df2, 'SO4', runoff_is_mg_l)
-	obs_so4_runoff = obs_so4_runoff_conc * input_df['Runoff'] * 1e-3
+	obs_so4_runoff = obs_so4_runoff_conc * Q
 	
 	#print(input_df['Runoff'][cl_range])
 	#print(obs_so4_runoff)
@@ -277,7 +293,7 @@ def add_deposition_ts(
 		if element not in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'H+', 'pH'] : continue
 		if np.isnan(runoff_df[element]).all() : continue
 		
-		input_df['Observed runoff conc %s' % element] = runoff_df[element]
+		input_df['Observed runoff conc %s' % element] = get_converted_conc(runoff_df, element, runoff_is_mg_l) #runoff_df[element]
 	
 	
 	
@@ -298,12 +314,14 @@ def add_single_deposition_ts(input_df, source, nonmarine=None, element_name='Cl'
 		patch_offset = 0.0
 		scale_val = np.nanmean(source[ref_dates])
 	
+	if element_name == 'SO4' : print('scale for %s is : %f' % (element_name, scale_val))
 	
 	if patch_scale is not None :
 		patch = patch_offset + patch_scale * scale_val
 	
 		for index, val in source.iteritems() :
 			if np.isnan(val) and (index in patch.index) :
+				#print('patching %s with %f at %s' % (element_name, patch[index], index))
 				source[index] = patch[index]
 	else :
 		#NOTE: This makes everything before const. equal to this value when we later interpolate
@@ -313,7 +331,8 @@ def add_single_deposition_ts(input_df, source, nonmarine=None, element_name='Cl'
 			
 	source = source.interpolate(limit_area=None, limit_direction='both')
 	
-	input_df['Total %s deposition' % element_name] = source * input_df['Precipitation'] * 1e-3
+	#input_df['Total %s deposition' % element_name] = source * input_df['Precipitation'] * 1e-3
+	input_df['%s conc in precipitation' % element_name] = source
 
 	
 def get_emep_deposition_scales() :
@@ -349,23 +368,15 @@ def plot_inputs(input_df) :
 	
 def write_as_input_file(input_df, filename) :
 	
+	type = os.path.splitext(filename)[1]
+	if type not in ['.dat', '.xlsx'] :
+		raise Exception('Unsupported file extension %s. Only dat and xlsx are supported.' % type)
+	
 	try :
 		os.makedirs(os.path.dirname(filename), exist_ok=True)
 	except :
 		#Do nothing. We expect a failure if there is no directory in the path name
 		dum=0
-		
-	of = open(filename, 'w')
-	
-	of.write('start_date: %s\n' % pd.to_datetime(input_df.index.values[0]).date())
-	of.write('end_date: %s\n' % pd.to_datetime(input_df.index.values[-1]).date())
-	
-	of.write('\n')
-	
-	
-	accepted = ['Air temperature', 'Precipitation', 'Runoff',
-		'Total Ca deposition', 'Total Mg deposition', 'Total Na deposition', 'Total K deposition', 'Total NH4 deposition', 'Total SO4 deposition', 'Total Cl deposition', 'Total NO3 deposition', 'Total F deposition',
-		]
 		
 	def get_unit(name) :
 		units = {
@@ -377,31 +388,61 @@ def write_as_input_file(input_df, filename) :
 				return units[key]
 		return None
 	
-	additional = []
-	for col in input_df :
-		if col not in accepted : additional.append(col)
+	accepted_met = ['Air temperature', 'Precipitation', 'Runoff', 'Potential evapotranspiration']
+	accepted_dep = (['%s conc in precipitation' % elem for elem in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'PO4']])
 	
-	if len(additional) > 0 :
-		of.write('additional_timeseries:\n')
-		for col in additional :
-			of.write('"%s"' % col)
-			unit = get_unit(col)
-			if unit is not None :
-				of.write(' unit "%s"' % unit)
+	accepted = accepted_met + accepted_dep
+	
+	if type == '.dat' :
+		of = open(filename, 'w')
+		
+		of.write('start_date: %s\n' % pd.to_datetime(input_df.index.values[0]).date())
+		of.write('end_date: %s\n' % pd.to_datetime(input_df.index.values[-1]).date())
+		
+		of.write('\n')	
+		
+		additional = []
+		for col in input_df :
+			if col not in accepted : additional.append(col)
+		
+		if len(additional) > 0 :
+			of.write('additional_timeseries:\n')
+			for col in additional :
+				of.write('"%s"' % col)
+				unit = get_unit(col)
+				if unit is not None :
+					of.write(' unit "%s"' % unit)
+				of.write('\n')
 			of.write('\n')
-		of.write('\n')
-	
-	of.write('inputs:\n')
-	
-	for ts in input_df :
-		of.write('"%s" :\n' % ts)
-		for index, row in input_df.iterrows() :
-			val = row[ts]
-			if not np.isnan(val) :
-				of.write('%s\t%g\n' % (index.date(), val))
-		of.write('\n\n\n')
-			
-	of.close()
+		
+		of.write('inputs:\n')
+		
+		for ts in input_df :
+			of.write('"%s" :\n' % ts)
+			for index, row in input_df.iterrows() :
+				val = row[ts]
+				if not np.isnan(val) :
+					of.write('%s\t%g\n' % (index.date(), val))
+			of.write('\n\n\n')
+				
+		of.close()
+	elif type == '.xlsx' :
+		df = input_df.copy()
+		df.index = df.index.strftime('%Y-%m-%d') # We have to do this because excel does not like date-formatted things earlier than 1900-1-1
+		
+		met_cols = [met for met in accepted_met if met in df.columns]
+		dep_cols = [dep for dep in accepted_dep if dep in df.columns]
+		rest_cols = [col for col in df.columns if (col not in accepted_met and col not in accepted_dep)]
+		
+		#print(met_cols)
+		#print(dep_cols)
+		with pd.ExcelWriter(filename, 'xlsxwriter') as wr :
+			df.to_excel(wr, 'Meteorological', columns=met_cols)
+			df.to_excel(wr, 'Deposition', columns=dep_cols)
+			#df.to_excel(wr, 'Observed', columns=rest_cols)
+			df[rest_cols].dropna(how='all').to_excel(wr, 'Observed') #Don't write empty rows for this sheet.
+			#wr.save()
+		
 	
 	
 	
