@@ -3,7 +3,7 @@
 static void
 AddSimplyCModel(mobius_model *Model)
 {
-	BeginModule(Model, "SimplyC", "0.0.1");
+	BeginModule(Model, "SimplyC", "0.0.2");
 	
 	// Inputs
 	auto SO4Deposition = RegisterInput(Model, "SO4 deposition");
@@ -38,9 +38,13 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilTemperatureDOCLinearCoefficient    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 20.0, "", "kT");
 	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0, "", "kSO4");
 	
-	auto DeepSoilDOCConstant                    = RegisterParameterBool(Model, CarbonParamsGlobal, "Deep soil/groundwater DOC conc. is constant", true);
+	auto DeepSoilDOCType                        = RegisterParameterEnum(Model, CarbonParamsGlobal, "Deep soil/groundwater DOC computation", {"soil_avg", "constant", "mass_balance"}, "soil_avg", "soil_avg: conc in deep soil is avg. of soil runoff, const: constant conc. mass_balance: DOC mass balance is computed, with a decay half life.");
+	auto SoilAvg = EnumValue(Model, DeepSoilDOCType, "soil_avg");
+	auto Const   = EnumValue(Model, DeepSoilDOCType, "constant");
+	auto MassBal = EnumValue(Model, DeepSoilDOCType, "mass_balance");
+	
 	auto DeepSoilDOCConcentration               = RegisterParameterDouble(Model, CarbonParamsGlobal, "Deep soil/groundwater DOC concentration", MgPerL, 5.0, 0.0, 70.0, "Only used if deep soil conc. is constant", "DOCgw");
-	auto DeepSoilDOCHalfLife                    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Deep soil/groundwater DOC half life", Days, 70.0, 0.5, 1000.0, "Only used if deep soil conc. is not constant", "DOChlgw");
+	auto DeepSoilDOCHalfLife                    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Deep soil/groundwater DOC half life", Days, 70.0, 0.5, 1000.0, "Only used if deep soil conc. is mass_balance", "DOChlgw");
 
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
@@ -58,6 +62,7 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilWaterVolume 			 = GetEquationHandle(Model, "Soil water volume");
 	auto QuickFlow                   = GetEquationHandle(Model, "Quick flow");
 	auto SoilWaterFlow   		     = GetEquationHandle(Model, "Soil water flow");
+	auto TotalSoilWaterFlow          = GetEquationHandle(Model, "Landuse weighted soil water flow");
 	auto GroundwaterFlow             = GetEquationHandle(Model, "Groundwater flow");
 	auto GroundwaterVolume           = GetEquationHandle(Model, "Groundwater volume");
 	auto ReachVolume                 = GetEquationHandle(Model, "Reach volume");
@@ -91,7 +96,7 @@ AddSimplyCModel(mobius_model *Model)
 	SetInitialValue(Model, SoilWaterDOCMass, InitialSoilWaterDOCMass);
 
 	auto SoilWaterDOCConcentration              = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL, LandSolver);
-	auto QuickFlowDOCFluxToReach                = RegisterEquation(Model, "Quick flow DOC flux scaled by land class area", KgPerKm2PerDay, LandSolver);
+	auto QuickFlowDOCFluxToReach                = RegisterEquation(Model, "Quick flow DOC flux", KgPerKm2PerDay, LandSolver); 
 	
 	auto SoilWaterDOCFlux = RegisterEquation(Model, "Soil water DOC flux", KgPerKm2PerDay, LandSolver);
 	
@@ -103,7 +108,7 @@ AddSimplyCModel(mobius_model *Model)
 
 	auto TotalSoilwaterDOCFlux                  = RegisterEquationCumulative(Model, "Soilwater DOC flux summed over landscape units", DailyMeanSoilwaterDOCFlux, LandscapeUnits, LandUseProportions);
 	auto TotalQuickFlowDOCFlux                  = RegisterEquationCumulative(Model, "Quick flow DOC flux to reach summed over landscape units", QuickFlowDOCFluxToReach, LandscapeUnits, LandUseProportions);
-	
+	auto AvgSoilWaterDOCConcentration           = RegisterEquationCumulative(Model, "Avg. soil water DOC concentration", SoilWaterDOCConcentration, LandscapeUnits, LandUseProportions);
 	
 	auto GroundwaterDOCLoss                     = RegisterEquation(Model, "Groundwater DOC loss", KgPerKm2PerDay, ReachSolver);
 	auto GroundwaterDOCConcentration            = RegisterEquation(Model, "Groundwater DOC concentration", MgPerL, ReachSolver);
@@ -206,7 +211,7 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, GroundwaterDOCMass,
 		double val = RESULT(TotalSoilwaterDOCFlux)*PARAMETER(BaseflowIndex) - RESULT(GroundwaterDOCLoss) - RESULT(GroundwaterDOCFlux);
-		if(PARAMETER(DeepSoilDOCConstant)) return 0.0;
+		if(PARAMETER(DeepSoilDOCType) != MassBal) return 0.0;
 		return val;
 	)
 	
@@ -222,10 +227,14 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, GroundwaterDOCConcentration,
-		double computed = SafeDivide(RESULT(GroundwaterDOCMass), RESULT(GroundwaterVolume)); // kg / (mm * km2) -> mg/l has conversion factor of 1
+		double massbal  = SafeDivide(RESULT(GroundwaterDOCMass), RESULT(GroundwaterVolume)); // kg / (mm * km2) -> mg/l has conversion factor of 1
 		double constant = PARAMETER(DeepSoilDOCConcentration);
-		if(PARAMETER(DeepSoilDOCConstant)) return constant;
-		return computed;
+		double soilavg  = RESULT(AvgSoilWaterDOCConcentration);
+		
+		auto type = PARAMETER(DeepSoilDOCType);
+		if(type == Const) return constant;
+		else if(type == MassBal) return massbal;
+		return soilavg;
 	)
 	
 	EQUATION(Model, StreamDOCInputFromUpstream,
