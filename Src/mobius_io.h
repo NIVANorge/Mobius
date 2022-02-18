@@ -517,27 +517,12 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 	}
 }
 
-
-static void
-FillConstantInputValues(mobius_data_set *DataSet, double *Base, double Value, s64 BeginTimestep, s64 EndTimestep)
-{
-	if(BeginTimestep < 0) BeginTimestep = 0;
-	if(EndTimestep >= (s64)DataSet->InputDataTimesteps) EndTimestep = (s64)DataSet->InputDataTimesteps - 1;
-	
-	size_t Stride = DataSet->InputStorageStructure.TotalCount;
-	double *WriteTo = Base + Stride*BeginTimestep;
-	for(s64 Timestep = BeginTimestep; Timestep <= EndTimestep; ++Timestep)
-	{
-		*WriteTo = Value;
-		WriteTo += Stride;
-	}
-}
-
 enum interpolation_type
 {
 	InterpolationType_None = 0,
 	InterpolationType_Step,
 	InterpolationType_Linear,
+	InterpolationType_Spline,
 };
 
 struct input_series_flags
@@ -584,6 +569,10 @@ struct mobius_input_reader
 	datetime InputStartDate;
 	s64      InputDataTimesteps;
 	std::function<void(void)> ErrorCleanup;
+	
+	// For spline interpolation -- not yet implemented
+	//std::vector<datetime> XVals;
+	//std::vector<double> YVals;
 	
 	//Used if we do interpolation:
 	datetime PrevDate;
@@ -733,27 +722,34 @@ struct mobius_input_reader
 			FillConstantRange(FirstDate, LastDate, FirstValue);
 			return;
 		}
-		
-		expanded_datetime Date(FirstDate, TimestepSize);
-		
-		double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
-		double YRange = LastValue - FirstValue;
-		
-		s64 Step     = FindTimestep(InputStartDate, FirstDate, TimestepSize);
-		s64 LastStep = FindTimestep(InputStartDate, LastDate,  TimestepSize);
-		LastStep = std::min(LastStep, InputDataTimesteps-1);
-		
-		while(Step <= LastStep)
+		else if(Type == InterpolationType_Linear)
 		{
-			if(Step >= 0)
-			{
-				double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
-				double Value = FirstValue + XX*YRange;
-				AddValue(Step, Value);
-			}
+			expanded_datetime Date(FirstDate, TimestepSize);
 			
-			Date.Advance();
-			++Step;
+			double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
+			double YRange = LastValue - FirstValue;
+			
+			s64 Step     = FindTimestep(InputStartDate, FirstDate, TimestepSize);
+			s64 LastStep = FindTimestep(InputStartDate, LastDate,  TimestepSize);
+			LastStep = std::min(LastStep, InputDataTimesteps-1);
+			
+			while(Step <= LastStep)
+			{
+				if(Step >= 0)
+				{
+					double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
+					double Value = FirstValue + XX*YRange;
+					AddValue(Step, Value);
+				}
+				
+				Date.Advance();
+				++Step;
+			}
+		}
+		else
+		{
+			ErrorCleanup();
+			FatalError("ERROR(internal): Got unimplemented interpolation type in input reading.\n");
 		}
 	}
 };

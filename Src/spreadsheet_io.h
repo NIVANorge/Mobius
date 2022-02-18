@@ -967,4 +967,11 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 	OLECloseSpreadsheet(&Handles);
 }
 
+/*
+static void
+WriteInputsToSpreadsheet(mobius_data_set *DataSet)
+{
+}
+*/
+
 #endif //_WIN32
