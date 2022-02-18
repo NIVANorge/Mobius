@@ -3,7 +3,7 @@
 static void
 AddSimplyCModel(mobius_model *Model)
 {
-	BeginModule(Model, "SimplyC", "test_03");
+	BeginModule(Model, "SimplyC", "0.0.1");
 	
 	// Inputs
 	auto SO4Deposition = RegisterInput(Model, "SO4 deposition");
