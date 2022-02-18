@@ -9,10 +9,10 @@
 #include "../../Modules/PET.h"
           
 //#include "../../Modules/SimplyQ.h"
-#include "../../Modules/Simply/SimplyQ_Langtjern.h"
 
-
-#include "../../Modules/Simply/Alternate_versions_of_simplyC/SimplyC_DOC_creation_rate.h"
+#define SIMPLYQ_GROUNDWATER
+#include "../../Modules/Simply/SimplyQ.h"
+#include "../../Modules/Simply/SimplyC.h"
 
 #include "../../Modules/SimplySoilTemperature.h"
 

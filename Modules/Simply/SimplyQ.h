@@ -160,15 +160,15 @@ New to version 0.4.2:
 	
 	// Make solvers
 	
-	auto LandSolver = RegisterSolver(Model, "SimplyQ land solver", 0.01 /* 1.0/20000.0 */, IncaDascru);
-	auto ReachSolver = RegisterSolver(Model, "SimplyQ reach solver", 0.1 /* 1.0/20000.0 */, IncaDascru);
+	auto LandSolver  = RegisterSolver(Model, "SimplyQ land solver", 0.01, IncaDascru);
+	auto ReachSolver = RegisterSolver(Model, "SimplyQ reach solver", 0.1, IncaDascru);
 
 	// Soil water equations
 	
-	auto SoilWaterFlow = RegisterEquation(Model, "Soil water flow", MmPerDay, LandSolver); // Total flow out of soil box (including that which then goes to GW)
-	auto Evapotranspiration = RegisterEquation(Model, "Evapotranspiration", MmPerDay, LandSolver);
+	auto SoilWaterFlow          = RegisterEquation(Model, "Soil water flow", MmPerDay, LandSolver); // Total flow out of soil box (including that which then goes to GW)
+	auto Evapotranspiration     = RegisterEquation(Model, "Evapotranspiration", MmPerDay, LandSolver);
 
-	auto SoilWaterVolume = RegisterEquationODE(Model, "Soil water volume", Mm, LandSolver);
+	auto SoilWaterVolume        = RegisterEquationODE(Model, "Soil water volume", Mm, LandSolver);
 	SetInitialValue(Model, SoilWaterVolume, SoilFieldCapacity);
 	
 	auto DailyMeanSoilWaterFlow = RegisterEquationODE(Model, "Daily mean soil water flow", MmPerDay, LandSolver);
