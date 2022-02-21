@@ -6,6 +6,7 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/PET.h"
+#include "../../Modules/Simply/SimplySnow.h"
 //#define SIMPLYQ_GROUNDWATER    //NOTE: #define this before the inclusion of the SimplyQ.h file if you want SimplyQ to simulate groundwater
 								 //Comment out this line if you don't want groundwater           
 #include "../../Modules/Simply/SimplyQ.h"
@@ -23,6 +24,7 @@ DllBuildModel()
 	mobius_model *Model = BeginModelDefinition("SimplyC");
 	
 	AddThornthwaitePETModule(Model);
+	AddSimplySnowModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel2(Model);
 	AddSimplyCModel(Model);

@@ -11,6 +11,7 @@
 #define SIMPLYQ_GROUNDWATER    //NOTE: #defining this before the inclusion of the SimplyQ.h file turns on groundwater in SimplyQ.
 
 #include "../../Modules/PET.h"
+#include "../../Modules/Simply/SimplySnow.h"
 #include "../../Modules/Simply/SimplyQ.h"
 
 
@@ -20,6 +21,7 @@ DllBuildModel()
 	mobius_model *Model = BeginModelDefinition("SimplyQ", true);
 	
 	//AddThornthwaitePETModule(Model);
+	AddSimplySnowModule(Model);
 	AddDegreeDayPETModule(Model);
 	AddSimplyHydrologyModule(Model);
 	

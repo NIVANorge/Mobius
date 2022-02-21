@@ -7,6 +7,7 @@
 #include "../../../mobius_dll.h"
 
 #include "../../../Modules/PET.h"
+#include "../../../Modules/Simply/SimplySnow.h"
 
 #define SIMPLYQ_GROUNDWATER
 #include "../../../Modules/Simply/SimplyQ.h"
@@ -22,6 +23,7 @@ DllBuildModel()
 	mobius_model *Model = BeginModelDefinition("SimplyP", true);   //'true' signifies that we want an "End date" parameter instead of a "Timesteps" parameter
 	
 	AddThornthwaitePETModule(Model);
+	AddSimplySnowModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSimplySedimentModule(Model);
 	AddSimplyPModel(Model);

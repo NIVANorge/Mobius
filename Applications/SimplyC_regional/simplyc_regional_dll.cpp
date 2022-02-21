@@ -9,7 +9,7 @@
 #include "../../Modules/PET.h"
           
 //#include "../../Modules/SimplyQ.h"
-
+#include "../../Modules/Simply/SimplySnow.h"
 #define SIMPLYQ_GROUNDWATER
 #include "../../Modules/Simply/SimplyQ.h"
 #include "../../Modules/Simply/SimplyC.h"
@@ -24,6 +24,7 @@ DllBuildModel()
 	
 	AddMaxSolarRadiationModule(Model);
 	AddPriestleyTaylorPETModule2(Model);
+	AddSimplySnowModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyCModel(Model);

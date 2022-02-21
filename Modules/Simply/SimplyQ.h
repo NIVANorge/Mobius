@@ -42,29 +42,20 @@ New to version 0.4.2:
 - Removed minimum groundwater flow parameter, to maintain mass balance
 )"""");
 	
-	auto Degrees           = RegisterUnit(Model, "°C");
 	auto Dimensionless     = RegisterUnit(Model);
-	auto Mm                = RegisterUnit(Model, "mm");
-	auto MmPerDegreePerDay = RegisterUnit(Model, "mm/°C/day");
 	auto Days              = RegisterUnit(Model, "days");
+	auto Mm                = RegisterUnit(Model, "mm");
 	auto MmPerDay          = RegisterUnit(Model, "mm/day");
 	auto M3                = RegisterUnit(Model, "m^3");
 	auto M3PerSecond       = RegisterUnit(Model, "m^3/s");
 	auto Km2               = RegisterUnit(Model, "km^2");
 	auto M                 = RegisterUnit(Model, "m");
-	auto DegreesCelsius    = RegisterUnit(Model, "°C");
 	auto MPerM			   = RegisterUnit(Model, "m/m");
 	auto SecondsPerCubeRouteM	= RegisterUnit(Model, "s/(m^1/3)");
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
 	auto LandscapeUnits = RegisterIndexSet(Model, "Landscape units");
-	
-	// Global snow parameters
-	auto Snow = RegisterParameterGroup(Model, "Snow");
-	
-	auto InitialSnowDepth        = RegisterParameterDouble(Model, Snow, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
-	auto DegreeDayFactorSnowmelt = RegisterParameterDouble(Model, Snow, "Degree-day factor for snowmelt", MmPerDegreePerDay, 2.74, 0.0, 5.0, "", "DDFmelt");
 	
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
@@ -99,49 +90,12 @@ New to version 0.4.2:
 	
 	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0, "Must sum to 1 over the landscape units for each given reach.", "lu");
 	
-	// Inputs
-	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);
-	auto AirTemperature = RegisterInput(Model, "Air temperature", Degrees);
 	
 	// Start equations
 	
-	// Non-ODE equations
-	auto PrecipitationFallingAsSnow = RegisterEquation(Model, "Precipitation falling as snow", MmPerDay);
-	auto PrecipitationFallingAsRain = RegisterEquation(Model, "Precipitation falling as rain", MmPerDay);
-	auto PotentialDailySnowmelt     = RegisterEquation(Model, "Potential daily snowmelt", MmPerDay);
-	auto SnowMelt                   = RegisterEquation(Model, "Snow melt", MmPerDay);
-	auto SnowDepth                  = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
-	SetInitialValue(Model, SnowDepth, InitialSnowDepth);
-	auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
-	
-	EQUATION(Model, PrecipitationFallingAsSnow,
-		double precip = INPUT(Precipitation);
-		return (INPUT(AirTemperature) < 0) ? precip : 0.0;
-	)
-	
-	EQUATION(Model, PrecipitationFallingAsRain,
-		double precip = INPUT(Precipitation);
-		return (INPUT(AirTemperature) > 0) ? precip : 0.0;
-	)
-	
-	EQUATION(Model, PotentialDailySnowmelt,
-		return Max(0.0, PARAMETER(DegreeDayFactorSnowmelt) * INPUT(AirTemperature));
-	)
-	
-	EQUATION(Model, SnowMelt,
-		return Min(LAST_RESULT(SnowDepth), RESULT(PotentialDailySnowmelt));
-	)
-	
-	EQUATION(Model, SnowDepth,
-		return LAST_RESULT(SnowDepth) + RESULT(PrecipitationFallingAsSnow) - RESULT(SnowMelt);
-	)
-	
-	EQUATION(Model, HydrologicalInputToSoilBox,
-		return RESULT(SnowMelt) + RESULT(PrecipitationFallingAsRain);
-	)
-	
-	//auto PotentialEvapotranspiration = RegisterInput(Model, "Potential evapotranspiration", MmPerDay);
-	
+	// This one is computed in the snow module, i.e. SimplySnow. Has to be added to the model before SimplyQ.
+	auto HydrologicalInputToSoilBox = GetEquationHandle(Model, "Hydrological input to soil box");
+
 	//Before adding SimplyQ to a model, add one of the PET modules from PET.h . It will provide a "Potential evapotranspiration" timeseries.
 	auto PotentialEvapotranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
 	
