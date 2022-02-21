@@ -545,6 +545,11 @@ PutFlag(input_series_flags *Flags, token_string Str)
 		Flags->InterpolationType = InterpolationType_Step;
 		return true;
 	}
+	else if(Str.Equals("spline_interpolate"))
+	{
+		Flags->InterpolationType = InterpolationType_Spline;
+		return true;
+	}
 	else if(Str.Equals("inside"))
 	{
 		Flags->InterpolateInsideOnly = true;
@@ -570,19 +575,15 @@ struct mobius_input_reader
 	s64      InputDataTimesteps;
 	std::function<void(void)> ErrorCleanup;
 	
-	// For spline interpolation -- not yet implemented
-	//std::vector<datetime> XVals;
-	//std::vector<double> YVals;
+	// For interpolation -- store values, then fill at end time.
+	std::vector<datetime> XVals;
+	std::vector<double>   YVals;
 	
-	//Used if we do interpolation:
-	datetime PrevDate;
-	double PrevValue;
-	bool AtBeginning;
 	
 	mobius_input_reader(double *InputBase, size_t StepStride, input_series_flags Flags, timestep_size TimestepSize, 
 		const std::vector<size_t> &Offsets, datetime InputStartDate, s64 InputDataTimesteps, const std::function<void(void)> &ErrorCleanup) 
 		: InputBase(InputBase), StepStride(StepStride), Flags(Flags), TimestepSize(TimestepSize), Offsets(Offsets), InputStartDate(InputStartDate), InputDataTimesteps(InputDataTimesteps),
-		  PrevDate(InputStartDate), PrevValue(0.0), AtBeginning(true), ErrorCleanup(ErrorCleanup)
+		  ErrorCleanup(ErrorCleanup)
 	{
 	}
 	
@@ -609,32 +610,39 @@ struct mobius_input_reader
 		{
 			if(!std::isfinite(Value)) return;
 			
-			if(AtBeginning)
-			{
-				PrevValue = Value;
-				if(Date < PrevDate)
-				{
-					//NOTE: The first given date is before the start of the input series
-					PrevDate = Date;
-					AtBeginning = false;
-					return;
-				}
-			}
-			
-			if(Date < PrevDate)
+			if(XVals.size() > 0 && Date <= XVals[XVals.size()-1])
 			{
 				ErrorCleanup();
-				FatalError("In interpolation mode, the dates have to be sequential.\n");
-			}
-
-			if(!AtBeginning || !Flags.InterpolateInsideOnly)    //If we interpolate inside given values only, we don't fill any values at the beginning
-			{
-				InterpolateValues(PrevDate, Date, PrevValue, Value, Flags.InterpolationType);
+				FatalError("In interpolation mode, the dates have to be in sequential order and non-overlapping.\n");
 			}
 			
-			PrevValue   = Value;
-			PrevDate    = Date;
-			AtBeginning = false;
+			/*
+			//NOTE: For spline interpolation, eliminate colinear points
+			if(Flags.InterpolationType == InterpolationType_Spline)
+			{
+				if(XVals.size() > 2)
+				{
+					int N = XVals.size()-1;
+					double X0 = (double)XVals[N-1].SecondsSinceEpoch - (double)XVals[N-2].SecondsSinceEpoch;
+					double X1 = (double)XVals[N].SecondsSinceEpoch - (double)XVals[N-1].SecondsSinceEpoch;
+					double X2 = (double)Date.SecondsSinceEpoch - (double)XVals[N].SecondsSinceEpoch;
+					double Y0 = YVals[N-1] - YVals[N-2];
+					double Y1 = YVals[N] - YVals[N-1];
+					double Y2 = Value - YVals[N];
+					
+					double Delta = (Y2-Y1)*(X1-X0) - (Y1-Y0)*(X2-X1);
+					if(std::abs(Delta) < 1e-12)
+					{
+						//WarningPrint("WARNING: Interpolation: Culled point due to colinearity\n");
+						XVals.pop_back();
+						YVals.pop_back();
+					}
+				}
+			}
+			*/
+			
+			XVals.push_back(Date);
+			YVals.push_back(Value);
 		}
 	}
 	
@@ -671,13 +679,8 @@ struct mobius_input_reader
 	
 	void Finish()
 	{
-		if((Flags.InterpolationType != InterpolationType_None) && !Flags.InterpolateInsideOnly)
-		{
-			//NOTE: Fill the rest of the time series with the last value read
-			s64 FirstStep = FindTimestep(InputStartDate, PrevDate, TimestepSize);
-			s64 LastStep = InputDataTimesteps-1;
-			FillConstantRange(FirstStep, LastStep, PrevValue);
-		}
+		if(Flags.InterpolationType != InterpolationType_None)
+			FillInterpolation();
 		
 		if(Flags.RepeatYearly)
 		{
@@ -715,35 +718,124 @@ struct mobius_input_reader
 		}
 	}
 	
-	void InterpolateValues(datetime FirstDate, datetime LastDate, double FirstValue, double LastValue, interpolation_type Type)
+	void FillInterpolation()
 	{
+		if(!Flags.InterpolateInsideOnly)
+		{
+			// Tell it to fill constant values from first input date to first given date
+			if(XVals[0] > InputStartDate)
+			{
+				XVals.insert(XVals.begin(), InputStartDate);
+				YVals.insert(YVals.begin(), YVals[0]);
+			}
+			
+			// Similarly fill in at the end
+			s64 EndStep = FindTimestep(InputStartDate, XVals[XVals.size()-1], TimestepSize);
+			if(EndStep < InputDataTimesteps)
+			{
+				expanded_datetime InputEnd(InputStartDate, TimestepSize);
+				for(s64 Step = 0; Step < InputDataTimesteps; ++Step) InputEnd.Advance();    //TODO: Has to be a better way to do it than this!!
+				
+				XVals.push_back(InputEnd.DateTime);
+				YVals.push_back(YVals[YVals.size()-1]);
+			}
+		}
+		
+		interpolation_type Type = Flags.InterpolationType;
+		
+		if(Type == InterpolationType_Spline && XVals.size() <= 2)
+			Type = InterpolationType_Linear;
+		
 		if(Type == InterpolationType_Step)
 		{
-			FillConstantRange(FirstDate, LastDate, FirstValue);
-			return;
+			for(int Pt = 0; Pt < XVals.size()-1; ++Pt)
+				FillConstantRange(XVals[Pt], XVals[Pt+1], YVals[Pt]);
 		}
 		else if(Type == InterpolationType_Linear)
 		{
-			expanded_datetime Date(FirstDate, TimestepSize);
-			
-			double XRange = (double)(LastDate.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch);
-			double YRange = LastValue - FirstValue;
-			
-			s64 Step     = FindTimestep(InputStartDate, FirstDate, TimestepSize);
-			s64 LastStep = FindTimestep(InputStartDate, LastDate,  TimestepSize);
-			LastStep = std::min(LastStep, InputDataTimesteps-1);
-			
-			while(Step <= LastStep)
+			for(int Pt = 0; Pt < XVals.size()-1; ++Pt)
 			{
-				if(Step >= 0)
-				{
-					double XX = (double)(Date.DateTime.SecondsSinceEpoch - FirstDate.SecondsSinceEpoch) / XRange;
-					double Value = FirstValue + XX*YRange;
-					AddValue(Step, Value);
-				}
+				expanded_datetime Date(XVals[Pt], TimestepSize);
+			
+				double XRange = (double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch);
 				
-				Date.Advance();
-				++Step;
+				s64 Step     = FindTimestep(InputStartDate, XVals[Pt],   TimestepSize);
+				s64 LastStep = FindTimestep(InputStartDate, XVals[Pt+1], TimestepSize);
+				LastStep = std::min(LastStep, InputDataTimesteps-1);
+				
+				while(Step <= LastStep)
+				{
+					if(Step >= 0)
+					{
+						double TT = (double)(Date.DateTime.SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch) / XRange;
+						double YY     = TT*YVals[Pt+1] + (1.0 - TT)*YVals[Pt];
+						AddValue(Step, YY);
+					}
+					
+					Date.Advance();
+					++Step;
+				}
+			}
+		}
+		else if(Type == InterpolationType_Spline)
+		{
+			//TODO: It looks like the first derivatives are not always continuous, so the implementation may be broken :(
+			//TODO: We should allow the user to specify that the value should never be negative (or just have this as a default?)
+			
+			if(XVals.size() != YVals.size())
+			{
+				ErrorCleanup();
+				FatalError("Interpolation (internal error), not the same amount of x and y values");
+			}
+			
+			std::vector<double> BCol(XVals.size());
+			std::vector<double> XCol(XVals.size());
+			std::vector<double> Diag(XVals.size());
+			std::vector<double> OffDiag(XVals.size());
+			
+			for(int Pt = 1; Pt < XVals.size()-1; ++Pt)
+				Diag[Pt] = 2.0 * ((double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt-1].SecondsSinceEpoch));
+			for(int Pt = 0; Pt < XVals.size()-1; ++Pt)
+				OffDiag[Pt] = (double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch);
+			for(int Pt = 1; Pt < XVals.size()-1; ++Pt)
+				BCol[Pt] = 6.0*((YVals[Pt+1]-YVals[Pt])/OffDiag[Pt] - (YVals[Pt]-YVals[Pt-1])/OffDiag[Pt-1]);
+			XCol[0] = 0.0;
+			XCol[XVals.size()-1] = 0.0;
+			
+			for(int Pt = 1; Pt < XVals.size()-1; ++Pt)
+			{
+				BCol[Pt+1] = BCol[Pt+1] - BCol[Pt]*OffDiag[Pt]/Diag[Pt];
+				Diag[Pt+1] = Diag[Pt+1] - OffDiag[Pt]*OffDiag[Pt]/Diag[Pt];
+			}
+			for(int Pt = XVals.size()-2; Pt > 0; --Pt)
+				XCol[Pt] = (BCol[Pt] - OffDiag[Pt]*XCol[Pt+1])/Diag[Pt];
+			
+			for(int Pt = 0; Pt < XVals.size()-1; ++Pt)
+			{
+				expanded_datetime Date(XVals[Pt], TimestepSize);
+			
+				double XRange = (double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch);
+				
+				s64 Step     = FindTimestep(InputStartDate, XVals[Pt],   TimestepSize);
+				s64 LastStep = FindTimestep(InputStartDate, XVals[Pt+1], TimestepSize);
+				LastStep = std::min(LastStep, InputDataTimesteps-1);
+				
+				while(Step <= LastStep)
+				{
+					if(Step >= 0)
+					{
+						double TT = (double)(Date.DateTime.SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch) / XRange;
+						double OmT = 1.0 - TT;
+						double TCmT   = TT*TT*TT - TT;
+						double OmTCmT = OmT*OmT*OmT - OmT;
+						double YY     = TT*YVals[Pt+1] + OmT*YVals[Pt] + (1.0/6.0)*XRange*XRange*(TCmT*XCol[Pt+1] - OmTCmT*XCol[Pt]);
+						
+						AddValue(Step, YY);
+					}
+					
+					Date.Advance();
+					++Step;
+				}
 			}
 		}
 		else
@@ -751,6 +843,7 @@ struct mobius_input_reader
 			ErrorCleanup();
 			FatalError("ERROR(internal): Got unimplemented interpolation type in input reading.\n");
 		}
+		
 	}
 };
 
