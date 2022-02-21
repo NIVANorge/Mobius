@@ -782,6 +782,8 @@ struct mobius_input_reader
 			//TODO: It looks like the first derivatives are not always continuous, so the implementation may be broken :(
 			//TODO: We should allow the user to specify that the value should never be negative (or just have this as a default?)
 			
+			//NOTE: Implementation inspired by https://stackoverflow.com/questions/23258711/c-spline-interpolation-from-an-array-of-points
+			
 			if(XVals.size() != YVals.size())
 			{
 				ErrorCleanup();
