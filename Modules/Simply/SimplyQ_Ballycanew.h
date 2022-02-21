@@ -45,8 +45,8 @@ New to version 0.4.2:
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
-	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "Maximum value", "fquick");
-	auto FlowAtMaxQuickFlow      = RegisterParameterDouble(Model, Hydrology, "Flow level where quickflow reaches maximum", MmPerDay, 0.0, 0.0, 200.0, "Set this to 0 to have a constant quick flow proportion. Otherwise, quick flow scales to the combined input of rainfall and snow melt up to the given maximum.", "qquick");
+	//auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "Maximum value", "fquick");
+	auto FlowAtMaxQuickFlow      = RegisterParameterDouble(Model, Hydrology, "Quick flow rate inflection point", MmPerDay, 0.0, 0.0, 200.0, "Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.", "iquick");
 	auto QuickFlowDrynessLimit   = RegisterParameterDouble(Model, Hydrology, "Quick flow dryness limit", Dimensionless, 0.9, 0.0, 1.0, "At what fraction of field capacity quick flow stops", "lquick");
 	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 #ifdef SIMPLYQ_GROUNDWATER
@@ -119,14 +119,6 @@ New to version 0.4.2:
 		double dryness_factor = SCurveResponse(LAST_RESULT(SoilWaterVolume), PARAMETER(QuickFlowDrynessLimit)*PARAMETER(SoilFieldCapacity), PARAMETER(SoilFieldCapacity), 0.0, 1.0);
 		
 		return dryness_factor * flow * std::atan(flow/a)*2.0/Pi;
-		
-		
-		
-		/*
-		double proportion = SCurveResponse(flow, 0.0, PARAMETER(FlowAtMaxQuickFlow), 0.0, PARAMETER(ProportionToQuickFlow));
-		
-		return flow * proportion * dryness_factor; 
-		*/
 	)
 	
 	EQUATION(Model, Infiltration,

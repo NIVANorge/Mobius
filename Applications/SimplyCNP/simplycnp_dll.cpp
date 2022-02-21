@@ -8,7 +8,7 @@
 #include "../../Modules/Simply/SimplyQ.h"
 #include "../../Modules/Simply/SimplySed.h"
 #include "../../Modules/Simply/SimplyP.h"
-#include "../../Modules/Simply/Alternate_versions_of_simplyC/SimplyC_DOC_creation_rate.h"
+#include "../../Modules/Simply/SimplyC.h"
 #include "../../Modules/Simply/SimplyN.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
