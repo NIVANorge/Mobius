@@ -55,6 +55,9 @@ New to version 2.0:
 	auto GPerM2PerDay  = RegisterUnit(Model, "g/m2/day");
 	auto KgPerL        = RegisterUnit(Model, "kg/L");
 	auto MuGPerKg      = RegisterUnit(Model, "µg/kg");
+	auto VarUnit       = RegisterUnit(Model, "(variable)");
+	auto GPerKgDry     = RegisterUnit(Model, "g/kg(dry)");
+	auto GPerGTOC     = RegisterUnit(Model, "g/g(TOC)");
 	
 	
 	//TODO: Some of these could be parametrized
@@ -117,7 +120,7 @@ New to version 2.0:
 	auto SedSurfaceArea             = RegisterParameterDouble(Model, SedPars, "Sediment surface area", M2, 5e6, 0.0, 361.9e12, "Surface area covered by the sediments of this compartment");
 	auto SedHeight                  = RegisterParameterDouble(Model, SedPars, "Sediment effective height", M, 0.5, 0.0, 10.0, "Thickness of the sediment layer");
 	auto Porosity                   = RegisterParameterDouble(Model, SedPars, "Sediment porosity", Dimensionless, 0.86, 0.0, 1.0);
-	auto SedDensity                 = RegisterParameterDouble(Model, SedPars, "Sediment inorganic density", KgPerL, 2.6, 0.0, 10.0, "Mass density of dry material");
+	auto SedDensity                 = RegisterParameterDouble(Model, SedPars, "Sediment inorganic density", KgPerL, 2.6, 0.0, 10.0, "Mass density of dry inorganic material");
 	auto SedPOCVolumeFraction       = RegisterParameterDouble(Model, SedPars, "Sediment POC volume fraction", Dimensionless, 0.0825, 0.0, 0.2, "Fraction of solid sediments that is particulate organic carbon"); // f_POC
 	auto SedBCVolumeFraction        = RegisterParameterDouble(Model, SedPars, "Sediment BC volume fraction", Dimensionless, 0.01, 0.0, 0.1, "Fraction of solid sediments that is black carbon (soot)"); // f_BC
 	auto SedConcDOC                 = RegisterParameterDouble(Model, SedPars, "Sediment DOC concentration", MgPerM3, 78000.0, 0.0, 1e6, "Concentration in pore water");
@@ -162,8 +165,14 @@ New to version 2.0:
 	
 	
 	auto BackgroundAirConc          = RegisterParameterDouble(Model, InitAirConc, "Background atmospheric concentration", GPerM3, 0.0, 0.0, 1e8);
+	
 	auto InitialWaterConc           = RegisterParameterDouble(Model, InitCompConc, "Initial concentration in water", GPerM3, 0.0, 0.0, 1e8);
-	auto InitialSedConc             = RegisterParameterDouble(Model, InitCompConc, "Initial concentration in sediments", GPerM3, 0.0, 0.0, 1e8);
+	auto InitialSedConc             = RegisterParameterDouble(Model, InitCompConc, "Initial concentration in sediments", VarUnit, 0.0, 0.0, 1e8);
+	auto SedConcType                = RegisterParameterEnum(Model, InitCompConc, "Unit of initial sediment concentration", {"g_per_m3_wet", "g_per_kg_dry", "g_per_g_toc"}, "g_per_m3_wet");
+	auto ConcType_GPerM3Wet = EnumValue(Model, SedConcType, "g_per_m3_wet");
+	auto ConcType_GPerKgDry = EnumValue(Model, SedConcType, "g_per_kg_dry");
+	auto ConcType_GPerGTOC  = EnumValue(Model, SedConcType, "g_per_g_toc");
+	
 	auto BoundaryBackgroundConc     = RegisterParameterDouble(Model, InitBoundConc, "Background concentration in boundary", GPerM3, 0.0, 0.0, 1e8);
 	
 	
@@ -235,7 +244,8 @@ New to version 2.0:
 	auto WaterConc                = RegisterEquation(Model, "Total concentration in water", GPerM3);
 	auto SedConc                  = RegisterEquation(Model, "Total concentration in sediments", GPerM3);
 	auto WaterConcParticulate     = RegisterEquation(Model, "Particulate concentration in water", GPerM3);
-	auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sediments (dry only)", GPerM3);
+	auto SedConcParticulate       = RegisterEquation(Model, "Particulate concentration in sediments (dry)", GPerKgDry);
+	//auto SedConcTOC               = RegisterEquation(Model, "Particulate concentration in sediments (toc)", GPerGTOC);
 	auto ApparentDissolvedConcWater = RegisterEquation(Model, "Apparent dissolved concentration in water", GPerM3);
 	auto ApparentDissolvedConcSed = RegisterEquation(Model, "Apparent dissolved concentration in sediments (water only)", GPerM3);
 	auto SedimentToxicity         = RegisterEquation(Model, "Sediment toxicity equivalent", MuGPerKg);
@@ -249,7 +259,29 @@ New to version 2.0:
 	)
 	
 	EQUATION(Model, InitialFugacityInSed,
-		return PARAMETER(InitialSedConc)/(PARAMETER(MolecularWeight)*RESULT(TotalFCSed));
+		double Conc = PARAMETER(InitialSedConc) / PARAMETER(MolecularWeight);
+		auto Type = PARAMETER(SedConcType);
+		double phi = PARAMETER(Porosity);
+		double frac_oc = PARAMETER(SedPOCVolumeFraction);
+		double frac_bc = PARAMETER(SedBCVolumeFraction);
+		double rho_min = PARAMETER(SedDensity);
+		
+		//TODO: Is it right to divide by those particular FCs or should we always divide by total fc?
+		if(Type == ConcType_GPerKgDry)
+		{
+			double mass_dry = (1.0-phi)*(frac_oc*rho_oc + frac_bc*rho_bc + (1.0-frac_oc-frac_bc)*rho_min)*1000.0;  // kg(dry) / m3
+			Conc = Conc * mass_dry / RESULT(SolidFCSed);
+		}
+		else if(Type == ConcType_GPerGTOC)
+		{
+			double mass_oc = (1.0-phi)*frac_oc*rho_oc*1e6; // g(TOC)/m3
+			Conc = Conc * mass_oc / RESULT(SolidFCSedExclSoot);
+			//TODO: should we adjust for some mass in the mineral part of the sediment here?
+		}
+		else
+			Conc = Conc / RESULT(TotalFCSed);
+		
+		return Conc;
 	)
 	
 	
@@ -747,8 +779,24 @@ New to version 2.0:
 	)
 	
 	EQUATION(Model, SedConcParticulate,
-		return RESULT(FugacityInSed)*RESULT(SolidFCSed)*PARAMETER(MolecularWeight);
+		double frac_oc = PARAMETER(SedPOCVolumeFraction);
+		double frac_bc = PARAMETER(SedBCVolumeFraction);
+		double rho_min = PARAMETER(SedDensity);
+		double phi     = PARAMETER(Porosity);
+		double mass_dry = (1.0-phi)*(frac_oc*rho_oc + frac_bc*rho_bc + (1.0-frac_oc-frac_bc)*rho_min)*1000.0;  // kg(dry) / m3
+		double Conc = RESULT(FugacityInSed)*RESULT(SolidFCSed)*PARAMETER(MolecularWeight);   // g / m3
+		return Conc / mass_dry; 
 	)
+	
+	/*
+	EQUATION(Model, SedConcTOC,
+		double frac_oc = PARAMETER(SedPOCVolumeFraction);
+		double phi     = PARAMETER(Porosity);
+		double mass_oc = (1.0-phi)*(frac_oc*rho_oc)*1e6;  // g(OC)/m3
+		double Conc = RESULT(FugacityInSed)*RESULT(SolidFCSed)*PARAMETER(MolecularWeight); // g/m3
+		return Conc / mass_oc;
+	)
+	*/
 	
 	EQUATION(Model, ApparentDissolvedConcWater,
 		return RESULT(FugacityInWater)*RESULT(WaterAndDOCFCWater)*PARAMETER(MolecularWeight);
