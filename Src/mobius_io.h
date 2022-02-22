@@ -563,6 +563,8 @@ PutFlag(input_series_flags *Flags, token_string Str)
 	return false;
 }
 
+//#include "spline_example.h"
+
 struct mobius_input_reader
 {
 	//TODO: Need some error printing context
@@ -730,6 +732,7 @@ struct mobius_input_reader
 			}
 			
 			// Similarly fill in at the end
+			//TODO: There is something wrong with the positioning of the last step here. Only important for spline interpolation though, so not a big deal before we fix that.
 			s64 EndStep = FindTimestep(InputStartDate, XVals[XVals.size()-1], TimestepSize);
 			if(EndStep < InputDataTimesteps)
 			{
@@ -779,7 +782,14 @@ struct mobius_input_reader
 		}
 		else if(Type == InterpolationType_Spline)
 		{
-			//TODO: It looks like the first derivatives are not always continuous, so the implementation may be broken :(
+			/******
+			
+				Oooops, this is currently incorrect. It produces discontinuous first derivatives!
+				Switch to Bezier spline instead, or fix the cubic spline?
+			
+			******/
+			
+			
 			//TODO: We should allow the user to specify that the value should never be negative (or just have this as a default?)
 			
 			//NOTE: Implementation inspired by https://stackoverflow.com/questions/23258711/c-spline-interpolation-from-an-array-of-points
@@ -790,47 +800,65 @@ struct mobius_input_reader
 				FatalError("Interpolation (internal error), not the same amount of x and y values");
 			}
 			
-			std::vector<double> BCol(XVals.size());
-			std::vector<double> XCol(XVals.size());
-			std::vector<double> Diag(XVals.size());
-			std::vector<double> OffDiag(XVals.size());
-			
-			for(int Pt = 1; Pt < XVals.size()-1; ++Pt)
-				Diag[Pt] = 2.0 * ((double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt-1].SecondsSinceEpoch));
-			for(int Pt = 0; Pt < XVals.size()-1; ++Pt)
-				OffDiag[Pt] = (double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch);
-			for(int Pt = 1; Pt < XVals.size()-1; ++Pt)
-				BCol[Pt] = 6.0*((YVals[Pt+1]-YVals[Pt])/OffDiag[Pt] - (YVals[Pt]-YVals[Pt-1])/OffDiag[Pt-1]);
-			XCol[0] = 0.0;
-			XCol[XVals.size()-1] = 0.0;
-			
-			for(int Pt = 1; Pt < XVals.size()-1; ++Pt)
+			/*
+			BezierSpline Spline;
+			for(int Seg = 0; Seg < XVals.size(); ++Seg)
 			{
-				BCol[Pt+1] = BCol[Pt+1] - BCol[Pt]*OffDiag[Pt]/Diag[Pt];
-				Diag[Pt+1] = Diag[Pt+1] - OffDiag[Pt]*OffDiag[Pt]/Diag[Pt];
+				Spline.AddPoint(Vec2((double)XVals[Seg].SecondsSinceEpoch, YVals[Seg]));
+				WarningPrint("x: ", (double)XVals[Seg].SecondsSinceEpoch, " y: ", YVals[Seg], "\n");
 			}
-			for(int Pt = XVals.size()-2; Pt > 0; --Pt)
-				XCol[Pt] = (BCol[Pt] - OffDiag[Pt]*XCol[Pt+1])/Diag[Pt];
+			Spline.ComputeSpline();
+			*/
 			
-			for(int Pt = 0; Pt < XVals.size()-1; ++Pt)
+			int NSeg = (int)XVals.size()-1;
+			
+			std::vector<double> BCol(NSeg+1);
+			std::vector<double> XCol(NSeg+1);
+			std::vector<double> Diag(NSeg+1);
+			std::vector<double> OffDiag(NSeg);
+			
+			for(int Seg = 1; Seg < NSeg; ++Seg)
+				Diag[Seg] = 2.0 * ((double)(XVals[Seg+1].SecondsSinceEpoch - XVals[Seg-1].SecondsSinceEpoch));
+			for(int Seg = 0; Seg < NSeg; ++Seg)
+				OffDiag[Seg] = (double)(XVals[Seg+1].SecondsSinceEpoch - XVals[Seg].SecondsSinceEpoch);
+			for(int Seg = 1; Seg < NSeg; ++Seg)
+				BCol[Seg] = 6.0*((YVals[Seg+1]-YVals[Seg])/OffDiag[Seg] - (YVals[Seg]-YVals[Seg-1])/OffDiag[Seg-1]);
+			XCol[0] = 0.0;
+			XCol[NSeg] = 0.0;
+			
+			for(int Seg = 1; Seg < NSeg; ++Seg)
 			{
-				expanded_datetime Date(XVals[Pt], TimestepSize);
+				BCol[Seg+1] = BCol[Seg+1] - BCol[Seg]*OffDiag[Seg]/Diag[Seg];
+				Diag[Seg+1] = Diag[Seg+1] - OffDiag[Seg]*OffDiag[Seg]/Diag[Seg];
+			}
+			for(int Seg = NSeg-1; Seg > 0; --Seg)
+				XCol[Seg] = (BCol[Seg] - OffDiag[Seg]*XCol[Seg+1])/Diag[Seg];
 			
-				double XRange = (double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch);
+			for(int Seg = 0; Seg < NSeg; ++Seg)
+			{
+				expanded_datetime Date(XVals[Seg], TimestepSize);
+			
+				double XRange = (double)(XVals[Seg+1].SecondsSinceEpoch - XVals[Seg].SecondsSinceEpoch);
 				
-				s64 Step     = FindTimestep(InputStartDate, XVals[Pt],   TimestepSize);
-				s64 LastStep = FindTimestep(InputStartDate, XVals[Pt+1], TimestepSize);
+				s64 Step     = FindTimestep(InputStartDate, XVals[Seg],   TimestepSize);
+				s64 LastStep = FindTimestep(InputStartDate, XVals[Seg+1], TimestepSize);
 				LastStep = std::min(LastStep, InputDataTimesteps-1);
 				
 				while(Step <= LastStep)
 				{
 					if(Step >= 0)
 					{
-						double TT = (double)(Date.DateTime.SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch) / XRange;
+						
+						double TT = (double)(Date.DateTime.SecondsSinceEpoch - XVals[Seg].SecondsSinceEpoch) / XRange;
+						
 						double OmT = 1.0 - TT;
 						double TCmT   = TT*TT*TT - TT;
 						double OmTCmT = OmT*OmT*OmT - OmT;
-						double YY     = TT*YVals[Pt+1] + OmT*YVals[Pt] + (1.0/6.0)*XRange*XRange*(TCmT*XCol[Pt+1] - OmTCmT*XCol[Pt]);
+						double YY     = TT*YVals[Seg+1] + OmT*YVals[Seg] + (1.0/6.0)*XRange*XRange*(TCmT*XCol[Seg+1] - OmTCmT*XCol[Seg]);
+						
+						
+						//Vec2 Result = Spline.Eval(Seg, TT);
+						//double YY = Result.y;
 						
 						AddValue(Step, YY);
 					}
