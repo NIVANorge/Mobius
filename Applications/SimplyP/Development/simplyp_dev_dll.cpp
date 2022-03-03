@@ -10,8 +10,8 @@
 #include "../../../Modules/Simply/SimplySnow.h"
 
 #define SIMPLYQ_GROUNDWATER
-#include "../../../Modules/Simply/SimplyQ.h"
-//#include "../../../Modules/Simply/SimplyQ_Ballycanew.h"
+//#include "../../../Modules/Simply/SimplyQ.h"
+#include "../../../Modules/Simply/SimplyQ_Ballycanew.h"
 #include "../../../Modules/Simply/SimplySed.h"
 //#include "../../../Modules/Simply/SimplySed_Ballycanew.h"
 #include "../../../Modules/Simply/SimplyP.h"   //NOTE: can change this again when starting a new version

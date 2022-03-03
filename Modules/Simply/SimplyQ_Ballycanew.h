@@ -46,7 +46,7 @@ New to version 0.4.2:
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
 	//auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "Maximum value", "fquick");
-	auto FlowAtMaxQuickFlow      = RegisterParameterDouble(Model, Hydrology, "Quick flow rate inflection point", MmPerDay, 0.0, 0.0, 200.0, "Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.", "iquick");
+	auto FlowAtMaxQuickFlow      = RegisterParameterDouble(Model, Hydrology, "Quick flow rate inflection point", MmPerDay, 30.0, 1.0, 200.0, "Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.", "iquick");
 	auto QuickFlowDrynessLimit   = RegisterParameterDouble(Model, Hydrology, "Quick flow dryness limit", Dimensionless, 0.9, 0.0, 1.0, "At what fraction of field capacity quick flow stops", "lquick");
 	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 #ifdef SIMPLYQ_GROUNDWATER
@@ -78,15 +78,6 @@ New to version 0.4.2:
 	auto LandUseProportions   = RegisterParameterDouble(Model, SubcatchmentGeneral, "Land use proportions", Dimensionless, 0.5, 0.0, 1.0, "Must sum to 1 over the landscape units for each given reach.", "lu");
 	
 	// Start equations
-	
-	// Non-ODE equations
-	auto PrecipitationFallingAsSnow = RegisterEquation(Model, "Precipitation falling as snow", MmPerDay);
-	auto PrecipitationFallingAsRain = RegisterEquation(Model, "Precipitation falling as rain", MmPerDay);
-	auto PotentialDailySnowmelt     = RegisterEquation(Model, "Potential daily snowmelt", MmPerDay);
-	auto SnowMelt                   = RegisterEquation(Model, "Snow melt", MmPerDay);
-	auto SnowDepth                  = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
-	SetInitialValue(Model, SnowDepth, InitialSnowDepth);
-	auto HydrologicalInputToSoilBox = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
 	auto LandSolver = RegisterSolver(Model, "SimplyQ land solver", 0.01 /* 1.0/20000.0 */, IncaDascru);
 	auto ReachSolver = RegisterSolver(Model, "SimplyQ reach solver", 0.1 /* 1.0/20000.0 */, IncaDascru);
