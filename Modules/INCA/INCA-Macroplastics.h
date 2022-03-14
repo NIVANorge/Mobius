@@ -83,8 +83,8 @@ INCA-Macroplastics is in early development
 	auto ClassReachParameters = RegisterParameterGroup(Model, "Litter by reach and class", Class, Reach);
 
 	auto InputToBank                   = RegisterParameterDouble(Model, ClassReachParameters, "Litter input to bank", ItemsPerMPerDay, 0.0, 0.0, 100.0, "Constant daily litter to the river bank from land sources");
+	auto InputToBankTimeseries                   = RegisterInput(Model, "Litter input to bank", ItemsPerMPerDay);
 
-	
 	
 	auto DragCoefficient = RegisterParameterDouble(Model, ClassParameters, "Drag coefficient", Dimensionless, 0.47);
 	auto SetDragCoefficient = RegisterEquationInitialValue(Model, "Set drag coefficient", Dimensionless);
@@ -307,7 +307,8 @@ INCA-Macroplastics is in early development
 	
 	
 	EQUATION(Model, BankLitterInputs,
-		return PARAMETER(InputToBank);
+		double litInputs = IF_INPUT_ELSE_PARAMETER(InputToBankTimeseries, InputToBank);
+		return litInputs;
 	)
 	
 	EQUATION(Model, RiverBankLitter,
