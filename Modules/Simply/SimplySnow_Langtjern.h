@@ -16,6 +16,7 @@ The basic simple snow module factored out from SimplyQ
 	auto MmPerDay          = RegisterUnit(Model, "mm/day");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
 	auto MmPerDegreePerDay = RegisterUnit(Model, "mm/°C/day");
+	auto Dimensionless     = RegisterUnit(Model);
 
 	// Global snow parameters
 	auto Snow = RegisterParameterGroup(Model, "Snow");
