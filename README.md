@@ -1,7 +1,7 @@
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
 
-Mobius is a general modelling framework for model biogeochemical systems.
+Mobius is a general modelling framework for modeling biogeochemical systems.
 
 Primarily Mobius was developed to model catchments (routing of precipitation through soil and groundwater into rivers and streams and assorted transport and reactions of chemical compounds and sediments), but can also be used to build e.g. biological population models.
 
