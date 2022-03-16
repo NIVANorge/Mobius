@@ -6,7 +6,11 @@ AddHBVSnowModule(mobius_model *Model)
 	BeginModule(Model, "HBV-Snow", "0.0");
 	
 	SetModuleDescription(Model, R""""(
-This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference)
+This is an adaption of the hydrology module from HBV-Nordic (Sælthun 1995)
+
+[NVE home page](https://www.nve.no/vann-og-vassdrag/vannets-kretslop/analysemetoder-og-modeller/hbv-modellen/)
+
+[Model description](https://www.uio.no/studier/emner/matnat/geofag/nedlagte-emner/GEO4430/v06/undervisningsmateriale/HBVMOD.PDF)
 )"""");
 
 	auto Mm                = RegisterUnit(Model, "mm");
@@ -43,8 +47,8 @@ This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference
 	
 	auto ComputeBoxQuantile  = RegisterEquationInitialValue(Model, "Compute snow box quantile", Dimensionless);
 	auto ComputeBoxDistr     = RegisterEquationInitialValue(Model, "Compute snow box distribution", Dimensionless);
-	ParameterIsComputedBy(Model, BoxQuantile, ComputeBoxQuantile, false);
-	ParameterIsComputedBy(Model, BoxDistr, ComputeBoxDistr, false);
+	ParameterIsComputedBy(Model, BoxQuantile, ComputeBoxQuantile, true);
+	ParameterIsComputedBy(Model, BoxDistr, ComputeBoxDistr, true);
 	
 	//NOTE this does not give exactly the same as they set up in the HBV source code, but it is close. I don't know how they computed the coefficients there (they are hard coded).
 	EQUATION(Model, ComputeBoxQuantile,

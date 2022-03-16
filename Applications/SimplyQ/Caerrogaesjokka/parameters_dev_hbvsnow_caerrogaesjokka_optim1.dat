@@ -53,10 +53,6 @@ parameters:
 	"Snow box area fraction" :     #(dimensionless) [0, 1]
 	0.01 0.04 0.1 0.2 0.3 0.2 0.1 0.04 0.01
 
-	"Snow box quantile" :     #(dimensionless) [-100, 100]
-	-2.57623608130957 -1.8812127935032 -1.28172875650271 -0.674189140043316 -1.01006675468085e-07 0.674189140043317 1.28172875650271 1.8812127935032 2.57623608130958
-
-
 } # end of module "HBV-Snow"
 
 { module "Degree-day PET" version "0.2"
