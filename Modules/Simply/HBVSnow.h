@@ -16,6 +16,9 @@ This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference
 	auto Dimensionless     = RegisterUnit(Model);
 	
 	
+	auto SnowDistributionBox = RegisterIndexSet(Model, "Snow distribution box");
+	
+	
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature = RegisterInput(Model, "Air temperature", DegC);
 	
@@ -26,7 +29,48 @@ This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference
 	auto DegreeDaySnowMelt   = RegisterParameterDouble(Model, SnowPar, "Degree-day factor for snow melt", MmPerDegreePerDay, 2.74, 0.0, 5.0, "", "DDFmelt");
 	auto LiquidWaterFraction = RegisterParameterDouble(Model, SnowPar, "Liquid water fraction", Dimensionless, 0.1, 0.0, 1.0, "Amount of melt water each unit of snow can hold before it is released");
 	auto RefreezeEfficiency  = RegisterParameterDouble(Model, SnowPar, "Refreeze efficiency", Dimensionless, 0.5, 0.0, 1.0);
+	auto DistCoeffOfVar      = RegisterParameterDouble(Model, SnowPar, "Snow distribution coefficient of variation", Dimensionless, 0.5, 0.0, 1.0,
+		"0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.");
+	auto DistMin             = RegisterParameterDouble(Model, SnowPar, "Minimal snow depth before snow fall is distributed unevenly", Mm, 0.0, 0.0, 50000.0);
+	auto DepthAtFullCover    = RegisterParameterDouble(Model, SnowPar, "Snow depth at which snow cover is considered full", Mm, 50.0, 0.0, 1000.0);
 	auto InitialSnowDepth    = RegisterParameterDouble(Model, SnowPar, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
+	
+	auto SnowDist       = RegisterParameterGroup(Model, "Snow distribution", SnowDistributionBox);
+	
+	auto BoxArea             = RegisterParameterDouble(Model, SnowDist, "Snow box area fraction", Dimensionless, 0.0, 0.0, 1.0);
+	auto BoxQuantile         = RegisterParameterDouble(Model, SnowDist, "Snow box quantile", Dimensionless, 0.0, -100.0, 100.0); //TODO: Should be computed from area fractions
+	auto BoxDistr            = RegisterParameterDouble(Model, SnowDist, "Snow box distribution coefficient", Dimensionless, 0.0, 0.0, 1.0);
+	
+	auto ComputeBoxQuantile  = RegisterEquationInitialValue(Model, "Compute snow box quantile", Dimensionless);
+	auto ComputeBoxDistr     = RegisterEquationInitialValue(Model, "Compute snow box distribution", Dimensionless);
+	ParameterIsComputedBy(Model, BoxQuantile, ComputeBoxQuantile, false);
+	ParameterIsComputedBy(Model, BoxDistr, ComputeBoxDistr, false);
+	
+	//NOTE this does not give exactly the same as they set up in the HBV source code, but it is close. I don't know how they computed the coefficients there (they are hard coded).
+	EQUATION(Model, ComputeBoxQuantile,
+		index_t Box = CURRENT_INDEX(SnowDistributionBox);
+		double p = 0.0;
+		for(index_t Box2 = FIRST_INDEX(SnowDistributionBox); Box2 < Box; ++Box2)
+			p += PARAMETER(BoxArea, Box2);
+		
+		p += 0.5*PARAMETER(BoxArea);
+		if(!RunState__->Running) return 0.0; // NOTE: Hack to not make it have an error in the setup phase.
+		return NormalCDFInverse(p);
+	)
+	
+	EQUATION(Model, ComputeBoxDistr,
+		index_t Box = CURRENT_INDEX(SnowDistributionBox);
+		double ThisCoeff;
+		double SumCoeff = 0.0;
+		//NOTE: A little annoying that we have to compute all the coefficients again per box here. Alternative is to make a preprocessing step.
+		for(index_t Box2 = FIRST_INDEX(SnowDistributionBox); Box2 < INDEX_COUNT(SnowDistributionBox); ++Box2)
+		{
+			double Coeff = std::exp(PARAMETER(BoxQuantile, Box2) * PARAMETER(DistCoeffOfVar));
+			if(Box2 == Box) ThisCoeff = Coeff;
+			SumCoeff += Coeff * PARAMETER(BoxArea, Box2);
+		}
+		return ThisCoeff / SumCoeff;
+	)
 	
 	
 	auto PrecipFallingAsRain = RegisterEquation(Model, "Precipitation falling as rain", MmPerDay);
@@ -35,13 +79,17 @@ This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference
 	auto SnowMelt            = RegisterEquation(Model, "Snow melt", MmPerDay);
 	auto Refreeze            = RegisterEquation(Model, "Refreeze", MmPerDay);
 	auto MeltWaterToSoil     = RegisterEquation(Model, "Melt water to soil", MmPerDay);
-	auto HydrolInputToSoil   = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
 	auto WaterInSnow         = RegisterEquation(Model, "Water in snow", Mm);
 	auto SnowDepth           = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
 	SetInitialValue(Model, SnowDepth, InitialSnowDepth);
 	SetInitialValue(Model, WaterInSnow, 0.0);
 	
+	auto AreaAvgMeltWaterToSoil = RegisterEquationCumulative(Model, "Area averaged melt water to soil", MeltWaterToSoil, SnowDistributionBox, BoxArea);
+	auto AvgSnowDepth        = RegisterEquationCumulative(Model, "Area averaged snow depth", SnowDepth, SnowDistributionBox, BoxArea);
+	auto AvgSnowFall         = RegisterEquationCumulative(Model, "Area averaged precipitation falling as snow", PrecipFallingAsSnow, SnowDistributionBox, BoxArea);
+	auto SnowCover           = RegisterEquation(Model, "Snow cover", Dimensionless);
+	auto HydrolInputToSoil   = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);
 	
 	
 	EQUATION(Model, PrecipFallingAsRain,
@@ -52,7 +100,10 @@ This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference
 	)
 	
 	EQUATION(Model, PrecipFallingAsSnow,
+		double fraction = PARAMETER(BoxDistr);
 		double pr = INPUT(Precipitation);
+		if(LAST_RESULT(AvgSnowDepth) <= PARAMETER(DistMin)) fraction = 1.0;
+		pr *= fraction;
 		if(INPUT(AirTemperature) > PARAMETER(SnowFallTemp))
 			return 0.0;
 		return pr;
@@ -90,8 +141,17 @@ This is an adaption of the hydrology module from HBV-Nordic (TODO: add reference
 		return LAST_RESULT(WaterInSnow) + RESULT(SnowMelt) - RESULT(Refreeze) - RESULT(MeltWaterToSoil);
 	)
 	
+	EQUATION(Model, SnowCover,
+		double fulldepth = PARAMETER(DepthAtFullCover);
+		double cover = 0.0;
+		for(index_t Box = FIRST_INDEX(SnowDistributionBox); Box < INDEX_COUNT(SnowDistributionBox); ++Box)
+			cover += LinearResponse(RESULT(SnowDepth, Box), 0.0, fulldepth, 0.0, 1.0) * PARAMETER(BoxArea, Box);
+
+		return cover;
+	)
+	
 	EQUATION(Model, HydrolInputToSoil,
-		return RESULT(PrecipFallingAsRain) + RESULT(MeltWaterToSoil);
+		return RESULT(PrecipFallingAsRain) + RESULT(AreaAvgMeltWaterToSoil);
 	)
 
 

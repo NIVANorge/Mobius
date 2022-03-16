@@ -1,6 +1,7 @@
-# Parameter file generated for model SimplyQ, containing modules (SimplySnow V0.1, Degree-day PET V0.2, SimplyQ V0.4.2) at 2022-03-09 14:17:41
+# Parameter file generated for model SimplyQ, containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew) at 2022-03-16 10:42:48
 
 index_sets:
+"Snow distribution box" : {"0-0.01" "0.01-0.05" "0.05-0.15" "0.15-0.35" "0.35-0.65" "0.65-0.85" "0.85-0.95" "0.95-0.99" "0.99-1"}
 "Landscape units" : {"One"}
 "Reaches" : {"Cærrogæsjokka"}
 
@@ -15,18 +16,45 @@ parameters:
 2020-12-31
 
 
-{ module "SimplySnow" version "0.1"
+{ module "HBV-Snow" version "0.0"
 
 	# Snow (no index sets) #
+
+	"Temperature below which precipitation falls as snow" :     #(°C) [-4, 4]
+	0
+
+	"Temperature above which snow melts" :     #(°C) [-4, 4]
+	0
+
+	"Degree-day factor for snow melt" :     #(mm/°C/day) [0, 5] 
+	2.74
+
+	"Liquid water fraction" :     #(dimensionless) [0, 1] Amount of melt water each unit of snow can hold before it is released
+	0.1
+
+	"Refreeze efficiency" :     #(dimensionless) [0, 1]
+	0.5
+
+	"Snow distribution coefficient of variation" :     #(dimensionless) [0, 1] 0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.
+	0.5
+
+	"Minimal snow depth before snow fall is distributed unevenly" :     #(mm) [0, 50000]
+	10
+
+	"Snow depth at which snow cover is considered full" :     #(mm) [0, 1000]
+	50
 
 	"Initial snow depth as water equivalent" :     #(mm) [0, 50000]
 	0
 
-	"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
-	1.5325818297552
+
+	# Snow distribution ("Snow distribution box") #
+
+	"Snow box area fraction" :     #(dimensionless) [0, 1]
+	0.01 0.04 0.1 0.2 0.3 0.2 0.1 0.04 0.01
 
 
-} # end of module "SimplySnow"
+} # end of module "HBV-Snow"
 
 { module "Degree-day PET" version "0.2"
 
@@ -41,12 +69,15 @@ parameters:
 
 } # end of module "Degree-day PET"
 
-{ module "SimplyQ" version "0.4.2"
+{ module "SimplyQ" version "0.4.2 Ballycanew"
 
 	# Hydrology (no index sets) #
 
-	"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
-	0.0276368121315009
+	"Quick flow rate inflection point" :     #(mm/day) [1, 200] Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.
+	60
+
+	"Quick flow dryness limit" :     #(dimensionless) [0, 1] At what fraction of field capacity quick flow stops
+	0.95
 
 	"Soil field capacity" :     #(mm) [0, 1000] 
 	290
