@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyQ, containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew) at 2022-03-16 13:12:10
+# Parameter file generated for model SimplyQ, containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew) at 2022-03-16 13:49:26
 
 index_sets:
 "Snow distribution box" : {"0-1"}
@@ -10,7 +10,7 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-1971-01-01
+2006-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
 2020-12-31
@@ -21,19 +21,19 @@ parameters:
 	# Snow (no index sets) #
 
 	"Temperature below which precipitation falls as snow" :     #(°C) [-4, 4]
-	1.62029356316519
+	1.00574020454776
 
 	"Temperature above which snow melts" :     #(°C) [-4, 4]
-	2.58712510789146
+	2.1383976016479
 
 	"Degree-day factor for snow melt" :     #(mm/°C/day) [0, 5] 
-	4.95975217225815
+	4.45692558156134
 
 	"Liquid water fraction" :     #(dimensionless) [0, 1] Amount of melt water each unit of snow can hold before it is released
-	0
+	0.0596598013893775
 
 	"Refreeze efficiency" :     #(dimensionless) [0, 1]
-	0.84144000698363
+	0.690916237633172
 
 	"Snow distribution coefficient of variation" :     #(dimensionless) [0, 1] 0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.
 	0.03
@@ -61,10 +61,10 @@ parameters:
 	# Potential evapotranspiration ("Landscape units") #
 
 	"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
-	0.05
+	0.2
 
 	"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
-	-4
+	4.76326345196388
 
 
 } # end of module "Degree-day PET"
@@ -74,19 +74,19 @@ parameters:
 	# Hydrology (no index sets) #
 
 	"Quick flow rate inflection point" :     #(mm/day) [1, 200] Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.
-	172.241489516301
+	197.275148926456
 
 	"Quick flow dryness limit" :     #(dimensionless) [0, 1] At what fraction of field capacity quick flow stops
-	0.797619143177339
+	0.252920773203704
 
 	"Soil field capacity" :     #(mm) [0, 1000] 
 	290
 
 	"Baseflow index" :     #(dimensionless) [0, 1] 
-	0.38966251768591
+	0.365029188297225
 
 	"Groundwater time constant" :     #(days) [0.5, 400] 
-	229.132973205987
+	34.0847730947726
 
 	"Manning's coefficient" :     #(s/(m^1/3)) [0.012, 0.1] Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types
 	0.04
@@ -113,7 +113,7 @@ parameters:
 	# Hydrology land ("Landscape units") #
 
 	"Soil water time constant" :     #(days) [0.01, 40] 
-	7.08875108976202
+	4.05160188150826
 
 
 	# Land cover ("Reaches" "Landscape units") #

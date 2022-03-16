@@ -28,21 +28,21 @@ This is an adaption of the hydrology module from HBV-Nordic (Sælthun 1995)
 	
 	auto SnowPar        = RegisterParameterGroup(Model, "Snow");
 	
-	auto SnowFallTemp        = RegisterParameterDouble(Model, SnowPar, "Temperature below which precipitation falls as snow", DegC, 0.0, -4.0, 4.0);
-	auto SnowMeltTemp        = RegisterParameterDouble(Model, SnowPar, "Temperature above which snow melts", DegC, 0.0, -4.0, 4.0);
+	auto SnowFallTemp        = RegisterParameterDouble(Model, SnowPar, "Temperature below which precipitation falls as snow", DegC, 0.0, -4.0, 4.0, "", "Tsnow");
+	auto SnowMeltTemp        = RegisterParameterDouble(Model, SnowPar, "Temperature above which snow melts", DegC, 0.0, -4.0, 4.0, "", "Tmelt");
 	auto DegreeDaySnowMelt   = RegisterParameterDouble(Model, SnowPar, "Degree-day factor for snow melt", MmPerDegreePerDay, 2.74, 0.0, 5.0, "", "DDFmelt");
-	auto LiquidWaterFraction = RegisterParameterDouble(Model, SnowPar, "Liquid water fraction", Dimensionless, 0.1, 0.0, 1.0, "Amount of melt water each unit of snow can hold before it is released");
-	auto RefreezeEfficiency  = RegisterParameterDouble(Model, SnowPar, "Refreeze efficiency", Dimensionless, 0.5, 0.0, 1.0);
+	auto LiquidWaterFraction = RegisterParameterDouble(Model, SnowPar, "Liquid water fraction", Dimensionless, 0.1, 0.0, 1.0, "Amount of melt water each unit of snow can hold before it is released", "LF");
+	auto RefreezeEfficiency  = RegisterParameterDouble(Model, SnowPar, "Refreeze efficiency", Dimensionless, 0.5, 0.0, 1.0, "RFeff");
 	auto DistCoeffOfVar      = RegisterParameterDouble(Model, SnowPar, "Snow distribution coefficient of variation", Dimensionless, 0.5, 0.0, 1.0,
-		"0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.");
-	auto DistMin             = RegisterParameterDouble(Model, SnowPar, "Minimal snow depth before snow fall is distributed unevenly", Mm, 0.0, 0.0, 50000.0);
+		"0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.", "Cvar");
+	auto DistMin             = RegisterParameterDouble(Model, SnowPar, "Minimal snow depth before snow fall is distributed unevenly", Mm, 0.0, 0.0, 50000.0, "Dmin");
 	auto DepthAtFullCover    = RegisterParameterDouble(Model, SnowPar, "Snow depth at which snow cover is considered full", Mm, 50.0, 0.0, 1000.0);
 	auto InitialSnowDepth    = RegisterParameterDouble(Model, SnowPar, "Initial snow depth as water equivalent", Mm, 0.0, 0.0, 50000.0);
 	
 	auto SnowDist       = RegisterParameterGroup(Model, "Snow distribution", SnowDistributionBox);
 	
 	auto BoxArea             = RegisterParameterDouble(Model, SnowDist, "Snow box area fraction", Dimensionless, 0.0, 0.0, 1.0);
-	auto BoxQuantile         = RegisterParameterDouble(Model, SnowDist, "Snow box quantile", Dimensionless, 0.0, -100.0, 100.0); //TODO: Should be computed from area fractions
+	auto BoxQuantile         = RegisterParameterDouble(Model, SnowDist, "Snow box quantile", Dimensionless, 0.0, -100.0, 100.0);
 	auto BoxDistr            = RegisterParameterDouble(Model, SnowDist, "Snow box distribution coefficient", Dimensionless, 0.0, 0.0, 1.0);
 	
 	auto ComputeBoxQuantile  = RegisterEquationInitialValue(Model, "Compute snow box quantile", Dimensionless);

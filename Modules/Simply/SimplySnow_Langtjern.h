@@ -5,10 +5,10 @@ static void
 AddSimplySnowModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplySnow", "0.1");
+	BeginModule(Model, "SimplySnow (Langtjern)", "0.1");
 	
 	SetModuleDescription(Model, R""""(
-The basic simple snow module factored out from SimplyQ
+The basic simple snow module factored out from SimplyQ. Development version Langtjern.
 )"""");
 
 
