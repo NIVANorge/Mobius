@@ -138,6 +138,7 @@ New to V0.3: Multiple contaminants at a time.
 	auto ReachVolume     = GetEquationHandle(Model, "Reach volume");
 	auto ReachVelocity   = GetEquationHandle(Model, "Reach velocity");
 	auto ReachDepth      = GetEquationHandle(Model, "Reach depth");
+	auto ReachAbstraction = GetEquationHandle(Model, "Reach abstraction");
 	
 	//INCA-Sed.h
 	auto TotalMassOfBedGrainPerUnitArea = GetEquationHandle(Model, "Total mass of bed sediment per unit area");
@@ -436,6 +437,7 @@ New to V0.3: Multiple contaminants at a time.
 	auto ReachContaminantSolidFlux     = RegisterEquation(Model, "Reach flux of solid-bound contaminants", NgPerDay, ReachSolver);
 	auto ReachContaminantFlux          = RegisterEquation(Model, "Total reach contaminant flux", NgPerDay, ReachSolver);
 	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay, ReachSolver);
+	auto ReachContaminantAbstraction   = RegisterEquation(Model, "Reach contaminant abstraction", NgPerDay, ReachSolver);
 	
 	auto ReachHenrysConstant                      = RegisterEquation(Model, "Reach Henry's constant", PascalM3PerMol);
 	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Reach air-water partitioning coefficient", Dimensionless);
@@ -488,9 +490,11 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, ReachContaminantInputFromUpstream,
+		index_t Cont = CURRENT_INDEX(Contaminant);
+		
 		double upstreamflux = 0.0;
 		for(index_t Input : BRANCH_INPUTS(Reach))
-			upstreamflux += RESULT(ReachContaminantFlux, Input);
+			upstreamflux += RESULT(ReachContaminantFlux, Input, Cont);
 			
 		return upstreamflux;
 	)
@@ -524,11 +528,15 @@ New to V0.3: Multiple contaminants at a time.
 		return (ln2 / PARAMETER(ReachContaminantHalfLife)) * RESULT(ContaminantMassInReach) * RESULT(ReachDegradationTemperatureModifier);
 	)
 	
+	EQUATION(Model, ReachContaminantAbstraction,
+		return SafeDivide(RESULT(ContaminantMassInReach), RESULT(ReachVolume)) * RESULT(ReachAbstraction)*86400.0;
+	)
 	
 	EQUATION(Model, ContaminantMassInReach,
 		return
 			  RESULT(ReachContaminantInput)
 			- RESULT(ReachContaminantFlux)
+			- RESULT(ReachContaminantAbstraction)
 			- RESULT(ReachContaminantDegradation)
 			- RESULT(DiffusiveAirReachExchangeFlux)
 			+ (RESULT(ReachContaminantEntrainment) - RESULT(ReachContaminantDeposition)) * PARAMETER(ReachLength)*PARAMETER(ReachWidth);
