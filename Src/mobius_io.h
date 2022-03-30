@@ -286,9 +286,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 	while(true)
 	{
 		if(!DataSet->ParameterData && DataSet->AllIndexesHaveBeenSet)
-		{
 			AllocateParameterStorage(DataSet);
-		}
 		
 		token Token = Stream.PeekToken();
 		
@@ -470,7 +468,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to version \"", ModuleVersion, "\" of module \"", GetName(Model, CurrentModule), "\". The version of this module in the current loaded model is \"", ModuleSpec.Version, "\", and does not have this parameter. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n\n");
 					}
 					
-					if(IgnoreUnknown || !ValidModule || !ValidVersion)
+					if(IgnoreUnknown || !(ValidModule && ValidVersion))
 					{
 						while(true) // Just skip through the values
 						{
@@ -506,11 +504,24 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 					Stream.ReadParameterSeries(Values, Spec);
 					if(Values.size() != ExpectedCount)                                                                   
 					{
-						//NOTE: Ideally we want to detect here if the version of the module changed, but there could also be other reasons for this error, so it is tricky
-						Stream.PrintErrorHeader();
-						FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
-					}                                                                                                    
-					SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
+						//TODO: The patching we do here may not be the best way to do it, but we'll see.
+						if(!(ValidModule && ValidVersion) || IgnoreUnknown)
+						{
+							WarningPrint("WARNING: Did not get the expected number of values for parameter \"", ParameterName, "\" Got ", Values.size(), ", expected ", ExpectedCount, 
+								". Parameter values have been deleted or filled in by default. Check if they are correct.\n");
+							parameter_value Default = Spec.Default;
+							if(Values.size() > 0) Default = Values[0];
+							Values.resize(ExpectedCount, Default);
+							SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
+						}
+						else
+						{
+							Stream.PrintErrorHeader();
+							FatalError("Did not get the expected number of values for parameter \"", ParameterName, "\". Got ", Values.size(), ", expected ", ExpectedCount, ".\n"); 
+						}
+					}
+					else
+						SetMultipleValuesForParameter(DataSet, Parameter, Values.data(), Values.size());
 				}
 			}
 		}
