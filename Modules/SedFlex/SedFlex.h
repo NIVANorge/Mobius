@@ -156,7 +156,7 @@ New to version 2.0:
 	AppxPars, "K_BC a parameter", Dimensionless, 1.6, 0.1, 10.0, "From the approximation K_BC = b*K_OW^a");
 	auto BCParB                     = RegisterParameterDouble(Model, AppxPars, "K_BC b parameter", Dimensionless, 0.0398, 0.0, 10.0, "From the approximation K_BC = b*K_OW^a");
 	auto AerosolParA                = RegisterParameterDouble(Model, AppxPars, "K_aerosol a parameter", Dimensionless, 1.0, 0.1, 10.0, "From the approximation K_aerosol = b*K_OA^a");
-	auto AerosolParB                = RegisterParameterDouble(Model, AppxPars, "K_aerosol b parameter", Dimensionless, 03.8, 0.0, 10.0, "From the approximation K_aerosol = b*K_OA^a");
+	auto AerosolParB                = RegisterParameterDouble(Model, AppxPars, "K_aerosol b parameter", Dimensionless, 3.8, 0.0, 10.0, "From the approximation K_aerosol = b*K_OA^a");
 	
 	auto FlowRate                   = RegisterParameterDouble(Model, FlowPars, "Flow rate", M3PerS, 0.0, 0.0, 10000.0);
 	

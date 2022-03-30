@@ -3,6 +3,23 @@
 
 //#include "../boost_solvers.h"
 
+static double
+TemperatureAdjustLogKH(double LogH25, double T, double dAW)
+{
+	constexpr double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+	double tdiff = (1.0 / T - 1.0/(273.15 + 25.0));
+	double LogHT = LogH25 - ((1e3*dAW + R*(273.15 + 25.0)) / (std::log(10.0)*R) )  * tdiff;
+	return LogHT;
+}
+
+static double
+TemperatureAdjustLogKow(double LogKOW25, double T, double dOW)
+{
+	constexpr double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+	double tdiff = (1.0 / T - 1.0/(273.15 + 25.0));
+	double LogKOWT = LogKOW25 - (1e3*dOW / (std::log(10.0)*R)) * tdiff;
+	return LogKOWT;
+}
 
 static void
 AddIncaToxModule(mobius_model *Model)
@@ -83,10 +100,12 @@ New to V0.3: Multiple contaminants at a time.
 	
 	auto ContaminantMolarMass                  = RegisterParameterDouble(Model, Chemistry, "Contaminant molar mass", GPerMol, 50.0, 0.0, 1000.0);
 	auto ContaminantMolecularVolume            = RegisterParameterDouble(Model, Chemistry, "Contaminant molecular volume at surface pressure", Cm3PerMol, 20.0, 0.0, 1000.0);
-	auto AirWaterPhaseTransferEnthalpy         = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase transfer between air and water", KiloJoulesPerMol, 0.0);
-	auto OctanolWaterPhaseTransferEntalphy     = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase tranfer between octanol and water", KiloJoulesPerMol, 0.0);
+	auto AirWaterPhaseTransferEnthalpy         = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase transfer between air and water", KiloJoulesPerMol, 0.0, -100.0, 100.0);
+	auto OctanolWaterPhaseTransferEnthalpy     = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase transfer between octanol and water", KiloJoulesPerMol, 0.0, -100.0, 100.0);
+	auto OctanolAirPhaseTransferEnthalpy       = RegisterParameterDouble(Model, Chemistry, "Enthalpy of phase transfer between octanol and air", KiloJoulesPerMol, 0.0, -100.0, 100.0, "Used if dry or wet deposition is computed by the model");
 	auto HenrysConstant25                      = RegisterParameterDouble(Model, Chemistry, "Henry's constant at 25°C", PascalM3PerMol, 0.0);
 	auto Log10OctanolWaterPartitioningCoefficient25 = RegisterParameterDouble(Model, Chemistry, "Log10 Octanol-water partitioning coefficient at 25°C", Dimensionless, 0.0);
+	auto Log10OctanolAirPartitioningCoefficient25   = RegisterParameterDouble(Model, Chemistry, "Log10 Octanol-air partitioning coefficient at 25°C", Dimensionless, 0.0);
 	
 	auto AtmosphericContaminantConcentration   = RegisterParameterDouble(Model, Chemistry, "Atmospheric contaminant concentration", NgPerM3, 0.0, 0.0, 100.0);
 	
@@ -103,6 +122,8 @@ New to V0.3: Multiple contaminants at a time.
 	auto ComputeWetDeposition                  = RegisterParameterBool(Model, Chemistry, "Compute wet deposition", false, "If true, precipitation is assumed to have an equilibrium concentration of contaminants relative to the atmospheric concentration");
 	auto ComputeDryDeposition                  = RegisterParameterBool(Model, Chemistry, "Compute dry deposition", false, "If true, dry deposition flux is given by atmospheric concentration multiplied with dry deposition velocity");
 	auto DryDepositionVelocity                 = RegisterParameterDouble(Model, Chemistry, "Dry deposition velocity", MPerDay, 0.0, 0.0, 100.0, "Used if dry deposition is computed");
+	auto AerosolVolumeFraction                 = RegisterParameterDouble(Model, Chemistry, "Volume fraction of aerosols", Dimensionless, 1e-10, 0.0, 1e-9, "Used if dry or wet deposition is computed");
+	auto ScavengingRatio                       = RegisterParameterDouble(Model, Chemistry, "Scavenging ratio", Dimensionless, 2e5, 0.0, 2e6, "Used if wet deposition is computed. Ratio of the volume an air drop passes through to its own volume.");
 	
 	
 	auto AirSoilOverallMassTransferCoefficient = RegisterParameterDouble(Model, Land, "Overall air-soil mass transfer coefficient", MPerDay, 0.0, 0.0, 100.0);
@@ -124,20 +145,21 @@ New to V0.3: Multiple contaminants at a time.
 	
 	
 	 //SoilTemperature.h
-	auto SoilTemperature = GetEquationHandle(Model, "Soil temperature");
+	auto SoilTemperature  = GetEquationHandle(Model, "Soil temperature");
 	
 	 //WaterTemperature.h
 	auto WaterTemperature = GetEquationHandle(Model, "Water temperature");
 	
 	 //PERSiST.h
-	auto Precipitation   = GetInputHandle(Model, "Actual precipitation");
-	auto WaterDepth      = GetEquationHandle(Model, "Water depth");
-	auto RunoffToReach   = GetEquationHandle(Model, "Runoff to reach");
-	auto PercolationInput= GetEquationHandle(Model, "Percolation input");
-	auto ReachFlow       = GetEquationHandle(Model, "Reach flow");
-	auto ReachVolume     = GetEquationHandle(Model, "Reach volume");
-	auto ReachVelocity   = GetEquationHandle(Model, "Reach velocity");
-	auto ReachDepth      = GetEquationHandle(Model, "Reach depth");
+	auto Precipitation    = GetInputHandle(Model, "Actual precipitation");
+	auto AirTemperature   = GetInputHandle(Model, "Air temperature");
+	auto WaterDepth       = GetEquationHandle(Model, "Water depth");
+	auto RunoffToReach    = GetEquationHandle(Model, "Runoff to reach");
+	auto PercolationInput = GetEquationHandle(Model, "Percolation input");
+	auto ReachFlow        = GetEquationHandle(Model, "Reach flow");
+	auto ReachVolume      = GetEquationHandle(Model, "Reach volume");
+	auto ReachVelocity    = GetEquationHandle(Model, "Reach velocity");
+	auto ReachDepth       = GetEquationHandle(Model, "Reach depth");
 	auto ReachAbstraction = GetEquationHandle(Model, "Reach abstraction");
 	
 	//INCA-Sed.h
@@ -187,13 +209,21 @@ New to V0.3: Multiple contaminants at a time.
 	
 	auto SoilSolver = RegisterSolver(Model, "Soil Solver", 0.1, IncaDascru);
 	
+	auto AtmosphereHenrysConstant          = RegisterEquation(Model, "Henry's constant (atmosphere)", PascalM3PerMol);
+	auto AtmosphereAirWaterPartitioningCoefficient = RegisterEquation(Model, "Air-water partitioning coefficient (atmosphere)", Dimensionless);
+	auto AerosolAirPartitioningCoefficient = RegisterEquation(Model, "Aerosol-air partitioning coefficient (atmosphere)", Dimensionless);
+	auto AerosolContaminantConcentration   = RegisterEquation(Model, "Aerosol contaminant concentration", NgPerM3);
+	auto ComputedPrecipitationContaminantConcentration = RegisterEquation(Model, "Computed contaminant concentration in precipitation", NgPerM3);
+	auto ComputedWetDeposition             = RegisterEquation(Model, "Computed wet deposition", NgPerM2PerDay);
+	auto ComputedDryDeposition             = RegisterEquation(Model, "Computed dry deposition", NgPerM2PerDay);
+	auto ContaminantInputsToSoil           = RegisterEquation(Model, "Contaminant inputs to soil", NgPerKm2PerDay);
 	
-	auto HenrysConstant = RegisterEquation(Model, "Henry's constant", PascalM3PerMol);
 	
-	auto AirWaterPartitioningCoefficient     = RegisterEquation(Model, "Air-water partitioning coefficient", Dimensionless);
-	auto OctanolWaterPartitioningCoefficient = RegisterEquation(Model, "Octanol-water partitioning coefficient", Dimensionless);
-	auto WaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Water-SOC partitioning coefficient", M3PerKg);
-	auto WaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Water-DOC partitioning coefficient", M3PerKg);
+	auto HenrysConstant                      = RegisterEquation(Model, "Henry's constant (soil)", PascalM3PerMol);
+	auto AirWaterPartitioningCoefficient     = RegisterEquation(Model, "Air-water partitioning coefficient (soil)", Dimensionless);
+	auto OctanolWaterPartitioningCoefficient = RegisterEquation(Model, "Octanol-water partitioning coefficient (soil)", Dimensionless);
+	auto WaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Water-SOC partitioning coefficient (soil)", M3PerKg);
+	auto WaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Water-DOC partitioning coefficient (soil)", M3PerKg);
 	
 	auto ContaminantDeliveryToReachByErosion = RegisterEquation(Model, "Contaminant delivery to reach by erosion", NgPerDay, SoilSolver);
 	
@@ -211,10 +241,6 @@ New to V0.3: Multiple contaminants at a time.
 	auto SoilWaterVolume                   = RegisterEquation(Model, "Soil water volume", M3PerKm2);
 	auto SoilAirVolume                     = RegisterEquation(Model, "Soil air volume", M3PerKm2);
 	
-	auto ComputedPrecipitationContaminantConcentration = RegisterEquation(Model, "Computed contaminant concentration in precipitation", NgPerM3);
-	auto ComputedWetDeposition             = RegisterEquation(Model, "Computed wet deposition", NgPerM2PerDay);
-	auto ComputedDryDeposition             = RegisterEquation(Model, "Computed dry deposition", NgPerM2PerDay);
-	auto ContaminantInputsToSoil           = RegisterEquation(Model, "Contaminant inputs to soil", NgPerKm2PerDay);
 	
 	auto InitialContaminantMassInSoil  = RegisterEquationInitialValue(Model, "Initial contaminant mass in soil (easily accessible fraction)", NgPerKm2);
 	auto InitialContaminantMassInPotentiallyAccessibleFraction = RegisterEquationInitialValue(Model, "Initial contaminant mass in soil (potentially accessible fraction)", NgPerKm2);
@@ -250,13 +276,60 @@ New to V0.3: Multiple contaminants at a time.
 		return concinsoc * socmass;
 	)
 	
+	EQUATION(Model, AtmosphereHenrysConstant,
+		double LogHT = TemperatureAdjustLogKH(std::log10(PARAMETER(HenrysConstant25)), INPUT(AirTemperature) + 273.15, PARAMETER(AirWaterPhaseTransferEnthalpy));
+		return std::pow(10.0, LogHT);
+	)
+	
+	EQUATION(Model, AtmosphereAirWaterPartitioningCoefficient,
+		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
+		return RESULT(AtmosphereHenrysConstant) / (R * (INPUT(AirTemperature) + 273.15));
+	)
+	
+	EQUATION(Model, AerosolAirPartitioningCoefficient,
+		double LogKOAT = TemperatureAdjustLogKow(PARAMETER(Log10OctanolAirPartitioningCoefficient25), INPUT(AirTemperature) + 273.15, PARAMETER(OctanolAirPhaseTransferEnthalpy));
+		double LogKaerosol = LogKOAT + 0.56;     // 0.56=log10(3.8)   Source: SedFlex, but TODO check properly why this number is used and if it should be parametrized. See McLeod &al 2010 Deposition from the Atmosphere to Water and Soils with Aerosol Particles and Precipitation
+		return std::pow(10.0, LogKaerosol);
+	)
+	
+	EQUATION(Model, ComputedPrecipitationContaminantConcentration,
+		double airwater_p = RESULT(AtmosphereAirWaterPartitioningCoefficient);
+		double air_c = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		return air_c/airwater_p; // ng/m3
+	)
+	
+	EQUATION(Model, AerosolContaminantConcentration,
+		double aerosol_air_p = RESULT(AerosolAirPartitioningCoefficient);
+		double air_c = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		return air_c*aerosol_air_p;
+	)
+	
+	EQUATION(Model, ComputedWetDeposition,
+		double water_in = INPUT(Precipitation) * 1e-3; // m/day
+		double conc_precip = RESULT(ComputedPrecipitationContaminantConcentration); // ng/m3
+		
+		double scavenging = PARAMETER(ScavengingRatio)*PARAMETER(AerosolVolumeFraction)*RESULT(AerosolContaminantConcentration);
+		
+		if(PARAMETER(ComputeWetDeposition))
+			return (conc_precip + scavenging) * water_in; // ng/m2/day
+		return 0.0;
+	)
+	
+	EQUATION(Model, ComputedDryDeposition,
+		//double conc_air = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
+		double conc_aerosol = RESULT(AerosolContaminantConcentration)*PARAMETER(AerosolVolumeFraction);
+		
+		double velocity = PARAMETER(DryDepositionVelocity);
+		if(PARAMETER(ComputeDryDeposition))
+			return conc_aerosol * velocity;
+		return 0.0;
+	)
+	
+	
 	
 	
 	EQUATION(Model, HenrysConstant,
-		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
-		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
-		double tdiff = (1.0 / RESULT(SoilTemperatureKelvin) - 1.0/(273.15 + 25.0));
-		double LogHT = LogH25 - ((1e3 * PARAMETER(AirWaterPhaseTransferEnthalpy) + R*(273.15 + 25.0)) / (std::log(10.0)*R) )  * tdiff;
+		double LogHT = TemperatureAdjustLogKH(std::log10(PARAMETER(HenrysConstant25)), RESULT(SoilTemperatureKelvin), PARAMETER(AirWaterPhaseTransferEnthalpy));
 		return std::pow(10.0, LogHT);
 	)
 	
@@ -266,10 +339,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, OctanolWaterPartitioningCoefficient,
-		double LogKOW25 = PARAMETER(Log10OctanolWaterPartitioningCoefficient25);
-		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
-		double tdiff = (1.0 / RESULT(SoilTemperatureKelvin) - 1.0/(273.15 + 25.0));
-		double LogKOWT = LogKOW25 - (1e3*PARAMETER(OctanolWaterPhaseTransferEntalphy) / (std::log(10.0)*R))   * tdiff;
+		double LogKOWT = TemperatureAdjustLogKow(PARAMETER(Log10OctanolWaterPartitioningCoefficient25), RESULT(SoilTemperatureKelvin), PARAMETER(OctanolWaterPhaseTransferEnthalpy));
 		return std::pow(10.0, LogKOWT);
 	)
 	
@@ -340,27 +410,7 @@ New to V0.3: Multiple contaminants at a time.
 		return 1e6 * PARAMETER(AirSoilOverallMassTransferCoefficient) * (/*1e-3*/atmospheric - RESULT(SoilAirContaminantConcentration));
 	)
 	
-	EQUATION(Model, ComputedPrecipitationContaminantConcentration,
-		double airwater_p = RESULT(AirWaterPartitioningCoefficient); //NOTE: This uses soil temperature, but should use air temperature. Can fix this later?
-		double air_c = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
-		return air_c/airwater_p; // ng/m3
-	)
 	
-	EQUATION(Model, ComputedWetDeposition,
-		double water_in = INPUT(Precipitation) * 1e-3; // m/day
-		double conc = RESULT(ComputedPrecipitationContaminantConcentration); // ng/m3
-		if(PARAMETER(ComputeWetDeposition))
-			return conc * water_in; // ng/m2/day
-		return 0.0;
-	)
-	
-	EQUATION(Model, ComputedDryDeposition,
-		double conc = IF_INPUT_ELSE_PARAMETER(AtmosphericContaminantConcentrationIn, AtmosphericContaminantConcentration);
-		double velocity = PARAMETER(DryDepositionVelocity);
-		if(PARAMETER(ComputeDryDeposition))
-			return conc * velocity;
-		return 0.0;
-	)
 	
 	EQUATION(Model, ContaminantInputsToSoil,
 		double input = IF_INPUT_ELSE_PARAMETER(DepositionToLand, DepositionToLandPar) + RESULT(ComputedWetDeposition) + RESULT(ComputedDryDeposition);
@@ -439,11 +489,11 @@ New to V0.3: Multiple contaminants at a time.
 	auto ReachContaminantDegradation   = RegisterEquation(Model, "Reach contaminant degradation", NgPerDay, ReachSolver);
 	auto ReachContaminantAbstraction   = RegisterEquation(Model, "Reach contaminant abstraction", NgPerDay, ReachSolver);
 	
-	auto ReachHenrysConstant                      = RegisterEquation(Model, "Reach Henry's constant", PascalM3PerMol);
-	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Reach air-water partitioning coefficient", Dimensionless);
-	auto ReachOctanolWaterPartitioningCoefficient = RegisterEquation(Model, "Reach octanol-water partitioning coefficient", Dimensionless);
-	auto ReachWaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Reach water-SOC partitioning coefficient", M3PerKg);
-	auto ReachWaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Reach water-DOC partitioning coefficient", M3PerKg);
+	auto ReachHenrysConstant                      = RegisterEquation(Model, "Henry's constant (reach)", PascalM3PerMol);
+	auto ReachAirWaterPartitioningCoefficient     = RegisterEquation(Model, "Air-water partitioning coefficient (reach)", Dimensionless);
+	auto ReachOctanolWaterPartitioningCoefficient = RegisterEquation(Model, "Octanol-water partitioning coefficient (reach)", Dimensionless);
+	auto ReachWaterSOCPartitioningCoefficient     = RegisterEquation(Model, "Water-SOC partitioning coefficient (reach)", M3PerKg);
+	auto ReachWaterDOCPartitioningCoefficient     = RegisterEquation(Model, "Water-DOC partitioning coefficient (reach)", M3PerKg);
 	
 	auto MolecularDiffusivityOfCompoundInAir      = RegisterEquation(Model, "Molecular diffusivity of compound in air", M2PerS);
 	auto MolecularDiffusivityOfWaterVapourInAir   = RegisterEquation(Model, "Molecular diffusivity of water vapour in air", M2PerS);
@@ -549,10 +599,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, ReachHenrysConstant,
-		double LogH25 = std::log10(PARAMETER(HenrysConstant25));
-		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
-		double tdiff = (1.0 / RESULT(WaterTemperatureKelvin) - 1.0/(273.15 + 25.0));
-		double LogHT = LogH25 - ((1e3 * PARAMETER(AirWaterPhaseTransferEnthalpy) + R*(273.15 + 25.0)) / (std::log(10.0)*R) )  * tdiff;
+		double LogHT = TemperatureAdjustLogKH(std::log10(PARAMETER(HenrysConstant25)), RESULT(WaterTemperatureKelvin), PARAMETER(AirWaterPhaseTransferEnthalpy));
 		return std::pow(10.0, LogHT);
 	)
 	
@@ -562,10 +609,7 @@ New to V0.3: Multiple contaminants at a time.
 	)
 	
 	EQUATION(Model, ReachOctanolWaterPartitioningCoefficient,
-		double LogKOW25 = PARAMETER(Log10OctanolWaterPartitioningCoefficient25);
-		double R = 8.314; //Ideal gas constant (J K^-1 mol^-1)
-		double tdiff = (1.0 / RESULT(WaterTemperatureKelvin) - 1.0/(273.15 + 25.0));
-		double LogKOWT = LogKOW25 - (1e3*PARAMETER(OctanolWaterPhaseTransferEntalphy) / (std::log(10.0)*R))   * tdiff;
+		double LogKOWT = TemperatureAdjustLogKow(PARAMETER(Log10OctanolWaterPartitioningCoefficient25), RESULT(WaterTemperatureKelvin), PARAMETER(OctanolWaterPhaseTransferEnthalpy));
 		return std::pow(10.0, LogKOWT);
 	)
 	
