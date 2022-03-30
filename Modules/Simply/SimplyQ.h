@@ -31,13 +31,15 @@ static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplyQ", "0.4.2");
+	BeginModule(Model, "SimplyQ", "0.4.3");
 	
 	SetModuleDescription(Model, R""""(
 This is an adaption of a hydrology module originally implemented in Python as a part of the model SimplyP, which was published as
 
 [Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132](https://doi.org/10.1002/2016WR020132)
 
+New to version 0.4.5:
+- Made field capacity vary by land class
 New to version 0.4.2:
 - Removed minimum groundwater flow parameter, to maintain mass balance
 )"""");
@@ -61,7 +63,6 @@ New to version 0.4.2:
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
 	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "", "fquick"); //Max ok, or breaks model?
-	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0, "", "Tg");
@@ -84,6 +85,7 @@ New to version 0.4.2:
 	auto HydrologyLand = RegisterParameterGroup(Model, "Hydrology land", LandscapeUnits);
 	
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0, "", "Ts");
+	auto SoilFieldCapacity       = RegisterParameterDouble(Model, HydrologyLand, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 	
 	// General parameters that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land cover", Reach, LandscapeUnits);
