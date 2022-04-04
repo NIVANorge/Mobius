@@ -288,7 +288,7 @@ New to V0.3: Multiple contaminants at a time.
 	
 	EQUATION(Model, AerosolAirPartitioningCoefficient,
 		double LogKOAT = TemperatureAdjustLogKow(PARAMETER(Log10OctanolAirPartitioningCoefficient25), INPUT(AirTemperature) + 273.15, PARAMETER(OctanolAirPhaseTransferEnthalpy));
-		double LogKaerosol = LogKOAT + 0.56;     // 0.56=log10(3.8)   Source: SedFlex, but TODO check properly why this number is used and if it should be parametrized. See McLeod &al 2010 Deposition from the Atmosphere to Water and Soils with Aerosol Particles and Precipitation
+		double LogKaerosol = LogKOAT + 0.56;     // 0.56=log10(3.8)   Source: SedFlex, but TODO check properly why this number is used and if it should be parametrized. See McLeod &al 2010 
 		return std::pow(10.0, LogKaerosol);
 	)
 	
