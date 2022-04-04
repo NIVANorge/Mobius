@@ -214,8 +214,6 @@ struct parameter_group_spec
 	std::vector<index_set_h> IndexSets;
 	
 	module_h Module;
-	
-	std::vector<parameter_h> Parameters;   //TODO: See if we use this anymore. It seems superfluous
 };
 
 enum index_set_type
@@ -427,15 +425,15 @@ struct mobius_model
 	
 	module_h CurrentModule = {};
 	
-	entity_registry<module_h,    module_spec>                   Modules;
+	entity_registry<module_h,    module_spec>                 Modules;
 	entity_registry<equation_h,  equation_spec>               Equations;
-	entity_registry<input_h,     input_spec>                     Inputs;
-	entity_registry<parameter_h, parameter_spec>             Parameters;
-	entity_registry<index_set_h, index_set_spec>             IndexSets;
-	entity_registry<parameter_group_h, parameter_group_spec> ParameterGroups;
-	entity_registry<solver_h,    solver_spec>                   Solvers;
-	entity_registry<conditional_h, conditional_spec>         Conditionals;
-	entity_registry<unit_h,      unit_spec>                       Units;
+	entity_registry<input_h,     input_spec>                  Inputs;
+	entity_registry<parameter_h, parameter_spec>              Parameters;
+	entity_registry<index_set_h, index_set_spec>              IndexSets;
+	entity_registry<parameter_group_h, parameter_group_spec>  ParameterGroups;
+	entity_registry<solver_h,    solver_spec>                 Solvers;
+	entity_registry<conditional_h, conditional_spec>          Conditionals;
+	entity_registry<unit_h,      unit_spec>                   Units;
 	
 	std::vector<mobius_equation> EquationBodies;
 	
@@ -884,7 +882,6 @@ RegisterParameter_(mobius_model *Model, parameter_group_h Group, const char *Nam
 	Spec.Unit = Unit;
 	Spec.Description = Description;
 	Spec.ShortName = ShortName;
-	Model->ParameterGroups[Group].Parameters.push_back(Parameter);
 	
 	return Parameter;
 }

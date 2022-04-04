@@ -26,7 +26,6 @@ The basic simple snow module factored out from SimplyQ. Development version Lang
 	auto SnowMeltOffsetTemperature  = RegisterParameterDouble(Model, Snow, "Snow melt offset temperature", DegreesCelsius, 0.0, -4.0, 4.0, "Snow begins melting above this temperature");
 	auto TemperatureAtWhichPrecipFallsAsSnow = RegisterParameterDouble(Model, Snow, "Temperature at which precipitation falls as snow", DegreesCelsius, 0.0, -4.0, 4.0, "Precipitation falls as snow below this temperature");
 	auto SnowMultiplier             = RegisterParameterDouble(Model, Snow, "Snow fall multiplier", Dimensionless, 1.0, 0.5, 1.5, "Adjustment factor to take into account possible inaccuracies in snow fall measurements");
-	//auto UseComplexMeltRate         = RegisterParameterBool(Model, Snow, "Use complex melt rate", false, "Base the melt rate on albedo, radiation and precipitation in addition to temperature");
 
 	// Inputs
 	auto Precipitation  = RegisterInput(Model, "Precipitation", MmPerDay);

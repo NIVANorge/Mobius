@@ -203,10 +203,11 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 				}
 				fprintf(File, ") #\n\n");
 				
-				for(parameter_h Parameter : Group.Parameters)
+				for(parameter_h Parameter : Model->Parameters)
 				{
 					const parameter_spec &Spec = Model->Parameters[Parameter];
 					
+					if(Spec.Group != ParameterGroup) continue;
 					if(Spec.ShouldNotBeExposed) continue;
 					
 					fprintf(File, "%s\"%s\" :", Indent, Spec.Name);
