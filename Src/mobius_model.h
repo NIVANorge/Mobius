@@ -129,10 +129,10 @@ struct entity_registry
 
 union parameter_value
 {
-	double ValDouble;
-	u64 ValUInt;
-	u64 ValBool;      //NOTE: Since this is a union we don't save space by making the bool smaller any way.
-	datetime ValTime; //NOTE: From datetime.h
+	double   ValDouble;
+	u64      ValUInt;
+	u64      ValBool;      //NOTE: Since this is a union we don't save space by making the bool smaller any way.
+	datetime ValTime;      //NOTE: From datetime.h
 	
 	parameter_value() : ValTime() {}; //NOTE: 0-initializes it.
 };
@@ -425,15 +425,15 @@ struct mobius_model
 	
 	module_h CurrentModule = {};
 	
-	entity_registry<module_h,    module_spec>                 Modules;
-	entity_registry<equation_h,  equation_spec>               Equations;
-	entity_registry<input_h,     input_spec>                  Inputs;
-	entity_registry<parameter_h, parameter_spec>              Parameters;
-	entity_registry<index_set_h, index_set_spec>              IndexSets;
+	entity_registry<module_h,          module_spec>           Modules;
+	entity_registry<equation_h,        equation_spec>         Equations;
+	entity_registry<input_h,           input_spec>            Inputs;
+	entity_registry<parameter_h,       parameter_spec>        Parameters;
+	entity_registry<index_set_h,       index_set_spec>        IndexSets;
 	entity_registry<parameter_group_h, parameter_group_spec>  ParameterGroups;
-	entity_registry<solver_h,    solver_spec>                 Solvers;
-	entity_registry<conditional_h, conditional_spec>          Conditionals;
-	entity_registry<unit_h,      unit_spec>                   Units;
+	entity_registry<solver_h,          solver_spec>           Solvers;
+	entity_registry<conditional_h,     conditional_spec>      Conditionals;
+	entity_registry<unit_h,            unit_spec>             Units;
 	
 	std::vector<mobius_equation> EquationBodies;
 	
@@ -966,15 +966,10 @@ RegisterParameterEnum(mobius_model *Model, parameter_group_h Group, const char *
 	s64 FoundDefault = -1;
 	for(const char *EnumName : EnumNames)
 	{
-		const char *C = EnumName;
-		while(*C != 0)
+		if(!IsIdentifier(EnumName))
 		{
-			if(!isalpha(*C) && *C != '_' && !(C != EnumName && isdigit(*C)))
-			{
-				PrintRegistrationErrorHeader(Model);
-				FatalError("ERROR: The enum parameter \"", Name, "\" was given the possible value \"", EnumName, "\", which contains characters that are not alphabetical, numerical, or '_'.\n");
-			}
-			++C;
+			PrintRegistrationErrorHeader(Model);
+			FatalError("ERROR: The enum parameter \"", Name, "\" was given the possible value \"", EnumName, "\", which contains characters that are not alphabetical, numerical, or '_'.\n");
 		}
 		
 		if(Default && strcmp(EnumName, Default)==0) FoundDefault = (s64)Idx;

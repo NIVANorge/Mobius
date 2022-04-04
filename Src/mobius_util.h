@@ -47,5 +47,19 @@ GetTimerMilliseconds(timer *Timer)
 	return (u64)Ms;
 }
 
+
+bool IsIdentifier(const char *Name)
+{
+	const char *C = Name;
+	while(*C != 0)
+	{
+		if(!isalpha(*C) && *C != '_' && !(C != Name && isdigit(*C)))
+			return false;
+		++C;
+	}
+	return true;
+}
+
+
 #define MOBIUS_UTIL_H
 #endif
