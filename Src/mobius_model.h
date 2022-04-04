@@ -204,7 +204,7 @@ typedef std::function<double(model_run_state *)> mobius_equation;
 
 typedef std::function<void(size_t, size_t, double)> mobius_matrix_insertion_function;
 
-#define MOBIUS_SOLVER_FUNCTION(Name) void Name(double h, size_t n, double* x0, double* wk, const equation_batch *Batch, model_run_state *RunState, double AbsErr, double RelErr)
+#define MOBIUS_SOLVER_FUNCTION(Name) bool Name(double h, size_t n, double* x0, double* wk, const equation_batch *Batch, model_run_state *RunState, double AbsErr, double RelErr)
 typedef MOBIUS_SOLVER_FUNCTION(mobius_solver_function);
 typedef size_t mobius_solver_space_requirement_function(size_t n);
 

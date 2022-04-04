@@ -71,15 +71,29 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 			X, 0.0 , 1.0 , h 
 			/*TODO: add an observer to handle errors? */);
 	}
-	catch(...)
+	catch(const no_progress_error &Err)
 	{
-		//TODO: Better handling to get a proper description of the error?
-		FatalError("ERROR: An error occurred in the Rosenbrock4 solver.\n");
+		ErrorPrint("ERROR: A \"no progress error\" occurred in the Rosenbrock4 solver.\n");
+		ErrorPrint("Message: ", Err.what(), "\n");
+		return false;
 	}
-	//std::cout << "N steps : " << NSteps << std::endl;
+	catch(const step_adjustment_error &Err)
+	{
+		ErrorPrint("ERROR: A \"step adjustment error\" occurred in the Rosenbrock4 solver.\n");
+		ErrorPrint("Message: ", Err.what(), "\n");
+		return false;
+	}
+	catch(const odeint_error &Err)
+	{
+		ErrorPrint("ERROR: An \"odeint error\" occurred in the Rosenbrock4 solver.\n");
+		ErrorPrint("Message: ", Err.what(), "\n");
+		return false;
+	}
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
 		x0[Idx] = X[Idx];
+	
+	return true;
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostRosenbrock4)
@@ -109,6 +123,8 @@ MOBIUS_SOLVER_FUNCTION(BoostRK4Impl_)
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
 		x0[Idx] = X[Idx];
+	
+	return true;
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostRK4)
@@ -137,6 +153,8 @@ MOBIUS_SOLVER_FUNCTION(BoostCashCarp54Impl_)
 	
 	for(size_t Idx = 0; Idx < n; ++Idx)
 		x0[Idx] = X[Idx];
+	
+	return true;
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(BoostCashCarp54)

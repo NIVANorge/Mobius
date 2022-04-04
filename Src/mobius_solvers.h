@@ -28,6 +28,8 @@ MOBIUS_SOLVER_FUNCTION(MobiusEulerImpl_)
 		
 		haccum += use_h;
 	}
+	
+	return true;
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(MobiusEuler)
@@ -165,6 +167,8 @@ FT:
 			StepCanBeReduced = true;
 		}
 	}
+	
+	return true;
 }
 
 MOBIUS_SOLVER_SETUP_FUNCTION(IncaDascru)

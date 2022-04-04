@@ -1578,7 +1578,21 @@ INNER_LOOP_BODY(RunInnerLoop)
 				if(IsValid(SolverSpec.hParam)) h = RunState->CurParameters[SolverSpec.hParam.Handle].ValDouble;
 				
 				//NOTE: Solve the system using the provided solver
-				SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, &Batch, RunState, SolverSpec.RelErr, SolverSpec.AbsErr);
+				bool Success = SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, &Batch, RunState, SolverSpec.RelErr, SolverSpec.AbsErr);
+				
+
+				if(!Success)
+				{
+					//TODO: Print index state
+					ErrorPrint("State of ODE equations at solver failure:\n");
+					size_t EquationIdx = 0;
+					for(equation_h Equation : Batch.EquationsODE)
+					{
+						ErrorPrint("\t", GetName(Model, Equation), " = ", RunState->SolverTempX0[EquationIdx], "\n");
+						++EquationIdx;
+					}
+					FatalError();
+				}
 				
 				//NOTE: Store out the final results from this solver to the main dataset.
 				for(equation_h Equation : Batch.Equations)
