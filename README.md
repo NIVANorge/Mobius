@@ -172,8 +172,6 @@ The basic functionality of the Mobius system has no other library dependencies t
 https://www.boost.org/
 You will not need to compile any of the boost libraries separately; we use the header-only libraries.
 
-Other more advanced functionality such as the C++-written calibration systems rely on other libraries. That will eventually be documented somewhere else.
-
 ### Python wrapper
 
 See the [PythonWrapper readme](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper).
