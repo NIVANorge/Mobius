@@ -123,8 +123,6 @@ https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installati
 
 On Linux you should be able to get g++ using the command `sudo apt install g++` or something similar (maybe depending on the Linux distribution).
 
-(Note: we would normally have recommended the TDM-gcc distribution of MingW, as that allows you to use multithreading and openmp in C++ code, but unfortunately there is a bug in this (last checked 2019-02-05) so that Windows 10 is unable to load .dll's compiled with it)
-
 ### Compiling
 
 #### Windows
