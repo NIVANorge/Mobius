@@ -117,7 +117,7 @@ struct token_stream
 	}
 	
 	token ReadToken();
-	token PeekToken(s64 PeekAhead = 1);
+	token PeekToken(s64 PeekAt = 0);
 	token ExpectToken(token_type);
 	
 	double       ExpectDouble();
@@ -163,14 +163,11 @@ token_stream::PrintErrorHeader(bool CurrentColumn)
 }
 
 token
-token_stream::PeekToken(s64 PeekAhead)
+token_stream::PeekToken(s64 PeekAt)
 {
-	if(PeekAhead < 1) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
+	if(PeekAt < 0) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
 	
-	//NOTE: The peek_queue stores its front item at index 0, while this function wants 1 to point to the first one (and it is annoying to change that without changing all the file parsers in mobius_io)
-	s64 PeekAt = PeekAhead-1;
-	
-	TokenQueue.Reserve(PeekAhead);
+	TokenQueue.Reserve(PeekAt+1);
 	while(TokenQueue.MaxPeek() < PeekAt)
 	{
 		token & Token = TokenQueue.Append();
