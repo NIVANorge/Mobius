@@ -14,6 +14,9 @@ struct token_string
 	
 	bool Equals(const char *) const;
 	token_string Copy(bucket_allocator *Allocator = nullptr) const;
+	
+	const char & operator[](size_t Idx) const { return Data[Idx]; }
+	token_string Substring(size_t Offset, size_t Span) const;
 };
 
 token_string::token_string(const char *DataIn)
@@ -62,6 +65,18 @@ token_string token_string::Copy(bucket_allocator *Allocator) const
 	NewData[Length] = '\0'; //NOTE: In case people want a 0-terminated string. This is sometimes used in the current code, but it is not that clean...
 	
 	memcpy(NewData, Data, Length);
+	
+	return Result;
+}
+
+token_string token_string::Substring(size_t Offset, size_t Span) const
+{
+	//TODO: Should this do error handling?
+	
+	token_string Result;
+	
+	Result.Data = Data+Offset;
+	Result.Length = Span;
 	
 	return Result;
 }

@@ -35,7 +35,7 @@ struct token
 	token_type Type;
 	token_string StringValue;
 
-	//TODO: It is tempting to put these in a union, but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint (and the bit patterns of a double and a u64 don't encode the same number).
+	//NOTE: It is tempting to put these in a union, but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint (and the bit patterns of a double and a u64 don't encode the same number).
 	u64 UIntValue;
 	double DoubleValue;
 	bool BoolValue;
@@ -44,54 +44,61 @@ struct token
 	bool IsUInt;
 };
 
+static token_string
+ReadEntireFile(const char *Filename)
+{
+	token_string FileData = {};
+	
+	FILE *File;
+#ifdef _WIN32
+	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
+	File = _wfopen((wchar_t *)Filename16.data(), L"rb");
+#else
+	File = fopen(Filename, "rb");
+#endif
+	if(!File)
+		FatalError("ERROR: Tried to open file ", Filename, ", but was not able to.\n");
+
+	fseek(File, 0, SEEK_END);
+	FileData.Length = ftell(File);
+	fseek(File, 0, SEEK_SET);
+	
+	if(FileData.Length == 0)
+	{
+		fclose(File);
+		FatalError("ERROR: File ", Filename, " has 0 length.\n");
+	}
+	
+	FileData.Data = (char *)malloc(FileData.Length);
+	if(FileData.Data)
+	{
+		size_t ReadSize = fread((void *)FileData.Data, 1, FileData.Length, File); // NOTE: Casting away constness, but it doesn't matter since we just allocated it ourselves.
+		if(ReadSize != FileData.Length)
+		{
+			fclose(File);
+			FatalError("ERROR: Was unable to read the entire file ", Filename);
+		}
+	}
+	fclose(File);
+	
+	if(!FileData.Data)
+		FatalError("Unable to allocate enough memory to read in file ", Filename, '\n');
+	
+	return FileData;
+}
+
 struct token_stream
 {
 	token_stream(const char *Filename)
 	{
-		FileData = 0;
-		FileDataLength = 0;
-		TokenQueue = 0;
 		this->Filename = Filename;
-		FILE *File;
-#ifdef _WIN32
-		std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
-		File = _wfopen((wchar_t *)Filename16.data(), L"rb");
-#else
-		File = fopen(Filename, "rb");
-#endif
-		if(!File)
-			FatalError("ERROR: Tried to open file ", Filename, ", but was not able to.\n");
-
-		fseek(File, 0, SEEK_END);
-		FileDataLength = ftell(File);
-		fseek(File, 0, SEEK_SET);
-		
-		if(FileDataLength == 0)
-		{
-			fclose(File);
-			FatalError("ERROR: File ", Filename, " has 0 length.\n");
-		}
-		
-		FileData = (char *)malloc(FileDataLength + 1);
-		if(FileData)
-		{
-			size_t ReadSize = fread(FileData, 1, FileDataLength, File);
-			if(ReadSize != FileDataLength)
-			{
-				fclose(File);
-				FatalError("ERROR: Was unable to read the entire file ", Filename);
-			}
-			FileData[FileDataLength] = '\0';
-		}
-		fclose(File);
-		
-		if(!FileData)
-			FatalError("Unable to allocate enough memory to read in file ", Filename, '\n');
 		
 		AtChar = -1;
 		
+		FileData = ReadEntireFile(Filename);
+		
 		//NOTE: In case the file has a BOM mark, which Notepad tends to do on Windows.
-		if(FileDataLength >= 3)
+		if(FileData.Length >= 3)
 		{
 			if(
 				   FileData[0] == (char) 0xEF
@@ -102,17 +109,11 @@ struct token_stream
 		}
 		
 		StartLine = 0; StartColumn = 0; Line = 0; Column = 0; PreviousColumn = 0;
-		Cursor_File = -1;
-		FurthestPeek_File = -1;
-		
-		TokenQueueCapacity = 16;   //This is how far we can peek into the file from our current cursor position (without resizing the token queue)
-		TokenQueue = AllocClearedArray(token, TokenQueueCapacity);
 	}
 	
 	~token_stream()
 	{
-		if(FileData)   free(FileData);
-		if(TokenQueue) free(TokenQueue);
+		if(FileData.Data) free((void *)FileData.Data); // NOTE: Casting away constness, but it doesn't matter since we just allocated it ourselves.
 	}
 	
 	token ReadToken();
@@ -144,14 +145,10 @@ private:
 	
 	bool AtEnd = false;
 	
-	char   *FileData;
-	size_t FileDataLength;
+	token_string FileData;
 	s64    AtChar;
 	
-	token  *TokenQueue;
-	size_t TokenQueueCapacity;
-	s64 Cursor_File;
-	s64 FurthestPeek_File;
+	peek_queue<token> TokenQueue;
 	
 	void ReadTokenInternal_(token &Token);
 	
@@ -170,32 +167,25 @@ token_stream::PeekToken(s64 PeekAhead)
 {
 	if(PeekAhead < 1) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
 	
-	if(PeekAhead > (s64)TokenQueueCapacity)    //NOTE: Resize the queue if we need more capacity. This will probably never happen since we don't peek that far ahead while parsing...
-	{
-		size_t NewCapacity = TokenQueueCapacity*2;
-		while(PeekAhead > (s64)NewCapacity) NewCapacity *= 2;
-		token *NewQueue = AllocClearedArray(token, NewCapacity);
-		for(int TokenIdx = 0; TokenIdx < (int)TokenQueueCapacity; ++TokenIdx) NewQueue[(Cursor_File + TokenIdx) % NewCapacity] = TokenQueue[(Cursor_File + TokenIdx) % TokenQueueCapacity];
-		free(TokenQueue);
-		TokenQueue = NewQueue;
-		TokenQueueCapacity = NewCapacity;
-	}
+	//NOTE: The peek_queue stores its front item at index 0, while this function wants 1 to point to the first one (and it is annoying to change that without changing all the file parsers in mobius_io)
+	s64 PeekAt = PeekAhead-1;
 	
-	while(FurthestPeek_File < Cursor_File + PeekAhead)
+	TokenQueue.Reserve(PeekAhead);
+	while(TokenQueue.MaxPeek() < PeekAt)
 	{
-		FurthestPeek_File++;
-		token &Token = TokenQueue[FurthestPeek_File % TokenQueueCapacity];
+		token & Token = TokenQueue.Append();
 		ReadTokenInternal_(Token);
 	}
 	
-	return TokenQueue[(Cursor_File + PeekAhead) % TokenQueueCapacity];
+	return TokenQueue.Peek(PeekAt);
 }
 
 token
 token_stream::ReadToken()
 {
+	// Hmm, lots of unnecessary copying here.
 	token Token = PeekToken();
-	Cursor_File++;
+	TokenQueue.Advance();
 	return Token;
 }
 
@@ -272,8 +262,8 @@ token_stream::ReadTokenInternal_(token &Token)
 	while(true)
 	{
 		++AtChar;
-		
-		char c = FileData[AtChar];
+		char c = '\0';
+		if(AtChar < FileData.Length) c = FileData[AtChar];
 		
 		if(c == EOF || c == '\0')
 		{
@@ -324,14 +314,12 @@ token_stream::ReadTokenInternal_(token &Token)
 			StartLine = Line;
 			StartColumn = Column;
 			
-			Token.StringValue.Data = FileData + AtChar;
-			Token.StringValue.Length = 1;
+			Token.StringValue = FileData.Substring(AtChar, 1);
 			
 			if(Token.Type == TokenType_QuotedString)
 			{
 				//NOTE: For quoted strings we don't want to record the actual " symbol into the sting value.
-				Token.StringValue.Data = FileData + AtChar + 1;
-				Token.StringValue.Length = 0;
+				Token.StringValue = FileData.Substring(AtChar + 1, 0);
 			}
 		}
 		else
