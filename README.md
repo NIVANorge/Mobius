@@ -123,8 +123,6 @@ https://mingw-w64.org/doku.php/download/mingw-builds **Be sure during installati
 
 On Linux you should be able to get g++ using the command `sudo apt install g++` or something similar (maybe depending on the Linux distribution).
 
-(Note: we would normally have recommended the TDM-gcc distribution of MingW, as that allows you to use multithreading and openmp in C++ code, but unfortunately there is a bug in this (last checked 2019-02-05) so that Windows 10 is unable to load .dll's compiled with it)
-
 ### Compiling
 
 #### Windows
@@ -173,8 +171,6 @@ We have also started making a simple wrapper of Mobius to the R language, but th
 The basic functionality of the Mobius system has no other library dependencies than the C++ standard library, which will be installed when you install g++ as described above. However, if you want to use more advanced solvers such as the boost::numeric::odeint solvers, you have to download boost (and copy the header files to your compiler's include directory).
 https://www.boost.org/
 You will not need to compile any of the boost libraries separately; we use the header-only libraries.
-
-Other more advanced functionality such as the C++-written calibration systems rely on other libraries. That will eventually be documented somewhere else.
 
 ### Python wrapper
 
