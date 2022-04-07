@@ -2,7 +2,7 @@
 
 /*
 	Very simple queue that allows you to peek ahead of the first position.
-	No advanced C++, so no move constructors or things like that supported. It was only made for a single purpose of having a token queue for file parsing.
+	No advanced C++, so no move semantics or things like that supported. It was only made for a single purpose of having a token queue for file parsing.
 */
 
 template<typename T>

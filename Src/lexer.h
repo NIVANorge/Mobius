@@ -14,28 +14,33 @@ enum token_type
 	TokenType_EOF,
 };
 
-//NOTE: WARNING: This has to match the token_type enum!!!
-const char *TokenNames[11] =
+const char *TokenTypeName(token_type Type)
 {
-	"(unknown)",
-	"unquoted string",
-	"quoted string",
-	":",
-	"{",
-	"}",
-	"number",
-	"boolean",
-	"date",
-	"time",
-	"(end of file)",
-};
+	//NOTE: WARNING: This has to match the token_type enum!!!
+	const char *TokenNames[11] =
+	{
+		"(unknown)",
+		"unquoted string",
+		"quoted string",
+		":",
+		"{",
+		"}",
+		"number",
+		"boolean",
+		"date",
+		"time",
+		"(end of file)",
+	};
+	return TokenNames[(int)Type];
+}
+
 
 struct token
 {
 	token_type Type;
 	token_string StringValue;
 
-	//NOTE: It is tempting to put these in a union, but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint (and the bit patterns of a double and a u64 don't encode the same number).
+	//NOTE: It is tempting to put these in a union (or just let them be a parameter_value), but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint. We could maybe pack some stuff better though.
 	u64 UIntValue;
 	double DoubleValue;
 	bool BoolValue;
@@ -69,20 +74,19 @@ ReadEntireFile(const char *Filename)
 		FatalError("ERROR: File ", Filename, " has 0 length.\n");
 	}
 	
-	FileData.Data = (char *)malloc(FileData.Length);
-	if(FileData.Data)
-	{
-		size_t ReadSize = fread((void *)FileData.Data, 1, FileData.Length, File); // NOTE: Casting away constness, but it doesn't matter since we just allocated it ourselves.
-		if(ReadSize != FileData.Length)
-		{
-			fclose(File);
-			FatalError("ERROR: Was unable to read the entire file ", Filename);
-		}
-	}
+	char *Data = (char *)malloc(FileData.Length + 1);
+	
+	if(!Data)
+		FatalError("Unable to allocate enough memory to read in file ", Filename, '\n');
+
+	size_t ReadSize = fread((void *)Data, 1, FileData.Length, File); // NOTE: Casting away constness, but it doesn't matter since we just allocated it ourselves.
 	fclose(File);
 	
-	if(!FileData.Data)
-		FatalError("Unable to allocate enough memory to read in file ", Filename, '\n');
+	if(ReadSize != FileData.Length)
+		FatalError("ERROR: Was unable to read the entire file ", Filename);
+	
+	Data[FileData.Length] = '\0';    //Zero-terminate it in case we want to interface with C libraries.
+	FileData.Data = Data;
 	
 	return FileData;
 }
@@ -94,6 +98,7 @@ struct token_stream
 		this->Filename = Filename;
 		
 		AtChar = -1;
+		AtEnd  = false;
 		
 		FileData = ReadEntireFile(Filename);
 		
@@ -128,8 +133,6 @@ struct token_stream
 	token_string ExpectUnquotedString();
 	
 	void ReadQuotedStringList(std::vector<token_string> &ListOut);
-	void ReadQuotedStringList(std::vector<const char *> &ListOut);
-	void ReadDoubleSeries(std::vector<double> &ListOut);
 	void ReadParameterSeries(std::vector<parameter_value> &ListOut, const parameter_spec &Spec);
 	
 	void PrintErrorHeader(bool CurrentColumn=false);
@@ -139,19 +142,19 @@ struct token_stream
 private:
 	s32 StartLine;
 	s32 StartColumn;
+	
 	s32 Line;
 	s32 Column;
 	s32 PreviousColumn;
 	
-	bool AtEnd = false;
-	
 	token_string FileData;
-	s64    AtChar;
+	s64          AtChar;
+	bool         AtEnd;
 	
 	peek_queue<token> TokenQueue;
 	
 	void ReadTokenInternal_(token &Token);
-	
+	const token & PeekInternal_(s64 PeekAt = 0);
 };
 
 void
@@ -162,8 +165,7 @@ token_stream::PrintErrorHeader(bool CurrentColumn)
 	ErrorPrint("ERROR: In file ", Filename, " line ", (StartLine+1), " column ", Col, ": ");
 }
 
-token
-token_stream::PeekToken(s64 PeekAt)
+const token & token_stream::PeekInternal_(s64 PeekAt)
 {
 	if(PeekAt < 0) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
 	
@@ -178,10 +180,15 @@ token_stream::PeekToken(s64 PeekAt)
 }
 
 token
+token_stream::PeekToken(s64 PeekAt)
+{
+	return PeekInternal_(PeekAt);
+}
+
+token
 token_stream::ReadToken()
 {
-	// Hmm, lots of unnecessary copying here.
-	token Token = PeekToken();
+	const token & Token = PeekInternal_();
 	TokenQueue.Advance();
 	return Token;
 }
@@ -193,7 +200,7 @@ token_stream::ExpectToken(token_type Type)
 	if(Token.Type != Type)
 	{
 		PrintErrorHeader();
-		ErrorPrint("Expected a token of type ", TokenNames[Type], ", got a(n) ", TokenNames[Token.Type]);
+		ErrorPrint("Expected a token of type ", TokenTypeName(Type), ", got a(n) ", TokenTypeName(Token.Type));
 		if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_UnquotedString)
 			ErrorPrint(" \"", Token.StringValue, "\"");
 		FatalError('\n');
@@ -210,7 +217,7 @@ IsIdentifier(char c)
 inline bool
 MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
 {
-	u64 MaxU64 = 0xffffffffffffffff;
+	constexpr u64 MaxU64 = 0xffffffffffffffff;
 	if( (MaxU64 - Addendand) / 10  < *Number) return false;
 	*Number = *Number * 10 + Addendand;
 	return true;
@@ -219,17 +226,39 @@ MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
 inline bool
 MultiplyByTenAndAdd(s32 *Number, s32 Addendand)
 {
-	s32 MaxS32 = 2147483647;
+	constexpr s32 MaxS32 = 2147483647;
 	if( (MaxS32 - Addendand) / 10  < *Number) return false;
 	*Number = *Number * 10 + Addendand;
 	return true;
 }
 
+inline double
+MakeDoubleFast(u64 Base, s64 Exponent, bool IsNegative, bool *Success)
+{
+	// Fast lane for parsing doubles. Described in
+	// Clinger WD. How to read floating point numbers accurately.
+    // ACM SIGPLAN Notices. 1990
+	static const double Pow10[] = {
+		1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22
+	};
+	if(-22 <= Exponent && Exponent <= 22 && Base <= 9007199254740991)
+	{
+		*Success = true;
+		double Result = (double)Base;
+		if(Exponent < 0)
+			Result /= Pow10[-Exponent];
+		else
+			Result *= Pow10[Exponent];
+		Result = IsNegative ? -Result : Result;
+		return Result;
+	}
+	*Success = false;
+	return 0.0;
+}
+
 void
 token_stream::ReadTokenInternal_(token &Token)
 {
-	//TODO: we should do heavy cleanup of this function, especially the floating point reading.
-	
 	Token = {}; // 0-initialize
 	
 	if(AtEnd)
@@ -239,17 +268,17 @@ token_stream::ReadTokenInternal_(token &Token)
 	}
 	
 	s32 NumericPos = 0;
+	
 	bool IsNegative  = false;
 	bool HasComma    = false;
 	bool HasExponent = false;
 	bool ExponentIsNegative = false;
-	u64 BeforeComma = 0;
-	u64 AfterComma = 0;
+	u64 Base = 0;
 	u64 Exponent = 0;
-	u64 DigitsAfterComma = 0;
+	s32 DigitsAfterComma = 0;
 	
 	s32 Date[3] = {0, 0, 0};
-	u32 DatePos = 0;
+	s32 DatePos = 0;
 	
 	
 	bool TokenHasStarted = false;
@@ -314,21 +343,15 @@ token_stream::ReadTokenInternal_(token &Token)
 			Token.StringValue = FileData.Substring(AtChar, 1);
 			
 			if(Token.Type == TokenType_QuotedString)
-			{
 				//NOTE: For quoted strings we don't want to record the actual " symbol into the sting value.
 				Token.StringValue = FileData.Substring(AtChar + 1, 0);
-			}
 		}
 		else
-		{
 			Token.StringValue.Length++;
-		}
 		
 		if(Token.Type == TokenType_Colon || Token.Type == TokenType_OpenBrace || Token.Type == TokenType_CloseBrace)
-		{
 			//NOTE: These tokens are always one character only
 			return;
-		}
 		
 		if(Token.Type == TokenType_QuotedString)
 		{
@@ -374,7 +397,6 @@ token_stream::ReadTokenInternal_(token &Token)
 					Token.Type = TokenType_Numeric;
 					Token.DoubleValue = std::numeric_limits<double>::quiet_NaN();
 				}
-				//else std::cout << Token.StringValue << std::endl;
 				
 				return;
 			}
@@ -391,7 +413,7 @@ token_stream::ReadTokenInternal_(token &Token)
 					{
 						//NOTE we have encountered something of the form x- where x is a plain number. Assume it continues on as x-y-z
 						Token.Type = TokenType_Date;
-						Date[0] = (s32)BeforeComma;
+						Date[0] = (s32)Base;
 						if(IsNegative) Date[0] = -Date[0];
 						DatePos = 1;
 					}
@@ -413,7 +435,7 @@ token_stream::ReadTokenInternal_(token &Token)
 			else if(c == ':')
 			{
 				Token.Type = TokenType_Time;
-				Date[0] = (s32)BeforeComma;
+				Date[0] = (s32)Base;
 				DatePos = 1;
 				if(HasComma || HasExponent || IsNegative)
 				{
@@ -457,28 +479,15 @@ token_stream::ReadTokenInternal_(token &Token)
 			}
 			else if(isdigit(c))
 			{
+				
 				if(HasExponent)
-				{
 					MultiplyByTenAndAdd(&Exponent, (u64)(c - '0'));
-					u64 MaxExponent = 308; //NOTE: This is not a really thorough test, because we could overflow still..
-					if(Exponent > MaxExponent)
-					{
-						PrintErrorHeader();
-						FatalError("Too large exponent in numeric literal.\n");
-					}
-				}
-				else if(HasComma)
-				{
-					if(!MultiplyByTenAndAdd(&AfterComma, (u64)(c - '0')))
-					{
-						PrintErrorHeader();
-						FatalError("Overflow after comma in numeric literal (too many digits).\n");
-					}
-					DigitsAfterComma++;
-				}
 				else
 				{
-					if(!MultiplyByTenAndAdd(&BeforeComma, (u64)(c - '0')))
+					if(HasComma)
+						DigitsAfterComma++;
+
+					if(!MultiplyByTenAndAdd(&Base, (u64)(c - '0'))) //TODO: Since we fallback on atof for large numbers, we don't necessarily have to make an error here...
 					{
 						PrintErrorHeader();
 						FatalError("Overflow in numeric literal (too many digits). If this is a double, try to use scientific notation instead.\n");
@@ -548,20 +557,16 @@ token_stream::ReadTokenInternal_(token &Token)
 		if(!HasComma && !HasExponent && !IsNegative)
 			Token.IsUInt = true;
 		
-		Token.UIntValue = BeforeComma;
+		Token.UIntValue = Base;
 		
-		//NOTE: Alternatively, we could also just use sscanf(Token.StringValue, "%f", &Token.DoubleValue), which may do a better job at this than us..
-		double BC = (double)BeforeComma;
-		double AC = (double)AfterComma;
-		for(size_t I = 0; I < DigitsAfterComma; ++I) AC *= 0.1;
-		Token.DoubleValue = BC + AC;
-		if(IsNegative) Token.DoubleValue = -Token.DoubleValue;
-		if(HasExponent)
-		{
-			double Multiplier = ExponentIsNegative ? 0.1 : 10.0;
-			for(u64 Ex = 0; Ex < Exponent; ++Ex)
-				Token.DoubleValue *= Multiplier;
-		}
+		s64 SignedExponent = ExponentIsNegative ? -(s64)Exponent : (s64)Exponent;
+		SignedExponent -= DigitsAfterComma;
+		bool Success;
+		Token.DoubleValue = MakeDoubleFast(Base, SignedExponent, IsNegative, &Success);
+		if(!Success)  
+			// Fall back on slow method. TODO: Should maybe get something like the fast_double_parser library instead.
+			Token.DoubleValue = atof(Token.StringValue.Data);
+			// Also we should do error handling, but the cases where atof fails will be very edge since we already checked that it is correctly formatted (only problem could be over/underflows).
 	}
 	
 	if(Token.Type == TokenType_Date || Token.Type == TokenType_Time)
@@ -661,52 +666,6 @@ token_stream::ReadQuotedStringList(std::vector<token_string> &ListOut)
 		}
 	}
 }
-
-/*
-//NOTE: removed this for now as we don't use it in active code, and it leaks. Should take a bucket allocator for the Copy()
-
-void
-token_stream::ReadQuotedStringList(std::vector<const char *> &ListOut)
-{
-	//NOTE: This one makes a copy of the strings.
-	ExpectToken(TokenType_OpenBrace);
-	while(true)
-	{
-		token Token = ReadToken();
-		
-		if(Token.Type == TokenType_QuotedString)
-		{
-			ListOut.push_back(Token.StringValue.Copy().Data);
-		}
-		else if(Token.Type == TokenType_CloseBrace)
-		{
-			break;
-		}
-		else if(Token.Type == TokenType_EOF)
-		{
-			PrintErrorHeader();
-			FatalError("End of file before list was ended.\n");
-		}
-		else
-		{
-			PrintErrorHeader();
-			FatalError("Unexpected token.\n");
-		}
-	}
-}
-*/
-
-void
-token_stream::ReadDoubleSeries(std::vector<double> &ListOut)
-{
-	while(true)
-	{
-		token Token = PeekToken();
-		if(Token.Type != TokenType_Numeric) break;
-		ListOut.push_back(ExpectDouble());
-	}
-}
-
 
 void
 token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, const parameter_spec &Spec)

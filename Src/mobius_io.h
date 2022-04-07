@@ -181,7 +181,6 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 		if(ModuleHandle != 0)
 		{
 			const module_spec &Module = Model->Modules.Specs[ModuleHandle];
-			//fprintf(File, "\n###################### %s V%s ######################\n", Module.Name, Module.Version);
 			fprintf(File, "\n{ module \"%s\" version \"%s\"\n", Module.Name, Module.Version);
 			
 			Indent = "\t";
