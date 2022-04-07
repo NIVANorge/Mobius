@@ -109,7 +109,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto ContaminantInputFromUpstream       = GetEquationHandle(Model, "Reach contaminant input from upstream"); // ng/day
 	//NOTE: We reuse these instead of computing them for the lake. This is ONLY OK because we have a slow-flowing river in our particular case!!
 	auto AirWaterTransferVelocity           = GetEquationHandle(Model, "Reach overall air-water transfer velocity");
-	auto AirWaterPartitioningCoefficient    = GetEquationHandle(Model, "Reach air-water partitioning coefficient");
+	auto AirWaterPartitioningCoefficient    = GetEquationHandle(Model, "Air-water partitioning coefficient (reach)");
 	
 	//EasyLake
 	auto EpilimnionTemperature              = GetEquationHandle(Model, "Epilimnion temperature");
@@ -134,7 +134,7 @@ This is a simple lake module for INCA-Tox that was made for just one specific pr
 	auto TemperatureAtWhichDegradationRatesAreMeasured = GetParameterDoubleHandle(Model, "Temperature at which degradation rates are measured");
 	auto MolecularVolume                               = GetParameterDoubleHandle(Model, "Contaminant molecular volume at surface pressure");
 	auto Log10OctanolWaterPartitioningCoefficient25    = GetParameterDoubleHandle(Model, "Log10 Octanol-water partitioning coefficient at 25°C");
-	auto OctanolWaterPhaseTransferEntalphy             = GetParameterDoubleHandle(Model, "Enthalpy of phase tranfer between octanol and water");
+	auto OctanolWaterPhaseTransferEntalphy             = GetParameterDoubleHandle(Model, "Enthalpy of phase transfer between octanol and water");
 	auto IsLake                                        = GetParameterBoolHandle(Model, "This section is a lake");
 	
 	auto AtmosphericContaminantConcentrationIn  = GetInputHandle(Model, "Atmospheric contaminant concentration");
