@@ -4,7 +4,8 @@ enum token_type : char
 	TokenType_Unknown = 0,
 	TokenType_Identifier,
 	TokenType_QuotedString,
-	TokenType_Numeric,
+	TokenType_Double,       // Number type only guaranteed to be a valid double
+	TokenType_UInt,         // Number type that is guaranteed to be a valid uint, but also valid double.
 	TokenType_Bool,
 	TokenType_Date,
 	TokenType_Time,
@@ -16,11 +17,12 @@ constexpr char MobiusMaxMulticharTokenType = 20; // We won't need more multi-cha
 inline const char *TokenTypeName(token_type &Type)
 {
 	//NOTE: WARNING: This has to match the token_type enum!!!
-	const char *TokenNames[8] =
+	const char *TokenNames[9] =
 	{
 		"(unknown)",
 		"identifier",
 		"quoted string",
+		"number",
 		"number",
 		"boolean",
 		"date",
@@ -40,64 +42,35 @@ inline const char *TokenTypeArticle(token_type Type)
 	return "a";
 }
 
+inline bool IsNumeric(token_type Type)
+{
+	return (Type == TokenType_Double) || (Type == TokenType_UInt);
+}
+
 
 struct token
 {
-	token_type   Type;
 	token_string StringValue;
-
-	//NOTE: The UIntValue can't be packed with the others since we can't always at the tokenizer stage determine if this should be interpreted as a uint or a double.
-	u64          UIntValue;
+	
+	// NOTE: This is almost the same as parameter_value, so we could use that, but it is nice to separate complexities just in case.
 	union
 	{
+		u64      UIntValue;
+		// WARNING: DoubleValue should never be read directly, instead use GetDoubleValue() below. This is because something that is a valid uint could also be interpreted as a double.
+		// TODO:    How to enforce that in the compiler without making too much boilerplate for accessing the other values?
 		double   DoubleValue;
-		bool     BoolValue;
+		u64      BoolValue;
 		datetime DateValue;
 	};
-	bool IsUInt; // TODO: This is a bit annoying.
-};
-
-static token_string
-ReadEntireFile(const char *Filename)
-{
-	token_string FileData = {};
 	
-	FILE *File;
-#ifdef _WIN32
-	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
-	File = _wfopen((wchar_t *)Filename16.data(), L"rb");
-#else
-	File = fopen(Filename, "rb");
-#endif
-	if(!File)
-		FatalError("ERROR: Tried to open file ", Filename, ", but was not able to.\n");
-
-	fseek(File, 0, SEEK_END);
-	FileData.Length = ftell(File);
-	fseek(File, 0, SEEK_SET);
+	token_type   Type;
 	
-	if(FileData.Length == 0)
+	double GetDoubleValue()
 	{
-		fclose(File);
-		FatalError("ERROR: File ", Filename, " has 0 length.\n");
+		if(Type == TokenType_Double) return DoubleValue;
+		return (double)UIntValue;
 	}
-	
-	char *Data = (char *)malloc(FileData.Length + 1);
-	
-	if(!Data)
-		FatalError("Unable to allocate enough memory to read in file ", Filename, '\n');
-
-	size_t ReadSize = fread((void *)Data, 1, FileData.Length, File); // NOTE: Casting away constness, but it doesn't matter since we just allocated it ourselves.
-	fclose(File);
-	
-	if(ReadSize != FileData.Length)
-		FatalError("ERROR: Was unable to read the entire file ", Filename);
-	
-	Data[FileData.Length] = '\0';    //Zero-terminate it in case we want to interface with C libraries.
-	FileData.Data = Data;
-	
-	return FileData;
-}
+};
 
 struct token_stream
 {
@@ -299,7 +272,7 @@ token_stream::ReadTokenInternal_(token &Token)
 		else if(c == '{') Token.Type = (token_type)c;
 		else if(c == '}') Token.Type = (token_type)c;
 		else if(c == '"') Token.Type = TokenType_QuotedString;
-		else if(c == '-' || c == '.' || isdigit(c)) Token.Type = TokenType_Numeric;
+		else if(c == '-' || c == '.' || isdigit(c)) Token.Type = TokenType_Double;  // NOTE: Could also be UInt, Date or Time. That is figured out later.
 		else if(IsIdentifier(c)) Token.Type = TokenType_Identifier;
 		else if(c == '#')
 		{
@@ -334,7 +307,7 @@ token_stream::ReadTokenInternal_(token &Token)
 		ReadString(Token);
 	else if(Token.Type == TokenType_Identifier)
 		ReadIdentifier(Token);
-	else if(Token.Type == TokenType_Numeric)
+	else if(Token.Type == TokenType_Double)
 		ReadNumber(Token);
 }
 
@@ -400,7 +373,7 @@ void token_stream::ReadIdentifier(token &Token)
 	}
 	else if(Token.StringValue.Equals("NaN") || Token.StringValue.Equals("nan") || Token.StringValue.Equals("Nan"))
 	{
-		Token.Type = TokenType_Numeric;
+		Token.Type = TokenType_Double;
 		Token.DoubleValue = std::numeric_limits<double>::quiet_NaN();
 	}
 }
@@ -592,17 +565,22 @@ token_stream::ReadNumber(token &Token)
 		}
 	}
 	
-	Token.IsUInt = (!HasComma && !HasExponent && !IsNegative);
-	Token.UIntValue = Base;
-	
-	s64 SignedExponent = ExponentIsNegative ? -(s64)Exponent : (s64)Exponent;
-	SignedExponent -= DigitsAfterComma;
-	bool Success;
-	Token.DoubleValue = MakeDoubleFast(Base, SignedExponent, IsNegative, &Success);
-	if(!Success)  
+	if(!HasComma && !HasExponent && !IsNegative)
 	{
-		PrintErrorHeader();
-		FatalError("Numeric overflow when parsing number");
+		Token.Type = TokenType_UInt;
+		Token.UIntValue = Base;
+	}
+	else
+	{
+		s64 SignedExponent = ExponentIsNegative ? -(s64)Exponent : (s64)Exponent;
+		SignedExponent -= DigitsAfterComma;
+		bool Success;
+		Token.DoubleValue = MakeDoubleFast(Base, SignedExponent, IsNegative, &Success);
+		if(!Success)  
+		{
+			PrintErrorHeader();
+			FatalError("Numeric overflow when parsing number.\n");
+		}
 	}
 }
 
@@ -669,18 +647,18 @@ token_stream::ReadDateTime(token &Token, s32 FirstPart)
 
 double token_stream::ExpectDouble()
 {
-	token Token = ExpectToken(TokenType_Numeric);
-	return Token.DoubleValue;
+	token Token = ReadToken();
+	if(!IsNumeric(Token.Type))
+	{
+		PrintErrorHeader();
+		FatalError("Expected a number, got ", TokenTypeArticle(Token.Type), " ", TokenTypeName(Token.Type), ".\n");
+	}
+	return Token.GetDoubleValue();
 }
 
 u64 token_stream::ExpectUInt()
 {
-	token Token = ExpectToken(TokenType_Numeric);
-	if(!Token.IsUInt)
-	{
-		PrintErrorHeader();
-		FatalError("Got a value that is signed, with a comma or with an exponent when expecting an unsigned integer.\n");
-	}
+	token Token = ExpectToken(TokenType_UInt);
 	return Token.UIntValue;
 }
 
@@ -749,7 +727,7 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, const p
 		while(true)
 		{
 			token Token = PeekToken();
-			if(Token.Type != TokenType_Numeric) break;
+			if(!IsNumeric(Token.Type)) break;
 			Value.ValDouble = ExpectDouble();
 			ListOut.push_back(Value);
 		}
@@ -759,7 +737,7 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, const p
 		while(true)
 		{
 			token Token = PeekToken();
-			if(Token.Type != TokenType_Numeric) break;
+			if(!IsNumeric(Token.Type)) break;
 			Value.ValUInt = ExpectUInt();
 			ListOut.push_back(Value);
 		}

@@ -96,6 +96,7 @@ WarningPrint(t Value, v... Tail)
 #include "Src/jacobian.h"
 #include "Src/mobius_model_run.h"
 #include "Src/peek_queue.h"
+#include "Src/file.h"
 #include "Src/lexer.h"
 #include "Src/mobius_io.h"
 #include "Src/spreadsheet_io.h"

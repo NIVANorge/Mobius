@@ -12,7 +12,7 @@ DlmWriteResultSeriesToFile(mobius_data_set *DataSet, const char *Filename, std::
 		GetResultSeries(DataSet, ResultNames[Idx], Indexes[Idx], ResultSeries[Idx], WriteSize);
 	}
 	
-	FILE *File = fopen(Filename, "w");
+	FILE *File = OpenFile(Filename, "w");
 	if(!File)
 		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\n");
 	else
@@ -105,13 +105,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 	if(!DataSet->ParameterData)
 		FatalError("ERROR: Tried to write parameters to a file before parameter data was allocated.\n");
 	
-	FILE *File;
-#ifdef _WIN32
-	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
-	File = _wfopen((wchar_t *)Filename16.data(), L"w");
-#else
-	File = fopen(Filename, "w");
-#endif
+	FILE *File = OpenFile(Filename, "w");
 
 	if(!File)
 		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\"");
@@ -273,7 +267,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 static bool
 CouldBeParameterValue(token_type Type)
 {
-	return (Type == TokenType_Numeric) || (Type == TokenType_Bool) || (Type == TokenType_Date) || (Type == TokenType_Identifier);
+	return IsNumeric(Type) || (Type == TokenType_Bool) || (Type == TokenType_Date) || (Type == TokenType_Identifier);
 }
 
 static void
@@ -1014,7 +1008,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Input);
 			Offsets.push_back(Offset);
 			if(DataSet->InputTimeseriesWasProvided[Offset])
-				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The last provided series will overwrite the earlier ones.\n");
+				WarningPrint("WARNING: The input time series \"", InputName, "\" was provided more than once. The latest provided series will overwrite the earlier one.\n");
 		}
 		
 		input_series_flags Flags = {};
@@ -1026,7 +1020,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			if(!Found)
 			{
 				Stream.PrintErrorHeader();
-				FatalError("unexpected command word ", Token.StringValue, ".\n");
+				FatalError("Unexpected command word ", Token.StringValue, ".\n");
 			}
 			Stream.ReadToken(); // Consume the current token to position for the next one.
 			Token = Stream.PeekToken();
@@ -1052,7 +1046,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		int FormatType = -1;
 		Token = Stream.PeekToken();
 		
-		if(Token.Type == TokenType_Numeric)
+		if(IsNumeric(Token.Type))
 			FormatType = 0;
 		else if(Token.Type == TokenType_Date)
 			FormatType = 1;
@@ -1068,12 +1062,12 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			for(u64 Timestep = 0; Timestep < Timesteps; ++Timestep)
 			{
 				Token = Stream.ReadToken();
-				if(Token.Type != TokenType_Numeric)
+				if(!IsNumeric(Token.Type))
 				{
 					Stream.PrintErrorHeader();
 					FatalError("Only got ", Timestep, " values for series. Expected ", Timesteps, ".\n");
 				}
-				double Value = Token.DoubleValue;
+				double Value = Token.GetDoubleValue();
 				Reader.AddValue(Timestep, Value);
 			}
 		}
@@ -1116,7 +1110,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 					double Value = Stream.ExpectDouble();
 					Reader.FillConstantRange(Date, EndDateRange, Value);
 				}
-				else if(Token.Type == TokenType_Numeric)
+				else if(IsNumeric(Token.Type))
 				{
 					double Value = Stream.ExpectDouble();
 					Reader.AddValue(Date, Value);
@@ -1371,13 +1365,7 @@ WriteInputsToFile(mobius_data_set *DataSet, const char *Filename)
 	if(!DataSet->InputData)
 		FatalError("ERROR: Tried to write inputs to a file before input data was allocated.\n");
 	
-	FILE *File;
-#ifdef _WIN32
-	std::u16string Filename16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Filename);
-	File = _wfopen((wchar_t *)Filename16.data(), L"w");
-#else
-	File = fopen(Filename, "w");
-#endif
+	FILE *File = OpenFile(Filename, "w");
 
 	if(!File)
 		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\"");
