@@ -1,12 +1,9 @@
 
-enum token_type
+enum token_type : char
 {
 	TokenType_Unknown = 0,
-	TokenType_UnquotedString,
+	TokenType_Identifier,
 	TokenType_QuotedString,
-	TokenType_Colon,
-	TokenType_OpenBrace,
-	TokenType_CloseBrace,
 	TokenType_Numeric,
 	TokenType_Bool,
 	TokenType_Date,
@@ -14,39 +11,50 @@ enum token_type
 	TokenType_EOF,
 };
 
-const char *TokenTypeName(token_type Type)
+constexpr char MobiusMaxMulticharTokenType = 20; // We won't need more multi-character token types, and this fits nicely with the ascii table
+
+inline const char *TokenTypeName(token_type &Type)
 {
 	//NOTE: WARNING: This has to match the token_type enum!!!
-	const char *TokenNames[11] =
+	const char *TokenNames[8] =
 	{
 		"(unknown)",
-		"unquoted string",
+		"identifier",
 		"quoted string",
-		":",
-		"{",
-		"}",
 		"number",
 		"boolean",
 		"date",
 		"time",
 		"(end of file)",
 	};
-	return TokenNames[(int)Type];
+	if(Type <= MobiusMaxMulticharTokenType)                   
+		return TokenNames[Type];
+	else
+		return (char *)&Type;
+}
+
+inline const char *TokenTypeArticle(token_type Type)
+{
+	if(Type == TokenType_Unknown || Type == TokenType_Identifier || Type == TokenType_EOF)
+		return "an";
+	return "a";
 }
 
 
 struct token
 {
-	token_type Type;
+	token_type   Type;
 	token_string StringValue;
 
-	//NOTE: It is tempting to put these in a union (or just let them be a parameter_value), but we can't. For some applications it has to store both the uint and double values separately. This is because we can't determine at the lexer stage whether the reader wants a double or uint. We could maybe pack some stuff better though.
-	u64 UIntValue;
-	double DoubleValue;
-	bool BoolValue;
-	datetime DateValue;
-
-	bool IsUInt;
+	//NOTE: The UIntValue can't be packed with the others since we can't always at the tokenizer stage determine if this should be interpreted as a uint or a double.
+	u64          UIntValue;
+	union
+	{
+		double   DoubleValue;
+		bool     BoolValue;
+		datetime DateValue;
+	};
+	bool IsUInt; // TODO: This is a bit annoying.
 };
 
 static token_string
@@ -98,7 +106,6 @@ struct token_stream
 		this->Filename = Filename;
 		
 		AtChar = -1;
-		AtEnd  = false;
 		
 		FileData = ReadEntireFile(Filename);
 		
@@ -124,13 +131,14 @@ struct token_stream
 	token ReadToken();
 	token PeekToken(s64 PeekAt = 0);
 	token ExpectToken(token_type);
+	token ExpectToken(char);
 	
 	double       ExpectDouble();
 	u64          ExpectUInt();
 	bool         ExpectBool();
 	datetime     ExpectDateTime();
 	token_string ExpectQuotedString();
-	token_string ExpectUnquotedString();
+	token_string ExpectIdentifier();
 	
 	void ReadQuotedStringList(std::vector<token_string> &ListOut);
 	void ReadParameterSeries(std::vector<parameter_value> &ListOut, const parameter_spec &Spec);
@@ -149,7 +157,6 @@ private:
 	
 	token_string FileData;
 	s64          AtChar;
-	bool         AtEnd;
 	
 	peek_queue<token> TokenQueue;
 	
@@ -159,6 +166,7 @@ private:
 	void ReadNumber(token &Token);
 	void ReadDateTime(token &Token, s32 FirstPart);
 	void ReadString(token &Token);
+	void ReadIdentifier(token &Token);
 	void ReadTokenInternal_(token &Token);
 	const token & PeekInternal_(s64 PeekAt = 0);
 };
@@ -173,7 +181,7 @@ token_stream::PrintErrorHeader(bool CurrentColumn)
 
 const token & token_stream::PeekInternal_(s64 PeekAt)
 {
-	if(PeekAt < 0) FatalError("ERROR (internal): It is not allowed to peek backwards on the tokens when parsing a file.\n");
+	if(PeekAt < 0) FatalError("ERROR (internal): Tried to peek backwards on already consumed tokens when parsing a file.\n");
 	
 	TokenQueue.Reserve(PeekAt+1);
 	while(TokenQueue.MaxPeek() < PeekAt)
@@ -206,12 +214,18 @@ token_stream::ExpectToken(token_type Type)
 	if(Token.Type != Type)
 	{
 		PrintErrorHeader();
-		ErrorPrint("Expected a token of type ", TokenTypeName(Type), ", got a(n) ", TokenTypeName(Token.Type));
-		if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_UnquotedString)
+		ErrorPrint("Expected a token of type ", TokenTypeName(Type), ", got ", TokenTypeArticle(Token.Type), " ", TokenTypeName(Token.Type));
+		if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_Identifier)
 			ErrorPrint(" \"", Token.StringValue, "\"");
 		FatalError('\n');
 	}
 	return Token;
+}
+
+token
+token_stream::ExpectToken(char Type)
+{
+	return ExpectToken((token_type)Type);
 }
 
 inline bool
@@ -229,10 +243,7 @@ token_stream::NextChar()
 	char c = '\0';
 	if(AtChar < FileData.Length) c = FileData[AtChar];
 	if(c == EOF || c == '\0')
-	{
-		AtEnd = true;
 		c = '\0';
-	}
 	else if(c == '\n')
 	{
 		++Line;
@@ -248,7 +259,8 @@ token_stream::NextChar()
 void
 token_stream::PutbackChar()
 {
-	//TODO: This should probably handle if we hit the end previously, but currently there is no use case for it.
+	// If we are at the end, there is no point in putting back characters, because we are not reading more tokens any way.
+	if(AtChar == FileData.Length) return;
 	
 	char c = FileData[AtChar];
 	if(c == '\n')
@@ -266,38 +278,32 @@ token_stream::ReadTokenInternal_(token &Token)
 {
 	Token = {}; // 0-initialize
 	
-	if(AtEnd)
-	{
-		Token.Type = TokenType_EOF;
-		return;
-	}
-	
-	bool SkipLine = false;
+	bool SkipComment = false;
 	
 	while(true)
 	{
 		char c = NextChar();
 		
-		if(SkipLine) // If we previously hit a # symbol outside a token (this is comment), SkipLine is true, and we continue until we hit a '\n'.
+		if(SkipComment) // If we hit a # symbol outside a token, SkipComment is true, and we continue skipping characters until we hit a newline or end of file.
 		{
-			if(c == '\n') SkipLine = false;
+			if(c == '\n' || c == '\0') SkipComment = false;
 			continue;
 		}
 		
-		// NOTE: Try to identify the type of the token.
-			
 		if(isspace(c)) continue; // Always skip whitespace between tokens.
 		
+		// NOTE: Try to identify the type of the token.
+		
 		if(c == '\0')     Token.Type = TokenType_EOF;
-		else if(c == ':') Token.Type = TokenType_Colon;
-		else if(c == '{') Token.Type = TokenType_OpenBrace;
-		else if(c == '}') Token.Type = TokenType_CloseBrace;
+		else if(c == ':') Token.Type = (token_type)c;    // NOTE: single-character tokens have type values equal to their char value.
+		else if(c == '{') Token.Type = (token_type)c;
+		else if(c == '}') Token.Type = (token_type)c;
 		else if(c == '"') Token.Type = TokenType_QuotedString;
 		else if(c == '-' || c == '.' || isdigit(c)) Token.Type = TokenType_Numeric;
-		else if(IsIdentifier(c)) Token.Type = TokenType_UnquotedString;
+		else if(IsIdentifier(c)) Token.Type = TokenType_Identifier;
 		else if(c == '#')
 		{
-			SkipLine = true;
+			SkipComment = true;
 			continue;
 		}
 		else
@@ -314,9 +320,8 @@ token_stream::ReadTokenInternal_(token &Token)
 		break;
 	}
 
-	if(Token.Type == TokenType_Colon || Token.Type == TokenType_OpenBrace || Token.Type == TokenType_CloseBrace || Token.Type == TokenType_EOF)
+	if(Token.Type > MobiusMaxMulticharTokenType) //NOTE: We have a single-character token.
 	{
-		//NOTE: These tokens are always one character only
 		Token.StringValue.Length = 1;
 		return;
 	}
@@ -325,8 +330,10 @@ token_stream::ReadTokenInternal_(token &Token)
 	
 	// NOTE: Continue processing multi-character tokens:
 	
-	if(Token.Type == TokenType_QuotedString || Token.Type == TokenType_UnquotedString)
+	if(Token.Type == TokenType_QuotedString)
 		ReadString(Token);
+	else if(Token.Type == TokenType_Identifier)
+		ReadIdentifier(Token);
 	else if(Token.Type == TokenType_Numeric)
 		ReadNumber(Token);
 }
@@ -341,61 +348,67 @@ token_stream::ReadString(token &Token)
 		char c = NextChar();
 		Token.StringValue.Length++;
 		
-		if(Token.Type == TokenType_QuotedString)
+		if(c == '"')
 		{
-			if(c == '"')
-			{
-				//NOTE: Don't count the quotation marks in the string length or data.
-				Token.StringValue.Length--;
-				if(FirstQuotationMark)
-					Token.StringValue.Data++;
-				else
-					break;
-				FirstQuotationMark = false;
-			}	
-			else if (c == '\n')
-			{
-				PrintErrorHeader();
-				FatalError("Newline within quoted string.\n");
-			}
-		}
-		else if(Token.Type == TokenType_UnquotedString)
-		{
-			if(!IsIdentifier(c) && !isdigit(c))
-			{
-				// NOTE: We assume that the latest read char was the start of another token, so go back one char to make the position correct for the next call to ReadTokenInternal_.
-				PutbackChar();
-				Token.StringValue.Length--;
+			//NOTE: Don't count the quotation marks in the string length or data.
+			Token.StringValue.Length--;
+			if(FirstQuotationMark)
+				Token.StringValue.Data++;
+			else
 				break;
-			}
-		}
-	}
-	
-	if(Token.Type == TokenType_UnquotedString)
-	{
-		// Reserved identifiers that are actually a different token type.
-		
-		if(Token.StringValue.Equals("true"))
+			FirstQuotationMark = false;
+		}	
+		else if (c == '\n')
 		{
-			Token.Type = TokenType_Bool;
-			Token.BoolValue = true;
+			PrintErrorHeader();
+			FatalError("New line before quoted string was closed.\n");
 		}
-		else if(Token.StringValue.Equals("false"))
+		else if (c == '\0')
 		{
-			Token.Type = TokenType_Bool;
-			Token.BoolValue = false;
-		}
-		else if(Token.StringValue.Equals("NaN") || Token.StringValue.Equals("nan") || Token.StringValue.Equals("Nan"))
-		{
-			Token.Type = TokenType_Numeric;
-			Token.DoubleValue = std::numeric_limits<double>::quiet_NaN();
+			PrintErrorHeader();
+			FatalError("End of file before quoted string was closed.\n");
 		}
 	}
 }
 
-inline bool
-MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
+void token_stream::ReadIdentifier(token &Token)
 {
+	while(true)
+	{
+		char c = NextChar();
+		Token.StringValue.Length++;
+		
+		if(!IsIdentifier(c) && !isdigit(c))
+		{
+			// NOTE: We assume that the latest read char was the start of another token, so go back one char to make the position correct for the next call to ReadTokenInternal_.
+			PutbackChar();
+			Token.StringValue.Length--;
+			break;
+		}
+	}
+	
+	// Check for reserved identifiers that are actually a different token type.
+	if(Token.StringValue.Equals("true"))
+	{
+		Token.Type = TokenType_Bool;
+		Token.BoolValue = true;
+	}
+	else if(Token.StringValue.Equals("false"))
+	{
+		Token.Type = TokenType_Bool;
+		Token.BoolValue = false;
+	}
+	else if(Token.StringValue.Equals("NaN") || Token.StringValue.Equals("nan") || Token.StringValue.Equals("Nan"))
+	{
+		Token.Type = TokenType_Numeric;
+		Token.DoubleValue = std::numeric_limits<double>::quiet_NaN();
+	}
+}
+
+inline bool
+AppendDigit(u64 *Number, char Digit)
+{
+	u64 Addendand = (u64)(Digit - '0');
 	constexpr u64 MaxU64 = 0xffffffffffffffff;
 	if( (MaxU64 - Addendand) / 10  < *Number) return false;
 	*Number = *Number * 10 + Addendand;
@@ -403,8 +416,9 @@ MultiplyByTenAndAdd(u64 *Number, u64 Addendand)
 }
 
 inline bool
-MultiplyByTenAndAdd(s32 *Number, s32 Addendand)
+AppendDigit(s32 *Number, char Digit)
 {
+	s32 Addendand = (s32)(Digit - '0');
 	constexpr s32 MaxS32 = 2147483647;
 	if( (MaxS32 - Addendand) / 10  < *Number) return false;
 	*Number = *Number * 10 + Addendand;
@@ -470,7 +484,7 @@ token_stream::ReadNumber(token &Token)
 					//NOTE we have encountered something of the form x- where x is a plain number. Assume it continues on as x-y-z, i.e. this is a date.
 					Token.Type = TokenType_Date;
 					s32 FirstPart = (s32)Base;
-					if(IsNegative) FirstPart = -FirstPart; //Years could be negative (though I doubt that will happen in practice).
+					if(IsNegative) FirstPart = -FirstPart; //Years could be negative (though I doubt that will be used in practice).
 					ReadDateTime(Token, FirstPart);
 					return;
 				}
@@ -554,15 +568,15 @@ token_stream::ReadNumber(token &Token)
 		{
 			
 			if(HasExponent)
-				MultiplyByTenAndAdd(&Exponent, (u64)(c - '0'));
+				AppendDigit(&Exponent, c);
 			else
 			{
 				if(HasComma)
 					DigitsAfterComma++;
 
-				if(!MultiplyByTenAndAdd(&Base, (u64)(c - '0')))
+				if(!AppendDigit(&Base, c))
 				{
-					// NOTE: Ideally we should use arbitrary precision integers for Base instead, or shift to it if this happens.
+					// NOTE: Ideally we should use arbitrary precision integers for Base instead, or shift to it if this happens. When parsing doubles, we should allow higher number of digits.
 					PrintErrorHeader();
 					FatalError("Overflow in numeric literal (too many digits). If this is a double, try to use scientific notation instead.\n");
 				}
@@ -616,7 +630,7 @@ token_stream::ReadDateTime(token &Token, s32 FirstPart)
 		}
 		else if(isdigit(c))
 		{
-			if(!MultiplyByTenAndAdd(&Date[DatePos], (u64)(c - '0')))
+			if(!AppendDigit(&Date[DatePos], c))
 			{
 				PrintErrorHeader();
 				FatalError("Overflow in numeric literal (too many digits).\n");
@@ -634,7 +648,7 @@ token_stream::ReadDateTime(token &Token, s32 FirstPart)
 	if(DatePos != 2)
 	{
 		PrintErrorHeader();
-		FatalError("Invalid date (time) literal. Has to be on the form YYYY-MM-DD (hh:mm:ss).\n");
+		FatalError("Invalid date (time) literal. It must be on the form YYYY-MM-DD (hh:mm:ss).\n");
 	}
 	bool Success;
 	if(Token.Type == TokenType_Date)
@@ -694,23 +708,23 @@ token_string token_stream::ExpectQuotedString()
 	return Token.StringValue;
 }
 
-token_string token_stream::ExpectUnquotedString()
+token_string token_stream::ExpectIdentifier()
 {
-	token Token = ExpectToken(TokenType_UnquotedString);
+	token Token = ExpectToken(TokenType_Identifier);
 	return Token.StringValue;
 }
 
 void
 token_stream::ReadQuotedStringList(std::vector<token_string> &ListOut)
 {
-	ExpectToken(TokenType_OpenBrace);
+	ExpectToken('{');
 	while(true)
 	{
 		token Token = ReadToken();
 		
 		if(Token.Type == TokenType_QuotedString)
 			ListOut.push_back(Token.StringValue);
-		else if(Token.Type == TokenType_CloseBrace)
+		else if(Token.Type == '}')
 			break;
 		else if(Token.Type == TokenType_EOF)
 		{
@@ -775,8 +789,8 @@ token_stream::ReadParameterSeries(std::vector<parameter_value> &ListOut, const p
 		while(true)
 		{
 			token Token = PeekToken();
-			if(Token.Type != TokenType_UnquotedString) break;
-			token_string Val = ExpectUnquotedString();
+			if(Token.Type != TokenType_Identifier) break;
+			token_string Val = ExpectIdentifier();
 			auto Find = Spec.EnumNameToValue.find(Val);
 			if(Find == Spec.EnumNameToValue.end())
 				FatalError("ERROR: The parameter \"", Spec.Name, "\" does not have a possible enum value called \"", Val, "\".\n");

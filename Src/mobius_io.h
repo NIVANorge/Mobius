@@ -273,7 +273,7 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 static bool
 CouldBeParameterValue(token_type Type)
 {
-	return (Type == TokenType_Numeric) || (Type == TokenType_Bool) || (Type == TokenType_Date) || (Type == TokenType_UnquotedString);
+	return (Type == TokenType_Numeric) || (Type == TokenType_Bool) || (Type == TokenType_Date) || (Type == TokenType_Identifier);
 }
 
 static void
@@ -293,7 +293,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 		if(Token.Type == TokenType_EOF)
 			break;
 		
-		token_string Section = Stream.ExpectUnquotedString();
+		token_string Section = Stream.ExpectIdentifier();
 		
 		int Mode = -1;
 
@@ -307,7 +307,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 			FatalError("The parameter file parser does not recognize section type: ", Section, ". Accepted sections are index_sets and parameters\n");
 		}
 		
-		Stream.ExpectToken(TokenType_Colon);
+		Stream.ExpectToken(':');
 		
 		if(Mode == 0)
 		{
@@ -324,7 +324,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 					Stream.PrintErrorHeader();
 					FatalError("The index set \"", IndexSetName, "\" was not registered with the model.\n");
 				}
-				Stream.ExpectToken(TokenType_Colon);
+				Stream.ExpectToken(':');
 				if(Model->IndexSets[IndexSet].Type == IndexSetType_Basic)
 				{
 					std::vector<token_string> Indexes;
@@ -335,11 +335,11 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				{
 					//TODO: Make a helper function for this too!
 					std::vector<std::pair<token_string, std::vector<token_string>>> Indexes;
-					Stream.ExpectToken(TokenType_OpenBrace);
+					Stream.ExpectToken('{');
 					while(true)
 					{
 						Token = Stream.ReadToken();
-						if(Token.Type == TokenType_CloseBrace)
+						if(Token.Type == '}')
 						{
 							if(Indexes.empty())
 							{
@@ -352,14 +352,14 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 						}				
 						else if(Token.Type == TokenType_QuotedString)
 							Indexes.push_back({Token.StringValue, {}});
-						else if(Token.Type == TokenType_OpenBrace)
+						else if(Token.Type == '{')
 						{
 							token_string IndexName;
 							std::vector<token_string> Inputs;
 							while(true)
 							{
 								Token = Stream.ReadToken();
-								if(Token.Type == TokenType_CloseBrace)
+								if(Token.Type == '}')
 								{
 									if(!IndexName.Data || Inputs.empty())
 									{
@@ -405,14 +405,14 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 			{
 				Token = Stream.PeekToken();
 				
-				if(Token.Type == TokenType_OpenBrace)
+				if(Token.Type == '{')
 				{
 					Stream.ReadToken(); // Consume the open brace
-					token_string ModuleDecl = Stream.ExpectUnquotedString();
+					token_string ModuleDecl = Stream.ExpectIdentifier();
 					if(!ModuleDecl.Equals("module"))
 					{
 						Stream.PrintErrorHeader();
-						FatalError("Expected an unquoted string saying \"module\".\n");
+						FatalError("Expected an identifier saying \"module\".\n");
 					}
 					ModuleName = Stream.ExpectQuotedString();
 					if(Model->Modules.Has(ModuleName))
@@ -426,11 +426,11 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 						ValidModule = false;
 						ValidVersion = true; //Just to not confuse error checking below
 					}
-					token_string VersionDecl = Stream.ExpectUnquotedString();
+					token_string VersionDecl = Stream.ExpectIdentifier();
 					if(!VersionDecl.Equals("version"))
 					{
 						Stream.PrintErrorHeader();
-						FatalError("Expected an unquoted string saying \"version\".\n");
+						FatalError("Expected an identifier saying \"version\".\n");
 					}
 					ModuleVersion = Stream.ExpectQuotedString();
 					if(ValidModule)
@@ -442,7 +442,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 							ValidVersion = false;
 					}
 				}
-				else if(Token.Type == TokenType_CloseBrace)
+				else if(Token.Type == '}')
 				{
 					Stream.ReadToken(); // Consume the close brace
 					CurrentModule = {};
@@ -453,7 +453,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				else if(Token.Type != TokenType_QuotedString) break;
 					
 				token_string ParameterName = Stream.ExpectQuotedString();
-				Stream.ExpectToken(TokenType_Colon);
+				Stream.ExpectToken(':');
 				
 				bool Found;
 				parameter_h Parameter = GetParameterHandle(Model, ParameterName, Found);
@@ -899,7 +899,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		token Token = Stream.ReadToken();
 		if(Token.Type == TokenType_EOF)	return;
 		
-		if(Token.Type == TokenType_UnquotedString)
+		if(Token.Type == TokenType_Identifier)
 		{
 			if(Token.StringValue.Equals("include_file"))
 			{
@@ -960,7 +960,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		{
 			Token = Stream.PeekToken();
 			
-			if(Token.Type == TokenType_OpenBrace)
+			if(Token.Type == '{')
 			{
 				std::vector<token_string> IndexNames;
 				
@@ -1020,7 +1020,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 		input_series_flags Flags = {};
 		
 		Token = Stream.PeekToken();
-		while(Token.Type == TokenType_UnquotedString)
+		while(Token.Type == TokenType_Identifier)
 		{
 			bool Found = PutFlag(&Flags, Token.StringValue);
 			if(!Found)
@@ -1032,7 +1032,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 			Token = Stream.PeekToken();
 		}
 		
-		Stream.ExpectToken(TokenType_Colon);
+		Stream.ExpectToken(':');
 		
 		for(size_t Offset : Offsets)
 			DataSet->InputTimeseriesWasProvided[Offset] = true;
@@ -1097,7 +1097,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				}
 				
 				Token = Stream.PeekToken();
-				if(Token.Type == TokenType_UnquotedString)
+				if(Token.Type == TokenType_Identifier)
 				{
 					if(Flags.InterpolationType != InterpolationType_None)
 					{
@@ -1178,17 +1178,17 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 			FatalError("Expected one of the code words timesteps, start_date, inputs, additional_timeseries or index_set_dependencies.\n");
 		}
 		
-		token_string Section = Stream.ExpectUnquotedString();
+		token_string Section = Stream.ExpectIdentifier();
 
 		if(Section.Equals("timesteps"))
 		{
 			//TODO: Guard against both 'timesteps' and 'end_date' being set?
-			Stream.ExpectToken(TokenType_Colon);
+			Stream.ExpectToken(':');
 			Timesteps = Stream.ExpectUInt();
 		}
 		else if(Section.Equals("start_date"))
 		{
-			Stream.ExpectToken(TokenType_Colon);
+			Stream.ExpectToken(':');
 			DataSet->InputDataStartDate = Stream.ExpectDateTime();
 			DataSet->InputDataHasSeparateStartDate = true;
 		}
@@ -1199,7 +1199,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 				Stream.PrintErrorHeader();
 				FatalError("The start date has to be provided before the end date.\n");
 			}
-			Stream.ExpectToken(TokenType_Colon);
+			Stream.ExpectToken(':');
 			datetime EndDate = Stream.ExpectDateTime();
 			s64 Step = FindTimestep(DataSet->InputDataStartDate, EndDate, Model->TimestepSize);
 			Step += 1;    //NOTE: Because the end date is inclusive. 
@@ -1212,7 +1212,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 		}
 		else if(Section.Equals("inputs"))
 		{
-			Stream.ExpectToken(TokenType_Colon);
+			Stream.ExpectToken(':');
 			break;
 		}
 		else if(Section.Equals("index_set_dependencies") || Section.Equals("additional_timeseries"))
@@ -1221,7 +1221,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 			while(true)
 			{
 				Token = Stream.PeekToken();
-				if(Token.Type == TokenType_UnquotedString && !Token.StringValue.Equals("unit")) break; //We hit a new section;
+				if(Token.Type == TokenType_Identifier && !Token.StringValue.Equals("unit")) break; //We hit a new section;
 				Stream.ReadToken(); //Otherwise consume the token and ignore it.
 			}
 		}
@@ -1267,8 +1267,8 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 		if(Token.Type == TokenType_EOF)
 			break;
 		
-		token_string Section = Stream.ExpectUnquotedString();
-		Stream.ExpectToken(TokenType_Colon);
+		token_string Section = Stream.ExpectIdentifier();
+		Stream.ExpectToken(':');
 
 		if(Section.Equals("index_set_dependencies"))
 		{
@@ -1293,7 +1293,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 						Stream.PrintErrorHeader();
 						FatalError("Tried to set index set dependencies for the input ", InputName, " for a second time.\n");
 					}
-					Stream.ExpectToken(TokenType_Colon);
+					Stream.ExpectToken(':');
 					
 					std::vector<token_string> IndexSetNames;
 					Stream.ReadQuotedStringList(IndexSetNames);
@@ -1327,7 +1327,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 					
 					unit_h Unit = {0};
 					Token = Stream.PeekToken();
-					if(Token.Type == TokenType_UnquotedString)
+					if(Token.Type == TokenType_Identifier)
 					{
 						if(Token.StringValue.Equals("unit"))
 						{
@@ -1356,7 +1356,7 @@ ReadInputDependenciesFromFile(mobius_model *Model, const char *Filename)
 				
 				if(Token.Type == TokenType_EOF) return;
 				
-				if(Token.Type == TokenType_UnquotedString) break; //We hit a new section;
+				if(Token.Type == TokenType_Identifier) break; //We hit a new section;
 				Stream.ReadToken(); //Otherwise consume the token and ignore it.
 			}
 		}
