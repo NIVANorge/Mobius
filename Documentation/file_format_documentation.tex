@@ -87,7 +87,7 @@ If you find the rest of this section too technical, just skip to the examples.
 \begin{enumerate}[i]
 \item You can put a comment in one of these files using the \# symbol. This will treat the rest of the line as a comment that is ignored when parsing the file.
 \item Quoted strings are sequences of characters enclosed in a pair of quotation marks " ". These can contain contain utf-8 encoded strings, but not newlines.
-\item Outside quoted strings, everything has to be ascii.
+\item Outside quoted strings and comments, everything has to be ascii (i.e. single-byte characters).
 \item Except for inside quoted strings and except for newlines after a \#, all consecutive sequences of whitespace (space characters, tabulars, newlines) are treated as one single space.
 \item Each .dat file is treated as a series of tokens. A token is a sequence of characters that encode one value or symbol. An overview of the types of tokens are given in Table \ref{tab:tokens}.
 \end{enumerate}
@@ -113,7 +113,7 @@ Date & 1999-05-01 (format YYYY-MM-DD) \\
 \hline
 Time & 12:31:00 (format hh:mm:ss) \\
 \hline
-Unquoted string & {\tt index\_sets} \\
+Identifier & {\tt index\_sets} \\
 \hline
 Quoted string & {\tt "Timesteps"} \\
 \hline
@@ -123,7 +123,7 @@ Quoted string & {\tt "Timesteps"} \\
 
 A \emph{Datetime} is either a Date alone or a Date followed by a Time.
 
-Both quoted strings and unquoted strings are always case sensitive, so you can for instance not type "landscape units" if you want to talk about the index set "Landscape units".
+Both quoted strings and identifiers are always case sensitive, so you can for instance not type "landscape units" if you want to talk about the index set "Landscape units".
 
 \subsection{The parameter file}
 
