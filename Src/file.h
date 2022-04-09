@@ -12,6 +12,9 @@ FILE *OpenFile(const char *Filename, const char *Mode)
 	File = fopen(Filename, Mode);
 #endif
 
+	if(!File)
+		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\n");
+
 	return File;
 }
 
@@ -21,9 +24,6 @@ ReadEntireFile(const char *Filename)
 	token_string FileData = {};
 	
 	FILE *File = OpenFile(Filename, "rb");
-	
-	if(!File)
-		FatalError("ERROR: Tried to open file ", Filename, ", but was not able to.\n");
 
 	fseek(File, 0, SEEK_END);
 	FileData.Length = ftell(File);

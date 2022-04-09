@@ -1,38 +1,4 @@
 
-static void
-DlmWriteResultSeriesToFile(mobius_data_set *DataSet, const char *Filename, std::vector<const char *> ResultNames, const std::vector<std::vector<const char *>> &Indexes, char Delimiter)
-{
-	size_t WriteSize = DataSet->TimestepsLastRun;
-	size_t NumSeries = ResultNames.size();
-	
-	double **ResultSeries = AllocClearedArray(double *, NumSeries);
-	for(size_t Idx = 0; Idx < NumSeries; ++Idx)
-	{
-		ResultSeries[Idx] = AllocClearedArray(double, WriteSize);
-		GetResultSeries(DataSet, ResultNames[Idx], Indexes[Idx], ResultSeries[Idx], WriteSize);
-	}
-	
-	FILE *File = OpenFile(Filename, "w");
-	if(!File)
-		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\n");
-	else
-	{
-		for(size_t Timestep = 0; Timestep < WriteSize; ++Timestep)
-		{
-			for(size_t Idx = 0; Idx < NumSeries; ++Idx)
-			{
-				fprintf(File, "%f", ResultSeries[Idx][Timestep]);
-				if(Idx < NumSeries-1) fprintf(File, "%c", Delimiter);
-			}
-			
-			fprintf(File, "\n");
-		}
-		fclose(File);
-	}
-	
-	for(size_t Idx = 0; Idx < NumSeries; ++Idx) free(ResultSeries[Idx]);
-	free(ResultSeries);	
-}
 
 static void
 WriteParameterValue(FILE *File, parameter_value Value, const parameter_spec &Spec)
@@ -106,9 +72,6 @@ WriteParametersToFile(mobius_data_set *DataSet, const char *Filename)
 		FatalError("ERROR: Tried to write parameters to a file before parameter data was allocated.\n");
 	
 	FILE *File = OpenFile(Filename, "w");
-
-	if(!File)
-		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\"");
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -1366,9 +1329,6 @@ WriteInputsToFile(mobius_data_set *DataSet, const char *Filename)
 		FatalError("ERROR: Tried to write inputs to a file before input data was allocated.\n");
 	
 	FILE *File = OpenFile(Filename, "w");
-
-	if(!File)
-		FatalError("ERROR: Tried to open file \"", Filename, "\", but was not able to.\"");
 	
 	const mobius_model *Model = DataSet->Model;
 	
@@ -1462,4 +1422,36 @@ WriteInputsToFile(mobius_data_set *DataSet, const char *Filename)
 	}
 	
 	fclose(File);
+}
+
+//TODO: Not sure if it is necessary to support this function anymore. It was mostly for debugging before we had MobiView.
+static void
+DlmWriteResultSeriesToFile(mobius_data_set *DataSet, const char *Filename, std::vector<const char *> ResultNames, const std::vector<std::vector<const char *>> &Indexes, char Delimiter)
+{
+	size_t WriteSize = DataSet->TimestepsLastRun;
+	size_t NumSeries = ResultNames.size();
+	
+	double **ResultSeries = AllocClearedArray(double *, NumSeries);
+	for(size_t Idx = 0; Idx < NumSeries; ++Idx)
+	{
+		ResultSeries[Idx] = AllocClearedArray(double, WriteSize);
+		GetResultSeries(DataSet, ResultNames[Idx], Indexes[Idx], ResultSeries[Idx], WriteSize);
+	}
+	
+	FILE *File = OpenFile(Filename, "w");
+
+	for(size_t Timestep = 0; Timestep < WriteSize; ++Timestep)
+	{
+		for(size_t Idx = 0; Idx < NumSeries; ++Idx)
+		{
+			fprintf(File, "%f", ResultSeries[Idx][Timestep]);
+			if(Idx < NumSeries-1) fprintf(File, "%c", Delimiter);
+		}
+		
+		fprintf(File, "\n");
+	}
+	fclose(File);
+	
+	for(size_t Idx = 0; Idx < NumSeries; ++Idx) free(ResultSeries[Idx]);
+	free(ResultSeries);	
 }

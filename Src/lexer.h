@@ -82,16 +82,12 @@ struct token_stream
 		
 		FileData = ReadEntireFile(Filename);
 		
-		//NOTE: In case the file has a BOM mark, which Notepad tends to do on Windows.
-		if(FileData.Length >= 3)
-		{
-			if(
-				   FileData[0] == (char) 0xEF
+		//NOTE: In case the file has a BOM (byte order mark), which Notepad tends to do on Windows.
+		if(FileData.Length >= 3 
+				&& FileData[0] == (char) 0xEF
 				&& FileData[1] == (char) 0xBB
-				&& FileData[2] == (char) 0xBF
-			)
-				AtChar = 2;
-		}
+				&& FileData[2] == (char) 0xBF)
+			AtChar = 2;
 		
 		StartLine = 0; StartColumn = 0; Line = 0; Column = 0; PreviousColumn = 0;
 	}
@@ -137,7 +133,7 @@ private:
 	void PutbackChar();
 	
 	void ReadNumber(token &Token);
-	void ReadDateTime(token &Token, s32 FirstPart);
+	void ReadDateOrTime(token &Token, s32 FirstPart);
 	void ReadString(token &Token);
 	void ReadIdentifier(token &Token);
 	void ReadTokenInternal_(token &Token);
@@ -257,13 +253,13 @@ token_stream::ReadTokenInternal_(token &Token)
 	{
 		char c = NextChar();
 		
-		if(SkipComment) // If we hit a # symbol outside a token, SkipComment is true, and we continue skipping characters until we hit a newline or end of file.
+		if(isspace(c)) continue; // Always skip whitespace between tokens.
+		
+		if(SkipComment) // If we hit a # symbol outside a string token, SkipComment is true, and we continue skipping characters until we hit a newline or end of file.
 		{
 			if(c == '\n' || c == '\0') SkipComment = false;
 			continue;
 		}
-		
-		if(isspace(c)) continue; // Always skip whitespace between tokens.
 		
 		// NOTE: Try to identify the type of the token.
 		
@@ -272,7 +268,7 @@ token_stream::ReadTokenInternal_(token &Token)
 		else if(c == '{') Token.Type = (token_type)c;
 		else if(c == '}') Token.Type = (token_type)c;
 		else if(c == '"') Token.Type = TokenType_QuotedString;
-		else if(c == '-' || c == '.' || isdigit(c)) Token.Type = TokenType_Double;  // NOTE: Could also be UInt, Date or Time. That is figured out later.
+		else if(c == '-' || c == '.' || isdigit(c)) Token.Type = TokenType_Double;  // NOTE: Could also be UInt, Date or Time. That is figured out later when reading it.
 		else if(IsIdentifier(c)) Token.Type = TokenType_Identifier;
 		else if(c == '#')
 		{
@@ -299,7 +295,7 @@ token_stream::ReadTokenInternal_(token &Token)
 		return;
 	}
 
-	PutbackChar();  // Put it back so that we can start processing it afresh below.
+	PutbackChar();  // Put the char back so that we can start processing it afresh below.
 	
 	// NOTE: Continue processing multi-character tokens:
 	
@@ -458,7 +454,7 @@ token_stream::ReadNumber(token &Token)
 					Token.Type = TokenType_Date;
 					s32 FirstPart = (s32)Base;
 					if(IsNegative) FirstPart = -FirstPart; //Years could be negative (though I doubt that will be used in practice).
-					ReadDateTime(Token, FirstPart);
+					ReadDateOrTime(Token, FirstPart);
 					return;
 				}
 				else
@@ -500,7 +496,7 @@ token_stream::ReadNumber(token &Token)
 			//NOTE we have encountered something of the form x: where x is a plain number. Assume it continues on as x:y:z, i.e. this is a time.
 			Token.Type = TokenType_Time;
 			s32 FirstPart = (s32)Base;
-			ReadDateTime(Token, FirstPart);
+			ReadDateOrTime(Token, FirstPart);
 			return;
 		}
 		else if(c == '+')
@@ -585,9 +581,15 @@ token_stream::ReadNumber(token &Token)
 }
 
 void
-token_stream::ReadDateTime(token &Token, s32 FirstPart)
+token_stream::ReadDateOrTime(token &Token, s32 FirstPart)
 {
-	char Separator = Token.Type == TokenType_Date ? '-' : ':';
+	char Separator = '-';
+	const char *Format = "hh:mm:ss";
+	if(Token.Type == TokenType_Time)
+	{
+		Separator = ':';
+		Format = "YYYY-MM-DD";
+	}
 	
 	s32 DatePos = 1;
 	s32 Date[3] = {FirstPart, 0, 0};
@@ -604,6 +606,7 @@ token_stream::ReadDateTime(token &Token, s32 FirstPart)
 			{
 				PrintErrorHeader();
 				FatalError("Too many '", Separator, "' signs in date or time literal.\n");
+				// or we could assume this is the beginning of a new token, i.e. "1997-8-1-5" is interpreted as the two tokens "1997-8-1" "-5". Don't know what is best.
 			}
 		}
 		else if(isdigit(c))
@@ -626,7 +629,7 @@ token_stream::ReadDateTime(token &Token, s32 FirstPart)
 	if(DatePos != 2)
 	{
 		PrintErrorHeader();
-		FatalError("Invalid date (time) literal. It must be on the form YYYY-MM-DD (hh:mm:ss).\n");
+		FatalError("Invalid ", TokenTypeName(Token.Type), " literal. It must be on the form ", Format, ".\n");
 	}
 	bool Success;
 	if(Token.Type == TokenType_Date)
@@ -640,7 +643,7 @@ token_stream::ReadDateTime(token &Token, s32 FirstPart)
 	if(!Success)
 	{
 		PrintErrorHeader();
-		FatalError("The date or time ", Token.StringValue, " does not exist.\n");
+		FatalError("The ", TokenTypeName(Token.Type), " ", Token.StringValue, " does not exist.\n");
 	}
 }
 

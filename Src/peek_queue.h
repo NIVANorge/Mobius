@@ -8,12 +8,13 @@
 template<typename T>
 struct peek_queue
 {
+private:
 	T      *Data;
 	size_t  Capacity;
 	
 	s64 CursorFirst;
 	s64 CursorEnd;
-	
+public:
 	// Data[(CursorFirst + Idx) % Capacity]  is item number Idx in the queue, Idx=0 being the first
 	// Data[(CursorEnd-1) % Capacity]        is the last item in the queue
 	
