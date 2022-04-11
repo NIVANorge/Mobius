@@ -253,13 +253,14 @@ token_stream::ReadTokenInternal_(token &Token)
 	{
 		char c = NextChar();
 		
-		if(isspace(c)) continue; // Always skip whitespace between tokens.
-		
 		if(SkipComment) // If we hit a # symbol outside a string token, SkipComment is true, and we continue skipping characters until we hit a newline or end of file.
 		{
 			if(c == '\n' || c == '\0') SkipComment = false;
 			continue;
 		}
+		
+		//NOTE: This is very subtle, but this clause has to be below the check for SkipComment, if we are in a comment we have to check for \n, (and \n isspace and would be skipped by this continue)
+		if(isspace(c)) continue; // Always skip whitespace between tokens.
 		
 		// NOTE: Try to identify the type of the token.
 		
@@ -408,12 +409,12 @@ MakeDoubleFast(u64 Base, s64 Exponent, bool IsNegative, bool *Success)
 	}
 	*Success = true;
 	
-	// Note: this is 100% accurate if(Exponent >= -22 && Exponent <= 22 && Base <= 9007199254740991)
+	// Note: this is the correct approximation if(Exponent >= -22 && Exponent <= 22 && Base <= 9007199254740991)
 	// See
 	// Clinger WD. How to read floating point numbers accurately.
 	// ACM SIGPLAN Notices. 1990	
 	
-	// For other numbers there is some small error due to rounding of large powers of 10.
+	// For other numbers there is some small error due to rounding of large powers of 10 (in the 15th decimal place).
 	// TODO: Maybe get the fast_double_parser library instead?
 	// atof is not an option since it is super slow (6 seconds parsing time on some typical input files).
 
@@ -584,11 +585,11 @@ void
 token_stream::ReadDateOrTime(token &Token, s32 FirstPart)
 {
 	char Separator = '-';
-	const char *Format = "hh:mm:ss";
+	const char *Format = "YYYY-MM-DD";
 	if(Token.Type == TokenType_Time)
 	{
 		Separator = ':';
-		Format = "YYYY-MM-DD";
+		Format = "hh:mm:ss";
 	}
 	
 	s32 DatePos = 1;

@@ -41,7 +41,7 @@ bool operator!=(const Type &A, const Type &B) { return A.Handle != B.Handle; } \
 bool operator<(const Type &A, const Type &B) { return A.Handle < B.Handle; } \
 inline bool IsValid(Type H) { return H.Handle > 0; }
 
-//NOTE: The following 4 should just be used during model registration. Internally we should just use parameter_h instead
+//NOTE: The following 5 should just be used during model registration. Internally we should just use parameter_h instead
 MODEL_PARAMETER_HANDLE(parameter_double_h)
 MODEL_PARAMETER_HANDLE(parameter_uint_h)
 MODEL_PARAMETER_HANDLE(parameter_bool_h)
@@ -425,15 +425,15 @@ struct mobius_model
 	
 	module_h CurrentModule = {};
 	
-	entity_registry<module_h,          module_spec>           Modules;
-	entity_registry<equation_h,        equation_spec>         Equations;
-	entity_registry<input_h,           input_spec>            Inputs;
-	entity_registry<parameter_h,       parameter_spec>        Parameters;
-	entity_registry<index_set_h,       index_set_spec>        IndexSets;
-	entity_registry<parameter_group_h, parameter_group_spec>  ParameterGroups;
-	entity_registry<solver_h,          solver_spec>           Solvers;
-	entity_registry<conditional_h,     conditional_spec>      Conditionals;
-	entity_registry<unit_h,            unit_spec>             Units;
+	entity_registry  <module_h,          module_spec>           Modules;
+	entity_registry  <equation_h,        equation_spec>         Equations;
+	entity_registry  <input_h,           input_spec>            Inputs;
+	entity_registry  <parameter_h,       parameter_spec>        Parameters;
+	entity_registry  <index_set_h,       index_set_spec>        IndexSets;
+	entity_registry  <parameter_group_h, parameter_group_spec>  ParameterGroups;
+	entity_registry  <solver_h,          solver_spec>           Solvers;
+	entity_registry  <conditional_h,     conditional_spec>      Conditionals;
+	entity_registry  <unit_h,            unit_spec>             Units;
 	
 	std::vector<mobius_equation> EquationBodies;
 	

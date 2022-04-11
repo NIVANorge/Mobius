@@ -1306,10 +1306,40 @@ typedef INNER_LOOP_BODY(mobius_inner_loop_body);
 static void
 ModelLoop(mobius_data_set *DataSet, model_run_state *RunState, mobius_inner_loop_body InnerLoopBody)
 {
+	/*
+		This procedure is for iterating over the equation batch groups of the model and the tuples of indexes associated to each batch group, then executing the InnerLoopBody for each iteration. One typical use is if this is the main model run, and the InnerLoopBody is the function that evaluates the equations in the batch group (called RunInnerLoop).
+		
+		The procedure does something like the following:  (example where BatchGroup.IndexSets = [index_set1, index_set2, index_set3] )
+		
+		for each BatchGroup in the model :
+			for idx1 in index_set1 :
+				RunState.CurrentIndexes[index_set1] = idx1
+				InnerLoopBody(.., RunState, BatchGroup, .., 0)
+				for idx2 in index_set2 :
+					RunState.CurrentIndexes[index_set2] = idx2
+					InnerLoopBody(.., RunState, BatchGroup, .., 1)
+					for idx3 in index_set3 :
+						RunState.CurrentIndexes[index_set3] = idx3
+						InnerLoopBody(.., RunState, BatchGroup, .., 2)
+		
+		(Typically it is only the bottom call to InnerLoopBody that will be used, e.g. when evaluating model equations in the main run, but for some applications it needs to be called at each level).
+				
+		(A) The tuple of index sets can also be [] if IndexSets is []. This is handled separately first. InnerLoopBody is just called once for this batch group.
+		
+		(B) Otherwise we have to iterate over a tuple of index sets. If we knew the size of the tuple we could explicitly write something like the above pseudocode.
+			
+			However, since the size of the tuple can be between 1 and a large number, we have to emulate this nested for loop.
+			One possible way one could do it is through recursive function calls, but here we have chosen a method that hopefully has less overhead.
+			
+			Method sketch:
+			We have a CurrentLevel which is a cursor pointing at one of the index sets. If the index set pointed at is the bottom level index set, i.e. index_set3 in the above example, then we just iterate over that index set and call InnerLoopBody for each iteration. If the iteration over an index set finishes, move the cursor up one level, then increase the index at that level by one (and call InnerLoopBody). Then if we are at the end of the current index set, ascend and repeat, otherwise descend and restart the iteration at the level below. We are finished when we have finished the top index set.
+	*/
+	
 	const mobius_model *Model = DataSet->Model;
 	size_t BatchGroupIdx = 0;
 	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
-	{	
+	{
+		// (A)  -- see note at top of procedure.
 		if(BatchGroup.IndexSets.Count == 0)
 		{
 			InnerLoopBody(DataSet, RunState, BatchGroup, BatchGroupIdx, -1);
@@ -1320,6 +1350,7 @@ ModelLoop(mobius_data_set *DataSet, model_run_state *RunState, mobius_inner_loop
 		s32 BottomLevel = (s32)BatchGroup.IndexSets.Count - 1;
 		s32 CurrentLevel = 0;
 		
+		// (B) -- see note at top of procedure.
 		while (true)
 		{
 			index_set_h CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
@@ -1336,18 +1367,14 @@ ModelLoop(mobius_data_set *DataSet, model_run_state *RunState, mobius_inner_loop
 				//NOTE: We are at the end of this index set
 				
 				RunState->CurrentIndexes[CurrentIndexSet.Handle] = {CurrentIndexSet, 0};
-				//NOTE: Traverse up the tree
 				if(CurrentLevel == 0) break; //NOTE: We are finished with this batch group.
 				CurrentLevel--;
 				CurrentIndexSet = BatchGroup.IndexSets[CurrentLevel];
-				++RunState->CurrentIndexes[CurrentIndexSet.Handle]; //Advance the index set above us so that we don't walk down the same branch again.
+				++RunState->CurrentIndexes[CurrentIndexSet.Handle];
 				continue;
 			}
 			else if(CurrentLevel != BottomLevel)
-			{
-				//NOTE: If we did not reach the end index, and we are not at the bottom, we instead traverse down the tree again.
 				++CurrentLevel;
-			}
 		}
 		++BatchGroupIdx;
 	}
@@ -1556,7 +1583,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 					++RunState->AtResult;
 				}
 			}
-			else // IsValid(Batch.Solver)
+			else // IsValid(Batch.Solver)  -- Solve the system of ODE equations using the given Solver.
 			{
 				//NOTE: The results from the last timestep are the initial results for this timestep.
 				size_t EquationIdx = 0;
@@ -1569,7 +1596,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 						RunState->SolverTempX0[EquationIdx] = RunState->LastResults[Equation.Handle]; //NOTE: RunState->LastResults is filled with the correct values already, see above.
 					++EquationIdx;
 				}
-				// NOTE: Do we need to clear DataSet->wk to 0? (Has not been needed in the solvers we have used so far...)
+				// TODO: Do we need to clear DataSet->wk to 0? (Has not been needed in the solvers we have used so far...)
 				
 				const solver_spec &SolverSpec = Model->Solvers[Batch.Solver];
 				
@@ -1639,9 +1666,7 @@ INNER_LOOP_BODY(FastLookupCounter)
 		RunState->FastLastResultLookup.Count += BatchGroup.IterationData[CurrentLevel].LastResultsToRead.Count;
 	}
 	else
-	{
 		RunState->FastLastResultLookup.Count += BatchGroup.LastResultsToReadAtBase.Count;
-	}
 }
 
 INNER_LOOP_BODY(FastLookupSetupInnerLoop)
@@ -1722,8 +1747,8 @@ SetupInitialValue(mobius_data_set *DataSet, model_run_state *RunState, equation_
 #endif
 	
 	RunState->AtResult[ResultStorageLocation] = Initial;
-	RunState->CurResults[Equation.Handle] = Initial;
-	RunState->LastResults[Equation.Handle] = Initial;
+	RunState->CurResults[Equation.Handle]     = Initial;
+	RunState->LastResults[Equation.Handle]    = Initial;
 	
 	return Initial;
 }
@@ -2083,12 +2108,13 @@ RunModel(mobius_data_set *DataSet)
 	//TODO: Timesteps is u64. Can cause problems if somebody have an unrealistically high amount of timesteps. Ideally we should move every parameter from u64 to s64 anyway? There is a similar problem a little earlier in this routine.
 	s64 MaxStep = (s64)Timesteps;
 	
+	//****** The main model run loop:
+	
 	for(RunState.Timestep = 0; RunState.Timestep < MaxStep; ++RunState.Timestep)
 	{
 		
 #if MOBIUS_TIMESTEP_VERBOSITY >= 1
 		WarningPrint("Timestep: ", RunState.Timestep, "\n");
-		//std::cout << "Day of year: " << RunState.DayOfYear << std::endl;
 #endif
 		
 		RunState.AtResult           = RunState.AllCurResultsBase;
@@ -2136,26 +2162,6 @@ RunModel(mobius_data_set *DataSet)
 #endif
 }
 
-static void
-PrintEquationDependencies(mobius_model *Model)
-{
-	if(!Model->Finalized)
-	{
-		WarningPrint("WARNING: Tried to print equation dependencies before the model was finalized.\n");
-		return;
-	}
-	
-	//Ooops, this one may not be correct for equations that are on solvers!!
-	
-	WarningPrint("**** Equation Dependencies ****\n");
-	for(equation_h Equation : Model->Equations)
-	{
-		WarningPrint(GetName(Model, Equation), "\n\t");
-		for(index_set_h IndexSet : Model->Equations[Equation].IndexSetDependencies)
-			WarningPrint("[", GetName(Model, IndexSet), "]");
-		WarningPrint("\n");
-	}
-}
 
 static void
 PrintResultStructure(const mobius_model *Model, std::ostream &Out = std::cout)

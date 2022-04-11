@@ -1,7 +1,7 @@
 
 FILE *OpenFile(const char *Filename, const char *Mode)
 {
-	// Wrapper to allow for non-ascii names on Windows.
+	// Wrapper to allow for non-ascii names on Windows. Assumes Filename is UTF8 formatted.
 	
 	FILE *File;
 #ifdef _WIN32
@@ -44,9 +44,12 @@ ReadEntireFile(const char *Filename)
 	fclose(File);
 	
 	if(ReadSize != FileData.Length)
+	{
+		free((void *)Data);
 		FatalError("ERROR: Was unable to read the entire file ", Filename);
+	}
 	
-	Data[FileData.Length] = '\0';    //Zero-terminate it in case we want to interface with C libraries.
+	Data[FileData.Length] = '\0';    // Zero-terminate it in case we want to interface with C libraries.
 	FileData.Data = Data;
 	
 	return FileData;
