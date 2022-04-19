@@ -212,7 +212,7 @@ token_stream::NextChar()
 	char c = '\0';
 	if(AtChar < FileData.Length) c = FileData[AtChar];
 	
-	else if(c == '\n')
+	if(c == '\n')
 	{
 		++Line;
 		PreviousColumn = Column;
