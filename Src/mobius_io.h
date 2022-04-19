@@ -1190,7 +1190,7 @@ ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
 	}
 	
 	if(Timesteps == 0)
-		FatalError("ERROR: Timesteps in the input file ", Filename, " is either not provided or set to 0.\n");
+		FatalError("ERROR: The amount of timesteps in the input file ", Filename, " is either not provided (as timesteps or end_date), or is set to 0.\n");
 	
 	AllocateInputStorage(DataSet, Timesteps);
 	

@@ -211,8 +211,7 @@ token_stream::NextChar()
 	++AtChar;
 	char c = '\0';
 	if(AtChar < FileData.Length) c = FileData[AtChar];
-	if(c == EOF || c == '\0')
-		c = '\0';
+	
 	else if(c == '\n')
 	{
 		++Line;
