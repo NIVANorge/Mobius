@@ -756,40 +756,51 @@ struct mobius_input_reader
 		}
 		else if(Type == InterpolationType_Spline)
 		{
-			//TODO: The current way this is implemented is a straight-forward implementation of the math, but it may not be that numerically stable?
+			//TODO: This is a straight-forward implementation of the math, but we don't know how numerically stable it is?
 			
-			//TODO: The way we fill end points (InsideOnly != false) is not good now. It should either be constant or more specific.
+			//TODO: The way we fill end points (InsideOnly != false) is not good now. It should either be constant or more specific. May also want to force option to have first derivatives in the end points be 0.
 			
 			//TODO: We should allow the user to specify that the value should never be negative (or just have this as a default?)
 			
 			int NPt  = (int)XVals.size();
-			int NSeg = NPt - 1;
 			
 			std::vector<double> BCol(NPt);
 			std::vector<double> KCol(NPt);
 			std::vector<double> Diag(NPt);
-			std::vector<double> OffDiag(NSeg);
+			std::vector<double> OffDiag(NPt-1);
+			
+			/* Set up the tridiagonal symmetric linear system  A*k = b ( see https://en.wikipedia.org/wiki/Spline_interpolation )
+				The vector of ks is the first derivatives of the polynomials at each control point, which is what we solve the system to obtain.
+			
+			|  Diag[0]    OffDiag[0]   0            0         ...  0             0     | | KCol[0] |     | BCol[0] |
+			| OffDiag[0]   Diag[1]    OffDiag[1]    0         ...  0             0     | | KCol[1] |     | BCol[1] |
+			|  0          OffDiag[1]   Diag[2]     OffDiag[2] ...  0             0     | | KCol[2] |     | BCol[2] |
+			|                        .....                                             | |  ...    |  =  |  ...    |
+			|  0           0           0            0         ... OffDiag[N-1]  Diag[N]| | KCol[N] |     | BCol[N] |
+			
+			*/
 			
 			for(int Pt = 0; Pt < NPt; ++Pt)
 			{
-				double D0 = 0.0;
-				double D1 = 0.0;
-				double Y0 = 0.0;
-				double Y1 = 0.0;
+				double DX0 = 0.0;
+				double DX1 = 0.0;
+				double DY0 = 0.0;
+				double DY1 = 0.0;
 				if(Pt != 0)
 				{
-					D0 = 1.0 / ((double)(XVals[Pt].SecondsSinceEpoch - XVals[Pt-1].SecondsSinceEpoch));
-					Y0 = YVals[Pt] - YVals[Pt-1];
+					DX0 = 1.0 / ((double)(XVals[Pt].SecondsSinceEpoch - XVals[Pt-1].SecondsSinceEpoch));
+					DY0 = YVals[Pt] - YVals[Pt-1];
 				}
 				if(Pt != NPt-1) {
-					D1 = 1.0 / ((double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch));
-					Y1 = YVals[Pt+1] - YVals[Pt];
-					OffDiag[Pt] = D1;
+					DX1 = 1.0 / ((double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch));
+					DY1 = YVals[Pt+1] - YVals[Pt];
+					OffDiag[Pt] = DX1;
 				}
-				Diag[Pt] = 2.0 * (D0 + D1);
-				BCol[Pt] = 3.0 * (Y0*D0*D0 + Y1*D1*D1);
+				Diag[Pt] = 2.0 * (DX0 + DX1);
+				BCol[Pt] = 3.0 * (DY0*DX0*DX0 + DY1*DX1*DX1);
 			}
 			
+			// Make the system upper triangular by subtracting a multiple of row i-1 from row i (for each 1 <= i < NPt).
 			for(int Pt = 1; Pt < NPt; ++Pt)
 			{
 				double Coeff = OffDiag[Pt-1]/Diag[Pt-1];
@@ -797,32 +808,32 @@ struct mobius_input_reader
 				BCol[Pt] = BCol[Pt] - BCol[Pt-1]*Coeff;
 			}
 			
+			// Back-solve the upper triangular system to obtain the Ks
 			KCol[NPt-1] = BCol[NPt-1]/Diag[NPt-1];
 			for(int Pt = NPt-2; Pt >= 0; --Pt)
 				KCol[Pt] = (BCol[Pt+1] - OffDiag[Pt]*KCol[Pt+1]) / Diag[Pt];
 			
-			for(int Seg = 0; Seg < NSeg; ++Seg)
+			for(int Pt = 0; Pt < NPt-1; ++Pt)
 			{
-				expanded_datetime Date(XVals[Seg], TimestepSize);
+				expanded_datetime Date(XVals[Pt], TimestepSize);
 			
-				double XRange = (double)(XVals[Seg+1].SecondsSinceEpoch - XVals[Seg].SecondsSinceEpoch);
-				double YRange = YVals[Seg+1] - YVals[Seg];
-				double AA = KCol[Seg]*XRange - YRange;
-				double BB = -KCol[Seg+1]*XRange + YRange;
+				double XRange = (double)(XVals[Pt+1].SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch);
+				double YRange = YVals[Pt+1] - YVals[Pt];
+				double AA = KCol[Pt]*XRange - YRange;
+				double BB = -KCol[Pt+1]*XRange + YRange;
 				
-				s64 Step     = FindTimestep(InputStartDate, XVals[Seg],   TimestepSize);
-				s64 LastStep = FindTimestep(InputStartDate, XVals[Seg+1], TimestepSize);
+				s64 Step     = FindTimestep(InputStartDate, XVals[Pt],   TimestepSize);
+				s64 LastStep = FindTimestep(InputStartDate, XVals[Pt+1], TimestepSize);
 				LastStep = std::min(LastStep, InputDataTimesteps-1);
 				
 				while(Step <= LastStep)
 				{
 					if(Step >= 0)
 					{
-						
-						double TT = (double)(Date.DateTime.SecondsSinceEpoch - XVals[Seg].SecondsSinceEpoch) / XRange;
+						double TT = (double)(Date.DateTime.SecondsSinceEpoch - XVals[Pt].SecondsSinceEpoch) / XRange;
 						double OmTT = 1.0 - TT;
 						
-						double YY = (1.0-TT)*YVals[Seg] + TT*YVals[Seg+1] + TT*(1.0-TT)*( (1.0-TT)*AA + TT*BB );
+						double YY = (1.0-TT)*YVals[Pt] + TT*YVals[Pt+1] + TT*(1.0-TT)*( (1.0-TT)*AA + TT*BB );
 						
 						AddValue(Step, YY);
 					}
