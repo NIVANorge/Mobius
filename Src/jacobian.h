@@ -117,7 +117,10 @@ EstimateJacobian(double *X, const mobius_matrix_insertion_function &MatrixInsert
 	}
 
 	//printf("begin matrix\n");
-	
+	//double H0 = std::numeric_limits<double>::infinity();
+	//for(size_t Col = 0; Col < N; ++Col)
+	//	H0 = std::min(1e-6 * X[Col], H0);
+		
 	for(size_t Col = 0; Col < N; ++Col)
 	{
 		equation_h EquationToPermute = Batch->EquationsODE[Col];
