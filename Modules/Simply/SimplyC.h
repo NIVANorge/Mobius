@@ -76,6 +76,7 @@ AddSimplyCModel(mobius_model *Model)
 	auto BaseflowIndex               = GetParameterDoubleHandle(Model, "Baseflow index");
 	auto LandUseProportions			 = GetParameterDoubleHandle(Model, "Land use proportions");
 	auto FieldCapacity               = GetParameterDoubleHandle(Model, "Soil field capacity");
+	auto GroundwaterTimeConstant     = GetParameterDoubleHandle(Model, "Groundwater time constant");
 
 	// Equation from soil temperature module
 	auto SoilTemperature             = GetEquationHandle(Model, "Soil temperature corrected for insulating effect of snow");
@@ -95,6 +96,7 @@ AddSimplyCModel(mobius_model *Model)
 	SetInitialValue(Model, SoilWaterDOCMass, InitialSoilWaterDOCMass);
 
 	auto SoilWaterDOCConcentration              = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL, LandSolver);
+	SetInitialValue(Model, SoilWaterDOCConcentration, SoilWaterDOCConcentration);  //NOTE: To force it to evaluate so that the result can be used by initial groundwater conc.
 	auto QuickFlowDOCFluxToReach                = RegisterEquation(Model, "Quick flow DOC flux", KgPerKm2PerDay, LandSolver); 
 	
 	auto SoilWaterDOCFlux = RegisterEquation(Model, "Soil water DOC flux", KgPerKm2PerDay, LandSolver);
@@ -112,12 +114,14 @@ AddSimplyCModel(mobius_model *Model)
 	auto GroundwaterDOCLoss                     = RegisterEquation(Model, "Groundwater DOC loss", KgPerKm2PerDay, ReachSolver);
 	auto GroundwaterDOCConcentration            = RegisterEquation(Model, "Groundwater DOC concentration", MgPerL, ReachSolver);
 	auto GroundwaterDOCFlux                     = RegisterEquation(Model, "Groundwater DOC flux", KgPerKm2PerDay, ReachSolver);
-	auto GroundwaterDOCMass                     = RegisterEquationODE(Model, "Groundwater DOC mass", KgPerKm2PerDay, ReachSolver);
-	SetInitialValue(Model, GroundwaterDOCMass, 0.02); //TODO: work this out from other parameters
+	auto InitialGroundwaterDOCMass              = RegisterEquationInitialValue(Model, "Initial groundwater DOC mass", KgPerKm2);
+	auto GroundwaterDOCMass                     = RegisterEquationODE(Model, "Groundwater DOC mass", KgPerKm2, ReachSolver);
+	SetInitialValue(Model, GroundwaterDOCMass, InitialGroundwaterDOCMass); //TODO: work this out from other parameters
 
 	auto StreamDOCInputFromUpstream             = RegisterEquation(Model, "DOC input from upstream", KgPerDay);
 	auto DOCInputFromCatchment                  = RegisterEquation(Model, "DOC input from catchment", KgPerDay, ReachSolver);
 	
+	auto InitialStreamDOCMass                   = RegisterEquationInitialValue(Model, "Initial reach DOC mass", Kg);
 	auto StreamDOCMass                          = RegisterEquationODE(Model, "Reach DOC mass", Kg, ReachSolver);
 	SetInitialValue(Model, StreamDOCMass, 0.02); //To do: work initial condition out from baseline DOC parameter
 
@@ -159,7 +163,8 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialSoilWaterDOCMass,
-		return PARAMETER(BaselineSoilDOCConcentration) * PARAMETER(FieldCapacity);
+		//NOTE: Assume steady-state initial conc.
+		return PARAMETER(FieldCapacity) * PARAMETER(BaselineSoilDOCConcentration) * (1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
 	)
 	
 	
@@ -207,14 +212,25 @@ AddSimplyCModel(mobius_model *Model)
 		return RESULT(SoilWaterDOCFlux);
 	)
 	
+	constexpr double ln2 = 0.69314718056;
+	
+	EQUATION(Model, InitialGroundwaterDOCMass,
+		//NOTE: Steady state-ish, assuming Qin = Qout.
+		double r = SafeDivide(ln2, PARAMETER(DeepSoilDOCHalfLife));
+		double V = RESULT(GroundwaterVolume);
+		double T = PARAMETER(GroundwaterTimeConstant);
+		double C = RESULT(AvgSoilWaterDOCConcentration);
+		double val = SafeDivide(V*C, (T*r + 1.0));
+		
+		if(PARAMETER(DeepSoilDOCType) != MassBal) return 0.0;
+		return val;
+	)
 	
 	EQUATION(Model, GroundwaterDOCMass,
 		double val = RESULT(TotalSoilwaterDOCFlux)*PARAMETER(BaseflowIndex) - RESULT(GroundwaterDOCLoss) - RESULT(GroundwaterDOCFlux);
 		if(PARAMETER(DeepSoilDOCType) != MassBal) return 0.0;
 		return val;
 	)
-	
-	constexpr double ln2 = 0.69314718056;
 	
 	EQUATION(Model, GroundwaterDOCLoss,
 		double decay_rate = SafeDivide(ln2, PARAMETER(DeepSoilDOCHalfLife));
@@ -251,6 +267,10 @@ AddSimplyCModel(mobius_model *Model)
 			+ RESULT(TotalSoilwaterDOCFlux)*(1.0-PARAMETER(BaseflowIndex))
 			+ RESULT(GroundwaterDOCFlux)
 			)* PARAMETER(CatchmentArea);
+	)
+	
+	EQUATION(Model, InitialStreamDOCMass,
+		return RESULT(GroundwaterDOCConcentration) * RESULT(ReachVolume) * 1000.0; 
 	)
 	
 	EQUATION(Model, StreamDOCMass,

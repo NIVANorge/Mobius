@@ -490,6 +490,7 @@ The following flags are supported
 \begin{enumerate}
 \item {\tt step\_interpolate}. Fill each given value (as a constant) for all dates until the next date where a value is specified.
 \item {\tt linear\_interpolate}. Fill a linear interpolation of values between dates where values are specified.
+\item {\tt spline\_interpolate}. Interpolate using a cubic spline (smoother option).
 \item {\tt inside}. Only interpolate between given values. If this is flag is  {\bf not} specified, the dates up to the first given value are filled with the first given value, and the dates after the last given value are filled with the last given value. Can be combined with any of the interpolation types.
 \end{enumerate}
 If you want to set multiple flags, just put them after one another with a space in between.

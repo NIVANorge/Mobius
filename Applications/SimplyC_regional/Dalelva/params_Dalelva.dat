@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC (quantom), containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew, SimplySed V0.4, Simply soil temperature V0.1, SimplyC V0.0.2, SimplyC TOC V0.0) at 2022-04-20 10:51:03
+# Parameter file generated for model SimplyC (quantom), containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew, SimplySed V0.4, Simply soil temperature V0.1, SimplyC V0.0.2, SimplyC TOC V0.0) at 2022-04-20 13:25:20
 
 index_sets:
 "Snow distribution box" : {"0-0.01" "0.01-0.05" "0.05-0.15" "0.15-0.35" "0.35-0.65" "0.65-0.85" "0.85-0.95" "0.95-0.99" "0.99-1"}
@@ -10,7 +10,7 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-1989-01-01
+1971-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
 2018-01-01
@@ -194,7 +194,7 @@ parameters:
 	0.0105235097150663
 
 	"Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20] 
-	0.000848587059757416
+	0.0015
 
 	"Deep soil/groundwater DOC computation" :     # [soil_avg, constant, mass_balance] soil_avg: conc in deep soil is avg. of soil runoff, const: constant conc. mass_balance: DOC mass balance is computed, with a decay half life.
 	mass_balance
@@ -203,7 +203,7 @@ parameters:
 	5
 
 	"Deep soil/groundwater DOC half life" :     #(day) [0.5, 1000] Only used if deep soil conc. is mass_balance
-	225.014168328734
+	220
 
 
 	# Carbon land ("Landscape units") #
@@ -212,10 +212,10 @@ parameters:
 	3 3 3 3
 
 	"Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0
-	4.45903018505725 4.45903018505725 4.45903018505725 4.45903018505725
+	4.7 4.7 4.7 4.7
 
 	"DOC mineralisation+sorption rate" :     #(1/day) [0, 1] 
-	0.672792036719859 0.672792036719859 0.672792036719859 0.672792036719859
+	0.638297872340425 0.638297872340425 0.638297872340425 0.638297872340425
 
 	"Compute mineralisation+sorption rate from baseline conc." :     # If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration
 	true true true true
