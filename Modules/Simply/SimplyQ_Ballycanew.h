@@ -48,7 +48,6 @@ New to version 0.4.2:
 	//auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "Maximum value", "fquick");
 	auto FlowAtMaxQuickFlow      = RegisterParameterDouble(Model, Hydrology, "Quick flow rate inflection point", MmPerDay, 30.0, 1.0, 200.0, "Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.", "iquick");
 	auto QuickFlowDrynessLimit   = RegisterParameterDouble(Model, Hydrology, "Quick flow dryness limit", Dimensionless, 0.9, 0.0, 1.0, "At what fraction of field capacity quick flow stops", "lquick");
-	auto SoilFieldCapacity       = RegisterParameterDouble(Model, Hydrology, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0, "", "Tg");
@@ -71,6 +70,7 @@ New to version 0.4.2:
 	auto HydrologyLand = RegisterParameterGroup(Model, "Hydrology land", LandscapeUnits);
 	
 	auto SoilWaterTimeConstant   = RegisterParameterDouble(Model, HydrologyLand, "Soil water time constant", Days, 2.0, 0.01, 40.0, "", "Ts");
+	auto SoilFieldCapacity       = RegisterParameterDouble(Model, HydrologyLand, "Soil field capacity", Mm, 290.0, 0.0, 1000.0, "", "fc");
 	
 	// General parameters that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land cover", Reach, LandscapeUnits);

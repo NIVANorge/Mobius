@@ -85,12 +85,12 @@ This is an adaption of the hydrology module from HBV-Nordic (Sælthun 1995)
 	auto MeltWaterToSoil     = RegisterEquation(Model, "Melt water to soil", MmPerDay);
 	
 	auto WaterInSnow         = RegisterEquation(Model, "Water in snow", Mm);
-	auto SnowDepth           = RegisterEquation(Model, "Snow depth as water equivalent", Mm);
+	auto SnowDepth           = RegisterEquation(Model, "Snow depth as water equivalent per box", Mm);
 	SetInitialValue(Model, SnowDepth, InitialSnowDepth);
 	SetInitialValue(Model, WaterInSnow, 0.0);
 	
 	auto AreaAvgMeltWaterToSoil = RegisterEquationCumulative(Model, "Area averaged melt water to soil", MeltWaterToSoil, SnowDistributionBox, BoxArea);
-	auto AvgSnowDepth        = RegisterEquationCumulative(Model, "Area averaged snow depth", SnowDepth, SnowDistributionBox, BoxArea);
+	auto AvgSnowDepth        = RegisterEquationCumulative(Model, "Snow depth as water equivalent", SnowDepth, SnowDistributionBox, BoxArea);
 	auto AvgSnowFall         = RegisterEquationCumulative(Model, "Area averaged precipitation falling as snow", PrecipFallingAsSnow, SnowDistributionBox, BoxArea);
 	auto SnowCover           = RegisterEquation(Model, "Snow cover", Dimensionless);
 	auto HydrolInputToSoil   = RegisterEquation(Model, "Hydrological input to soil box", MmPerDay);

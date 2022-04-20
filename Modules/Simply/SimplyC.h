@@ -75,7 +75,6 @@ AddSimplyCModel(mobius_model *Model)
 	auto CatchmentArea               = GetParameterDoubleHandle(Model, "Catchment area");
 	auto BaseflowIndex               = GetParameterDoubleHandle(Model, "Baseflow index");
 	auto LandUseProportions			 = GetParameterDoubleHandle(Model, "Land use proportions");
-	auto ProportionToQuickFlow		 = GetParameterDoubleHandle(Model, "Proportion of precipitation that contributes to quick flow");
 	auto FieldCapacity               = GetParameterDoubleHandle(Model, "Soil field capacity");
 
 	// Equation from soil temperature module
