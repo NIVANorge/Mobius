@@ -54,3 +54,36 @@ ReadEntireFile(const char *Filename)
 	
 	return FileData;
 }
+
+
+static const char *
+MakePathRelativeTo(const char *ParentFile, token_string Filename)
+{
+	int LastSlash;
+	bool AnySlashAtAll = false;
+	for(LastSlash = strlen(ParentFile) - 1; LastSlash >= 0; --LastSlash)
+	{
+		char C = ParentFile[LastSlash];
+		if(C == '\\' || C == '/')
+		{
+			AnySlashAtAll = true;
+			break;
+		}
+	}
+	if(!AnySlashAtAll) LastSlash = -1;
+	
+	static char NewPath[512]; //Umm, hope this is plenty???
+	sprintf(NewPath, "%.*s%.*s", LastSlash+1, ParentFile, (int)Filename.Length, Filename.Data);
+	
+	return &NewPath[0];
+}
+
+static const char *
+GetExtension(const char *Filename, bool *Success)
+{
+	int Len = strlen(Filename);
+	const char *C = Filename+(Len-1);
+	while(*C != '.' && C != Filename) --C;
+	*Success = !(C == Filename && *C != '.');
+	return C;
+}

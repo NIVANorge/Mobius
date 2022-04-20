@@ -657,7 +657,7 @@ struct mobius_input_reader
 			if(TimestepSize.Unit == Timestep_Month && (TimestepSize.Magnitude >= 12  || 12 % TimestepSize.Magnitude != 0))
 			{
 				ErrorCleanup();
-				FatalError("yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
+				FatalError("Yearly repetition is only available for models with a step size that is less than a year, and where the number of months in each step divides 12.\n");
 			}
 
 			expanded_datetime Year(InputStartDate, {Timestep_Month, 12});
@@ -772,11 +772,11 @@ struct mobius_input_reader
 			/* Set up the tridiagonal symmetric linear system  A*k = b ( see https://en.wikipedia.org/wiki/Spline_interpolation )
 				The vector of ks is the first derivatives of the polynomials at each control point, which is what we solve the system to obtain.
 			
-			|  Diag[0]    OffDiag[0]   0            0         ...  0             0     | | KCol[0] |     | BCol[0] |
-			| OffDiag[0]   Diag[1]    OffDiag[1]    0         ...  0             0     | | KCol[1] |     | BCol[1] |
-			|  0          OffDiag[1]   Diag[2]     OffDiag[2] ...  0             0     | | KCol[2] |     | BCol[2] |
-			|                        .....                                             | |  ...    |  =  |  ...    |
-			|  0           0           0            0         ... OffDiag[N-1]  Diag[N]| | KCol[N] |     | BCol[N] |
+			|  Diag[0]    OffDiag[0]   0            0         ...  0             0        | | KCol[0]   |     | BCol[0]   |
+			| OffDiag[0]   Diag[1]    OffDiag[1]    0         ...  0             0        | | KCol[1]   |     | BCol[1]   |
+			|  0          OffDiag[1]   Diag[2]     OffDiag[2] ...  0             0        | | KCol[2]   |     | BCol[2]   |
+			|                        .....                                                | |  ...      |  =  |  ...      |
+			|  0           0           0            0         ... OffDiag[N-2]  Diag[N-1] | | KCol[N-1] |     | BCol[N-1] |
 			
 			*/
 			
@@ -870,24 +870,7 @@ ReadInputSeries(mobius_data_set *DataSet, token_stream &Stream)
 				token_string Filename = Stream.ExpectQuotedString();
 				
 				//NOTE: The file path is given relatively to the current file, so we have to add any path of the current one in front.
-				
-				const char *ParentPath = Stream.Filename;
-				int LastSlash;
-				bool AnySlashAtAll = false;
-				for(LastSlash = strlen(ParentPath) - 1; LastSlash >= 0; --LastSlash)
-				{
-					char C = ParentPath[LastSlash];
-					if(C == '\\' || C == '/')
-					{
-						AnySlashAtAll = true;
-						break;
-					}
-				}
-				if(!AnySlashAtAll) LastSlash = -1;
-				
-				char NewPath[512]; //Umm, hope this is plenty???
-				sprintf(NewPath, "%.*s%.*s", LastSlash+1, ParentPath, (int)Filename.Length, Filename.Data);
-				
+				const char *NewPath = MakePathRelativeTo(Stream.Filename, Filename);
 				token_stream SubStream(NewPath);
 				
 				ReadInputSeries(DataSet, SubStream);
@@ -1102,16 +1085,6 @@ ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 
 static void
 ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile);
-
-static const char *
-GetExtension(const char *Filename, bool *Success)
-{
-	int Len = strlen(Filename);
-	const char *C = Filename+(Len-1);
-	while(*C != '.' && C != Filename) --C;
-	*Success = !(C == Filename && *C != '.');
-	return C;
-}
 
 static void
 ReadInputsFromFile(mobius_data_set *DataSet, const char *Filename)
