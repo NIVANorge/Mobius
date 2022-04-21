@@ -33,18 +33,12 @@ OLEAutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, const wchar_t *Na
     DISPID dispidNamed = DISPID_PROPERTYPUT;
     DISPID dispID;
     HRESULT hr;
-    //char buf[200];
-    //char szName[200];
-
-
-    // Convert down to ANSI
-    //WideCharToMultiByte(CP_ACP, 0, Name, -1, szName, 256, NULL, NULL);
 
     // Get DISPID for name passed...
     hr = pDisp->GetIDsOfNames(IID_NULL, (wchar_t**)&Name, 1, LOCALE_USER_DEFAULT, &dispID);
     if(FAILED(hr))
 	{
-        ErrorPrint("ERROR(internal, excel) AutoWrap() failed.\n");//IDispatch::GetIDsOfNames(\"%s\") failed w/err 0x%08lx", szName, hr);
+        ErrorPrint("ERROR(internal, excel) AutoWrap() failed.\n");
 		return false;
 	}
 
@@ -69,7 +63,7 @@ OLEAutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, const wchar_t *Na
     hr = pDisp->Invoke(dispID, IID_NULL, LOCALE_SYSTEM_DEFAULT, autoType, &dp, pvResult, NULL, NULL);
     if(FAILED(hr))
 	{
-        ErrorPrint("ERROR(internal, excel) AutoWrap() failed.\n");//sprintf(buf, "IDispatch::Invoke(\"%s\"=%08lx) failed w/err 0x%08lx", szName, dispID, hr);
+        ErrorPrint("ERROR(internal, excel) AutoWrap() failed.\n");
 		return false;
 	}
 	

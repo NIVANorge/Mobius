@@ -531,7 +531,6 @@ PutFlag(input_series_flags *Flags, token_string Str)
 	return false;
 }
 
-//#include "spline_example.h"
 
 struct mobius_input_reader
 {

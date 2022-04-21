@@ -1557,7 +1557,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 			}
 			
 			if(!IsValid(Batch.Solver))
-			{	
+			{
 				//NOTE: Basic discrete timestep evaluation of equations.
 				for(equation_h Equation : Batch.Equations) 
 				{
@@ -1610,7 +1610,13 @@ INNER_LOOP_BODY(RunInnerLoop)
 
 				if(!Success)
 				{
-					//TODO: Print index state
+					ErrorPrint("Solver: ", SolverSpec.Name, ", Timestep: ", RunState->Timestep, "\n");
+					ErrorPrint("Indexes:\n");
+					for(index_set_h IndexSet : BatchGroup.IndexSets)
+					{
+						const char *IndexName = DataSet->IndexNames[IndexSet.Handle][RunState->CurrentIndexes[IndexSet.Handle]];
+						ErrorPrint("\t\"", GetName(Model, IndexSet), "\": \"", IndexName, "\"\n");
+					}
 					ErrorPrint("State of ODE equations at solver failure:\n");
 					size_t EquationIdx = 0;
 					for(equation_h Equation : Batch.EquationsODE)
