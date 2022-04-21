@@ -95,8 +95,9 @@ AddSimplyCModel(mobius_model *Model)
 	auto SoilWaterDOCMass                       = RegisterEquationODE(Model, "Soil water DOC mass", KgPerKm2, LandSolver);
 	SetInitialValue(Model, SoilWaterDOCMass, InitialSoilWaterDOCMass);
 
-	auto SoilWaterDOCConcentration              = RegisterEquation(Model, "Soil water DOC concentration, mg/l", MgPerL, LandSolver);
+	auto SoilWaterDOCConcentration              = RegisterEquation(Model, "Soil water DOC concentration", MgPerL, LandSolver);
 	SetInitialValue(Model, SoilWaterDOCConcentration, SoilWaterDOCConcentration);  //NOTE: To force it to evaluate so that the result can be used by initial groundwater conc.
+	auto EquilibriumSoilDOCConc                 = RegisterEquation(Model, "Equilibrium soil water DOC conc", MgPerL);
 	auto QuickFlowDOCFluxToReach                = RegisterEquation(Model, "Quick flow DOC flux", KgPerKm2PerDay, LandSolver); 
 	
 	auto SoilWaterDOCFlux = RegisterEquation(Model, "Soil water DOC flux", KgPerKm2PerDay, LandSolver);
@@ -196,6 +197,10 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, SoilWaterDOCConcentration,
 		return SafeDivide(RESULT(SoilWaterDOCMass), RESULT(SoilWaterVolume));    // kg / (mm * km2) -> mg/l has conversion factor of 1 
+	)
+	
+	EQUATION(Model, EquilibriumSoilDOCConc,
+		return PARAMETER(BaselineSoilDOCConcentration) * (1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
 	)
 	
 	EQUATION(Model, QuickFlowDOCFluxToReach,

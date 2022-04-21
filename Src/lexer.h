@@ -77,11 +77,10 @@ struct token_stream
 	token_stream(const char *Filename)
 	{
 		this->Filename = Filename;
-		
-		AtChar = -1;
-		
 		FileData = ReadEntireFile(Filename);
 		
+		
+		AtChar = -1;
 		//NOTE: In case the file has a BOM (byte order mark), which Notepad tends to do on Windows.
 		if(FileData.Length >= 3 
 				&& FileData[0] == (char) 0xEF
