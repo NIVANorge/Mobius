@@ -1396,7 +1396,7 @@ NaNTest(const mobius_model *Model, model_run_state *RunState, double ResultValue
 		ErrorPrint("ERROR: Got a NaN or Inf value as the result of the equation \"", GetName(Model, Equation), "\" at timestep ", RunState->Timestep, ", model time ", RunState->CurrentTime, " .\n");
 		const equation_spec &Spec = Model->Equations[Equation];
 		ErrorPrint("Indexes:\n");
-		for(index_set_h IndexSet : Spec.IndexSetDependencies)
+		for(index_set_h IndexSet : Spec.IndexSetDependencies) //TODO: This may not be all the index set dependencies, since it could have inherited some from a solver.
 		{
 			const char *IndexName = RunState->DataSet->IndexNames[IndexSet.Handle][RunState->CurrentIndexes[IndexSet.Handle]];
 			ErrorPrint("\"", GetName(Model, IndexSet), "\": \"", IndexName, "\"\n");
@@ -1607,10 +1607,9 @@ INNER_LOOP_BODY(RunInnerLoop)
 				//NOTE: Solve the system using the provided solver
 				bool Success = SolverSpec.SolverFunction(h, Batch.EquationsODE.Count, RunState->SolverTempX0, RunState->SolverTempWorkStorage, &Batch, RunState, SolverSpec.RelErr, SolverSpec.AbsErr);
 				
-
 				if(!Success)
 				{
-					ErrorPrint("Solver: ", SolverSpec.Name, ", Timestep: ", RunState->Timestep, "\n");
+					ErrorPrint("Solver: \"", SolverSpec.Name, "\", Timestep: ", RunState->Timestep, "\n");
 					ErrorPrint("Indexes:\n");
 					for(index_set_h IndexSet : BatchGroup.IndexSets)
 					{
@@ -1816,7 +1815,7 @@ ProcessComputedParameters(mobius_data_set *DataSet, model_run_state *RunState)
 	{
 		const parameter_spec &Spec = DataSet->Model->Parameters[Parameter];
 		equation_h Equation = Spec.IsComputedBy;
-		if(IsValid(Spec.IsComputedBy))
+		if(IsValid(Equation))
 		{
 			const equation_spec &EqSpec = DataSet->Model->Equations[Equation];
 			
