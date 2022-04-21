@@ -226,7 +226,7 @@ The parameter section consists of a series of quoted names of parameters followe
 \item Parameter values of type {\bf double} (double-precision floating point numbers) can written as numbers with or without a decimal separator '.', or in scientific notation. Technically you could also provide a NaN (not-a-number), but that will probably crash the model in most cases.
 \item Values of type {\bf uint} (unsigned integers) have to be written as a non-negative number without any commas. These are often used to denote a number of timesteps or days of duration for some process.
 \item {\bf Boolean} values are either {\tt true} or {\tt false}. These are typically switches that turn on or off a process.
-\item Values of {\bf time} type are provided as a date on the format yyyy-mm-dd.
+\item Values of {\bf time} type are provided as a date on the format YYYY-MM-DD, potentially followed by a time on the format hh:mm:ss if the model supports sub-daily timesteps.
 \end{enumerate}
 
 Every parameter indexes over a list of index sets determined by the model. Note that an index set can appear more than one time in this list. If a parameter indexes over no index sets, it has only one value. If it indexes over one index set it has one value for each index in that index set. If it indexes over more than one index set, it has one value for each element in the cartesian product\footnote{Remember that the Cartesian product of sets $X$ and $Y$ is the set of tuples $(x, y)$, with $x\in X$ and $y\in Y$.} of these index sets, i.e. the number of values is equal to the product of the number of indexes.
