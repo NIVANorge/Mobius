@@ -267,18 +267,18 @@ The only time a batch group can have more than one batch is if it contains both 
 \begin{example}\label{ex:pseucocode}
 Pseudocode for how the model evaluates the batch structure in Example \ref{ex:persiststructure}.
 \begin{lstlisting}[style=textstyle]
-for every timestep:
-	for every reach R:
-		for every landscape unit LU:
+for timestep in 0..Timesteps-1:
+	for  R in Reaches:
+		for LU in Landscape units:
 			evaluate "Snow melt" and "Rainfall" for this LU in this R.
-	for every reach R:
-		for every landscape unit LU:
-			for every soil box S:
+	for R in Reaches:
+		for LU in Landscape units:
+			for S in Soil boxes:
 				evaluate "Percolation input" to "Water depth" for this S in this LU in this R
-	for every reach R:
-		for every landscape unit LU:
+	for R in Reaches:
+		for LU in Landscape units:
 			evaluate "Snow fall" to "Diffuse flow output" for this LU in this R
-	for every reach R:
+	for R in Reaches:
 		evaluate "Total diffuse flow output" and "Reach flow input"
 		run a solver that integrates the ODE system containing the equations "Reach time constant" to "Reach volume" (possibly evaluating them many times)
 		evaluate "Reach velocity" and "Reach depth"
@@ -295,7 +295,7 @@ Unlike parameters, equations can never index over one index set more than once. 
 
 We refer to the quick start guide on the front page of the github repository as well as the tutorials on how to quickly get a project started.
 
-Usually you will have one or more header (.h) files with the procedures you use to build your model modules, and one source file (.cpp) with the main C++ program. The below example shows how to set up a model .dll that can be accessed through MobiView or the python wrapper. It is also possible to make a command line application (.exe) using the model interaction API described in section \ref{sec:modelinteraction}.
+Usually you will have one or more header (.h) files with the procedures you use to build your modules, and one source file (.cpp) with the main C++ program that composes the modules into a model. The below example shows how to set up a model .dll that can be accessed through MobiView or the python wrapper. It is very convenient to use MobiView during model development to visualize how new processes are behaving (but remember to recompile every time). It is also possible to make a command line application (.exe) using the model interaction API described in section \ref{sec:modelinteraction}.
 
 \begin{example}\label{ex:examplemain}
 Example of a mymodel.cpp
@@ -387,7 +387,7 @@ Note that the "Timesteps" and "Start date" parameters are automatically register
 
 \subsection{Entity registration, handles, and equation bodies}\label{sec:registrationandhandles}
 
-The {\tt mobius\_model} object contains lists of various model entities (see Table \ref{tab:modelentity} for an explanaition) and information about these. It is the model developer's job to register all the entities and provide the needed information for each one.
+The {\tt mobius\_model} object contains lists of various model entities (see Table \ref{tab:modelentity} for an explanation) and information about these. It is the model developer's job to register all the entities and provide the needed information for each one.
 
 \begin{example}\label{ex:registration}
 Example of entity registration.
@@ -440,7 +440,7 @@ $D_{snow}$   & state variable & $mm$                                & Snow depth
 $P$               & state variable &  $mm\, d^{-1}$                & Hydrological input to soil & & &\\
 \hline
 \end{tabular}
-\caption{SimplyP snow parameters and state variables}
+\caption{SimplySnow parameters and state variables}
 \end{table}
 The state variables at a given timestep $t$ are given by the following equations
 \begin{align*}
@@ -458,7 +458,7 @@ P_t &= P_{rain,t} + P_{melt,t}
 \end{align*}
 Say that one also wants a different initial snow depth and degree-day factor for each reach (subcatchment). First one has to register all of the model entities.
 \begin{example}
-Registration of model entities for the SimplyP snow module.
+Registration of model entities for the SimplySnow module.
 \begin{lstlisting}[style=mycpp,mathescape]
 BeginModule(Model, "Simply Snow", "1.0");
 
@@ -494,7 +494,7 @@ EndModule(Model);
 Note that we also use the {\tt SetInitialValue} procedure to tell the model that "Snow depth" should have initial value "Initial snow depth". The value of "Initial snow depth" is not determined at this point, but it will be determined before one runs the model (typically by reading a parameter file), and the framework will remember that it should set this value as the initial value of "Snow depth" before the run starts. We have also added the state variable "Potential daily snowmelt" as a partial calculation used in "Snow melt", however that is not strictly necessary. Next one provides the equation bodies.
 
 \begin{example}\label{ex:simplypequations}
-Equation bodies for the SimplyP snow module.
+Equation bodies for the SimplySnow module.
 \begin{lstlisting}[style=mycpp]
 EQUATION(Model, PrecipitationFallingAsSnow,
 	double precip = INPUT(Precipitation);
@@ -529,7 +529,7 @@ EQUATION(Model, HydrologicalInputToSoilBox,
 In Example \ref{ex:simplypequations} we see that {\tt RESULT} refers to the value of another equation from the current timestep, while {\tt LAST\_RESULT} refers to the value from the previous timestep (in the first timestep, it refers to the initial value). Looking at the model equation batch structure that can be viewed in MobiView using one of the top buttons (or printed from a command line application using {\tt PrintResultStructure(Model)}), we see the following.
 
 \begin{example}
-Batch structure for the SimplyP snow module.
+Batch structure for the SimplySnow module.
 \begin{lstlisting}[style=textstyle]
 []
         -----
@@ -554,7 +554,7 @@ Even if we had declared the equations in a different order, the framework would 
 In this example we used an input file that does not declare any index set dependencies for "Air temperature" or "Precipitation". If we had instead used an input file where these two timeseries are given per index in "Reaches", we would get the following batch structure.
 
 \begin{example}
-Batch structure for the SimplyP snow module if the user provided precipitation and air temperature timeseries per reach.
+Batch structure for the SimplySnow module if the user provided precipitation and air temperature timeseries per reach.
 \begin{lstlisting}[style=textstyle]
 [Reaches]
         -----
