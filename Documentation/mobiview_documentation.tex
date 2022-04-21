@@ -125,7 +125,7 @@ Another way is to take the parameter file of an existing project and delete ever
 
 \subsection{The parameter group view and parameter index selection}
 
-In the parameter group view you can select what parameter group to view the parameters of. These are usually organized under what module (i.e. sub-model) they belong to. Each parameter group indexes zero or more index sets. In the parameter index selection menus you can choose the (tuple of) indexes that you want for the current the parameter view display. Only the index sets that the currently selected group indexes over are active, the menus of the other index sets are disabled.
+In the parameter group view you can select what parameter group to view the parameters of. These are usually organized under what module (i.e. sub-model) they belong to. Each parameter group indexes zero or more index sets. In the parameter index selection menus you can choose the (tuple of) indexes that you want for the current parameter view display. Only the index sets that the currently selected group indexes over are active, the menus of the other index sets are disabled.
 
 If you check the 'Lock' box under one or more of the index sets, any edit to a parameter value will be performed to all value instances over those index sets, not just to the value corresponding to the current index tuple.
 
@@ -225,7 +225,7 @@ To compare your modeled time series against an observed series, you can load the
 
 A linear regression line of the residuals is also displayed. This shows the trend in the residuals. For instance if this trend goes up, it says that the observed quantity increases over time compared to the modeled one. The regression line is only computed for the stat interval (see section \ref{sec:gofint}).
 
-You can also use aggregation. For instance, the monthly sum of the residuals of something like "Reach flow" versus "Observed discharge" can tell you something about the monthly water balance in a hydrology model.
+You can also use aggregation. For instance, the monthly sum of the residuals of something like "Reach flow" versus "Observed flow" can tell you something about the monthly water balance in a hydrology model.
 
 \subsubsection{Residual histogram}
 
@@ -243,7 +243,7 @@ In addition to what we have implemented in MobiView (described above), the plot 
 \begin{enumerate}[i]
 \item Select zooming or panning options.
 \item Edit text fields, select colors and plot styles (Properties).
-\item Get a table of the underlying data of the plot (Data). Can e.g. be copied to Excel by selecting multiple cells and ctrl-C.
+\item Get a table of the underlying data of the plot (View data). Can e.g. be copied to Excel by selecting multiple cells and ctrl-C.
 \item Copy the plot as an image to the clipboard (Copy image). This only works correctly if you want to paste into certain applications. It works with most image editing software, Microsoft applications (e.g. Word, Outlook, Internet Explorer), but sadly there is a bug right now where it does not work with the Google Chrome browser.
 \item Save the image of the plot (Save image). Several formats are available (e.g. png, pdf).
 \end{enumerate}
@@ -301,7 +301,7 @@ N-S is the Nash-Sutcliffe efficiency coefficient \cite{nashsutcliffe70}
 \[
 1 - \frac{\sum_{i\in I}(o_i - m_i)^2}{\sum_{i\in I}(o_i-\overline{o})^2}.
 \]
-This coefficient takes values in $(-\infty, 1]$, where a value of $1$ means a perfect fit, while a value of $0$ or less means that the modeled series is a no better fit than a series constantly equal to the mean of the observed series.
+This coefficient takes values in $(-\infty, 1]$, where a value of $1$ means a perfect fit, while a value of $0$ or less means that the modeled series is a no better predictor than the mean of the observed series.
 
 \subsubsection{log N-S}
 log N-S is the same as N-S, but where $o_i$ is replaced by $\ln(o_i)$ and $m_i$ replaced by $\ln(m_i)$ for each $i\in I$. Here $\ln$ denotes the natural logarithm.
