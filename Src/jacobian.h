@@ -117,16 +117,16 @@ EstimateJacobian(double *X, const mobius_matrix_insertion_function &MatrixInsert
 	}
 
 	//printf("begin matrix\n");
-	//double H0 = std::numeric_limits<double>::infinity();
-	//for(size_t Col = 0; Col < N; ++Col)
-	//	H0 = std::min(1e-6 * X[Col], H0);
+	
+	// NOTE: We use the same numeric step size for all the Fs. If we don't do that, the computation will be much more expensive.
+	double H0 = std::numeric_limits<double>::infinity();
+	for(size_t Col = 0; Col < N; ++Col)
+		H0 = std::min(std::max(1e-6*X[Col], 1e-9), H0);   //NOTE: We'll see if 1e-6 and 1e-9 are good values for this.. There is probably nothing that is optimal for all cases.
 		
 	for(size_t Col = 0; Col < N; ++Col)
 	{
 		equation_h EquationToPermute = Batch->EquationsODE[Col];
 		
-		//Hmm. here we assume we can use the same H for all Fs which may not be a good idea?? But it makes things significantly faster because then we don't have to recompute the non-odes in all cases.
-		double H0 = 1e-6;  //TODO: This should definitely be sensitive to the size of the base values. But how to do that?
 		volatile double Temp = X[Col] + H0;   //NOTE: volatile to make sure the optimizer doesn't optimize this away. We do it to improve numerical accuracy.
 		double H = Temp - X[Col];
 		RunState->CurResults[EquationToPermute.Handle] = X[Col] + H;
