@@ -2308,50 +2308,60 @@ PrintEquationProfiles(mobius_data_set *DataSet, model_run_state *RunState)
 {
 #if MOBIUS_EQUATION_PROFILING
 	const mobius_model *Model = DataSet->Model;
-	std::cout << std::endl << "**** Equation profiles - Average cycles per evaluation (number of evaluations) ****" << std::endl;
-	//std::cout << "Number of batches: " << Model->ResultStructure.size() << std::endl;
+	WarningPrint("\n**** Equation profiles - Average cycles per evaluation (number of evaluations) ****\n");
+
 	u64 SumCc = 0;
 	u64 TotalHits = 0;
 	
 	for(const equation_batch_group &BatchGroup : Model->BatchGroups)
 	{	
-		std::cout << std::endl;
-		if(BatchGroup.IndexSets.Count == 0) std::cout << "[]";
+		WarningPrint('\n');
+		if(BatchGroup.IndexSets.Count == 0) WarningPrint("[]");
 		for(index_set_h IndexSet : BatchGroup.IndexSets)
-			std::cout << "[" << GetName(Model, IndexSet) << "]";
+			WarningPrint("[", GetName(Model, IndexSet), "]");
 		
 		for(size_t BatchIdx = BatchGroup.FirstBatch; BatchIdx <= BatchGroup.LastBatch; ++BatchIdx)
 		{
 			const equation_batch &Batch = Model->EquationBatches[BatchIdx];
-			std::cout << "\n\t-----";
-			if(IsValid(Batch.Solver)) std::cout << " Solver \"" << GetName(Model, Batch.Solver) << "\"";
+			WarningPrint("\n\t-----");
+			if(IsValid(Batch.Solver)) WarningPrint(" Solver \"", GetName(Model, Batch.Solver), "\"");
 			
 			ForAllBatchEquations(Batch,
 			[Model, RunState, &TotalHits, &SumCc](equation_h Equation)
 			{
 				int PrintCount = 0;
-				printf("\n\t");
-				if(Model->Equations[Equation].Type == EquationType_Cumulative) PrintCount += printf("(Cumulative) ");
-				else if(Model->Equations[Equation].Type == EquationType_ODE) PrintCount += printf("(ODE) ");
-				PrintCount += printf("%s: ", GetName(Model, Equation));
+				WarningPrint("\n\t");
+				if(Model->Equations[Equation].Type == EquationType_Cumulative)
+				{
+					WarningPrint("(Cumulative) ");
+					PrintCount += 13;
+				}
+				else if(Model->Equations[Equation].Type == EquationType_ODE)
+				{
+					WarningPrint("(ODE) ");
+					PrintCount += 6;
+				}
+				const char *Name = GetName(Model, Equation);
+				WarningPrint(Name, ": ");
+				PrintCount += (strlen(Name) + 2);
 				
 				u64 Cc = RunState->EquationTotalCycles[Equation.Handle];
 				size_t Hits = RunState->EquationHits[Equation.Handle];
 				double CcPerHit = (double)Cc / (double)Hits;
 				
-				char FormatString[100];
+				char FormatString[64];
+				char ResultString[128];
 				sprintf(FormatString, "%s%dlf", "%", 60-PrintCount);
-				//printf("%s", FormatString);
-				printf(FormatString, CcPerHit);
-				printf(" (%llu)", Hits);
+				sprintf(ResultString, FormatString, CcPerHit);
+				WarningPrint(ResultString, " (", Hits, ")");
 				
 				TotalHits += (u64)Hits;
 				SumCc += Cc;
 				return false;
 			});
-			if(BatchIdx == BatchGroup.LastBatch) std::cout << "\n\t-----\n";
+			if(BatchIdx == BatchGroup.LastBatch) WarningPrint("\n\t-----\n");
 		}
 	}
-	std::cout << "\nTotal average cycles per evaluation: " << ((double)SumCc / (double)TotalHits)<< std::endl;
+	WarningPrint("\nTotal average cycles per evaluation: ", ((double)SumCc / (double)TotalHits), "\n");
 #endif
 }
