@@ -1,4 +1,4 @@
-# Parameter file generated for model INCA-Sed, containing modules (PERSiST V1.4, INCA-Sed V0.9) at 2020-09-30 11:14:03
+# Parameter file generated for model INCA-Sed, containing modules (PERSiST V1.4, INCA-Sed V0.9) at 2022-04-22 14:50:47
 
 index_sets:
 "Landscape units" : {"All"}
@@ -11,245 +11,249 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-2004-01-01
+1981-01-01
 
 "Timesteps" :     #(days) [0, 18446744073709551615]
-400
+10000
 
 
-###################### PERSiST V1.4 ######################
+{ module "PERSiST" version "1.4"
 
-# Solver resolution (no index sets) #
+	# Solver resolution (no index sets) #
 
-"Solver resolution" :     #(dimensionless) [0.001, 0.5] Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km
-0.1
+	"Solver resolution" :     #(dimensionless) [0.001, 0.5] Default should be 0.1, decrease this if the reach hydrology misbehaves. This should only be necessary if you have reaches shorter than about 1km
+	0.1
 
 
-# Hydrology by land class ("Landscape units") #
+	# Hydrology by land class ("Landscape units") #
 
-"Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
-1
+	"Snow multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between snow measured in the gauge and effective snowfall amounts falling
+	1
 
-"Snow melt temperature" :     #(°C) [-4, 4] The temperature at or above which snow can melt
-0
+	"Snow melt temperature" :     #(°C) [-4, 4] The temperature at or above which snow can melt
+	0
 
-"Degree day melt factor" :     #(mm/°C/day) [1, 4] Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature
-3
+	"Degree day melt factor" :     #(mm/°C/day) [1, 4] Describes the dependency of snow melt rates on temperature. The parameter represents the number of millimetres water melted per degree celcius above the snow melt temperature
+	3
 
-"Rain multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling
-1
+	"Rain multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor used to account for bias in the relationship between rain measured in the gauge and effective rainfall amounts falling
+	1
 
-"Initial snow depth" :     #(mm SWE) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
-0
+	"Initial snow depth" :     #(mm SWE) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
+	0
 
-"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
-0.2
+	"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
+	0.17
 
-"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
--1
+	"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
+	-1
 
-"Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
-0
+	"Canopy interception" :     #(mm/day) [0, 0.3] The depth of precipitation which does not make it to the soil surface but is instead intercepted by the vegetative canopy and returned to the atmosphere either through evaporation or sublimation
+	0
 
 
-# Soil characteristics by land class ("Soils" "Landscape units") #
+	# Soil characteristics by land class ("Soils" "Landscape units") #
 
-"Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
-0
-300
-15
+	"Initial water depth" :     #(mm) [0, 9999] The initial depth of water in a box at the start of a simulation
+	0
+	300
+	15
 
-"Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
-1
-1
-1
+	"Relative area index" :     #(dimensionless) [0, 1] The areal fraction of the simulation covered by a box, typical INCA-type simulations will use a value of 1.0
+	1
+	1
+	1
 
-"Infiltration" :     #(mm/day) [0, 500] The maximum rate at which water can infiltrate into a box from overlying boxes
-1000
-100
-20
+	"Infiltration" :     #(mm/day) [0, 500] The maximum rate at which water can infiltrate into a box from overlying boxes
+	1000
+	100
+	20
 
-"Retained water depth" :     #(mm) [0, 100000] The depth of water in a box which does not contribute to runoff but can contribute to evapotranspiration and to diluting nutrient inputs to the box. For the soil water box, this is similar to the field capacity
-0
-300
-0
+	"Retained water depth" :     #(mm) [0, 100000] The depth of water in a box which does not contribute to runoff but can contribute to evapotranspiration and to diluting nutrient inputs to the box. For the soil water box, this is similar to the field capacity
+	0
+	300
+	0
 
-"Drought runoff fraction" :     #(dimensionless) [0, 0.5] The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth
-0
-0.1
-0
+	"Drought runoff fraction" :     #(dimensionless) [0, 0.5] The fraction of water entering a box which contributes to runoff generation when the depth of water is below the retained water depth
+	0
+	0.1
+	0
 
-"Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
-1
-3
-40
+	"Time constant" :     #(days) [1, 9999] The inverse of the rate at which water flows out of a box
+	1
+	5
+	40
 
-"Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
-0
-3.5
-0
+	"Evapotranspiration adjustment" :     #(dimensionless) [0, 10] A factor to slow the rate of evapotranspiration when the depth of water in a box is below the retained water depth. Special  values include 0 (no slowing of evapotranspiration, 1 (slowing is proportional to the depth of water remaining in the bucket) and values above 10 (all evapotranspiration effectively stops when the depth of water is below the retained water depth)
+	0
+	3.5
+	0
 
-"Relative evapotranspiration index" :     #(dimensionless) [0, 1] The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket
-0
-1
-0
+	"Relative evapotranspiration index" :     #(dimensionless) [0, 1] The fraction of the total evapotranspiration in a landscape unit which is to be generated from the current bucket
+	0
+	1
+	0
 
-"Maximum capacity" :     #(mm) [0, 9999] The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity
-1000
-350
-1000
+	"Maximum capacity" :     #(mm) [0, 9999] The maximum depth of water which can be held in a bucket. For soil water, this is similar to the saturation capacity
+	1000
+	350
+	1000
 
 
-# Soil box type ("Soils") #
+	# Soil box type ("Soils") #
 
-"This is a quick box" :
-true false false
+	"This is a quick box" :
+	true false false
 
 
-# Reach and subcatchment characteristics ("Reaches") #
+	# Reach and subcatchment characteristics ("Reaches") #
 
-"Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
-50.6
+	"Terrestrial catchment area" :     #(km2) [0.01, 999999] The terrestrial area of a subcatchment, excluding open water
+	50.6
 
-"Reach length" :     #(m) [1, 999999] The length of the main stem of the stream / reach in a subcatchment
-9300
+	"Reach length" :     #(m) [1, 999999] The length of the main stem of the stream / reach in a subcatchment
+	9300
 
-"Reach bottom width" :     #(m) [0.1, 9999] The bottom width of the main stem of the stream / reach in a subcatchment
-2
+	"Reach bottom width" :     #(m) [0.1, 9999] The bottom width of the main stem of the stream / reach in a subcatchment
+	2
 
-"Reach bank slope" :     #(dimensionless) [0.01, 10] The slope of the river bank
-0.3
+	"Reach bank slope" :     #(dimensionless) [0.01, 10] The slope of the river bank
+	0.3
 
-"Reach slope" :     #(dimensionless) [1e-06, 0.2] Roughly the difference in elevation between the ends divided by the length
-0.8
+	"Reach slope" :     #(dimensionless) [1e-06, 0.2] Roughly the difference in elevation between the ends divided by the length
+	0.8
 
-"Manning's roughness coefficent" :     #(s/(m^1/3)) [0.01, 0.1] The roughness coefficent n in Manning's flow velocity equation
-0.04
+	"Manning's roughness coefficent" :     #(s/(m^1/3)) [0.01, 0.1] The roughness coefficent n in Manning's flow velocity equation
+	0.04
 
-"Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
-0
+	"Snow threshold temperature" :     #(°C) [-4, 4] The temperature at or below which precipitation will fall as snow in a subcatchment
+	0
 
-"Reach snow multiplier" :     #(dimensionless) [0.5, 2] The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
-1
+	"Reach snow multiplier" :     #(dimensionless) [0.5, 2] The subcatchment-specific snow multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+	1
 
-"Reach rain multiplier" :     #(dimensionless) [0.5, 2] The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
-1
+	"Reach rain multiplier" :     #(dimensionless) [0.5, 2] The subcatchment specific rain multiplier needed to account for possible spatial variability between the precipitation monitoring site and the subcatchment
+	1
 
-"Abstraction flow" :     #(m3/s) [0, 9999] The rate at which water is removed from a reach by human activities
-0
+	"Abstraction flow" :     #(m3/s) [0, 9999] The rate at which water is removed from a reach by human activities
+	0
 
-"Effluent flow" :     #(m3/s) [0, 9999] The rate of liquid inputs to a reach from e.g. sewage treatment works
-0
+	"Effluent flow" :     #(m3/s) [0, 9999] The rate of liquid inputs to a reach from e.g. sewage treatment works
+	0
 
-"Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
-0.87
+	"Initial stream flow" :     #(m3/s) [0.0001, 9999] The flow in the stream at the start of the simulation. This parameter is only used for reaches that don't have any other reaches as inputs.
+	0.87
 
 
-# Land use percentages ("Reaches" "Landscape units") #
+	# Land use percentages ("Reaches" "Landscape units") #
 
-"%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
-100
+	"%" :     #(%) [0, 100] The percentage of a subcatchment occupied by a specific land cover type
+	100
 
 
-# Percolation ("Landscape units" "Soils" "Soils") #
+	# Percolation ("Landscape units" "Soils" "Soils") #
 
-"Percolation matrix" :     #(dimensionless) [0, 1] The fraction of runoff that goes from one box to another
-0.01 0.99 0
-1 0.35 0.65
-1 0 1
+	"Percolation matrix" :     #(dimensionless) [0, 1] The fraction of runoff that goes from one box to another
+	0.01 0.99 0
+	1 0.35 0.65
+	1 0 1
 
 
-###################### INCA-Sed V0.9 ######################
+} # end of module "PERSiST"
 
-# Sediments ("Landscape units") #
+{ module "INCA-Sed" version "0.9"
 
-"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.12
+	# Sediment mobilisation ("Landscape units") #
 
-"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+	"Flow erosion scaling factor" :     #(s/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.127164781113874
 
-"Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.12
+	"Flow erosion direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+	4.68058341446336e-11
 
-"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.3
+	"Flow erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.145823023084169
 
-"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+	"Transport capacity scaling factor" :     #(kg/m^2/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.95107725023997
 
-"Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
+	"Transport capacity direct runoff threshold" :     #(m^3/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.000237560080557682
 
-"Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.0012
+	"Transport capacity non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.425582789083899
 
-"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.029
+	"Splash detachment scaling factor" :     #(s/m) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.000136716857060468
 
-"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
-2
+	"Flow erosion potential" :     #(kg/s/km^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.0869740308476052
 
-"Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+	"Splash detachment soil erodibility" :     #(kg/m^2/s) [-1.79769313486232e+308, 1.79769313486232e+308]
+	2
 
-"Initial surface sediment store" :     #(kg/km^2) [0, 10]
-0
+	"Vegetation index" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0
 
-"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
-2
+	"Initial surface sediment store" :     #(kg/km^2) [0, 10]
+	0
 
-"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
-600
+	"Average soil depth in the O/A horizon" :     #(m) [-1.79769313486232e+308, 1.79769313486232e+308]
+	2
 
+	"Soil bulk density" :     #(kg/m^3) [-1.79769313486232e+308, 1.79769313486232e+308]
+	600
 
-# Sediment size class ("Sediment size class") #
 
-"Percentage of sediment in grain size class" :     #(%) [-1.79769313486232e+308, 1.79769313486232e+308]
-5 5 20 35 35
+	# Sediment size class ("Sediment size class") #
 
-"Smallest diameter of sediment in size class" :     #(m) [0, 1]
-0 2e-06 6e-05 0.0002 0.0006
+	"Percentage of sediment in grain size class" :     #(%) [-1.79769313486232e+308, 1.79769313486232e+308]
+	5 5 20 35 35
 
-"Largest diameter of sediment in size class" :     #(m) [0, 1]
-2e-06 6e-05 0.0002 0.0006 0.002
+	"Smallest diameter of sediment in size class" :     #(m) [0, 1]
+	0 2e-06 6e-05 0.0002 0.0006
 
+	"Largest diameter of sediment in size class" :     #(m) [0, 1]
+	2e-06 6e-05 0.0002 0.0006 0.002
 
-# Sediment by subcatchment ("Sediment size class" "Reaches") #
 
-"Effluent sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
-0
-0
-0
-0
+	# Sediment by subcatchment ("Sediment size class" "Reaches") #
 
-"Initial mass of bed sediment per unit area" :     #(kg/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
-0.1
-0.1
-0.1
-0.1
+	"Effluent sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0
+	0
+	0
+	0
+	0
 
-"Initial suspended sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
-0
-0
-0
-0
+	"Initial mass of bed sediment per unit area" :     #(kg/m^2) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0
+	0
+	0
+	5
+	5
 
+	"Initial suspended sediment concentration" :     #(mg/l) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0
+	0
+	0
+	0
+	0
 
-# Erosion and transport by subcatchment ("Reaches") #
 
-"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0
+	# Erosion and transport by subcatchment ("Reaches") #
 
-"Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+	"Bank erosion scaling factor" :     #(kg/m^2/m^3 s/day) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.00969169625449144
 
-"Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
+	"Bank erosion non-linear coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.984860271741933
 
-"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
-9e-08
+	"Shear velocity coefficient" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
+	0.98459500590099
 
+	"Entrainment coefficient" :     #(s^2/kg) [-1.79769313486232e+308, 1.79769313486232e+308]
+	1e-07
+
+
+} # end of module "INCA-Sed"

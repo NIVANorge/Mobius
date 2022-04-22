@@ -867,17 +867,33 @@ GetIndex(mobius_data_set *DataSet, index_set_h IndexSet, token_string IndexName,
 	return {IndexSet, 0};
 }
 
+
+template<typename handle_type>
+size_t
+GetOffset(mobius_data_set *DataSet, handle_type Handle, const char * const *Indexes, size_t IndexCount, storage_structure<handle_type> &Structure, int *Error)
+{
+	size_t StorageUnitIndex = Structure.UnitForHandle[Handle.Handle];
+	array<index_set_h> &IndexSetDependencies = Structure.Units[StorageUnitIndex].IndexSets;
+	
+	*Error = -1;
+	if(IndexCount != IndexSetDependencies.Count)
+	{
+		*Error = IndexSetDependencies.Count;
+		return 0;
+	}
+
+	//TODO: This overflows if somebody have more than 256 index sets for an entity type, but that will not happen in practice.
+	index_t IndexValues[256];
+	for(size_t Level = 0; Level < IndexCount; ++Level)
+		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
+	
+	size_t Offset = OffsetForHandle(Structure, IndexValues, IndexCount, DataSet->IndexCounts, Handle);
+	return Offset;
+}
+
 static void
 SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_value Value, parameter_type Type)
 {
-	/*
-	if(!DataSet->AllIndexesHaveBeenSet)
-	{
-		ErrorPrint("ERROR: Tried to set a parameter value before all index sets have been filled with indexes.\n");
-		ErrorPrintUnfilledIndexSets(DataSet);
-	}
-	*/
-
 	if(DataSet->ParameterData == 0)
 		AllocateParameterStorage(DataSet);
 	
@@ -887,20 +903,12 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	if(Model->Parameters[Parameter].Type != Type)
 		FatalError("ERROR: Tried to set the value of the parameter \"", Name, "\" with a value that was of the wrong type.\n");
 	
-	//TODO: Check that the value is in the Min-Max range. (issue warning only)
+	int Error;
+	size_t Offset = GetOffset(DataSet, Parameter, Indexes, IndexCount, DataSet->ParameterStorageStructure, &Error);
 	
-	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-	array<index_set_h> &IndexSetDependencies = DataSet->ParameterStorageStructure.Units[StorageUnitIndex].IndexSets;
-	
-	if(IndexCount != IndexSetDependencies.Count)
-		FatalError("ERROR; Tried to set the value of the parameter \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", IndexSetDependencies.Count, ".\n");
+	if(Error >= 0)
+		FatalError("ERROR; Tried to set the value of the parameter \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", Error, ".\n");
 
-	//TODO: This crashes if somebody have more than 256 index sets for a parameter, but that is highly unlikely. Still, this is not clean code...
-	index_t IndexValues[256];
-	for(size_t Level = 0; Level < IndexCount; ++Level)
-		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
-	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter);
 	DataSet->ParameterData[Offset] = Value;
 }
 
@@ -970,18 +978,12 @@ GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 	if(Model->Parameters[Parameter].Type != Type)
 		FatalError("ERROR: Tried to get the value of the parameter \"", Name, "\" specifying the wrong value type.\n");
 	
-	size_t StorageUnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-	array<index_set_h> &IndexSetDependencies = DataSet->ParameterStorageStructure.Units[StorageUnitIndex].IndexSets;
+	int Error;
+	size_t Offset = GetOffset(DataSet, Parameter, Indexes, IndexCount, DataSet->ParameterStorageStructure, &Error);
 	
-	if(IndexCount != IndexSetDependencies.Count)
-		FatalError("ERROR; Tried to get the value of the parameter \"", Name, "\", but an incorrect number of indexes were provided. Got ",  IndexCount, ", expected ", IndexSetDependencies.Count, ".\n");
-
-	//TODO: This crashes if somebody have more than 256 index sets for a parameter, but that is highly unlikely. Still, this is not clean code...
-	index_t IndexValues[256];
-	for(size_t Level = 0; Level < IndexCount; ++Level)
-		IndexValues[Level] = GetIndex(DataSet, IndexSetDependencies[Level], Indexes[Level]);
+	if(Error >= 0)
+		FatalError("ERROR: Tried to get the value of the parameter \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", Error, ".\n");
 	
-	size_t Offset = OffsetForHandle(DataSet->ParameterStorageStructure, IndexValues, IndexCount, DataSet->IndexCounts, Parameter);
 	return DataSet->ParameterData[Offset];
 }
 
@@ -1014,60 +1016,8 @@ GetParameterBool(mobius_data_set *DataSet, const char  *Name, const std::vector<
 //TODO: GetParameterTime? But what format should it use?
 
 
-//NOTE: Is used by cumulation equations when they evaluate.
-static double
-CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h CumulateOverIndexSet, index_t *CurrentIndexes, double *LookupBase)
-{
-	//NOTE: LookupBase should always be DataSet->ResultData + N*DataSet->ResultStorageStructure.TotalCount. I.e. it should point to the beginning of one timestep.
-	
-	double Total = 0.0;
-	
-	size_t SubsequentOffset;
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation);
-	
-	double *Lookup = LookupBase + Offset;
-	for(index_t Index = {CumulateOverIndexSet, 0}; Index < DataSet->IndexCounts[CumulateOverIndexSet.Handle]; ++Index)
-	{
-		Total += *Lookup;
-		Lookup += SubsequentOffset;
-	}
-	
-	return Total;
-}
-
-static double
-CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h CumulateOverIndexSet, index_t *CurrentIndexes, double *LookupBase, parameter_double_h Weight)
-{
-	double Total = 0.0;
-	double Total0 = 0.0;
-	
-	size_t SubsequentOffset;
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation);
-	
-	size_t ParSubsequentOffset;
-	size_t ParOffset = OffsetForHandle(DataSet->ParameterStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, ParSubsequentOffset, (parameter_h)Weight);
-	
-	double *Lookup = LookupBase + Offset;
-	parameter_value *ParLookup = DataSet->ParameterData + ParOffset;
-	
-	ParLookup = DataSet->ParameterData + ParOffset;
-	for(index_t Index = {CumulateOverIndexSet, 0}; Index < DataSet->IndexCounts[CumulateOverIndexSet.Handle]; ++Index)
-	{
-		double EquationValue = *Lookup;
-		double ParValue = (*ParLookup).ValDouble;
-		Total += EquationValue * ParValue;
-		Total0 += ParValue;
-		Lookup += SubsequentOffset;
-		ParLookup += ParSubsequentOffset;
-	}
-	
-	return Total / Total0;
-}
-
-
-//TODO: There is so much code doubling between input / result access. Could it be merged?
 static void
-SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount, const double *InputSeries, size_t InputSeriesSize, bool AlignWithResults = false)
+SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, const double *InputSeries, size_t InputSeriesSize, bool AlignWithResults = false)
 {
 	if(!DataSet->InputData)
 		AllocateInputStorage(DataSet, InputSeriesSize);
@@ -1076,17 +1026,12 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	
 	input_h Input = GetInputHandle(Model, Name);
 	
-	size_t StorageUnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
+	int Error;
+	size_t Offset = GetOffset(DataSet, Input, Indexes, IndexCount, DataSet->InputStorageStructure, &Error);
 	
-	if(IndexCount != IndexSets.Count)
-		FatalError("ERROR: Got the wrong amount of indexes when setting the input series for \"", GetName(Model, Input), "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+	if(Error >= 0)
+		FatalError("ERROR: Tried to set the value of the input series \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", Error, ".\n");
 	
-	index_t Indexes[256];
-	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-	
-	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input);
 	double *At = DataSet->InputData + Offset;
 	s64 TimestepOffset = 0;
 	
@@ -1125,7 +1070,7 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<con
 // MyResults.resize(DataSet->TimestepsLastRun);
 // GetResultSeries(DataSet, "Percolation input", {"Reach 1", "Forest", "Groundwater"}, MyResult.data(), MyResult.size());
 static void
-GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* IndexNames, size_t IndexCount, double *WriteTo, size_t WriteSize, bool IncludeInitial = false)
+GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* Indexes, size_t IndexCount, double *WriteTo, size_t WriteSize, bool IncludeInitial = false)
 {	
 	if(!DataSet->HasBeenRun || !DataSet->ResultData)
 		FatalError("ERROR: Tried to extract result series before the model was run at least once.\n");
@@ -1141,18 +1086,12 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const char* const* I
 	if(Spec.Type == EquationType_InitialValue)
 		FatalError("ERROR: Can not get the result series of the equation \"", Name, "\", because it is an initial value equation.\n");
 	
+	int Error;
+	size_t Offset = GetOffset(DataSet, Equation, Indexes, IndexCount, DataSet->ResultStorageStructure, &Error);
 	
-	size_t StorageUnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
-	array<index_set_h> &IndexSets = DataSet->ResultStorageStructure.Units[StorageUnitIndex].IndexSets;
-
-	if(IndexCount != IndexSets.Count)
-		FatalError("ERROR: Got the wrong amount of indexes when getting the result series for \"", Name, "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+	if(Error >= 0)
+		FatalError("ERROR: Tried to get the result series of the equation \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", Error, ".\n");
 	
-	index_t Indexes[256];
-	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-
-	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Equation);
 	double *Lookup = DataSet->ResultData + Offset;
 	
 	if(!IncludeInitial)
@@ -1172,7 +1111,7 @@ GetResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<co
 }
 
 static void
-GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount, double *WriteTo, size_t WriteSize, bool AlignWithResults = false)
+GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, double *WriteTo, size_t WriteSize, bool AlignWithResults = false)
 {	
 	if(!DataSet->InputData)
 		FatalError("ERROR: Tried to extract input series before input data was allocated.\n");
@@ -1181,17 +1120,12 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	
 	input_h Input = GetInputHandle(Model, Name);
 	
-	size_t StorageUnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
-
-	if(IndexCount != IndexSets.Count)
-		FatalError("ERROR: Got the wrong amount of indexes when getting the input series for \"", Name, "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
-
-	index_t Indexes[256];
-	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-
-	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input);
+	int Error;
+	size_t Offset = GetOffset(DataSet, Input, Indexes, IndexCount, DataSet->InputStorageStructure, &Error);
+	
+	if(Error >= 0)
+		FatalError("ERROR: Tried to get the input series \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", Error, ".\n");
+	
 	double *Lookup = DataSet->InputData + Offset;
 	
 	s64 TimestepOffset = 0;
@@ -1222,7 +1156,7 @@ GetInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<con
 }
 
 static bool
-InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const char * const *IndexNames, size_t IndexCount)
+InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount)
 {
 	if(!DataSet->InputData)
 		FatalError("ERROR: Tried to see if an input series was provided before input data was even allocated.\n");
@@ -1231,17 +1165,11 @@ InputSeriesWasProvided(mobius_data_set *DataSet, const char *Name, const char * 
 	
 	input_h Input = GetInputHandle(Model, Name);
 	
-	size_t StorageUnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	array<index_set_h> &IndexSets = DataSet->InputStorageStructure.Units[StorageUnitIndex].IndexSets;
-
-	if(IndexCount != IndexSets.Count)
-		FatalError("ERROR: Got the wrong amount of indexes when checking the input series for \"", Name, "\". Got ", IndexCount, ", expected ", IndexSets.Count, ".\n");
+	int Error;
+	size_t Offset = GetOffset(DataSet, Input, Indexes, IndexCount, DataSet->InputStorageStructure, &Error);
 	
-	index_t Indexes[256];
-	for(size_t IdxIdx = 0; IdxIdx < IndexSets.Count; ++IdxIdx)
-		Indexes[IdxIdx] = GetIndex(DataSet, IndexSets[IdxIdx], IndexNames[IdxIdx]);
-	
-	size_t Offset = OffsetForHandle(DataSet->InputStorageStructure, Indexes, IndexCount, DataSet->IndexCounts, Input);
+	if(Error >= 0)
+		FatalError("ERROR: Tried to check the input series \"", Name, "\", but an incorrect number of indexes were provided. Got ", IndexCount, ", expected ", Error, ".\n");
 	
 	return DataSet->InputTimeseriesWasProvided[Offset];
 }
@@ -1327,79 +1255,57 @@ EquationWasComputed(mobius_data_set *DataSet, const char *Name, const char * con
 }
 
 
-
-static void
-PrintResultSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
+//NOTE: Is used by cumulation equations when they evaluate.
+static double
+CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h CumulateOverIndexSet, index_t *CurrentIndexes, double *LookupBase)
 {
-	double *ResultSeries = AllocClearedArray(double, WriteSize);
-	GetResultSeries(DataSet, Name, Indexes, ResultSeries, WriteSize);
+	//NOTE: LookupBase should always be DataSet->ResultData + N*DataSet->ResultStorageStructure.TotalCount. I.e. it should point to the beginning of one timestep.
 	
-	std::cout << "Result series for " << Name << " ";
-	for(const char *Index : Indexes) std::cout << "[" << Index << "]";
+	double Total = 0.0;
 	
-	equation_h Equation = GetEquationHandle(DataSet->Model, Name);
-	const equation_spec &Spec = DataSet->Model->Equations[Equation];
-	if(IsValid(Spec.Unit))
-		std::cout << " (" << GetName(DataSet->Model, Spec.Unit) << ")";
+	size_t SubsequentOffset;
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation);
 	
-	std::cout << ":" << std::endl;
-	for(size_t Idx = 0; Idx < WriteSize; ++Idx)
-		std::cout << ResultSeries[Idx] << " ";
-	std::cout << std::endl << std::endl;
-	
-	free(ResultSeries);
-}
-
-static void
-PrintInputSeries(mobius_data_set *DataSet, const char *Name, const std::vector<const char*> &Indexes, size_t WriteSize)
-{
-	double *InputSeries = AllocClearedArray(double, WriteSize);
-	GetInputSeries(DataSet, Name, Indexes, InputSeries, WriteSize);
-	
-	std::cout << "Input series for " << Name << " ";
-	for(const char *Index : Indexes) std::cout << "[" << Index << "]";
-	
-	input_h Input = GetInputHandle(DataSet->Model, Name);
-	const input_spec &Spec = DataSet->Model->Inputs[Input];
-	if(IsValid(Spec.Unit))
-		std::cout << " (" << GetName(DataSet->Model, Spec.Unit) << ")";
-	
-	std::cout << ":" << std::endl;
-	for(size_t Idx = 0; Idx < WriteSize; ++Idx)
-		std::cout << InputSeries[Idx] << " ";
-	std::cout << std::endl << std::endl;
-	
-	free(InputSeries);
-}
-
-static void
-PrintIndexes(mobius_data_set *DataSet, const char *IndexSetName)
-{
-	//TODO: checks
-	const mobius_model *Model = DataSet->Model;
-	index_set_h IndexSet = GetIndexSetHandle(Model, IndexSetName);
-	std::cout << "Indexes for " << IndexSetName << ": ";
-	const index_set_spec &Spec = Model->IndexSets[IndexSet];
-	if(Spec.Type == IndexSetType_Basic)
+	double *Lookup = LookupBase + Offset;
+	for(index_t Index = {CumulateOverIndexSet, 0}; Index < DataSet->IndexCounts[CumulateOverIndexSet.Handle]; ++Index)
 	{
-		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSet.Handle]; ++IndexIndex)
-			std::cout << DataSet->IndexNames[IndexSet.Handle][IndexIndex] << " ";
+		Total += *Lookup;
+		Lookup += SubsequentOffset;
 	}
-	else if(Spec.Type == IndexSetType_Branched)
-	{
-		for(size_t IndexIndex = 0; IndexIndex < DataSet->IndexCounts[IndexSet.Handle]; ++IndexIndex)
-		{
-			std::cout <<  "(" << DataSet->IndexNames[IndexSet.Handle][IndexIndex] << ": ";
-			for(size_t InputIndexIndex = 0; InputIndexIndex < DataSet->BranchInputs[IndexSet.Handle][IndexIndex].Count; ++InputIndexIndex)
-			{
-				size_t InputIndex = DataSet->BranchInputs[IndexSet.Handle][IndexIndex][InputIndexIndex];
-				std::cout << DataSet->IndexNames[IndexSet.Handle][InputIndex] << " ";
-			}
-			std::cout << ") ";
-		}
-	}
-	std::cout << std::endl;
+	
+	return Total;
 }
+
+static double
+CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h CumulateOverIndexSet, index_t *CurrentIndexes, double *LookupBase, parameter_double_h Weight)
+{
+	double Total = 0.0;
+	double Total0 = 0.0;
+	
+	size_t SubsequentOffset;
+	size_t Offset = OffsetForHandle(DataSet->ResultStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, SubsequentOffset, Equation);
+	
+	size_t ParSubsequentOffset;
+	size_t ParOffset = OffsetForHandle(DataSet->ParameterStorageStructure, CurrentIndexes, DataSet->IndexCounts, CumulateOverIndexSet, ParSubsequentOffset, (parameter_h)Weight);
+	
+	double *Lookup = LookupBase + Offset;
+	parameter_value *ParLookup = DataSet->ParameterData + ParOffset;
+	
+	ParLookup = DataSet->ParameterData + ParOffset;
+	for(index_t Index = {CumulateOverIndexSet, 0}; Index < DataSet->IndexCounts[CumulateOverIndexSet.Handle]; ++Index)
+	{
+		double EquationValue = *Lookup;
+		double ParValue = (*ParLookup).ValDouble;
+		Total += EquationValue * ParValue;
+		Total0 += ParValue;
+		Lookup += SubsequentOffset;
+		ParLookup += ParSubsequentOffset;
+	}
+	
+	return Total / Total0;
+}
+
+
 
 static void
 ForeachRecursive(mobius_data_set *DataSet, char **CurrentIndexNames, const array<index_set_h> &IndexSets, const std::function<void(const char *const *IndexNames, size_t IndexesCount)> &Do, s32 Level)

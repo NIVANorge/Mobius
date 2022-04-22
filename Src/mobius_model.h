@@ -451,6 +451,14 @@ struct mobius_model
 	~mobius_model();
 };
 
+/*
+template<typename handle_type, typename spec_type>
+const spec_type *
+GetSpec(const mobius_model *Model, handle_type Handle) {  return nullptr; }
+template<> const parameter_spec * GetSpec(const mobius_model *Model, parameter_h Handle) {  return &Model->Parameters[Handle]; }
+template<> const input_spec * GetSpec(const mobius_model *Model, input_h Handle) {  return &Model->Inputs[Handle]; }
+template<> const equation_spec * GetSpec(const mobius_model *Model, equation_h Handle) {  return &Model->Equations[Handle]; }
+*/
 
 template<typename batch_like>
 inline void
