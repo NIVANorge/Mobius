@@ -124,7 +124,7 @@ AddSimplyCModel(mobius_model *Model)
 	
 	auto InitialStreamDOCMass                   = RegisterEquationInitialValue(Model, "Initial reach DOC mass", Kg);
 	auto StreamDOCMass                          = RegisterEquationODE(Model, "Reach DOC mass", Kg, ReachSolver);
-	SetInitialValue(Model, StreamDOCMass, 0.02); //To do: work initial condition out from baseline DOC parameter
+	SetInitialValue(Model, StreamDOCMass, InitialStreamDOCMass);
 
 	auto StreamDOCFluxOut                       = RegisterEquation(Model, "DOC flux from reach, end-of-day", KgPerDay, ReachSolver);
 
@@ -275,7 +275,7 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, InitialStreamDOCMass,
-		return RESULT(GroundwaterDOCConcentration) * RESULT(ReachVolume) * 1000.0; 
+		return RESULT(GroundwaterDOCConcentration) * RESULT(ReachVolume) * 1e-3; 
 	)
 	
 	EQUATION(Model, StreamDOCMass,

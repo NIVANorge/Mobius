@@ -422,15 +422,28 @@ If you need a more complex setup than the one you can make here, we recommend th
 In the toolbar of the optimization setup window you can click buttons to save the current setup for future use, or load it again.
 
 \subsection{Optimizer}
+
+We use the dlib global optimization algorithm from \url{http://dlib.net/optimization.html}.
+
 All the GOF statistics (section \ref{sec:gof}) are available for optimization. The statistics MAE and RMSE will be minimized, the others maximized. You can not mix targets that should be minimized with targets that should be maximized. All targets have to have an input comparison series for it to be able to evaluate the error of the modeled series compared to the observed series.
 
 You can also optimize the likelihood functions described in section \ref{sec:mcmc} and use that as a starting point for a MCMC run. Unless you use a likelihood function, you should ignore the "error param(s)" field in the target setup.
 
 You can set the maximal number of times the optimizer is allowed to evaluate the model. It will typically use all of these. The higher number, the better result, but also longer run time. The total time of the optimizer is roughly equal to the time to run one model multiplied with the number of evaluations (overhead of the algorithm is small in comparison).
 
-The main parameter set (that is loaded in memory) is replaced with the new best parameter set when the optimization run is finished.
+Epsilon: According to the dlib documentation, "the search will only attempt to find a global
+              maximizer to at most epsilon accuracy.  Once a local maximizer is
+              found to that accuracy the search will focus entirely on finding other maxima
+              elsewhere rather than on further improving the current local optima found so
+              far.  That is, once a local maxima is identified to about epsilon
+              accuracy, the algorithm will spend all its time exploring the functions to
+              find other local maxima to investigate.  An epsilon of 0 means it will keep
+              solving until it reaches full floating point precision.  Larger values will
+              cause it to switch to pure global exploration sooner and therefore might be
+              more effective if your objective function has many local maxima and you don't
+              care about a super high precision solution."
 
-We use the dlib global optimization algorithm from \url{http://dlib.net/optimization.html}.
+The main parameter set (that is loaded in memory) is replaced with the new best parameter set when the optimization run is finished.
 
 If you have the "show progress" box ticked, it will periodically show how many evaluations it has done and what is the best current value of the (compound) target statistic compared to the initial value of the statistic. If you additionally have the additional plot view open with the targeted time series
 

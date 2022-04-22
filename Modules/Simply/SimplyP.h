@@ -141,13 +141,47 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 		return RESULT(SoilWaterEPC0) * RESULT(SoilWaterVolume);   //NOTE: mg/l * mm = kg/km2
 	)
 	
+	/*
+	NOTE: The soil TDP mass is described by the ODE equation
+	
+		d(TDPs)/dt  = input - Kf*Msoil*(TDPs/Vs - EPC0) - Q*TDPs/Vs
+	
+	This equation is generally stiff. However, if we assume that Q (soil water flow, including quick flow) and V are approximately constant over the time step, we have an equation on the form
+	
+		d(TDPs)/dt  = (input + Kf*Msoil*EPC0)  -  ((Kf*Msoil + Q) / V)*TDPs
+		            = a - b*TDPs
+		This has the exact solution TDPs(t) = a/b + (TDPs(0) - a/b) * exp(-b*t)   , where we can insert t=1 to integrate over the time step.
+	
+	Solving it this way saves time by a factor of about 50-100, and has miniscule error compared to solving it with time-variable V and Q.
+	
+	Now,
+		
+		d(Plab)/dt  = Kf*Msoil*((TDPs/Vs)-EPC0)
+		
+		So
+			Plab(1) = Plab(0) + Integral(Kf*Msoil*((TDPs(t)/Vs) - EPC0), t=0->1)
+	
+		Again, assuming constant V, the integral will be
+			I = (Kf*Msoil)*( (1/Vs)*Integral(TDPs(t), t=0->1) - EPC0)
+			
+			  = (Kf*Msoil)*( (1/Vs)(a/b + (TDPs(0)-a/b)*(1/b)*(1 - exp(-b)) ) - EPC0)
+			  = (Kf*Msoil)*( (1/(Vs*b))(a + (TDPs(0) - a/b)(1 - exp(-b)) ) - EPC0)
+	*/
+	
 	EQUATION(Model, SoilTDPMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
-		double b = (PARAMETER(PhosphorousSorptionCoefficient) * Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow)) / LAST_RESULT(SoilWaterVolume);
-		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 / 365.0 + PARAMETER(PhosphorousSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
-		double value = a / b + (LAST_RESULT(SoilTDPMass) - a / b) * exp(-b);
+		double Kf = PARAMETER(PhosphorousSorptionCoefficient);
+		double Q  = LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow);
+		double V  = LAST_RESULT(SoilWaterVolume);
+		double epc0 = RESULT(SoilWaterEPC0);
+		double input = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 / 365.0;
+		double TDP0 = LAST_RESULT(SoilTDPMass);
 		
-		if(!PARAMETER(DynamicEPC0)) return LAST_RESULT(SoilTDPMass);
+		double a = (input + Kf*Msoil*epc0);
+		double b = (Kf*Msoil + Q) / V;
+		double value = a/b + (TDP0 - a/b) * exp(-b);
+		
+		if(!PARAMETER(DynamicEPC0)) return TDP0;
 		
 		return value;
 	)
@@ -159,13 +193,21 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	
 	EQUATION(Model, SoilLabilePMass,
 		double Msoil = PARAMETER(MSoilPerM2) * 1e6;
-		double b0 = PARAMETER(PhosphorousSorptionCoefficient)* Msoil + LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow);
-		double b = b0 / LAST_RESULT(SoilWaterVolume);
-		double a = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 / 365.0 + PARAMETER(PhosphorousSorptionCoefficient) * Msoil * RESULT(SoilWaterEPC0);
-		//TODO: factor out calculations of b0, a? Would probably not matter that much to speed though.
+		double Kf = PARAMETER(PhosphorousSorptionCoefficient);
+		double Q  = LAST_RESULT(SoilWaterFlow) + RESULT(QuickFlow);
+		double V  = LAST_RESULT(SoilWaterVolume);
+		double epc0 = RESULT(SoilWaterEPC0);
+		double input = IF_INPUT_ELSE_PARAMETER(NetAnnualPInputTimeseries, NetAnnualPInput) * 100.0 / 365.0;
+		double TDP0 = LAST_RESULT(SoilTDPMass);
+		
+		//NOTE: we could factor out computation of a and b for reuse in the two equations, but they don't have any interesting meaning of their own.
+		double a = (input + Kf*Msoil*epc0);
+		double bV = (Kf*Msoil + Q);
+		double b = bV / V;
 	
-		double sorp = PARAMETER(PhosphorousSorptionCoefficient) * Msoil * (a / b0 - RESULT(SoilWaterEPC0) + (LAST_RESULT(SoilTDPMass)/LAST_RESULT(SoilWaterVolume) - a/b0)*(1.0 - exp(-b))/b);
-		if(!std::isfinite(sorp)) sorp = 0.0; //NOTE: Otherwise calculation can break down in some rare cases.
+		double sorp = (Kf*Msoil)*( (1/bV)*(a + (TDP0 - a/b)*(1 - exp(-b))) - epc0);
+
+		if(!std::isfinite(sorp)) sorp = 0.0; //NOTE: computation can break down in some rare cases.
 		
 		if(!PARAMETER(DynamicEPC0)) sorp = 0.0;
 	
