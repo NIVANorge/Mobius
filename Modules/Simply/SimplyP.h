@@ -1,7 +1,4 @@
 
-//  THIS VERSION IS IN DEVELOPMENT !!!!
-// If you want to use the model, use SimplyP.h instead for now
-
 
 //NOTE: Only include these if you are going to use them (they cause long compile times):
 //#include "../boost_solvers.h"
