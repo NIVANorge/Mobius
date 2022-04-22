@@ -150,22 +150,22 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	
 		d(TDPs)/dt  = (input + Kf*Msoil*EPC0)  -  ((Kf*Msoil + Q) / V)*TDPs
 		            = a - b*TDPs
-		This has the exact solution TDPs(t) = a/b + (TDPs(0) - a/b) * exp(-b*t)   , where we can insert t=1 to integrate over the time step.
+	This has the exact solution TDPs(t) = a/b + (TDPs(0) - a/b) * exp(-b*t)   , where we can insert t=1 to integrate over the time step.
 	
 	Solving it this way saves time by a factor of about 50-100, and has miniscule error compared to solving it with time-variable V and Q.
 	
-	Now,
+	Now, the soil labile P mass is described by
 		
 		d(Plab)/dt  = Kf*Msoil*((TDPs/Vs)-EPC0)
 		
-		So
-			Plab(1) = Plab(0) + Integral(Kf*Msoil*((TDPs(t)/Vs) - EPC0), t=0->1)
+	So
+		Plab(1) = Plab(0) + Integral(Kf*Msoil*((TDPs(t)/Vs) - EPC0), t=0->1)
 	
-		Again, assuming constant V, the integral will be
-			I = (Kf*Msoil)*( (1/Vs)*Integral(TDPs(t), t=0->1) - EPC0)
-			
-			  = (Kf*Msoil)*( (1/Vs)(a/b + (TDPs(0)-a/b)*(1/b)*(1 - exp(-b)) ) - EPC0)
-			  = (Kf*Msoil)*( (1/(Vs*b))(a + (TDPs(0) - a/b)(1 - exp(-b)) ) - EPC0)
+	Again, assuming constant V, the integral will be
+		I = (Kf*Msoil)*( (1/Vs)*Integral(TDPs(t), t=0->1) - EPC0)
+		
+		  = (Kf*Msoil)*( (1/Vs)(a/b + (TDPs(0)-a/b)*(1/b)*(1 - exp(-b)) ) - EPC0)
+		  = (Kf*Msoil)*( (1/(Vs*b))(a + (TDPs(0) - a/b)(1 - exp(-b)) ) - EPC0)
 	*/
 	
 	EQUATION(Model, SoilTDPMass,
