@@ -444,9 +444,7 @@ DllGetInputSeries(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCoun
 	
 	size_t Timesteps = GetTimesteps(DataSet);
 	if(!AlignWithResults)
-	{
 		Timesteps = DataSet->InputDataTimesteps;
-	}
 	
 	GetInputSeries(DataSet, Name, IndexNames, (size_t)IndexCount, WriteTo, Timesteps, AlignWithResults);
 	
@@ -459,9 +457,7 @@ DllSetParameterDouble(void *DataSetPtr, char *Name, char **IndexNames, u64 Index
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	parameter_value Value;
-	Value.ValDouble = Val;
-	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_Double);
+	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Val);
 	
 	CHECK_ERROR_END
 }
@@ -472,9 +468,7 @@ DllSetParameterUInt(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	parameter_value Value;
-	Value.ValUInt = Val;
-	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_UInt);
+	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Val);
 	
 	CHECK_ERROR_END
 }
@@ -485,9 +479,7 @@ DllSetParameterBool(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	parameter_value Value;
-	Value.ValBool = Val;
-	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_Bool);
+	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Val);
 	
 	CHECK_ERROR_END
 }
@@ -498,13 +490,7 @@ DllSetParameterTime(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	parameter_value Value;
-	bool ParseSuccess;
-	Value.ValTime = datetime(Val, &ParseSuccess);
-	if(!ParseSuccess)
-		FatalError("Unrecognized date/time format \"", Val, "\" provided for the value of the parameter ", Name, '\n');
-
-	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Value, ParameterType_Time);
+	SetParameterValue(DataSet, Name, IndexNames, (size_t)IndexCount, Val);
 	
 	CHECK_ERROR_END
 }
@@ -514,19 +500,8 @@ DllSetParameterEnum(void *DataSetPtr, char *Name, char **IndexNames, u64 IndexCo
 {
 	CHECK_ERROR_BEGIN
 	
-	if(!Val || !strlen(Val))
-		FatalError("Got a value string for the parameter \"", Name, "\" with length 0.\n");
-	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
-	parameter_value Value;
-	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
-	auto Find = Spec.EnumNameToValue.find(Val);
-	if(Find != Spec.EnumNameToValue.end())
-		Value.ValUInt = Find->second;
-	else
-		FatalError("The parameter \"", Name, "\" does not take the value \"", Val, "\".\n");
-
-	SetParameterValue(DataSet, Name, IndexNames, IndexCount, Value, ParameterType_Enum);
+	SetParameterValue(DataSet, Name, IndexNames, IndexCount, Val);
 	
 	CHECK_ERROR_END
 }
@@ -632,7 +607,7 @@ DllGetParameterDoubleMinMax(void *DataSetPtr, char *Name, double *MinOut, double
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	if(Spec.Type != ParameterType_Double)
-		FatalError("ERROR: Requested the min and max values of ", Name, " using DllGetParameterDoubleMinMax, but it is not of type double.\n");
+		FatalError("ERROR: Requested the min and max values of the parameter \"", Name, "\" using DllGetParameterDoubleMinMax, but it is not of type double.\n");
 	
 	*MinOut = Spec.Min.ValDouble;
 	*MaxOut = Spec.Max.ValDouble;
@@ -648,7 +623,7 @@ DllGetParameterUIntMinMax(void *DataSetPtr, char *Name, u64 *MinOut, u64 *MaxOut
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
 	if(Spec.Type != ParameterType_UInt)
-		FatalError("ERROR: Requested the min and max values of ", Name, " using DllGetParameterUIntMinMax, but it is not of type uint.\n");
+		FatalError("ERROR: Requested the min and max values of the parameter \"", Name, "\" using DllGetParameterUIntMinMax, but it is not of type uint.\n");
 
 	*MinOut = Spec.Min.ValUInt;
 	*MaxOut = Spec.Max.ValUInt;
@@ -822,12 +797,9 @@ DllGetParameterIndexSetsCount(void *DataSetPtr, char *ParameterName)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->ParameterStorageStructure.HasBeenSetUp) return 0;
-	
 	parameter_h Parameter = GetParameterHandle(DataSet->Model, ParameterName);
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-	return DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets.Count;
-	
+	return GetIndexSetCount(DataSet->ParameterStorageStructure, Parameter); 
+
 	CHECK_ERROR_END
 	
 	return 0;
@@ -840,16 +812,8 @@ DllGetParameterIndexSets(void *DataSetPtr, char *ParameterName, const char **Nam
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->ParameterStorageStructure.HasBeenSetUp) return;
-	
 	parameter_h Parameter = GetParameterHandle(DataSet->Model, ParameterName);
-	size_t UnitIndex = DataSet->ParameterStorageStructure.UnitForHandle[Parameter.Handle];
-	size_t Idx = 0;
-	for(index_set_h IndexSet : DataSet->ParameterStorageStructure.Units[UnitIndex].IndexSets)
-	{
-		NamesOut[Idx] = GetName(DataSet->Model, IndexSet);
-		++Idx;
-	}
+	GetIndexSets(DataSet->ParameterStorageStructure, Parameter, NamesOut);
 	
 	CHECK_ERROR_END
 }
@@ -861,11 +825,8 @@ DllGetResultIndexSetsCount(void *DataSetPtr, char *ResultName)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->ResultStorageStructure.HasBeenSetUp) return 0;   //TODO: This is problematic, because the storage structure will not be set up before the model is run at least once. Then users can't determine the result structure before the model has been run..
-	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
-	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
-	return DataSet->ResultStorageStructure.Units[UnitIndex].IndexSets.Count;
+	return GetIndexSetCount(DataSet->ResultStorageStructure, Equation);
 	
 	CHECK_ERROR_END
 	
@@ -879,16 +840,8 @@ DllGetResultIndexSets(void *DataSetPtr, char *ResultName, const char **NamesOut)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->ResultStorageStructure.HasBeenSetUp) return;
-	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
-	size_t UnitIndex = DataSet->ResultStorageStructure.UnitForHandle[Equation.Handle];
-	size_t Idx = 0;
-	for(index_set_h IndexSet : DataSet->ResultStorageStructure.Units[UnitIndex].IndexSets)
-	{
-		NamesOut[Idx] = GetName(DataSet->Model, IndexSet);
-		++Idx;
-	}
+	GetIndexSets(DataSet->ResultStorageStructure, Equation, NamesOut);
 	
 	CHECK_ERROR_END
 }
@@ -900,11 +853,8 @@ DllGetInputIndexSetsCount(void *DataSetPtr, char *InputName)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->InputStorageStructure.HasBeenSetUp) return 0;
-	
 	input_h Input = GetInputHandle(DataSet->Model, InputName);
-	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	return DataSet->InputStorageStructure.Units[UnitIndex].IndexSets.Count;
+	return GetIndexSetCount(DataSet->InputStorageStructure, Input);
 	
 	CHECK_ERROR_END
 	
@@ -918,16 +868,8 @@ DllGetInputIndexSets(void *DataSetPtr, char *InputName, const char **NamesOut)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
-	if(!DataSet->InputStorageStructure.HasBeenSetUp) return;
-	
 	input_h Input = GetInputHandle(DataSet->Model, InputName);
-	size_t UnitIndex = DataSet->InputStorageStructure.UnitForHandle[Input.Handle];
-	size_t Idx = 0;
-	for(index_set_h IndexSet : DataSet->InputStorageStructure.Units[UnitIndex].IndexSets)
-	{
-		NamesOut[Idx] = GetName(DataSet->Model, IndexSet);
-		++Idx;
-	}
+	GetIndexSets(DataSet->InputStorageStructure, Input, NamesOut);
 	
 	CHECK_ERROR_END
 }

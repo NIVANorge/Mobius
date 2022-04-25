@@ -913,37 +913,37 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const
 }
 
 inline void
-SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, double Value)
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, double Value)
 {
 	parameter_value Val;
 	Val.ValDouble = Value;
-	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Val, ParameterType_Double);
+	SetParameterValue(DataSet, Name, Indexes, IndexCount, Val, ParameterType_Double);
 }
 
 inline void
-SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, u64 Value)
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, u64 Value)
 {
 	parameter_value Val;
 	Val.ValUInt = Value;
-	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Val, ParameterType_UInt);
+	SetParameterValue(DataSet, Name, Indexes, IndexCount, Val, ParameterType_UInt);
 }
 
 inline void
-SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, bool Value)
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, bool Value)
 {
 	parameter_value Val;
 	Val.ValBool = Value;
-	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Val, ParameterType_Bool);
+	SetParameterValue(DataSet, Name, Indexes, IndexCount, Val, ParameterType_Bool);
 }
 
 inline void
-SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, const char *StrValue)
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, const char *StrValue)
 {
 	if(!StrValue || !strlen(StrValue))
 		FatalError("ERROR: Got a value string for the parameter \"", Name, "\" with length 0.\n");
 		
 	parameter_value Val;
-	if(StrValue[0] >= '0' && StrValue[0] <= '9')
+	if(isdigit(StrValue[0]))
 	{
 		//Interpret this as a time value
 		bool ParseSuccess;
@@ -951,6 +951,8 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<
 		
 		if(!ParseSuccess)
 			FatalError("ERROR: Unrecognized date format when setting the value of the parameter \"", Name, "\".\n");
+		
+		SetParameterValue(DataSet, Name, Indexes, IndexCount, Val, ParameterType_Time);
 	}
 	else
 	{
@@ -961,10 +963,36 @@ SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<
 			Val.ValUInt = Find->second;
 		else
 			FatalError("ERROR: The parameter \"", Name, "\" does not take the value \"", StrValue, "\".\n");
+		
+		SetParameterValue(DataSet, Name, Indexes, IndexCount, Val, ParameterType_Enum);
 	}
-	
-	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Val, ParameterType_Time);
 }
+
+inline void
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, double Value)
+{
+	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Value);
+}
+
+inline void
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, u64 Value)
+{
+	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Value);
+}
+
+inline void
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, bool Value)
+{
+	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Value);
+}
+
+inline void
+SetParameterValue(mobius_data_set *DataSet, const char *Name, const std::vector<const char *>& Indexes, const char *Value)
+{
+	SetParameterValue(DataSet, Name, Indexes.data(), Indexes.size(), Value);
+}
+
+
 
 static parameter_value
 GetParameterValue(mobius_data_set *DataSet, const char *Name, const char * const *Indexes, size_t IndexCount, parameter_type Type)
@@ -1305,6 +1333,31 @@ CumulateResult(mobius_data_set *DataSet, equation_h Equation, index_set_h Cumula
 	return Total / Total0;
 }
 
+
+template<typename handle_type>
+u64
+GetIndexSetCount(storage_structure<handle_type> &Structure, handle_type Handle)
+{
+	if(!Structure.HasBeenSetUp) return 0;
+	
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
+	return Structure.Units[UnitIndex].IndexSets.Count;
+}
+
+template<typename handle_type>
+void
+GetIndexSets(storage_structure<handle_type> &Structure, handle_type Handle, const char **NamesOut)
+{
+	if(!Structure.HasBeenSetUp) return;
+	
+	size_t UnitIndex = Structure.UnitForHandle[Handle.Handle];
+	size_t Idx = 0;
+	for(index_set_h IndexSet : Structure.Units[UnitIndex].IndexSets)
+	{
+		NamesOut[Idx] = GetName(Structure.Model, IndexSet);
+		++Idx;
+	}
+}
 
 
 static void
