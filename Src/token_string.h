@@ -1,7 +1,5 @@
 
 
-
-
 //NOTE: This is a length-based string that does not have ownership of its data. Good for making substrings without having to reallocate.
 
 struct token_string
@@ -81,10 +79,9 @@ token_string token_string::Substring(size_t Offset, size_t Span) const
 	return Result;
 }
 
-//TODO: Borrowed hash function from https://stackoverflow.com/questions/20649864/c-unordered-map-with-char-as-key . We should look into it more..
 struct token_string_hash_function
 {
-    //BKDR Hash algorithm
+    //BKDR Hash function
     int operator()(const token_string &Str) const
     {
         int Seed = 131;//31  131 1313 13131131313 etc//
@@ -96,5 +93,3 @@ struct token_string_hash_function
         return Hash & (0x7FFFFFFF);
     }
 };
-
-

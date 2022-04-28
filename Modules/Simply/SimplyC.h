@@ -35,6 +35,7 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that don't vary with land class or sub-catchment/reach
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
 	
+	auto BaselineSoilDOCDissolutionRate         = RegisterParameterDouble(Model, CarbonParamsGlobal, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0, "", "cDOC");
 	auto SoilTemperatureDOCLinearCoefficient    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 20.0, "", "kT");
 	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0, "", "kSO4");
 	
@@ -49,7 +50,6 @@ AddSimplyCModel(mobius_model *Model)
 	// Carbon params that vary with land class
 	auto CarbonParamsLand = RegisterParameterGroup(Model, "Carbon land", LandscapeUnits);
 	
-	auto BaselineSoilDOCDissolutionRate         = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0, "", "cDOC");
 	auto BaselineSoilDOCConcentration           = RegisterParameterDouble(Model, CarbonParamsLand, "Baseline Soil DOC concentration", MgPerL, 10.0, 0.0, 100.0, "Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0", "baseDOC");
 	auto SoilDOCMineralisationRate              = RegisterParameterDouble(Model, CarbonParamsLand, "DOC mineralisation+sorption rate", PerDay, 0.0, 0.0, 1.0, "", "dDOC");
 	auto UseBaselineConc                        = RegisterParameterBool(Model, CarbonParamsLand, "Compute mineralisation+sorption rate from baseline conc.", true, "If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration");
@@ -165,7 +165,7 @@ AddSimplyCModel(mobius_model *Model)
 	
 	EQUATION(Model, InitialSoilWaterDOCMass,
 		//NOTE: Assume steady-state initial conc.
-		return PARAMETER(FieldCapacity) * PARAMETER(BaselineSoilDOCConcentration) * (1.0 + PARAMETER(SoilTemperatureDOCLinearCoefficient)*RESULT(SoilTemperature) - PARAMETER(SoilCSolubilityResponseToSO4deposition)*INPUT(SO4Deposition));
+		return RESULT(SoilWaterVolume) * RESULT(EquilibriumSoilDOCConc);
 	)
 	
 	
@@ -173,8 +173,8 @@ AddSimplyCModel(mobius_model *Model)
 		// mg/(l day) * mm = kg/(km2 day)
 		
 		/*
-		double volume = PARAMETER(FieldCapacity);
-		double volume = RESULT(SoilWaterVolume);
+		double volume  = PARAMETER(FieldCapacity);
+		double volume2 = RESULT(SoilWaterVolume);
 		if(PARAMETER(ProductionProportionalToVolume)) volume = volume2;
 		*/
 		double volume = RESULT(SoilWaterVolume);
@@ -271,7 +271,7 @@ AddSimplyCModel(mobius_model *Model)
 			  RESULT(TotalQuickFlowDOCFlux) 
 			+ RESULT(TotalSoilwaterDOCFlux)*(1.0-PARAMETER(BaseflowIndex))
 			+ RESULT(GroundwaterDOCFlux)
-			)* PARAMETER(CatchmentArea);
+			) * PARAMETER(CatchmentArea);
 	)
 	
 	EQUATION(Model, InitialStreamDOCMass,
@@ -322,4 +322,6 @@ AddSimplyTOCModule(mobius_model *Model)
 	EQUATION(Model, ReachTOCConcentration,
 		return RESULT(ReachDOCConcentration) + PARAMETER(SedimentCarbonContent)*RESULT(ReachSSConcentration);
 	)
+	
+	EndModule(Model);
 }

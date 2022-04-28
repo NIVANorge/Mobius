@@ -53,7 +53,7 @@ New to version 0.4.2:
 	auto Km2               = RegisterUnit(Model, "km^2");
 	auto M                 = RegisterUnit(Model, "m");
 	auto MPerM			   = RegisterUnit(Model, "m/m");
-	auto SecondsPerCubeRouteM	= RegisterUnit(Model, "s/(m^1/3)");
+	auto SecondsPerCubeRootM	= RegisterUnit(Model, "s/(m^1/3)");
 	
 	// Set up index sets
 	auto Reach = RegisterIndexSetBranched(Model, "Reaches");
@@ -67,7 +67,7 @@ New to version 0.4.2:
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
 	auto GroundwaterTimeConstant = RegisterParameterDouble(Model, Hydrology, "Groundwater time constant", Days, 65.0, 0.5, 400.0, "", "Tg");
 #endif
-	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRouteM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types", "Cmann") ;
+	auto ManningsCoefficient	 = RegisterParameterDouble(Model, Hydrology, "Manning's coefficient", SecondsPerCubeRootM, 0.04, 0.012, 0.1, "Default of 0.04 is for clean winding natural channels. See e.g. Chow 1959 for a table of values for other channel types", "Cmann") ;
 	
 	// General parameters that vary by reach or sub-catchment
 	auto ReachParams = RegisterParameterGroup(Model, "General subcatchment and reach parameters", Reach);
