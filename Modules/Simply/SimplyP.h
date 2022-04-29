@@ -8,7 +8,7 @@
 static void
 AddSimplyPModel(mobius_model *Model)
 {
-	BeginModule(Model, "SimplyP", "0.4");
+	BeginModule(Model, "SimplyP", "0.4.1");
 	
 	SetModuleDescription(Model, R""""(
 SimplyP is a parsimonious phosphorus model. It was originally implemented in Python and published as
@@ -248,7 +248,8 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	EQUATION(Model, SoilTDPOutput,
 		//TODO: Should consider using "integrated" values here similar to in the equation for the TDP mass value..
 		double flow = (1.0-PARAMETER(BaseflowIndex)) * RESULT(SoilWaterFlow) + RESULT(QuickFlow);
-		return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * flow; 
+		//return SafeDivide(RESULT(SoilTDPMass), RESULT(SoilWaterVolume)) * flow; 
+		return RESULT(SoilWaterTDPConcentration) * flow;
 	)
 	
 	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
@@ -272,7 +273,6 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	auto ReachTDPInputFromUpstream  = RegisterEquation(Model, "Reach TDP input from upstream", KgPerDay);
 	auto ReachTDPInputFromCatchment = RegisterEquation(Model, "Reach TDP input from catchment", KgPerDay, ReachSolver);
 	auto ReachPPInputFromErosion    = RegisterEquation(Model, "Reach PP input from erosion and entrainment", KgPerDay, ReachSolver);
-	//auto TotalReachPPInputFromErosion = RegisterEquationCumulative(Model, "Total reach PP input from erosion", ReachPPInputFromErosion, LandscapeUnits);
 	auto ReachPPInputFromUpstream  = RegisterEquation(Model, "Reach PP input from upstream", KgPerDay);
 	
 	EQUATION(Model, StreamTDPFlux,
