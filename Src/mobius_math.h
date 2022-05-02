@@ -68,7 +68,8 @@ Clamp01(double A)
 }
 
 
-double NormalCDFInverseRationalApproximation(double T)
+double
+NormalCDFInverseRationalApproximation(double T)
 {
     // Abramowitz and Stegun formula 26.2.23.
     // The absolute value of the error should be less than 4.5 e-4.
@@ -79,7 +80,8 @@ double NormalCDFInverseRationalApproximation(double T)
                (((d[2]*T + d[1])*T + d[0])*T + 1.0);
 }
 
-double NormalCDFInverse(double P)
+double
+NormalCDFInverse(double P)
 {
     if (P <= 0.0 || P >= 1.0)
 		return std::numeric_limits<double>::quiet_NaN();
@@ -90,7 +92,12 @@ double NormalCDFInverse(double P)
         return NormalCDFInverseRationalApproximation( std::sqrt(-2.0*std::log(1-P)) );
 }
 
-
+inline double
+HalfLifeToRate(double HalfLife)
+{
+	constexpr double ln2 = 0.69314718056;
+	return ln2 / HalfLife;
+}
 
 
 

@@ -140,8 +140,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	auto SoilSOCMass     = GetParameterDoubleHandle(Model, "Soil SOC mass");
 	auto SizeOfEasilyAccessibleFraction = GetParameterDoubleHandle(Model, "Size of easily accessible SOC fraction");
 	
-	constexpr double CONST_LN_2 = 0.69314718056;
-	constexpr double Avogadro   = 6.02214076e23;
+	//constexpr double Avogadro   = 6.02214076e23;
 	
 	auto SoilTemperatureKelvin = RegisterEquation(Model, "Soil temperature in Kelvin", K);
 	
@@ -288,9 +287,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, SoilContaminantDegradationPotentiallyAccessible,
-		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
-	
-		return rate * RESULT(ContaminantMassInPotentiallyAccessibleFraction);
+		return HalfLifeToRate(365.0 * PARAMETER(HalfLife)) * RESULT(ContaminantMassInPotentiallyAccessibleFraction);
 	)
 	
 	EQUATION(Model, SoilContaminantFormationPotentiallyAccessible,
@@ -342,9 +339,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 		+ RESULT(SoilDOCMass)     * RESULT(SoilDOCContaminantConcentration)
 		+ PARAMETER(SoilSOCMass)*PARAMETER(SizeOfEasilyAccessibleFraction)*1e6  * RESULT(SoilSOCContaminantConcentration);
 		
-		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
-		
-		return rate * degradablemass;
+		return HalfLifeToRate(365.0 * PARAMETER(HalfLife)) * degradablemass;
 	)
 	
 	EQUATION(Model, SoilContaminantFormation,
@@ -381,9 +376,8 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
-		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
-		return rate * degradablemass;
+		return HalfLifeToRate(365.0 * PARAMETER(HalfLife)) * degradablemass;
 	)
 	
 	EQUATION(Model, GroundwaterContaminantFormation,
@@ -506,8 +500,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, ReachContaminantDegradation,
-		double rate = CONST_LN_2 / (365.0 * PARAMETER(HalfLife));
-		return RESULT(ContaminantMassInReach) * rate;
+		return RESULT(ContaminantMassInReach) * HalfLifeToRate(365.0 * PARAMETER(HalfLife));
 	)
 	
 	EQUATION(Model, ReachContaminantFormation,
@@ -710,8 +703,7 @@ Inca-Rad, is a small modification of INCA-Tox (INCA-Contaminants) that makes it 
 	)
 	
 	EQUATION(Model, BedContaminantDegradation,
-		double rate = CONST_LN_2/ (365.0 * PARAMETER(HalfLife));
-		return RESULT(BedContaminantMass) * rate;
+		return RESULT(BedContaminantMass) * HalfLifeToRate(365.0 * PARAMETER(HalfLife));
 	)
 	
 	EQUATION(Model, BedContaminantFormation,

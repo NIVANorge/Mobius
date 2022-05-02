@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC (quantom), containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew, SimplySed V0.4, Simply soil temperature V0.1, SimplyC V0.0.2, SimplyC TOC V0.0) at 2022-04-20 13:25:20
+# Parameter file generated for model SimplyC (quantom), containing modules (HBV-Snow V0.0, Degree-day PET V0.2, SimplyQ V0.4.2 Ballycanew, SimplySed V0.4, Simply soil temperature V0.1, SimplyC V0.0.2, SimplyC TOC V0.0) at 2022-05-02 11:28:49
 
 index_sets:
 "Snow distribution box" : {"0-0.01" "0.01-0.05" "0.05-0.15" "0.15-0.35" "0.35-0.65" "0.65-0.85" "0.85-0.95" "0.95-0.99" "0.99-1"}
@@ -32,13 +32,13 @@ parameters:
 	"Liquid water fraction" :     #(dimensionless) [0, 1] Amount of melt water each unit of snow can hold before it is released
 	0.249303720590798
 
-	"Refreeze efficiency" :     #(dimensionless) [0, 1] RFeff
+	"Refreeze efficiency" :     #(dimensionless) [0, 1] 
 	0.596109324029471
 
 	"Snow distribution coefficient of variation" :     #(dimensionless) [0, 1] 0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.
 	0.318452565581378
 
-	"Minimal snow depth before snow fall is distributed unevenly" :     #(mm) [0, 50000] Dmin
+	"Minimal snow depth before snow fall is distributed unevenly" :     #(mm) [0, 50000] 
 	16.0786333407468
 
 	"Snow depth at which snow cover is considered full" :     #(mm) [0, 1000]
@@ -190,6 +190,9 @@ parameters:
 
 	# Carbon global (no index sets) #
 
+	"Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100] 
+	3
+
 	"Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 20] 
 	0.0105235097150663
 
@@ -207,9 +210,6 @@ parameters:
 
 
 	# Carbon land ("Landscape units") #
-
-	"Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100] 
-	3 3 3 3
 
 	"Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0
 	4.7 4.7 4.7 4.7

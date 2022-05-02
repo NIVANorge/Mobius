@@ -217,11 +217,9 @@ AddSimplyCModel(mobius_model *Model)
 		return RESULT(SoilWaterDOCFlux);
 	)
 	
-	constexpr double ln2 = 0.69314718056;
-	
 	EQUATION(Model, InitialGroundwaterDOCMass,
 		//NOTE: Steady state-ish, assuming Qin = Qout.
-		double r = SafeDivide(ln2, PARAMETER(DeepSoilDOCHalfLife));
+		double r = HalfLifeToRate(PARAMETER(DeepSoilDOCHalfLife));
 		double V = RESULT(GroundwaterVolume);
 		double T = PARAMETER(GroundwaterTimeConstant);
 		double C = RESULT(AvgSoilWaterDOCConcentration);
@@ -238,8 +236,7 @@ AddSimplyCModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, GroundwaterDOCLoss,
-		double decay_rate = SafeDivide(ln2, PARAMETER(DeepSoilDOCHalfLife));
-		return RESULT(GroundwaterDOCMass) * decay_rate;
+		return RESULT(GroundwaterDOCMass) * HalfLifeToRate(PARAMETER(DeepSoilDOCHalfLife));
 	)
 
  	EQUATION(Model, GroundwaterDOCFlux,
