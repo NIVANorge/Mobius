@@ -8,7 +8,7 @@
 static void
 AddSimplyPModel(mobius_model *Model)
 {
-	BeginModule(Model, "SimplyP", "0.4.1");
+	BeginModule(Model, "SimplyP", "0.4.2");
 	
 	SetModuleDescription(Model, R""""(
 SimplyP is a parsimonious phosphorus model. It was originally implemented in Python and published as
@@ -178,7 +178,7 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 		double b = (Kf*Msoil + Q) / V;
 		double value = a/b + (TDP0 - a/b) * exp(-b);
 		
-		if(!PARAMETER(DynamicEPC0)) return TDP0;
+		if(!PARAMETER(DynamicEPC0)) return PARAMETER(InitialEPC0)*V; //TDP0;
 		
 		return value;
 	)

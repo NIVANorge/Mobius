@@ -33,11 +33,11 @@ parameters:
 "Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5]
 3.15268497878498
 
-"Snow melt offset temperature" :     #(°C) [-4, 4] Snow begins melting above this temperature
-0
+#"Snow melt offset temperature" :     #(°C) [-4, 4] Snow begins melting above this temperature
+#0
 
-"Snow fall multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor to take into account possible inaccuracies in snow fall measurements
-2
+#"Snow fall multiplier" :     #(dimensionless) [0.5, 1.5] Adjustment factor to take into account possible inaccuracies in snow fall measurements
+#2
 
 "Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1]
 0.08

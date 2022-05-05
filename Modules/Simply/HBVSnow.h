@@ -6,7 +6,7 @@ AddHBVSnowModule(mobius_model *Model)
 	BeginModule(Model, "HBV-Snow", "0.0");
 	
 	SetModuleDescription(Model, R""""(
-This is an adaption of the hydrology module from HBV-Nordic (Sælthun 1995)
+This is an adaption of the snow module from HBV-Nordic (Sælthun 1995)
 
 [NVE home page](https://www.nve.no/vann-og-vassdrag/vannets-kretslop/analysemetoder-og-modeller/hbv-modellen/)
 

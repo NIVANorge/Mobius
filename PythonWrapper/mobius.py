@@ -771,3 +771,27 @@ class DataSet :
 		check_dll_error()
 		return [name.decode('utf-8') for name in namearray]
 		
+	
+	
+	# The below is experimental code to allow for things like
+	# dataset.parameter["Baseflow index"] = 0.6
+	class _ParameterReference :
+		def __init__(self, dataset) :
+			self._dataset = dataset
+			
+		def __getitem__(self, name_idx):
+			if isinstance(name_idx, tuple):
+				return self._dataset.get_parameter_double(name_idx[0], name_idx[1:])
+			else :
+				return self._dataset.get_parameter_double(name_idx, [])
+		
+		def __setitem__(self, name_idx, val):
+			if isinstance(name_idx, tuple):
+				return self._dataset.set_parameter_double(name_idx[0], name_idx[1:], val)
+			else :
+				return self._dataset.set_parameter_double(name_idx, [], val)
+			
+	@property
+	def parameter(self) :
+		return self._ParameterReference(self)
+	

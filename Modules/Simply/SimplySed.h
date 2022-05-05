@@ -3,10 +3,13 @@
 static void
 AddSimplySedimentModule(mobius_model *Model)
 {
-	BeginModule(Model, "SimplySed", "0.4");
+	BeginModule(Model, "SimplySed", "0.5.0");
 	
 	SetModuleDescription(Model, R""""(
 This is a simple sediment transport module created as a part of SimplyP.
+
+New to version 0.5:
+* Linear and power coefficents should have less covariance, making them easier to calibrate.
 )"""");
 	
 	auto Dimensionless = RegisterUnit(Model);
@@ -21,27 +24,17 @@ This is a simple sediment transport module created as a part of SimplyP.
 	auto Reach          = GetIndexSetHandle(Model, "Reaches");
 	auto LandscapeUnits = GetIndexSetHandle(Model, "Landscape units");
 	
-	// Could alternatively just have a "Dynamic erodibility" flag on each landscape unit.
-	auto Arable             = RequireIndex(Model, LandscapeUnits, "Arable");
-	
 	// Params already defined
 	auto CatchmentArea = GetParameterDoubleHandle(Model, "Catchment area");
-	auto ReachSlope    = GetParameterDoubleHandle(Model, "Reach slope");	
+	auto ReachSlope    = GetParameterDoubleHandle(Model, "Reach slope");
+	auto ReachLength   = GetParameterDoubleHandle(Model, "Reach length");
 	
 	// Global sediment parameters (don't vary by land use/sub-catchment/reach
 	auto Sediment = RegisterParameterGroup(Model, "Erodibility and sediments");
 	
-	auto DynamicErodibility                      = RegisterParameterBool(Model, Sediment, "Dynamic erodibility", true, "Requires one of your land use classes to be 'Arable' (exact name match). If set to 'true', the model simulates the change in erodibility on arable land through the year due to cropping and harvesting");
-	
+	//TODO: Fix units and document!
 	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", KgPerM3, 15.0, 0.0, 100.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land", "Ksed");
-	auto SedimentInputNonlinearCoefficient = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0, "", "psed"); 
-	auto DayOfYearWhenSoilErodibilityIsMaxSpring = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for spring-grown crops", JulianDay, 60, 30, 335, "Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment");
-	auto DayOfYearWhenSoilErodibilityIsMaxAutumn = RegisterParameterUInt(Model, Sediment, "Day of year when soil erodibility is at its max for autumn-grown crops", JulianDay, 304, 30, 335, "Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment");
-	
-
-	auto ReachParams = RegisterParameterGroup(Model, "Seasonal erodibility by subcatchment", Reach);
-	
-	auto ProportionOfSpringGrownCrops            = RegisterParameterDouble(Model, ReachParams, "Proportion of spring grown crops", Dimensionless, 0.65, 0.0, 1.0, "Proportion of total arable land that is spring-sown crops. Only needed if Dynamic erodibility is set to true and one of your land use classes is Arable");
+	auto SedimentInputNonlinearCoefficient       = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0, "", "psed");
 	
 	// Params that vary by land class and reach
 	auto SubcatchmentGeneral = RegisterParameterGroup(Model, "Land slope", Reach, LandscapeUnits);
@@ -53,6 +46,12 @@ This is a simple sediment transport module created as a part of SimplyP.
 	auto SedimentLand = RegisterParameterGroup(Model, "Sediment land", LandscapeUnits);
 	auto VegetationCoverFactor                   = RegisterParameterDouble(Model, SedimentLand, "Vegetation cover factor", Dimensionless, 0.2, 0.0, 1.0, "Vegetation cover factor, describing ratio between long-term erosion under the land use class, compared to under bare soil of the same soil type, slope, etc. Source from (R)USLE literature and area-weight as necessary to obtain a single value for the land class.", "kveg");
 	auto ReductionOfLoadInSediment               = RegisterParameterDouble(Model, SedimentLand, "Reduction of load in sediment", Dimensionless, 0.0, 0.0, 1.0, "Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.", "kload"); //Note: may be better indexing this by reach? TO DO
+	
+	auto DynamicErodibility                      = RegisterParameterBool(Model, SedimentLand, "Dynamic erodibility", false, "Requires one of your land use classes to be 'Arable' (exact name match). If set to 'true', the model simulates the change in erodibility on arable land through the year due to cropping and harvesting");
+	auto DayOfYearWhenSoilErodibilityIsMaxSpring = RegisterParameterUInt(Model, SedimentLand, "Day of year when soil erodibility is at its max for spring-grown crops", JulianDay, 60, 30, 335, "Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment");
+	auto DayOfYearWhenSoilErodibilityIsMaxAutumn = RegisterParameterUInt(Model, SedimentLand, "Day of year when soil erodibility is at its max for autumn-grown crops", JulianDay, 304, 30, 335, "Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment");
+	auto ProportionOfSpringGrownCrops            = RegisterParameterDouble(Model, SedimentLand, "Proportion of spring grown crops", Dimensionless, 0.65, 0.0, 1.0, "Proportion of total arable land that is spring-sown crops. Only needed if Dynamic erodibility is set to true.");
+	
 	
 	// Start equations
 	
@@ -73,7 +72,6 @@ This is a simple sediment transport module created as a part of SimplyP.
 	auto SuspendedSedimentFlux = RegisterEquation(Model, "Reach suspended sediment flux", KgPerDay, ReachSolver);
 	
 	auto ReachSedimentInput = RegisterEquation(Model, "Reach sediment input (erosion and entrainment)", KgPerDay, ReachSolver);
-	//auto TotalReachSedimentInput = RegisterEquationCumulative(Model, "Total reach sediment input (erosion and entrainment)", ReachSedimentInput, LandscapeUnits);
 	
 	auto ReachSedimentInputUpstream = RegisterEquation(Model, "Reach sediment input (upstream flux)", KgPerDay);
 	
@@ -102,7 +100,7 @@ This is a simple sediment transport module created as a part of SimplyP.
 		coverproportion[1] = 1.0 - coverproportion[0];
 		
 		//NOTE: Sine wave not implemented, only triangular.
-		if(PARAMETER(DynamicErodibility) && (CURRENT_INDEX(LandscapeUnits) == Arable))
+		if(PARAMETER(DynamicErodibility))
 		{
 			double C_cov = 0.0;
 			double E_risk_period = 60.0;
@@ -127,21 +125,19 @@ This is a simple sediment transport module created as a part of SimplyP.
 	)
 	
 	EQUATION(Model, ReachSedimentInputCoefficient,
-		// Reach sed input coefficient per land use class (kg/m3). This was recently changed from kg/mm which had a different rationalization.
+		// Reach sed input coefficient per land use class. 
 		return
-			  PARAMETER(ReachSedimentInputScalingFactor) * 1e6 //1e6 just for convenient range in input parameter
-			* PARAMETER(ReachSlope)
-			* PARAMETER(MeanSlopeOfLand)
+			PARAMETER(MeanSlopeOfLand)
 			* RESULT(TimeDependentVegetationCoverFactor)
 			* (1.0 - PARAMETER(ReductionOfLoadInSediment));
 	
-		// This does not take into account the greater sediment mobilisation capacity of reaches which are further downstream in the catchment, and may need revisiting. May need to split sediment delivery into two (terrestrial versus instream), which would likely require two of these equations which we want to avoid as long as possible.
 		//Note: if this changes, also needs to change in the particulate P equations
 	)
 	
 	EQUATION(Model, ErosionFactor,
 		double A_catch = PARAMETER(CatchmentArea);
-		return A_catch * pow(RESULT(ReachFlowInputFromLand) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
+		double a = PARAMETER(ReachSedimentInputScalingFactor) * 1e-3;
+		return A_catch * pow(a * 86400.0*RESULT(ReachFlowInputFromLand) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
 	)
 	
 	EQUATION(Model, ReachSedimentInput,
