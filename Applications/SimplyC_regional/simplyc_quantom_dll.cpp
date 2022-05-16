@@ -15,7 +15,7 @@
 //#include "../../Modules/Simply/HBVSnow.h"
 #include "../../Modules/Simply/SimplyQ_Ballycanew.h"
 //#include "../../Modules/Simply/SimplyQ_SoilFrost.h"
-//#include "../../Modules/Simply/SimplySed.h"
+#include "../../Modules/Simply/SimplySed.h"
 #include "../../Modules/Simply/SimplyC.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
@@ -31,9 +31,9 @@ DllBuildModel()
 	AddDegreeDayPETModule(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyHydrologyModule(Model);
-	//AddSimplySedimentModule(Model);
+	AddAwfullySimplySedimentModule(Model);
 	AddSimplyCModel(Model);
-	//AddSimplyTOCModule(Model);
+	AddSimplyTOCModule(Model);
 	
 	return Model;
 }

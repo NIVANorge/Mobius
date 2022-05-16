@@ -170,3 +170,89 @@ New to version 0.5:
 	
 	EndModule(Model);
 }
+
+
+
+static void
+AddAwfullySimplySedimentModule(mobius_model *Model)
+{
+	BeginModule(Model, "AwfullySimplySed", "0.0.1");
+	
+	SetModuleDescription(Model, R""""(
+This is an awfully simple sediment transport module, simplified from SimplySed for semi-natural areas (without agriculture).
+)"""");
+	
+	auto Dimensionless = RegisterUnit(Model);
+	auto Kg            = RegisterUnit(Model, "kg");
+	auto KgPerDay      = RegisterUnit(Model, "kg/day");
+	auto KgPerM3       = RegisterUnit(Model, "kg/m^3");
+	auto JulianDay     = RegisterUnit(Model, "Julian day");
+	auto Degrees       = RegisterUnit(Model, "°");
+	auto MgPerL        = RegisterUnit(Model, "mg/l");
+	
+	auto Sediment = RegisterParameterGroup(Model, "Erodibility and sediments");
+	// TODO: fix units!
+	auto ReachSedimentInputScalingFactor         = RegisterParameterDouble(Model, Sediment, "Reach sediment input scaling factor", Dimensionless, 15.0, 0.0, 100.0, "Calibrated parameter linking simulated sediment input from land to simulated flow from land", "Ksed");
+	auto SedimentInputNonlinearCoefficient       = RegisterParameterDouble(Model, Sediment, "Sediment input non-linear coefficient", Dimensionless, 2.0, 0.1, 5.0, "", "psed");
+	
+	
+	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
+	auto Reach       = GetIndexSetHandle(Model, "Reaches");
+	
+	auto SuspendedSedimentFlux = RegisterEquation(Model, "Reach suspended sediment flux", KgPerDay, ReachSolver);
+	auto ReachSedimentInput = RegisterEquation(Model, "Reach sediment input (erosion and entrainment)", KgPerDay, ReachSolver);
+	auto ReachSedimentInputUpstream = RegisterEquation(Model, "Reach sediment input (upstream flux)", KgPerDay);
+	
+	auto SuspendedSedimentMass = RegisterEquationODE(Model, "Reach suspended sediment mass", Kg, ReachSolver);
+	SetInitialValue(Model, SuspendedSedimentMass, 0.0);
+	
+	auto DailyMeanSuspendedSedimentFlux = RegisterEquationODE(Model, "Reach daily mean suspended sediment flux", KgPerDay, ReachSolver);
+	SetInitialValue(Model, DailyMeanSuspendedSedimentFlux, 0.0);
+	ResetEveryTimestep(Model, DailyMeanSuspendedSedimentFlux);
+	
+	auto SuspendedSedimentConcentration = RegisterEquation(Model, "Reach suspended sediment concentration", MgPerL); //Volume-weighted daily mean
+
+	
+	// Equations already defined
+	auto ReachFlow          = GetEquationHandle(Model, "Reach flow (end-of-day)");
+	auto ReachFlowInputFromLand = GetEquationHandle(Model, "Flow input from land");
+	auto DailyMeanReachFlow = GetEquationHandle(Model, "Reach flow (daily mean, cumecs)");
+	auto ReachVolume        = GetEquationHandle(Model, "Reach volume");
+	
+	// Params already defined
+	auto CatchmentArea = GetParameterDoubleHandle(Model, "Catchment area");
+	auto ReachSlope    = GetParameterDoubleHandle(Model, "Reach slope");
+	auto ReachLength   = GetParameterDoubleHandle(Model, "Reach length");
+	
+	
+	EQUATION(Model, ReachSedimentInput,
+		double A_catch = PARAMETER(CatchmentArea);
+		double a = PARAMETER(ReachSedimentInputScalingFactor) * 1e-3;
+		return A_catch * pow(a * 86400.0*RESULT(ReachFlow) / A_catch, PARAMETER(SedimentInputNonlinearCoefficient));
+	)
+	
+	EQUATION(Model, ReachSedimentInputUpstream,
+		double upstreamflux = 0.0;
+		for(index_t Input : BRANCH_INPUTS(Reach))
+			upstreamflux += RESULT(DailyMeanSuspendedSedimentFlux, Input);
+		return upstreamflux;
+	)
+	
+	EQUATION(Model, SuspendedSedimentMass,	
+		return RESULT(ReachSedimentInput) + RESULT(ReachSedimentInputUpstream) - RESULT(SuspendedSedimentFlux);
+	)
+	
+	EQUATION(Model, SuspendedSedimentFlux,
+		return 86400.0 * RESULT(ReachFlow) * SafeDivide(RESULT(SuspendedSedimentMass), RESULT(ReachVolume));
+	)
+	
+	EQUATION(Model, DailyMeanSuspendedSedimentFlux,
+		return RESULT(SuspendedSedimentFlux);
+	)
+	
+	EQUATION(Model, SuspendedSedimentConcentration,
+		//Converting flow m3/s->m3/day, and converting kg/m3 to mg/l. TODO: make conversion functions
+		return 1e3 * SafeDivide(RESULT(DailyMeanSuspendedSedimentFlux), 86400.0 * RESULT(DailyMeanReachFlow));
+	)
+}
+

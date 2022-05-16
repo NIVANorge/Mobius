@@ -9,8 +9,8 @@ AddSimplyCModel(mobius_model *Model)
 	auto SO4Deposition = RegisterInput(Model, "SO4 deposition");
 
 	// Solvers already defined in hydrology module
-	auto LandSolver = GetSolverHandle(Model, "SimplyQ land solver");
-	auto ReachSolver = GetSolverHandle(Model, "SimplyQ reach solver");
+	auto LandSolver     = GetSolverHandle(Model, "SimplyQ land solver");
+	auto ReachSolver    = GetSolverHandle(Model, "SimplyQ reach solver");
 
 	// Units
 	auto Dimensionless  = RegisterUnit(Model);
@@ -36,8 +36,8 @@ AddSimplyCModel(mobius_model *Model)
 	auto CarbonParamsGlobal = RegisterParameterGroup(Model, "Carbon global");
 	
 	auto BaselineSoilDOCDissolutionRate         = RegisterParameterDouble(Model, CarbonParamsGlobal, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0, "", "cDOC");
-	auto SoilTemperatureDOCLinearCoefficient    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 20.0, "", "kT");
-	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 20.0, "", "kSO4");
+	auto SoilTemperatureDOCLinearCoefficient    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 0.1, "", "kT");
+	auto SoilCSolubilityResponseToSO4deposition = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil carbon solubility response to SO4 deposition", PerMgPerL, 0.0, 0.0, 0.1, "", "kSO4");
 	
 	auto DeepSoilDOCType                        = RegisterParameterEnum(Model, CarbonParamsGlobal, "Deep soil/groundwater DOC computation", {"soil_avg", "constant", "mass_balance"}, "soil_avg", "soil_avg: conc in deep soil is avg. of soil runoff, const: constant conc. mass_balance: DOC mass balance is computed, with a decay half life.");
 	auto SoilAvg = EnumValue(Model, DeepSoilDOCType, "soil_avg");

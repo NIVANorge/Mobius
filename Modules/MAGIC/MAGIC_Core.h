@@ -399,9 +399,7 @@ CalculateNetAlCharge(const magic_coeff &Coeff, double conc_H, double conc_Al, do
 	// Al-hydroxide dissociation
 	double Term1 = 0.0;
 	for(int Idx = 3; Idx >= 0; --Idx)
-	{
 		Term1 = (Term1 + (double)(2-Idx)*Coeff.K_Al[Idx])/conc_H;
-	}
 	
 	// Al-SO4 complexes
 	double Term2 = (Coeff.K_SO4[0] + Coeff.K_SO4[1]*conc_SO4)*conc_SO4;
@@ -409,9 +407,7 @@ CalculateNetAlCharge(const magic_coeff &Coeff, double conc_H, double conc_Al, do
 	// Al-F complexes
 	double Term3 = 0.0;
 	for(int Idx = 5; Idx >= 0; --Idx)
-	{
 		Term3 = (Term3 + (double)(2-Idx)*Coeff.K_F[Idx])*conc_F;
-	}
 	
 	// Al-DOC complexes
 	double Term4 = Coeff.K_AlDOC[1]*conc_H*conc_A3M;
@@ -428,9 +424,7 @@ ComputeAlHEquivalent(const magic_coeff &Coeff, double conc_H, double conc_Al, do
 	// Al-hydroxide dissociation
 	double Term1 = 0.0;
 	for(int Idx = 3; Idx >= 0; --Idx)
-	{
 		Term1 = (Term1 + (double)(2-Idx)*Coeff.K_Al[Idx])/conc_H;
-	}
 	
 	// Al-SO4 complexes
 	double Term2 = (3.0*Coeff.K_SO4[0] + 3.0*Coeff.K_SO4[1]*conc_SO4)*conc_SO4;
@@ -438,9 +432,7 @@ ComputeAlHEquivalent(const magic_coeff &Coeff, double conc_H, double conc_Al, do
 	// Al-F complexes
 	double Term3 = 0.0;
 	for(int Idx = 5; Idx >= 0; --Idx)
-	{
 		Term3 = (Term3 + 3.0*Coeff.K_F[Idx])*conc_F;
-	}
 	
 	// Al-DOC complexes
 	double Term4 = (3.0*Coeff.K_AlDOC[0] + 4.0*Coeff.K_AlDOC[1]*conc_H)*conc_A3M;
@@ -457,9 +449,7 @@ CalculateTotalAqueousAl(const magic_coeff &Coeff, double conc_H, double conc_Al,
 	// Al-hydroxide dissociation
 	double Term1 = 0.0;
 	for(int Idx = 3; Idx >= 0; --Idx)
-	{
 		Term1 = (Term1 + Coeff.K_Al[Idx])/conc_H;
-	}
 	
 	// Al-SO4 complexes
 	double Term2 = (Coeff.K_SO4[0] + Coeff.K_SO4[1]*conc_SO4)*conc_SO4;
@@ -467,9 +457,7 @@ CalculateTotalAqueousAl(const magic_coeff &Coeff, double conc_H, double conc_Al,
 	// Al-F complexes
 	double Term3 = 0.0;
 	for(int Idx = 5; Idx >= 0; --Idx)
-	{
 		Term3 = (Term3 + Coeff.K_F[Idx])*conc_F;
-	}
 	
 	// Al-DOC complexes
 	double Term4 = (Coeff.K_AlDOC[0] + Coeff.K_AlDOC[1]*conc_H)*conc_A3M;
