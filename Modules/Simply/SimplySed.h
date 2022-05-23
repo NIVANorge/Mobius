@@ -9,7 +9,10 @@ AddSimplySedimentModule(mobius_model *Model)
 This is a simple sediment transport module created as a part of SimplyP.
 
 New to version 0.5:
-* Linear and power coefficents should have less covariance, making them easier to calibrate.
+* Replaced Q - SS input relationship aQ^b with (aQ)^b. Reduces strong correlation/covariance of a and b params.
+* Moved reach slope to be a reach parameter.
+* Remove need for “Arable” land class.
+* Can have dynamic erodibility for all land classes and % spring-sown crops.
 )"""");
 	
 	auto Dimensionless = RegisterUnit(Model);

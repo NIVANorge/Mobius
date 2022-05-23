@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplySnow V0.1, SimplyQ V0.4.3, SimplySed V0.5.0, SimplyP V0.4.2) at 2022-05-05 12:34:32
+# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplySnow V0.1, SimplyQ V0.4.3, SimplySed V0.5.0, SimplyP V0.4.2) at 2022-05-05 11:01:44
 
 index_sets:
 "Reaches" : {"Coull"}
@@ -79,7 +79,7 @@ parameters:
 	# Hydrology land ("Landscape units") #
 
 	"Soil water time constant" :     #(days) [0.01, 40] 
-	2 2 2
+	2 3 10
 
 	"Soil field capacity" :     #(mm) [0, 1000] 
 	290 290 290
@@ -98,10 +98,10 @@ parameters:
 	# Erodibility and sediments (no index sets) #
 
 	"Reach sediment input scaling factor" :     #(kg/m^3) [0, 100] Calibrated parameter linking simulated sediment input from land to simulated flow from land
-	5.01
+	4.50432269978514
 
 	"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
-	2
+	2.2265144688203
 
 
 	# Land slope ("Reaches" "Landscape units") #
