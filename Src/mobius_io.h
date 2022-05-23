@@ -412,6 +412,8 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				token_string ParameterName = Stream.ExpectQuotedString();
 				Stream.ExpectToken(':');
 				
+				bool IgnoreErrors = IgnoreUnknown || !(ValidModule && ValidVersion);
+				
 				bool Found;
 				parameter_h Parameter = GetParameterHandle(Model, ParameterName, Found);
 				if(!Found)
@@ -425,7 +427,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 						WarningPrint("WARNING: The parameter \"", ParameterName, "\" is marked as belonging to version \"", ModuleVersion, "\" of module \"", GetName(Model, CurrentModule), "\". The version of this module in the current loaded model is \"", ModuleSpec.Version, "\", and does not have this parameter. Since this parameter does not exist in any other loaded modules it will be ignored, and will be deleted if the file is overwritten.\n\n");
 					}
 					
-					if(IgnoreUnknown || !(ValidModule && ValidVersion))
+					if(IgnoreErrors)
 					{
 						while(true) // Just skip through the values
 						{
@@ -444,7 +446,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 				{
 					const parameter_spec &Spec = Model->Parameters[Parameter];
 					
-					if(Spec.ShouldNotBeExposed)
+					if(Spec.ShouldNotBeExposed && !IgnoreErrors)
 					{
 						Stream.PrintErrorHeader();
 						FatalError("The parameter \"", ParameterName, "\" is computed by the model, and should not be provided in a parameter file.\n");
@@ -462,7 +464,7 @@ ReadParametersFromFile(mobius_data_set *DataSet, const char *Filename, bool Igno
 					if(Values.size() != ExpectedCount)                                                                   
 					{
 						//TODO: The patching we do here may not be the best way to do it, but we'll see.
-						if(!(ValidModule && ValidVersion) || IgnoreUnknown)
+						if(IgnoreErrors)
 						{
 							WarningPrint("WARNING: Did not get the expected number of values for parameter \"", ParameterName, "\" Got ", Values.size(), ", expected ", ExpectedCount, 
 								". Parameter values have been deleted or filled in by default. Check if they are correct.\n");
