@@ -19,6 +19,8 @@
 #include "../../Modules/Simply/SimplyC.h"
 #include "../../Modules/SimplySoilTemperature.h"
 
+#include "../../Modules/EasyLake/SuperEasyLake.h"
+
 
 mobius_model *
 DllBuildModel()
@@ -31,9 +33,14 @@ DllBuildModel()
 	AddDegreeDayPETModule(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyHydrologyModule(Model);
+	
+	AddSuperEasyLakeModule(Model);
+	
 	AddAwfullySimplySedimentModule(Model);
 	AddSimplyCModel(Model);
 	AddSimplyTOCModule(Model);
+	
+	AddSuperEasyLakeCModule(Model);
 	
 	return Model;
 }
