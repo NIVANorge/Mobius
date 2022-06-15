@@ -240,6 +240,7 @@ AddSimplyCModel(mobius_model *Model)
 	
 		double val1 = PARAMETER(BaselineSoilDOCConcentration);
 		double val2 = val1 * (1.0 + (kT1 + kT2*T)*T - kSO4*SO4);
+		val2 = Max(0.0, val2);
 		if(PARAMETER(SoilDOCType) == ConstSoil) return val1;
 		return val2;
 	)

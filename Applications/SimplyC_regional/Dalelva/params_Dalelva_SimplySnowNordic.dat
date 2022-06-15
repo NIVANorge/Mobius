@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC (quantom), containing modules (SimplySnow Nordic V0.0, Degree-day PET V0.2, Simply soil temperature V0.1, SimplyQ V0.4.2 Ballycanew, SuperEasyLake V0.0, AwfullySimplySed V0.0.1, SimplyC V0.0.3, SimplyC TOC V0.0) at 2022-06-13 10:49:13
+# Parameter file generated for model SimplyC (quantom), containing modules (SimplySnow Nordic V0.0, Degree-day PET V0.2, Simply soil temperature V0.1, SimplyQ V0.4.2 Ballycanew, SuperEasyLake V0.0, AwfullySimplySed V0.0.1, SimplyC V0.0.3, SimplyC TOC V0.0, SuperEasyLakeC V0.0) at 2022-06-15 13:29:58
 
 index_sets:
 "Landscape units" : {"Forest" "Shrubs" "Peat"}
@@ -9,10 +9,10 @@ parameters:
 # System (no index sets) #
 
 "Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
-1971-01-01
+1985-01-01
 
 "End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
-2018-01-01
+2000-01-01
 
 
 { module "SimplySnow Nordic" version "0.0"
@@ -148,12 +148,6 @@ parameters:
 	11 1
 
 
-	# Lake Carbon (no index sets) #
-
-	"Lake DOC half life" :     #(days) [1, 10000]
-	450
-
-
 } # end of module "SuperEasyLake"
 
 { module "AwfullySimplySed" version "0.0.1"
@@ -215,3 +209,13 @@ parameters:
 
 
 } # end of module "SimplyC TOC"
+
+{ module "SuperEasyLakeC" version "0.0"
+
+	# Lake Carbon (no index sets) #
+
+	"Lake DOC half life" :     #(days) [1, 10000]
+	450
+
+
+} # end of module "SuperEasyLakeC"
