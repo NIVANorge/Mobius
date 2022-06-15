@@ -263,14 +263,16 @@ DllGetModelName(void *DataSetPtr)
 	return ((mobius_data_set *)DataSetPtr)->Model->Name;
 }
 
-DLLEXPORT void
-DllRunModel(void *DataSetPtr)
+DLLEXPORT bool
+DllRunModel(void *DataSetPtr, s64 MillisecondTimeout)
 {
 	CHECK_ERROR_BEGIN
 	
-	RunModel((mobius_data_set *)DataSetPtr);
+	return RunModel((mobius_data_set *)DataSetPtr, MillisecondTimeout);
 	
 	CHECK_ERROR_END
+	
+	return false;
 }
 
 DLLEXPORT void *

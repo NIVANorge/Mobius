@@ -1853,8 +1853,8 @@ ProcessComputedParameters(mobius_data_set *DataSet, model_run_state *RunState)
 static void
 PrintEquationProfiles(mobius_data_set *DataSet, model_run_state *RunState);
 
-static void
-RunModel(mobius_data_set *DataSet)
+static bool
+RunModel(mobius_data_set *DataSet, s64 MillisecondTimeout=-1)
 {
 #if MOBIUS_PRINT_TIMING_INFO
 	timer SetupTimer = BeginTimer();
@@ -2097,9 +2097,10 @@ RunModel(mobius_data_set *DataSet)
 	
 #if MOBIUS_PRINT_TIMING_INFO
 	u64 SetupDuration = GetTimerMilliseconds(&SetupTimer);
-	timer RunTimer = BeginTimer();
 	u64 BeforeC = __rdtsc();
 #endif
+
+	timer RunTimer = BeginTimer();
 	
 	RunState.AllLastResultsBase = DataSet->ResultData;
 	RunState.AllCurResultsBase = DataSet->ResultData + DataSet->ResultStorageStructure.TotalCount;
@@ -2147,6 +2148,13 @@ RunModel(mobius_data_set *DataSet)
 		RunState.AllCurInputsBase  += DataSet->InputStorageStructure.TotalCount;
 		
 		RunState.CurrentTime.Advance();
+		
+		if(MillisecondTimeout > 0)
+		{
+			s64 Ms = GetTimerMilliseconds(&RunTimer);
+			if(Ms > MillisecondTimeout)
+				return false;
+		}
 	}
 	
 #if MOBIUS_PRINT_TIMING_INFO
@@ -2165,4 +2173,6 @@ RunModel(mobius_data_set *DataSet)
 #if MOBIUS_EQUATION_PROFILING
 	PrintEquationProfiles(DataSet, &RunState);
 #endif
+
+	return true;
 }

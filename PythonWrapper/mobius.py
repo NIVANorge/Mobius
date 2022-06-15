@@ -36,7 +36,8 @@ def initialize(dllname) :
 		
 	mobiusdll.DllSetBranchIndexes.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint64, ctypes.POINTER(dll_branch_index)]
 
-	mobiusdll.DllRunModel.argtypes = [ctypes.c_void_p]
+	mobiusdll.DllRunModel.argtypes = [ctypes.c_void_p, ctypes.c_int64]
+	mobiusdll.DllRunModel.restype = ctypes.c_bool
 
 	mobiusdll.DllCopyDataSet.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_bool]
 	mobiusdll.DllCopyDataSet.restype  = ctypes.c_void_p
@@ -266,12 +267,19 @@ class DataSet :
 		mobiusdll.DllReadParameters(self.datasetptr, _CStr(parfilename), ignore_unknown)
 		check_dll_error()
 		
-	def run_model(self) :
+	def run_model(self, ms_timeout=-1) :
 		'''
 		Runs the model with the parameters and input series that are currently stored in the dataset. All result series will also be stored in the dataset.
+		
+		Arguments
+			ms_timeout         -- int. If it is negative, there is no timeout, otherwise the model run process will be halted at a given timestep where the timeout is exceeded.
+			
+		Returns
+			finished		   -- bool. Whether or not the model run finished without error or timeout.
 		'''
-		mobiusdll.DllRunModel(self.datasetptr)
+		finished = mobiusdll.DllRunModel(self.datasetptr, ms_timeout)
 		check_dll_error()
+		return finished
 	
 	def copy(self, copyresults=False, borrowinputs=False) :
 		'''
