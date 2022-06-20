@@ -417,6 +417,8 @@ If an index set was checked as "locked" in the main window at the time a paramet
 
 To add a target statistic, select one result series and up to one comparison input series in the main window, then click "Add target". You can select the target statistic from a list of statistics. The available statistic will depend on what kind of run you want (optimizer, MCMC or variance-based sensitivity). The total statistic that is considered in each model run is the weighted sum of the statistics for the individual targets. All statistics are computed inside the stat interval only (see Section \ref{sec:gofint}.
 
+The individual run timeout allows you to set a timeout on each individual run of the model in milliseconds. This can be useful if the model sometimes crashes on certain combinations of parameters, but it is hard to exclude them using the parameter intervals. If the model run times out, the calibration statistic is set to $\infty$ or $-\infty$ depending on whether the target statistic is being minimalized or maximized respectively. If you set the timeout negative, there is no timeout. The timeout currently only has been tested with the optimizer, and may not work well with the other sensitivity setups.
+
 If you need a more complex setup than the one you can make here, we recommend that you use the Mobius python wrapper to script it instead.
 
 In the toolbar of the optimization setup window you can click buttons to save the current setup for future use, or load it again.

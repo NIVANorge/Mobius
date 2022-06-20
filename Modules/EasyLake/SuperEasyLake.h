@@ -159,6 +159,7 @@ Simple DOC processing for SuperEasyLake.
 	
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 	
+	auto InitialLakeDOCMass   = RegisterEquationInitialValue(Model, "Initial lake DOC mass", Kg);
 	auto LakeDOCMass          = RegisterEquationODE(Model, "Lake DOC mass", Kg, LakeSolver);
 	auto LakeDOCConcentration = RegisterEquation(Model, "Lake DOC concentration", MgPerL, LakeSolver);
 	auto LakeDOCLoss          = RegisterEquation(Model, "Lake DOC loss", KgPerDay, LakeSolver);
@@ -170,6 +171,7 @@ Simple DOC processing for SuperEasyLake.
 	auto ReachDailyMeanDOCFlux = GetEquationHandle(Model, "DOC flux from reach, daily mean");
 	auto DOCInputFromCatchment = GetEquationHandle(Model, "DOC input from catchment");
 	auto DOCInputFromUpstream  = GetEquationHandle(Model, "DOC input from upstream");
+	auto GroundwaterDOCConcentration = GetEquationHandle(Model, "Groundwater DOC concentration");
 	
 	auto LakeOutflow           = GetEquationHandle(Model, "Lake outflow");
 	auto LakeVolume            = GetEquationHandle(Model, "Lake volume");
@@ -190,6 +192,11 @@ Simple DOC processing for SuperEasyLake.
 		}
 		
 		return upstreamflux;
+	)
+	
+	EQUATION(Model, InitialLakeDOCMass,
+		//TODO: This is not that good. Should use lake's own steady state in computation...
+		return RESULT(GroundwaterDOCConcentration);
 	)
 	
 	EQUATION(Model, LakeDOCMass,
