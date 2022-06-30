@@ -30,7 +30,7 @@ parameters:
 "Decomposition rate linear precipitation dependence" :     #(1/mm) [-20, 0]
 -1 -1 -1 -1 -10
 
-"Foilage chemical composition" :     #(dimensionless) [0, 1]
+"Foliage chemical composition" :     #(dimensionless) [0, 1]
 0.2 0.3 0.25 0.25 0
 
 "Fine wood chemical composition" :     #(dimensionless) [0, 1]

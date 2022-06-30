@@ -48,7 +48,7 @@ This is an un-official implementation of the Yasso model
 	auto DecompPrecipLinear= RegisterParameterDouble(Model, BoxPar, "Decomposition rate linear precipitation dependence", PerMm, 0.0, -20.0, 0.0);
 	
 	
-	auto FoilageComp       = RegisterParameterDouble(Model, BoxPar, "Foilage chemical composition", Dimensionless, 0.0, 0.0, 1.0);
+	auto FoliageComp       = RegisterParameterDouble(Model, BoxPar, "Foliage chemical composition", Dimensionless, 0.0, 0.0, 1.0);
 	auto FineWoodComp      = RegisterParameterDouble(Model, BoxPar, "Fine wood chemical composition", Dimensionless, 0.0, 0.0, 1.0);
 	auto CoarseWoodComp    = RegisterParameterDouble(Model, BoxPar, "Coarse wood chemical composition", Dimensionless, 0.0, 0.0, 1.0);
 	
@@ -67,7 +67,7 @@ This is an un-official implementation of the Yasso model
 	
 	auto Precipitation     = RegisterInput(Model, "Precipitation", MmPerYear);
 	auto AirTemperature    = RegisterInput(Model, "Air temperature", DegreesCelsius);
-	auto FoilageLitter     = RegisterInput(Model, "Foilage and fine root litter", GPerM2PerYear);
+	auto FoliageLitter     = RegisterInput(Model, "Foliage and fine root litter", GPerM2PerYear);
 	auto FineWoodLitter    = RegisterInput(Model, "Fine wood litter", GPerM2PerYear);
 	auto CoarseWoodLitter  = RegisterInput(Model, "Coarse wood litter", GPerM2PerYear);
 	
@@ -248,28 +248,28 @@ This is an un-official implementation of the Yasso model
 	
 	EQUATION(Model, AInputFromLitter,
 		return
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, ACompartment)
+			  INPUT(FoliageLitter) * PARAMETER(FoliageComp, ACompartment)
 			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, ACompartment)
 			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, ACompartment);
 	)
 	
 	EQUATION(Model, WInputFromLitter,
 		return
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, WCompartment)
+			  INPUT(FoliageLitter) * PARAMETER(FoliageComp, WCompartment)
 			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, WCompartment)
 			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, WCompartment);
 	)
 	
 	EQUATION(Model, EInputFromLitter,
 		return
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, ECompartment)
+			  INPUT(FoliageLitter) * PARAMETER(FoliageComp, ECompartment)
 			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, ECompartment)
 			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, ECompartment);
 	)
 	
 	EQUATION(Model, NInputFromLitter,
 		return
-			  INPUT(FoilageLitter) * PARAMETER(FoilageComp, NCompartment)
+			  INPUT(FoliageLitter) * PARAMETER(FoliageComp, NCompartment)
 			+ RESULT(FineWoodDecomp) * PARAMETER(FineWoodComp, NCompartment)
 			+ RESULT(CoarseWoodDecomp) * PARAMETER(CoarseWoodComp, NCompartment);
 	)
