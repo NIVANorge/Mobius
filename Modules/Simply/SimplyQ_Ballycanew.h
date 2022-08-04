@@ -102,7 +102,19 @@ New to version 0.4.2:
 	auto PotentialEvapotranspiration = GetEquationHandle(Model, "Potential evapotranspiration");
 	
 	
+	EQUATION(Model, QuickFlow,
+		double flow = RESULT(HydrologicalInputToSoilBox);
+		double a    = PARAMETER(FlowAtMaxQuickFlow);
+		
+		double dryness_factor = SCurveResponse(LAST_RESULT(SoilWaterVolume), PARAMETER(QuickFlowDrynessLimit)*PARAMETER(SoilFieldCapacity), PARAMETER(SoilFieldCapacity), 0.0, 1.0);
+		
+		double aa = 2.0*flow/a;
+		double scale = 2.0 / (1.0 + std::exp(-aa)) - 1.0;
+		
+		return dryness_factor * flow * scale;
+	)
 	
+	/*
 	EQUATION(Model, QuickFlow,
 		double flow = RESULT(HydrologicalInputToSoilBox);
 		double a    = PARAMETER(FlowAtMaxQuickFlow);
@@ -111,6 +123,7 @@ New to version 0.4.2:
 		
 		return dryness_factor * flow * std::atan(flow/a)*2.0/Pi;
 	)
+	*/
 	
 	EQUATION(Model, Infiltration,
 		return RESULT(HydrologicalInputToSoilBox) - RESULT(QuickFlow);
