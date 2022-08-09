@@ -827,6 +827,9 @@ DllGetResultIndexSetsCount(void *DataSetPtr, char *ResultName)
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	
+	if(!DataSet->ResultStorageStructure.HasBeenSetUp)
+		FatalError("ERROR: Tried to look up result indexes before result storage structure was set up.\n");
+	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
 	return GetIndexSetCount(DataSet->ResultStorageStructure, Equation);
 	
@@ -841,6 +844,9 @@ DllGetResultIndexSets(void *DataSetPtr, char *ResultName, const char **NamesOut)
 	CHECK_ERROR_BEGIN
 	
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
+	
+	if(!DataSet->ResultStorageStructure.HasBeenSetUp)
+		FatalError("ERROR: Tried to look up result indexes before result storage structure was set up.\n");
 	
 	equation_h Equation = GetEquationHandle(DataSet->Model, ResultName);
 	GetIndexSets(DataSet->ResultStorageStructure, Equation, NamesOut);

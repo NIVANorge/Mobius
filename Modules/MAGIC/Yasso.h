@@ -1,9 +1,9 @@
 
 
 inline double
-ComputeDecompRate(double Precipitation, double Temperature, double BaseRate, double Temp1, double Temp2, double Precip1)
+ComputeDecompRate(double Temperature, double Tempref, double BaseRate, double Beta)
 {
-	return BaseRate * std::exp(Temp1*Temperature + Temp2*Temperature*Temperature) * (1.0 - std::exp(Precip1*Precipitation*0.001));
+	return BaseRate * (1.0 + Beta*(Temperature - Tempref));
 }
 
 
@@ -11,7 +11,7 @@ ComputeDecompRate(double Precipitation, double Temperature, double BaseRate, dou
 static void
 AddYassoModel(mobius_model *Model)
 {
-	BeginModule(Model, "YASSO", "_dev");
+	BeginModule(Model, "YASSO", "0.0.1");
 	
 	SetModuleDescription(Model, R""""(
 This is an un-official implementation of the Yasso model
@@ -23,12 +23,12 @@ This is an un-official implementation of the Yasso model
 	auto Dimensionless     = RegisterUnit(Model);
 	auto PerYear           = RegisterUnit(Model, "1/year");
 	auto MmPerYear         = RegisterUnit(Model, "mm/year");
-	auto GPerM2            = RegisterUnit(Model, "g/m2");
-	auto GPerM2PerYear     = RegisterUnit(Model, "g/m2/year");
+	auto KgPerM2           = RegisterUnit(Model, "kg/m2");
+	auto KgPerM2PerYear    = RegisterUnit(Model, "kg/m2/year");
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
 	auto PerDegC           = RegisterUnit(Model, "1/°C");
-	auto PerDegC2          = RegisterUnit(Model, "1/°C2");
-	auto PerMm             = RegisterUnit(Model, "1/mm");
+	//auto PerDegC2          = RegisterUnit(Model, "1/°C2");
+	//auto PerMm             = RegisterUnit(Model, "1/mm");
 	
 	auto Compartment       = RegisterIndexSet(Model, "Compartment");
 	
@@ -44,8 +44,7 @@ This is an un-official implementation of the Yasso model
 	
 	auto DecompositionRate = RegisterParameterDouble(Model, BoxPar, "Decomposition rate", PerYear, 0.0, 0.0, 20.0);
 	auto DecompTempLinear  = RegisterParameterDouble(Model, BoxPar, "Decomposition rate linear temperature dependence", PerDegC, 0.0, 0.0, 0.2);
-	auto DecompTempQuad    = RegisterParameterDouble(Model, BoxPar, "Decomposition rate quadratic temperature dependence", PerDegC2, 0.0, -0.05, 0.0);
-	auto DecompPrecipLinear= RegisterParameterDouble(Model, BoxPar, "Decomposition rate linear precipitation dependence", PerMm, 0.0, -20.0, 0.0);
+	//auto DecompPrecipLinear= RegisterParameterDouble(Model, BoxPar, "Decomposition rate linear precipitation dependence", PerMm, 0.0, -20.0, 0.0);
 	
 	
 	auto FoliageComp       = RegisterParameterDouble(Model, BoxPar, "Foliage chemical composition", Dimensionless, 0.0, 0.0, 1.0);
@@ -60,22 +59,23 @@ This is an un-official implementation of the Yasso model
 	
 	auto GlobalPar         = RegisterParameterGroup(Model, "Other parameters");
 	
-	auto FineWoodDecompR   = RegisterParameterDouble(Model, GlobalPar, "Fine wood decomposition rate", PerYear, 0.0, 0.0, 1.0);
-	auto CoarseWoodDecompR = RegisterParameterDouble(Model, GlobalPar, "Coarse wood decomposition rate", PerYear, 0.0, 0.0, 1.0);
+	auto ReferenceTemp     = RegisterParameterDouble(Model, GlobalPar, "Temperature at which base rates are measured", DegreesCelsius, 3.3, -20.0, 20.0);
+	auto FineWoodDecompR   = RegisterParameterDouble(Model, GlobalPar, "Fine wood fractionation rate", PerYear, 0.0, 0.0, 1.0);
+	auto CoarseWoodDecompR = RegisterParameterDouble(Model, GlobalPar, "Coarse wood fractionation rate", PerYear, 0.0, 0.0, 1.0);
 	
 	
 	
-	auto Precipitation     = RegisterInput(Model, "Precipitation", MmPerYear);
+	//auto Precipitation     = RegisterInput(Model, "Precipitation", MmPerYear);
 	auto AirTemperature    = RegisterInput(Model, "Air temperature", DegreesCelsius);
-	auto FoliageLitter     = RegisterInput(Model, "Foliage and fine root litter", GPerM2PerYear);
-	auto FineWoodLitter    = RegisterInput(Model, "Fine wood litter", GPerM2PerYear);
-	auto CoarseWoodLitter  = RegisterInput(Model, "Coarse wood litter", GPerM2PerYear);
+	auto FoliageLitter     = RegisterInput(Model, "Foliage and fine root litter inputs", KgPerM2PerYear);
+	auto FineWoodLitter    = RegisterInput(Model, "Fine wood litter inputs", KgPerM2PerYear);
+	auto CoarseWoodLitter  = RegisterInput(Model, "Coarse wood litter inputs", KgPerM2PerYear);
 	
 	
 	auto SoilSolver = RegisterSolver(Model, "YASSO soil solver", 0.02, IncaDascru);
 	
-	auto FineWoodDecomp = RegisterEquation(Model, "Fine wood decomposition", GPerM2PerYear, SoilSolver);
-	auto CoarseWoodDecomp=RegisterEquation(Model, "Coarse wood decomposition", GPerM2PerYear, SoilSolver);
+	auto FineWoodDecomp = RegisterEquation(Model, "Fine wood fractionation", KgPerM2PerYear, SoilSolver);
+	auto CoarseWoodDecomp=RegisterEquation(Model, "Coarse wood fractionation", KgPerM2PerYear, SoilSolver);
 	
 	auto ADecayRate     = RegisterEquation(Model, "(A) decay rate", PerYear, SoilSolver);
 	auto WDecayRate     = RegisterEquation(Model, "(W) decay rate", PerYear, SoilSolver);
@@ -83,34 +83,34 @@ This is an un-official implementation of the Yasso model
 	auto NDecayRate     = RegisterEquation(Model, "(N) decay rate", PerYear, SoilSolver);
 	auto HDecayRate     = RegisterEquation(Model, "(H) decay rate", PerYear, SoilSolver);
 	
-	auto AInputFromLitter = RegisterEquation(Model, "(A) input from litter", GPerM2PerYear, SoilSolver);
-	auto WInputFromLitter = RegisterEquation(Model, "(W) input from litter", GPerM2PerYear, SoilSolver);
-	auto EInputFromLitter = RegisterEquation(Model, "(E) input from litter", GPerM2PerYear, SoilSolver);
-	auto NInputFromLitter = RegisterEquation(Model, "(N) input from litter", GPerM2PerYear, SoilSolver);
+	auto AInputFromLitter = RegisterEquation(Model, "(A) input from litter", KgPerM2PerYear, SoilSolver);
+	auto WInputFromLitter = RegisterEquation(Model, "(W) input from litter", KgPerM2PerYear, SoilSolver);
+	auto EInputFromLitter = RegisterEquation(Model, "(E) input from litter", KgPerM2PerYear, SoilSolver);
+	auto NInputFromLitter = RegisterEquation(Model, "(N) input from litter", KgPerM2PerYear, SoilSolver);
 	
-	auto ADecay         = RegisterEquation(Model, "(A) decay", GPerM2PerYear, SoilSolver);
-	auto WDecay         = RegisterEquation(Model, "(W) decay", GPerM2PerYear, SoilSolver);
-	auto EDecay         = RegisterEquation(Model, "(E) decay", GPerM2PerYear, SoilSolver);
-	auto NDecay         = RegisterEquation(Model, "(N) decay", GPerM2PerYear, SoilSolver);
-	auto HDecay         = RegisterEquation(Model, "(H) decay", GPerM2PerYear, SoilSolver);
+	auto ADecay         = RegisterEquation(Model, "(A) decay", KgPerM2PerYear, SoilSolver);
+	auto WDecay         = RegisterEquation(Model, "(W) decay", KgPerM2PerYear, SoilSolver);
+	auto EDecay         = RegisterEquation(Model, "(E) decay", KgPerM2PerYear, SoilSolver);
+	auto NDecay         = RegisterEquation(Model, "(N) decay", KgPerM2PerYear, SoilSolver);
+	auto HDecay         = RegisterEquation(Model, "(H) decay", KgPerM2PerYear, SoilSolver);
 	
-	auto FineWoodMass   = RegisterEquationODE(Model, "Fine wood mass", GPerM2, SoilSolver);
-	auto CoarseWoodMass = RegisterEquationODE(Model, "Coarse wood mass", GPerM2, SoilSolver);
+	auto FineWoodMass   = RegisterEquationODE(Model, "Fine wood litter (mass on ground)", KgPerM2, SoilSolver);
+	auto CoarseWoodMass = RegisterEquationODE(Model, "Coarse wood litter (mass on ground)", KgPerM2, SoilSolver);
 	
-	auto AMass          = RegisterEquationODE(Model, "(A) mass", GPerM2, SoilSolver);
-	auto WMass          = RegisterEquationODE(Model, "(W) mass", GPerM2, SoilSolver);
-	auto EMass          = RegisterEquationODE(Model, "(E) mass", GPerM2, SoilSolver);
-	auto NMass          = RegisterEquationODE(Model, "(N) mass", GPerM2, SoilSolver);
-	auto HMass          = RegisterEquationODE(Model, "(H) mass", GPerM2, SoilSolver);
+	auto AMass          = RegisterEquationODE(Model, "(A) mass", KgPerM2, SoilSolver);
+	auto WMass          = RegisterEquationODE(Model, "(W) mass", KgPerM2, SoilSolver);
+	auto EMass          = RegisterEquationODE(Model, "(E) mass", KgPerM2, SoilSolver);
+	auto NMass          = RegisterEquationODE(Model, "(N) mass", KgPerM2, SoilSolver);
+	auto HMass          = RegisterEquationODE(Model, "(H) mass", KgPerM2, SoilSolver);
 	
-	auto InitialFineWood   = RegisterEquationInitialValue(Model, "Initial fine wood mass", GPerM2);
-	auto InitialCoarseWood = RegisterEquationInitialValue(Model, "Initial coarse wood mass", GPerM2);
+	auto InitialFineWood   = RegisterEquationInitialValue(Model, "Initial fine wood mass", KgPerM2);
+	auto InitialCoarseWood = RegisterEquationInitialValue(Model, "Initial coarse wood mass", KgPerM2);
 	
-	auto InitialAMass      = RegisterEquationInitialValue(Model, "Initial (A) mass", GPerM2);
-	auto InitialWMass      = RegisterEquationInitialValue(Model, "Initial (W) mass", GPerM2);
-	auto InitialEMass      = RegisterEquationInitialValue(Model, "Initial (E) mass", GPerM2);
-	auto InitialNMass      = RegisterEquationInitialValue(Model, "Initial (N) mass", GPerM2);
-	auto InitialHMass      = RegisterEquationInitialValue(Model, "Initial (H) mass", GPerM2);
+	auto InitialAMass      = RegisterEquationInitialValue(Model, "Initial (A) mass", KgPerM2);
+	auto InitialWMass      = RegisterEquationInitialValue(Model, "Initial (W) mass", KgPerM2);
+	auto InitialEMass      = RegisterEquationInitialValue(Model, "Initial (E) mass", KgPerM2);
+	auto InitialNMass      = RegisterEquationInitialValue(Model, "Initial (N) mass", KgPerM2);
+	auto InitialHMass      = RegisterEquationInitialValue(Model, "Initial (H) mass", KgPerM2);
 	
 	SetInitialValue(Model, FineWoodMass, InitialFineWood);
 	SetInitialValue(Model, CoarseWoodMass, InitialCoarseWood);
@@ -200,27 +200,27 @@ This is an un-official implementation of the Yasso model
 
 	
 	EQUATION(Model, ADecayRate,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, ACompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, ACompartment), PARAMETER(DecompPrecipLinear, ACompartment));
+		double rate = ComputeDecompRate(INPUT(AirTemperature), PARAMETER(ReferenceTemp), PARAMETER(DecompositionRate, ACompartment), PARAMETER(DecompTempLinear, ACompartment));
 		return rate;
 	)
 	
 	EQUATION(Model, WDecayRate,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, WCompartment), PARAMETER(DecompTempLinear, WCompartment), PARAMETER(DecompTempQuad, WCompartment), PARAMETER(DecompPrecipLinear, WCompartment));
+		double rate = ComputeDecompRate(INPUT(AirTemperature), PARAMETER(ReferenceTemp), PARAMETER(DecompositionRate, WCompartment), PARAMETER(DecompTempLinear, WCompartment));
 		return rate;
 	)
 	
 	EQUATION(Model, EDecayRate,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, ECompartment), PARAMETER(DecompTempLinear, ECompartment), PARAMETER(DecompTempQuad, ECompartment), PARAMETER(DecompPrecipLinear, ECompartment));
+		double rate = ComputeDecompRate(INPUT(AirTemperature), PARAMETER(ReferenceTemp), PARAMETER(DecompositionRate, ECompartment), PARAMETER(DecompTempLinear, ECompartment));
 		return rate;
 	)
 	
 	EQUATION(Model, NDecayRate,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, NCompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, NCompartment), PARAMETER(DecompPrecipLinear, NCompartment));
+		double rate = ComputeDecompRate(INPUT(AirTemperature), PARAMETER(ReferenceTemp), PARAMETER(DecompositionRate, NCompartment), PARAMETER(DecompTempLinear, NCompartment));
 		return rate;
 	)
 	
 	EQUATION(Model, HDecayRate,
-		double rate = ComputeDecompRate(INPUT(Precipitation), INPUT(AirTemperature), PARAMETER(DecompositionRate, HCompartment), PARAMETER(DecompTempLinear, ACompartment), PARAMETER(DecompTempQuad, HCompartment), PARAMETER(DecompPrecipLinear, HCompartment));
+		double rate = ComputeDecompRate(INPUT(AirTemperature), PARAMETER(ReferenceTemp), PARAMETER(DecompositionRate, HCompartment), PARAMETER(DecompTempLinear, HCompartment));
 		return rate;
 	)
 

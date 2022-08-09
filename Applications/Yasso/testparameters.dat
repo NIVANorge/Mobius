@@ -1,4 +1,4 @@
-# Parameter file generated for model Yasso, containing modules (YASSO V_dev) at 2021-03-18 14:54:31
+# Parameter file generated for model Yasso, containing modules (YASSO V0.0.1) at 2022-08-09 09:45:22
 
 index_sets:
 "Compartment" : {"(A) Acid-hydrolyzable" "(W) Water-soluble" "(E) Ethanol-soluble" "(N) Non-soluble" "(H) Humus"}
@@ -14,47 +14,46 @@ parameters:
 2018-12-01
 
 
-###################### YASSO V_dev ######################
+{ module "YASSO" version "0.0.1"
 
-# Compartment parameters ("Compartment") #
+	# Compartment parameters ("Compartment") #
 
-"Decomposition rate" :     #(1/year) [0, 20]
-2 3 6 5 0.1
+	"Decomposition rate" :     #(1/year) [0, 20]
+	2 3 6 5 0.1
 
-"Decomposition rate linear temperature dependence" :     #(1/°C) [0, 0.2]
-0.1 0.1 0.1 0.05 0
+	"Decomposition rate linear temperature dependence" :     #(1/°C) [0, 0.2]
+	0.1 0.1 0.1 0.05 0
 
-"Decomposition rate quadratic temperature dependence" :     #(1/°C2) [-0.05, 0]
--0.05 -0.05 -0.05 -0.05 0
+	"Foliage chemical composition" :     #(dimensionless) [0, 1]
+	0.2 0.3 0.25 0.25 0
 
-"Decomposition rate linear precipitation dependence" :     #(1/mm) [-20, 0]
--1 -1 -1 -1 -10
+	"Fine wood chemical composition" :     #(dimensionless) [0, 1]
+	0.3 0.1 0.1 0.5 0
 
-"Foliage chemical composition" :     #(dimensionless) [0, 1]
-0.2 0.3 0.25 0.25 0
-
-"Fine wood chemical composition" :     #(dimensionless) [0, 1]
-0.3 0.1 0.1 0.5 0
-
-"Coarse wood chemical composition" :     #(dimensionless) [0, 1]
-0.4 0.2 0.2 0.2 0
+	"Coarse wood chemical composition" :     #(dimensionless) [0, 1]
+	0.4 0.2 0.2 0.2 0
 
 
-# Transfer matrix ("Compartment" "Compartment") #
+	# Transfer matrix ("Compartment" "Compartment") #
 
-"Relative mass flow" :     #(dimensionless) [0, 1]
-0 0 0 0 0
-0.2 0 0 0 0
-0.3 0.2 0 0 0
-0 0.3 0.1 0 0
-0.4 0.4 0.4 0.4 0
+	"Relative mass flow" :     #(dimensionless) [0, 1]
+	0 0 0 0 0
+	0.2 0 0 0 0
+	0.3 0.2 0 0 0
+	0 0.3 0.1 0 0
+	0.4 0.4 0.4 0.4 0
 
 
-# Other parameters (no index sets) #
+	# Other parameters (no index sets) #
 
-"Fine wood decomposition rate" :     #(1/year) [0, 1]
-0.5
+	"Temperature at which base rates are measured" :     #(°C) [-20, 20]
+	3.3
 
-"Coarse wood decomposition rate" :     #(1/year) [0, 1]
-0.6
+	"Fine wood fractionation rate" :     #(1/year) [0, 1]
+	0.5
 
+	"Coarse wood fractionation rate" :     #(1/year) [0, 1]
+	0.6
+
+
+} # end of module "YASSO"
