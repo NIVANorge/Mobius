@@ -808,7 +808,7 @@ ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 		
 		OLEChooseTab(&Handles, Tab);
 		
-		VARIANT Matrix = OLEGetRangeMatrix(1, FirstDateRow[Tab]-1, 2, 128, &Handles); //TODO: Ideally also do this in a loop in case there are more than 128 rows!
+		VARIANT Matrix = OLEGetRangeMatrix(1, FirstDateRow[Tab]-1, 2, 128, &Handles); //TODO: Ideally also do this in a loop in case there are more than 128 cols!
 		
 		input_h CurInput = {};
 		for(int Col = 0; Col < 127; ++Col)
