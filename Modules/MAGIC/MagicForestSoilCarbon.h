@@ -14,6 +14,7 @@ A soil carbon module for MAGIC Forest.
 	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
 	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	auto PerYear       = RegisterUnit(Model, "1/year");
+	auto KgPerM2       = RegisterUnit(Model, "kg/m2");
 
 
 	auto Compartment = GetIndexSetHandle(Model, "Compartment");
@@ -42,6 +43,10 @@ A soil carbon module for MAGIC Forest.
 	auto OrganicCMineralized    = RegisterEquation(Model, "Organic C mineralized", MMolPerM2PerTs);
 	auto OrganicCInBiomass      = RegisterEquation(Model, "Organic C in soil microbial biomass", MMolPerM2PerTs);
 	auto OrganicC               = RegisterEquation(Model, "Organic C", MMolPerM2);
+	
+	auto OrganicCFastMass       = RegisterEquation(Model, "Organic C fast pool (mass)", KgPerM2);
+	auto OrganicCSlowMass       = RegisterEquation(Model, "Organic C slow pool (mass)", KgPerM2);
+	auto OrganicCMass           = RegisterEquation(Model, "Organic C (mass)", KgPerM2);
 	
 	auto InitialOrganicCFast    = RegisterEquationInitialValue(Model, "Initial organic C fast-decomposable", MMolPerM2);
 	auto InitialOrganicCSlow    = RegisterEquationInitialValue(Model, "Initial organic C slow-decomposable", MMolPerM2);
@@ -74,8 +79,10 @@ A soil carbon module for MAGIC Forest.
 		
 		double f = RESULT(FractionOfYear);
 		double In = forest + f*PARAMETER(OrganicCLitter);
-		double r_F = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), f);
-		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		//double r_F = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), f);
+		//double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		double r_F = std::exp(PARAMETER(TurnoverRateFast)*f) - 1;
+		double r_FS = std::exp(PARAMETER(FastSlowMassFlowRate)*f) - 1;
 		double a = PARAMETER(Solubilization);
 		double b = PARAMETER(CUseEfficiency);
 		double steady = In / ((r_F + r_FS)*(1.0 - (1.0-a)*b));
@@ -90,8 +97,10 @@ A soil carbon module for MAGIC Forest.
 		double provided = PARAMETER(InitialOrganicC)*(1.0 - PARAMETER(OrganicCFastFraction))*1000.0; //mol->mmol
 		
 		double f = RESULT(FractionOfYear);
-		double r_S = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), f);
-		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		//double r_S = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), f);
+		//double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		double r_S = std::exp(PARAMETER(TurnoverRateSlow)*f) - 1;
+		double r_FS = std::exp(PARAMETER(FastSlowMassFlowRate)*f) - 1;
 		double steady = RESULT(OrganicCFast) * r_FS / r_S;
 		
 		if(PARAMETER(InitialSteady))
@@ -101,12 +110,14 @@ A soil carbon module for MAGIC Forest.
 	)
 	
 	EQUATION(Model, TurnoverFast,
-		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), RESULT(FractionOfYear));
+		//double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), RESULT(FractionOfYear));
+		double r = std::exp(PARAMETER(TurnoverRateFast)*RESULT(FractionOfYear)) - 1;
 		return LAST_RESULT(OrganicCFast)*r;
 	)
 	
 	EQUATION(Model, TurnoverSlow,
-		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), RESULT(FractionOfYear));
+		//double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), RESULT(FractionOfYear));
+		double r = std::exp(PARAMETER(TurnoverRateSlow)*RESULT(FractionOfYear)) - 1;
 		return LAST_RESULT(OrganicCSlow)*r;
 	)
 	
@@ -127,8 +138,9 @@ A soil carbon module for MAGIC Forest.
 	)
 	
 	EQUATION(Model, FastSlowMassFlow,
-		double r = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), RESULT(FractionOfYear));
-		return LAST_RESULT(OrganicCFast)*r;
+		//double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), RESULT(FractionOfYear));
+		double r_FS = std::exp(PARAMETER(FastSlowMassFlowRate)*RESULT(FractionOfYear)) - 1;
+		return LAST_RESULT(OrganicCFast)*r_FS;
 	)
 	
 	EQUATION(Model, OrganicCFast,
@@ -152,6 +164,20 @@ A soil carbon module for MAGIC Forest.
 	
 	EQUATION(Model, OrganicC,
 		return RESULT(OrganicCFast) + RESULT(OrganicCSlow);
+	)
+	
+	constexpr double c_molar_weight = 12.011; // g/mol
+	
+	EQUATION(Model, OrganicCFastMass,
+		return RESULT(OrganicCFast) * 1e-6 * c_molar_weight; // mmol/m2 * g/mol -> kg/m2
+	)
+	
+	EQUATION(Model, OrganicCSlowMass,
+		return RESULT(OrganicCSlow) * 1e-6 * c_molar_weight;
+	)
+	
+	EQUATION(Model, OrganicCMass,
+		return RESULT(OrganicCFastMass) + RESULT(OrganicCSlowMass);
 	)
 	
 }

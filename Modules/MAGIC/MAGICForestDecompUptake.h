@@ -7,7 +7,7 @@
 static void
 AddMAGICForestDecompUptakeModel(mobius_model *Model)
 {
-	BeginModule(Model, "MAGIC Forest decomposition and uptake", "0.0.2");
+	BeginModule(Model, "MAGIC Forest decomposition and uptake", "0.0.3");
 	
 	auto Dimensionless   = RegisterUnit(Model);
 	auto M3PerHa         = RegisterUnit(Model, "m3/Ha");
@@ -15,14 +15,14 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TPerM3          = RegisterUnit(Model, "tonnes/m3");
 	auto Years           = RegisterUnit(Model, "years");
 	auto PerYear         = RegisterUnit(Model, "1/year");
-	auto M3PerHaPerTs    = RegisterUnit(Model, "m3/Ha/month");
-	auto TPerHaPerTs     = RegisterUnit(Model, "tonnes/Ha/month");
+	auto M3PerHaPerTs    = RegisterUnit(Model, "m3/Ha/ts");
+	auto TPerHaPerTs     = RegisterUnit(Model, "tonnes/Ha/ts");
 	//auto TPerHaPerYear   = RegisterUnit(Model, "tonnes/Ha/year");
 	auto MMolPerKg       = RegisterUnit(Model, "mmol/kg");
 	auto MEqPerKg        = RegisterUnit(Model, "meq/kg");
-	auto MMolPerM2PerTs  = RegisterUnit(Model, "mmol/m2/month");
-	auto MEqPerM2PerTs   = RegisterUnit(Model, "meq/m2/month");
-	auto KgPerM2PerTs    = RegisterUnit(Model, "kg/m2/month");
+	auto MMolPerM2PerTs  = RegisterUnit(Model, "mmol/m2/ts");
+	auto MEqPerM2PerTs   = RegisterUnit(Model, "meq/m2/ts");
+	auto KgPerM2PerTs    = RegisterUnit(Model, "kg/m2/ts");
 	
 	
 	auto ForestPatch     = RegisterIndexSet(Model, "Forest patch");
@@ -58,19 +58,16 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	auto TreeDecomp           = RegisterParameterGroup(Model, "Tree (de)composition", TreeClass, TreeCompartment);
 	
-	//auto ShareOfYoung         = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in young trees", Dimensionless, 0.0, 0.0, 1.0);
-	//auto ShareOfOld           = RegisterParameterDouble(Model, TreeDecomp, "Share of compartment in old trees", Dimensionless, 0.0, 0.0, 1.0);
-	auto BefYoung             = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor in young trees", TPerM3, 0.0, 0.0, 1.0);
-	auto BefAgeDep            = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor age dependence", TPerM3, 0.0, -1.0, 1.0);
+	auto BefYoung             = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor in young trees", TPerM3, 0.0, 0.0, 1.0, "The a in bef = a + b*exp(-stand_age/100)");
+	auto BefAgeDep            = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor age dependence", TPerM3, 0.0, -1.0, 1.0, "The b in bef = a + b*exp(-stand_age/100)");
 	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
 	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
-	auto TreeCConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree C concentration", MMolPerKg, 0.0, 0.0, 100000.0);
-	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration", MMolPerKg, 0.0, 0.0, 100000.0);
-	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration", MMolPerKg, 0.0, 0.0, 100000.0);
-	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg, 0.0, 0.0, 100000.0);
-	auto TreeMgConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Mg concentration", MEqPerKg, 0.0, 0.0, 100000.0);
-	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg, 0.0, 0.0, 100000.0);
-	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration", MEqPerKg, 0.0, 0.0, 100000.0);
+	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration",  MMolPerKg, 0.0, 0.0, 100000.0, "mmol N per kg of tree biomass");
+	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration",  MMolPerKg, 0.0, 0.0, 100000.0, "mmol P per kg of tree biomass");
+	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg, 0.0, 0.0, 100000.0, "meq Ca per kg of tree biomass");
+	auto TreeMgConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Mg concentration", MEqPerKg, 0.0, 0.0, 100000.0, "meq Mg per kg of tree biomass");
+	auto TreeNaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Na concentration", MEqPerKg, 0.0, 0.0, 100000.0, "meq Na per kg of tree biomass");
+	auto TreeKConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree K concentration",  MEqPerKg, 0.0, 0.0, 100000.0, "meq K per kg of tree biomass");
 	
 	
 	
@@ -81,8 +78,10 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto ForestCoverAvg       = RegisterEquationCumulative(Model, "Forest cover averaged over patches", ForestCoverPatch, ForestPatch, PatchArea);
 
 	auto CompartmentTurnover  = RegisterEquation(Model, "Compartment turnover", TPerHaPerTs);
+	SetInitialValue(Model, CompartmentTurnover, CompartmentTurnover);
 	
 	auto CompartmentTurnoverSummed = RegisterEquationCumulative(Model, "Compartment turnover averaged over patches", CompartmentTurnover, ForestPatch, PatchArea);
+	SetInitialValue(Model, CompartmentTurnoverSummed, CompartmentTurnoverSummed);
 	
 	SetInitialValue(Model, LiveTreeVolume, InitialTreeVolume);
 	
@@ -90,6 +89,10 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto CompartmentBef       = RegisterEquation(Model, "Compartment biomass expansion factor", TPerM3);
 	auto CompartmentBiomass   = RegisterEquation(Model, "Compartment biomass", TPerHa);
 	auto CompartmentGrowth    = RegisterEquation(Model, "Compartment growth", TPerHaPerTs);
+	
+	//SetInitialValue(Model, CompartmentBef, CompartmentBef);
+	auto InitialCompartmentBiomass = RegisterEquationInitialValue(Model, "Initial compartment biomass", TPerHa);
+	SetInitialValue(Model, CompartmentBiomass, InitialCompartmentBiomass);
 	
 	auto CompartmentGrowthSummed = RegisterEquationCumulative(Model, "Compartment growth averaged over patches", CompartmentGrowth, ForestPatch, PatchArea);
 	
@@ -120,10 +123,12 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree biomass", TPerHa);
 	auto DeadTreeDecomp       = RegisterEquation(Model, "Dead tree decomposition", TPerHaPerTs);
 	
+	SetInitialValue(Model, LitterPerCompartment, LitterPerCompartment);
+	
 	auto InitialDeadTreeMass  = RegisterEquationInitialValue(Model, "Initial dead tree mass", TPerHa);
 	SetInitialValue(Model, DeadTreeMass, InitialDeadTreeMass);
 	
-	auto TreeDecompCSourceMass = RegisterEquation(Model, "C source from tree decomposition (mass)", TPerHaPerTs);
+	auto TreeDecompCSourceMass = RegisterEquation(Model, "C source from tree decomposition (mass)", KgPerM2PerTs);
 	auto TreeDecompCSource    = RegisterEquation(Model, "C source from tree decomposition", MMolPerM2PerTs);
 	auto TreeDecompNSource    = RegisterEquation(Model, "N source from tree decomposition", MMolPerM2PerTs);
 	auto TreeDecompPSource    = RegisterEquation(Model, "P source from tree decomposition", MMolPerM2PerTs);
@@ -151,8 +156,17 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TotalTreeDecompNaSource = RegisterEquationCumulative(Model, "Total Na source from tree decomposition", TotalTreeDecompNaSourceSpecies, TreeClass);
 	auto TotalTreeDecompKSource  = RegisterEquationCumulative(Model, "Total K source from tree decomposition", TotalTreeDecompKSourceSpecies, TreeClass);
 	
-	auto FractionOfYear       = GetEquationHandle(Model, "Fraction of year");
+#ifdef FOREST_STANDALONE
+	auto FractionOfYear       = RegisterEquation(Model, "Fraction of year", Dimensionless);
+	SetInitialValue(Model, FractionOfYear, FractionOfYear);
 	
+	EQUATION(Model, FractionOfYear,
+		return (double)CURRENT_TIME().StepLengthInSeconds / (86400.0*(double)CURRENT_TIME().DaysThisYear);
+	)
+#else
+	auto FractionOfYear       = GetEquationHandle(Model, "Fraction of year");
+#endif
+
 	EQUATION(Model, ForestNetGrowth,
 		double in = INPUT(TreeGrowth);
 		double r = PARAMETER(MaxGrowthRate)*RESULT(FractionOfYear);
@@ -167,8 +181,13 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		
 		if(std::isfinite(in)) return in;
 		
-		//NOTE: Logistic growth. The way it is formulated here is technically unstable, but the growth rate should be so slow that it shouldn't matter.
-		double computed = r*V*(1.0 - Vtot/K);
+		//double computed = r*V*(1.0 - Vtot/K);
+		
+		// TODO: This isn't really an exact solution. Reason being that if you have multiple species they would compete during the growth. May not be a problem.
+		//double exprt = std::exp(r);
+		//double computed = (K*V*exprt) / (K + Vtot*(exprt-1)) - V;
+		double expmrt = std::exp(-r);
+		double computed = K / (1.0 + ((K -V)/Vtot)*expmrt) - V;
 		
 		if(!std::isfinite(computed)) computed = 0.0;
 		
@@ -189,20 +208,15 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		return PARAMETER(BefYoung) + PARAMETER(BefAgeDep)*std::exp(-INPUT(StandAge)*0.01);
 	)
 	
+	// Ugh, broken initial value system...
+	EQUATION(Model, InitialCompartmentBiomass,
+		double bef = PARAMETER(BefYoung) + PARAMETER(BefAgeDep)*std::exp(-INPUT(StandAge)*0.01);
+		return RESULT(LiveTreeVolume) * bef; 
+	)
+	
 	EQUATION(Model, CompartmentBiomass,
 		return RESULT(LiveTreeVolume) * RESULT(CompartmentBef);
 	)
-	
-	/*
-	EQUATION(Model, CompartmentShare,
-		const double ln100  = 4.60517018599;
-		double interp = INPUT(TreeAgeInterp);
-		double young  = PARAMETER(ShareOfYoung);
-		double old    = PARAMETER(ShareOfOld);
-		if(interp == 0.0) return young;                                      //NOTE: Just to not make the model crash if the time series was not provided.
-		return LinearInterpolate(std::log(interp), 0.0, ln100, young, old);
-	)
-	*/
 	
 	EQUATION(Model, CompartmentTurnover,
 		//double in = INPUT(TreeTurnover);
@@ -280,11 +294,12 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, TreeDecompCSourceMass,
-		return RESULT(DeadTreeDecomp)*0.5;   // Assume half of biomass is C
+		return RESULT(DeadTreeDecomp) * 0.1 * 0.5;   // convert tonne/Ha -> kg/m2, then assume half of biomass is C
 	)
 	
-	EQUATION(Model, TreeDecompCSource,      
-		return PARAMETER(TreeCConc) * RESULT(DeadTreeDecomp) * 0.1;  // Convert   tonne/Ha -> kg/m2
+	EQUATION(Model, TreeDecompCSource,
+		constexpr double c_molar_weight = 12.011; // g/mol
+		return RESULT(TreeDecompCSourceMass) * 1e6/c_molar_weight;   // kg/m2 * mol/g -> mmol/m2
 	)
 	
 	EQUATION(Model, TreeDecompNSource,      

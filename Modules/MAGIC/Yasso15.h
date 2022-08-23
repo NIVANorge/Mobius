@@ -28,15 +28,15 @@ Yasso15 :
 	auto DegreesCelsius    = RegisterUnit(Model, "°C");
 	auto PerDegC           = RegisterUnit(Model, "1/°C");
 	auto PerDegC2          = RegisterUnit(Model, "1/°C2");
-	auto PerM             = RegisterUnit(Model, "1/m");
+	auto PerM             = RegisterUnit(Model,  "1/m");
 	
 	auto Compartment       = RegisterIndexSet(Model, "Compartment");
 	
 	auto GlobalPar         = RegisterParameterGroup(Model, "Climate general");
 	
 	auto ResponseModel     = RegisterParameterEnum(Model, GlobalPar, "Climate response model", {"Yasso", "Yasso15" }, "Yasso15");
-	auto YassoResponse = EnumValue(Model, ResponseModel, "Yasso");
-	auto Yasso15Response = EnumValue(Model, ResponseModel, "Yasso15");
+	auto YassoResponse     = EnumValue(Model, ResponseModel, "Yasso");
+	auto Yasso15Response   = EnumValue(Model, ResponseModel, "Yasso15");
 	auto ReferenceTemp     = RegisterParameterDouble(Model, GlobalPar, "Temperature at which base rates are measured", DegreesCelsius, 3.3, -20.0, 20.0);
 	
 	
@@ -58,9 +58,43 @@ Yasso15 :
 	
 	auto Precipitation     = RegisterInput(Model, "Precipitation", MmPerYear);
 	auto AirTemperature    = RegisterInput(Model, "Air temperature", DegreesCelsius);
-	auto FoliageLitter     = RegisterInput(Model, "Foliage and fine root litter inputs", KgPerM2PerYear);
-	auto FineWoodLitter    = RegisterInput(Model, "Fine wood litter inputs", KgPerM2PerYear);
-	auto CoarseWoodLitter  = RegisterInput(Model, "Coarse wood litter inputs", KgPerM2PerYear);
+#ifndef YASSO_USE_FOREST_MODEL
+	auto FoliageLitterIn     = RegisterInput(Model, "Foliage and fine root litter inputs", KgPerM2PerYear);
+	auto FineWoodLitterIn    = RegisterInput(Model, "Fine wood litter inputs", KgPerM2PerYear);
+	auto CoarseWoodLitterIn  = RegisterInput(Model, "Coarse wood litter inputs", KgPerM2PerYear);
+	
+	auto FoliageLitter       = RegisterEquation(Model, "Foliage and fine root litter inputs", KgPerM2PerYear);
+#else
+	auto LitterPerCompartment = GetEquationHandle(Model, "Litter per compartment");
+	
+	auto TreeCompartment      = GetIndexSetHandle(Model, "Tree compartment");
+	auto TreeSpecies          = GetIndexSetHandle(Model, "Tree species");
+	auto ForestPatch          = GetIndexSetHandle(Model, "Forest patch");
+	
+	auto IdentifyLitter       = RegisterParameterGroup(Model, "Identify litter type", TreeSpecies, TreeCompartment);
+	
+	auto LitterType           = RegisterParameterEnum(Model, IdentifyLitter, "Litter type", {"foliage_fine_root", "fine_wood", "coarse_wood"}, "foliage_fine_root", "Identify the forest model tree compartment with a Yasso litter type");
+	auto FineRootType   = EnumValue(Model, LitterType, "foliage_fine_root");
+	auto FineWoodType   = EnumValue(Model, LitterType, "fine_wood");
+	auto CoarseWoodType = EnumValue(Model, LitterType, "coarse_wood");
+	
+	auto FoliageLitterPerSpecies     = RegisterEquation(Model, "Foliage and fine root litter inputs per species", KgPerM2PerYear);
+	auto FineWoodLitterPerSpecies    = RegisterEquation(Model, "Fine wood litter inputs per species", KgPerM2PerYear);
+	auto CoarseWoodLitterPerSpecies  = RegisterEquation(Model, "Coarse wood litter inputs per species", KgPerM2PerYear);
+	
+	SetInitialValue(Model, FoliageLitterPerSpecies, FoliageLitterPerSpecies);
+	SetInitialValue(Model, FineWoodLitterPerSpecies, FineWoodLitterPerSpecies);
+	SetInitialValue(Model, CoarseWoodLitterPerSpecies, CoarseWoodLitterPerSpecies);
+	
+	auto FoliageLitter    = RegisterEquationCumulative(Model, "Foliage and fine root litter inputs", FoliageLitterPerSpecies, TreeSpecies);
+	auto FineWoodLitter   = RegisterEquationCumulative(Model, "Fine wood litter inputs", FineWoodLitterPerSpecies, TreeSpecies);
+	auto CoarseWoodLitter = RegisterEquationCumulative(Model, "Coarse wood litter inputs", CoarseWoodLitterPerSpecies, TreeSpecies);
+	
+	SetInitialValue(Model, FoliageLitter, FoliageLitter);
+	SetInitialValue(Model, FineWoodLitter, FineWoodLitter);
+	SetInitialValue(Model, CoarseWoodLitter, CoarseWoodLitter);
+#endif
+
 	
 	
 	auto FwlCompartment    = RequireIndex(Model, Compartment, "Fine wood");
@@ -84,7 +118,57 @@ Yasso15 :
 	auto TotalCarbon       = RegisterEquation(Model, "Total soil carbon", KgPerM2);
 	auto TotalCarbonLitter = RegisterEquationCumulative(Model, "Total soil carbon + litter", Mass, Compartment);
 	
-	EquationIsComputedBy(Model, Mass, ComputeYasso, Compartment);
+	//EquationIsComputedBy(Model, Mass, ComputeYasso, Compartment);
+	
+	// Ugh, this is hacky, but the system is not good enough to make it work otherwise.
+	EQUATION(Model, Mass,
+		RESULT(ComputeYasso);
+		return RESULT(Mass, CURRENT_INDEX(Compartment));
+	)
+	
+#ifdef YASSO_USE_FOREST_MODEL
+	EQUATION(Model, FoliageLitterPerSpecies,
+		double Result = 0.0;
+		for(index_t Comp = FIRST_INDEX(TreeCompartment); Comp < INDEX_COUNT(TreeCompartment); ++Comp)
+		{
+			if(PARAMETER(LitterType, Comp) == FineRootType)
+				Result += RESULT(LitterPerCompartment, Comp) * 0.1 * 0.5;  // NOTE; tonne/Ha -> kg/m2, then assume half of biomass is carbon
+		}
+		return Result;
+	)
+	
+	EQUATION(Model, FineWoodLitterPerSpecies,
+		double Result = 0.0;
+		for(index_t Comp = FIRST_INDEX(TreeCompartment); Comp < INDEX_COUNT(TreeCompartment); ++Comp)
+		{
+			if(PARAMETER(LitterType, Comp) == FineWoodType)
+				Result += RESULT(LitterPerCompartment, Comp) * 0.1 * 0.5;  // NOTE; tonne/Ha -> kg/m2, then assume half of biomass is carbon
+		}
+		return Result;
+	)
+	
+	EQUATION(Model, CoarseWoodLitterPerSpecies,
+		double Result = 0.0;
+		for(index_t Comp = FIRST_INDEX(TreeCompartment); Comp < INDEX_COUNT(TreeCompartment); ++Comp)
+		{
+			if(PARAMETER(LitterType, Comp) == CoarseWoodType)
+				Result += RESULT(LitterPerCompartment, Comp) * 0.1 * 0.5;  // NOTE; tonne/Ha -> kg/m2, then assume half of biomass is carbon
+		}
+		return Result;
+	)
+#else
+	EQUATION(Model, FoliageLitter,
+		return INPUT(FoliageLitterIn);
+	)
+	
+	EQUATION(Model, FineWoodLitter,
+		return INPUT(FineWoodLitterIn);
+	)
+	
+	EQUATION(Model, CoarseWoodLitter,
+		return INPUT(CoarseWoodLitterIn);
+	)
+#endif
 	
 	EQUATION(Model, TotalCarbon,
 		double result = 0.0;
@@ -117,7 +201,7 @@ Yasso15 :
 	)
 	
 	
-	auto MakeMatrix = [=](arma::mat &A, arma::vec &b, model_run_state *RunState__) -> void {
+	auto MakeMatrix = [&](arma::mat &A, arma::vec &b, model_run_state *RunState__) -> void {
 	//MakeMatrix(arma::mat &A, arma::vec &b, model_run_state *RunState__,
 	//index_set_h Compartment, index_t FwlCompartment, index_t CwlCompartment, input_h FineWoodLitter, input_h CoarseWoodLitter, parameter_h FoliageComp, equation_h DecompOrFracRate, parameter_h RelativeMassFlow) {
 		
@@ -125,11 +209,11 @@ Yasso15 :
 			int i = Comp.Index;
 			
 			if(Comp == FwlCompartment) {
-				b(i) = INPUT(FineWoodLitter);
+				b(i) = RESULT(FineWoodLitter);
 			} else if(Comp == CwlCompartment) {
-				b(i) = INPUT(CoarseWoodLitter);
+				b(i) = RESULT(CoarseWoodLitter);
 			} else {
-				b(i) = PARAMETER(FoliageComp, Comp) * INPUT(FoliageLitter);
+				b(i) = PARAMETER(FoliageComp, Comp) * RESULT(FoliageLitter);
 			}
 			
 			for(index_t ToComp = FIRST_INDEX(Compartment); ToComp < INDEX_COUNT(Compartment); ++ToComp) {
@@ -144,6 +228,12 @@ Yasso15 :
 	
 	
 	EQUATION(Model, ComputeYasso,
+		
+		// NOTE: we need these here, otherwise the dependency is not correctly registered.
+		RESULT(FineWoodLitter);
+		RESULT(CoarseWoodLitter);
+		RESULT(FoliageLitter);
+		
 		/*
 		NOTE: the linear system
 			dx/dt = A*x + b
@@ -180,6 +270,10 @@ Yasso15 :
 	)
 	
 	EQUATION(Model, ComputeSteady,
+		
+		RESULT(FineWoodLitter);
+		RESULT(CoarseWoodLitter);
+		RESULT(FoliageLitter);
 		
 		int N = INDEX_COUNT(Compartment);
 		

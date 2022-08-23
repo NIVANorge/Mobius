@@ -4,7 +4,7 @@ static void
 AddMagicForestCNPModel(mobius_model *Model)
 {
 	
-	BeginModule(Model, "MAGIC Forest CNP", "_dev_2");
+	BeginModule(Model, "MAGIC Forest CNP", "0.0.1");
 	SetModuleDescription(Model, R""""(
 A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Bernard J. Cosby.
 )"""");
@@ -23,11 +23,11 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto NUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "N use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic N that becomes biomass and is returned to the organic N pool. The rest is mineralized as NH4.");
 	auto PUseEfficiency               = RegisterParameterDouble(Model, CNPPar, "P use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic P that becomes biomass and is returned to the organic P pool. The rest is mineralized as PO4.");
 	
-	auto LitterCNRatio                = RegisterParameterDouble(Model, CNPPar, "C/N ratio of litter", Dimensionless, 0.1, 0.0001, 10.0, "Only for litter that is not computed by the forest module");
-	auto LitterCPRatio                = RegisterParameterDouble(Model, CNPPar, "C/P ratio of litter", Dimensionless, 0.1, 0.0001, 10.0, "Only for litter that is not computed by the forest module");
+	auto LitterCNRatio                = RegisterParameterDouble(Model, CNPPar, "C/N ratio of litter", Dimensionless, 10, 0.1, 1000.0, "Only for litter that is not computed by the forest module");
+	auto LitterCPRatio                = RegisterParameterDouble(Model, CNPPar, "C/P ratio of litter", Dimensionless, 10, 0.1, 1000.0, "Only for litter that is not computed by the forest module");
 	
-	auto InitialOrganicN              = RegisterParameterDouble(Model, CNPPar, "Initial organic N", MolPerM2, 0.0, 0.0, 1e8);
-	auto InitialOrganicP              = RegisterParameterDouble(Model, CNPPar, "Initial organic P", MolPerM2, 0.0, 0.0, 1e8);
+	auto InitialPoolCN                = RegisterParameterDouble(Model, CNPPar, "Initial pool C/N ratio", MolPerM2, 10, 0.1, 1000);
+	auto InitialPoolCP                = RegisterParameterDouble(Model, CNPPar, "Initial pool C/P ratio", MolPerM2, 10, 0.1, 1000);
 
 
 	auto Nitrification                = RegisterParameterDouble(Model, CNPPar, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NH4->NO3. Negative rate sets value as % of inputs");
@@ -152,11 +152,12 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 
 	
 	EQUATION(Model, InitialOrganicNScaled,
-		return PARAMETER(InitialOrganicN)*1000.0;
+		WarningPrint("Organic C is ", RESULT(OrganicC), " init cn is ", PARAMETER(InitialPoolCN));
+		return RESULT(OrganicC) / PARAMETER(InitialPoolCN);
 	)
 	
 	EQUATION(Model, InitialOrganicPScaled,
-		return PARAMETER(InitialOrganicP)*1000.0;
+		return RESULT(OrganicC) / PARAMETER(InitialPoolCP);
 	)
 	
 	
