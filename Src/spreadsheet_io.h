@@ -221,7 +221,7 @@ ColRowToCell(int Col, int Row, char *Buf)
 			Buf++;
 		}
 	}
-	itoa(Row, Buf, 10)+1;
+	//itoa(Row, Buf, 10)+1;
 	while(*Buf != 0) ++Buf;
 	return Buf;
 }
@@ -446,7 +446,8 @@ OLEGetDouble(VARIANT *Var)
 			if(*C == ',') *C = '.';   //NOTE: Replace ',' with '.' in case of nonstandard formats.
 			++C;
 		}
-		int Count = sscanf(Buf, "%f", &Result);
+		int Count = sscanf(Buf, "%lf", &Result);
+		//int Count = sscanf(Buf, "%f", &Result);
 		if(Count != 1) Result = std::numeric_limits<double>::quiet_NaN();
 		OLEDestroyString(Var);
 	}

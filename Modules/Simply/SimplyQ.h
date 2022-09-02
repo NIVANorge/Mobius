@@ -62,6 +62,8 @@ New to version 0.4.2:
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
+	auto Test = RegisterParameterDouble(Model, Hydrology, "The test parameter", Dimensionless, 0.3, 0.1, 0.4, "My description");
+	
 	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "", "fquick"); //Max ok, or breaks model?
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
@@ -247,20 +249,23 @@ New to version 0.4.2:
 		
 		return avgupstreamvol;
 	)
-#endif
-	
-	// In-stream equations
-	
+
 	EQUATION(Model, ReachFlowInputFromLand,
 		//Flow from land in mm/day, converted to m3/s
-#ifdef SIMPLYQ_GROUNDWATER
 		double fromland = RESULT(QuickFlow) + (1.0 - PARAMETER(BaseflowIndex)) * RESULT(TotalSoilWaterFlow) + RESULT(GroundwaterFlow);
-#else
-		double fromland = RESULT(QuickFlow) + RESULT(TotalSoilWaterFlow);
-#endif
+
 		return ConvertMmPerDayToM3PerSecond(fromland, PARAMETER(CatchmentArea));
 	)
-	
+#else
+	EQUATION(Model, ReachFlowInputFromLand,
+		//Flow from land in mm/day, converted to m3/s
+		double fromland = RESULT(QuickFlow) + RESULT(TotalSoilWaterFlow);
+
+		return ConvertMmPerDayToM3PerSecond(fromland, PARAMETER(CatchmentArea));
+	)
+
+#endif
+
 	EQUATION(Model, ReachFlowInputFromUpstream,
 		double upstreamflow = 0.0;
 		for(index_t Input : BRANCH_INPUTS(Reach))

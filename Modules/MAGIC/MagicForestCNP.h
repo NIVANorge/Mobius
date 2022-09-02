@@ -152,7 +152,7 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 
 	
 	EQUATION(Model, InitialOrganicNScaled,
-		WarningPrint("Organic C is ", RESULT(OrganicC), " init cn is ", PARAMETER(InitialPoolCN));
+		//WarningPrint("Organic C is ", RESULT(OrganicC), " init cn is ", PARAMETER(InitialPoolCN));
 		return RESULT(OrganicC) / PARAMETER(InitialPoolCN);
 	)
 	
