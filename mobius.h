@@ -8,10 +8,12 @@
 
 
 #ifdef _WIN32
-#define NOMINMAX
-#include <windows.h>
-#include <oleauto.h>
-#undef NOMINMAX
+	#ifndef NOMINMAX
+		#define NOMINMAX
+	#endif
+	
+	#include <windows.h>
+	#include <oleauto.h>
 #endif
 
 

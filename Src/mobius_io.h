@@ -812,7 +812,7 @@ struct mobius_input_reader
 			// Back-solve the upper triangular system to obtain the Ks
 			KCol[NPt-1] = BCol[NPt-1]/Diag[NPt-1];
 			for(int Pt = NPt-2; Pt >= 0; --Pt)
-				KCol[Pt] = (BCol[Pt+1] - OffDiag[Pt]*KCol[Pt+1]) / Diag[Pt];
+				KCol[Pt] = (BCol[Pt] - OffDiag[Pt]*KCol[Pt+1]) / Diag[Pt];
 			
 			for(int Pt = 0; Pt < NPt-1; ++Pt)
 			{
