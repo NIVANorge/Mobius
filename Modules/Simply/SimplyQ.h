@@ -62,8 +62,6 @@ New to version 0.4.2:
 	// Hydrology parameters that don't currently vary by sub-catchment or reach
 	auto Hydrology = RegisterParameterGroup(Model, "Hydrology");
 	
-	auto Test = RegisterParameterDouble(Model, Hydrology, "The test parameter", Dimensionless, 0.3, 0.1, 0.4, "My description");
-	
 	auto ProportionToQuickFlow   = RegisterParameterDouble(Model, Hydrology, "Proportion of precipitation that contributes to quick flow", Dimensionless, 0.020, 0.0, 1.0, "", "fquick"); //Max ok, or breaks model?
 #ifdef SIMPLYQ_GROUNDWATER
 	auto BaseflowIndex           = RegisterParameterDouble(Model, Hydrology, "Baseflow index", Dimensionless, 0.70, 0.0, 1.0, "", "bfi");
