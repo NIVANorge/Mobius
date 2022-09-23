@@ -501,9 +501,9 @@ token_string GetTokenWord(char **In)
 {
 	char *At = *In;
 	token_string Result = {};
-	while(std::isspace(*At) && *At != 0) ++At;
+	while(std::isspace((int)*At) && *At != 0) ++At;
 	Result.Data = At;
-	while(!std::isspace(*At) && *At != 0)
+	while(!std::isspace((int)*At) && *At != 0)
 	{
 		++At;
 		++Result.Length;

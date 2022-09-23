@@ -243,7 +243,7 @@ token_stream::PutbackChar()
 void
 token_stream::ReadTokenInternal_(token &Token)
 {
-	Token = {}; // 0-initialize
+	//Token = {}; // 0-initialize
 	
 	bool SkipComment = false;
 	
