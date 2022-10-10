@@ -23,6 +23,7 @@ This is the ABCD hydrological model, with snow sub-model taken from WASMOD.
 	
 	auto ABCDPars = RegisterParameterGroup(Model, "ABCD hydrology");
 	
+	auto PrecipInterception     = RegisterParameterDouble(Model, ABCDPars, "Precipitation interception", Dimensionless, 0.0, 0.0, 1.0, "Fraction of precipitation that is intercepted in the canopy and evaporates");
 	auto PropensityForDryRunoff = RegisterParameterDouble(Model, ABCDPars, "a (propensity for runoff below saturation)", Dimensionless, 1.0, 0.5, 1.0, "A value of 1 means no runoff when soil moisture is below field capacity");
 	auto FieldCapacity          = RegisterParameterDouble(Model, ABCDPars, "b (field capacity)", Mm, 150, 0.0, 500.0);
 	auto BaseflowIndex          = RegisterParameterDouble(Model, ABCDPars, "c (baseflow index)", Dimensionless, 0.5, 0.0, 1.0);
@@ -33,7 +34,7 @@ This is the ABCD hydrological model, with snow sub-model taken from WASMOD.
 	auto InitialSnowPack        = RegisterParameterDouble(Model, ABCDPars, "Initial snow pack (water equivalents)", Mm, 0.0, 0.0, 5000.0);
 	
 	
-	
+	auto EffectivePrecipitation = RegisterEquation(Model, "Effective precipitation", MmPerMonth);
 	auto SnowFall               = RegisterEquation(Model, "Snow fall", MmPerMonth);
 	auto RainFall               = RegisterEquation(Model, "Rain fall", MmPerMonth);
 	auto SnowMelt               = RegisterEquation(Model, "Snow melt", MmPerMonth);
@@ -58,16 +59,20 @@ This is the ABCD hydrological model, with snow sub-model taken from WASMOD.
 	auto AirTemperature         = RegisterInput(Model, "Air temperature", DegreesCelsius);
 	auto PET                    = RegisterInput(Model, "Potential evapotranspiration", Mm);
 	
+	EQUATION(Model, EffectivePrecipitation,
+		return (1.0 - PARAMETER(PrecipInterception)) * INPUT(Precipitation);
+	)
+	
 	EQUATION(Model, SnowFall,
 		double excess_temp = INPUT(AirTemperature) - (PARAMETER(SnowMeltsAbove) + PARAMETER(SnowFallOffset));
 		excess_temp = std::min(excess_temp, 0.0);
 		double rootexponent = excess_temp / PARAMETER(SnowFallOffset);
 		double fraction = 1.0 - std::exp(-rootexponent*rootexponent);    //NOTE: The publications don't have a minus in the exponent, but the model doesn't work without it!
-		return INPUT(Precipitation)*std::max(0.0, fraction); 
+		return RESULT(EffectivePrecipitation)*std::max(0.0, fraction); 
 	)
 	
 	EQUATION(Model, RainFall,
-		return INPUT(Precipitation) - RESULT(SnowFall);
+		return RESULT(EffectivePrecipitation) - RESULT(SnowFall);
 	)
 	
 	EQUATION(Model, SnowMelt,

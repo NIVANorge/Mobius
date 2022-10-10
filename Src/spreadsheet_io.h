@@ -221,7 +221,7 @@ ColRowToCell(int Col, int Row, char *Buf)
 			Buf++;
 		}
 	}
-	//itoa(Row, Buf, 10)+1;
+	itoa(Row, Buf, 10);
 	while(*Buf != 0) ++Buf;
 	return Buf;
 }
