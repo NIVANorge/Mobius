@@ -451,8 +451,9 @@ Forest growth driver module developed as part of the CatchCAN project.
 	EQUATION(Model, SO4ExternalFlux,
 		double deposition = RESULT(SO4Deposition);
 		double weathering = RESULT(FractionOfYear)*PARAMETER(SO4Weathering);
+		double sed        = RESULT(SO4SedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
-		return deposition + weathering;
+		return deposition + weathering - sed;
 	)
 	
 	EQUATION(Model, NO3ExternalFlux,

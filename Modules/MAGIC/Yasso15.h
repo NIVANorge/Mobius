@@ -201,7 +201,7 @@ Yasso15 :
 	)
 	
 	
-	auto MakeMatrix = [&](arma::mat &A, arma::vec &b, model_run_state *RunState__) -> void {
+	auto MakeMatrix = [=](arma::mat &A, arma::vec &b, model_run_state *RunState__) -> void {
 	//MakeMatrix(arma::mat &A, arma::vec &b, model_run_state *RunState__,
 	//index_set_h Compartment, index_t FwlCompartment, index_t CwlCompartment, input_h FineWoodLitter, input_h CoarseWoodLitter, parameter_h FoliageComp, equation_h DecompOrFracRate, parameter_h RelativeMassFlow) {
 		
@@ -229,6 +229,7 @@ Yasso15 :
 	
 	EQUATION(Model, ComputeYasso,
 		
+		if(RunState__->Timestep == -1) return 0.0;
 		// NOTE: we need these here, otherwise the dependency is not correctly registered.
 		RESULT(FineWoodLitter);
 		RESULT(CoarseWoodLitter);

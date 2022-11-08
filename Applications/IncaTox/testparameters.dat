@@ -342,7 +342,7 @@ parameters:
 	"Enthalpy of phase transfer between air and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
 	68.2
 
-	"Enthalpy of phase tranfer between octanol and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
+	"Enthalpy of phase transfer between octanol and water" :     #(kJ/mol) [-1.79769313486232e+308, 1.79769313486232e+308]
 	-26.6
 
 	"Henry's constant at 25°C" :     #(Pa m3/mol) [-1.79769313486232e+308, 1.79769313486232e+308]

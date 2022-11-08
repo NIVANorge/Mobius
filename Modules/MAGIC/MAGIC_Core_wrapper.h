@@ -243,6 +243,9 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 	auto Log10NaAlSelectCoeff      = RegisterEquation(Model, "(log10) Na/Al exchange selectivity coefficient", Dimensionless);
 	auto Log10KAlSelectCoeff       = RegisterEquation(Model, "(log10) K/Al exchange selectivity coefficient", Dimensionless);
 	
+	auto CationExchangeCapacityEq  = RegisterEquation(Model, "Cation exchange capacity", MEqPerKg);
+	SetInitialValue(Model, CationExchangeCapacityEq, CationExchangeCapacity);
+	
 	constexpr double MinInitConc = 1e-6;   //NOTE: To safeguard against numerical errors.
 
 	EQUATION(Model, InitialConcCa,
@@ -654,6 +657,10 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		return RESULT(PO4ExternalFlux) - RESULT(PO4Output) + RESULT(PO4Input);
 	)
 	
+	EQUATION(Model, CationExchangeCapacityEq,        // NOTE: We need this one so that it can be overridden in the MAGIC Forest CNP module.
+		return PARAMETER(CationExchangeCapacity);
+	)
+	
 	EQUATION(Model, ConcH,
 		magic_input Input;
 		magic_param Param;
@@ -685,7 +692,8 @@ This is a Mobius implementation. There are earlier implementations in FORTRAN by
 		
 		Param.Porosity                   = PARAMETER(Porosity);
 		Param.BulkDensity                = PARAMETER(BulkDensity);
-		Param.CationExchangeCapacity     = PARAMETER(CationExchangeCapacity);
+		//Param.CationExchangeCapacity     = PARAMETER(CationExchangeCapacity);
+		Param.CationExchangeCapacity     = RESULT(CationExchangeCapacityEq);
 		Param.SO4HalfSat                 = PARAMETER(SO4HalfSat);
 		Param.SO4MaxCap                  = PARAMETER(SO4MaxCap);
 		

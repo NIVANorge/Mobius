@@ -53,15 +53,17 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	
 	auto TreeGrowthPars       = RegisterParameterGroup(Model, "Tree growth", TreeClass);
 	
-	auto MaxGrowthRate        = RegisterParameterDouble(Model, TreeGrowthPars, "Max tree growth rate", PerYear, 0.0, 0.0, 1000.0);
+	auto MaxGrowthRate        = RegisterParameterDouble(Model, TreeGrowthPars, "Un-restricted tree growth rate at 20°C", PerYear, 0.0, 0.0, 1000.0);
+	auto GrowthQ10            = RegisterParameterDouble(Model, TreeGrowthPars, "Growth rate Q10", Dimensionless, 1.0, 1.0, 5.0);
 	
 	
 	auto TreeDecomp           = RegisterParameterGroup(Model, "Tree (de)composition", TreeClass, TreeCompartment);
 	
-	auto BefYoung             = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor in young trees", TPerM3, 0.0, 0.0, 1.0, "The a in bef = a + b*exp(-stand_age/100)");
+	auto BefYoung             = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor in old trees", TPerM3, 0.0, 0.0, 1.0, "The a in bef = a + b*exp(-stand_age/100)");
 	auto BefAgeDep            = RegisterParameterDouble(Model, TreeDecomp, "Biomass expansion factor age dependence", TPerM3, 0.0, -1.0, 1.0, "The b in bef = a + b*exp(-stand_age/100)");
 	auto TurnoverRate         = RegisterParameterDouble(Model, TreeDecomp, "Tree compartment turnover rate", PerYear, 0.0, 0.0, 1.0);
-	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0);
+	auto TreeDecompRate       = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition rate", PerYear, 0.1, 0.0, 1.0); // at 20°C
+	//auto DecompQ10            = RegisterParameterDouble(Model, TreeDecomp, "Tree decomposition Q10", Dimensionless, 1.0, 1.0, 5.0);
 	auto TreeNConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree N concentration",  MMolPerKg, 0.0, 0.0, 100000.0, "mmol N per kg of tree biomass");
 	auto TreePConc            = RegisterParameterDouble(Model, TreeDecomp, "Tree P concentration",  MMolPerKg, 0.0, 0.0, 100000.0, "mmol P per kg of tree biomass");
 	auto TreeCaConc           = RegisterParameterDouble(Model, TreeDecomp, "Tree Ca concentration", MEqPerKg, 0.0, 0.0, 100000.0, "meq Ca per kg of tree biomass");
@@ -167,9 +169,12 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto FractionOfYear       = GetEquationHandle(Model, "Fraction of year");
 #endif
 
+	auto Temperature          = GetEquationHandle(Model, "Temperature");
+
 	EQUATION(Model, ForestNetGrowth,
 		double in = INPUT(TreeGrowth);
 		double r = PARAMETER(MaxGrowthRate)*RESULT(FractionOfYear);
+		r = r*std::pow(PARAMETER(GrowthQ10), (RESULT(Temperature) - 20.0)/10.0);
 		double K = PARAMETER(CarryingCapacity);
 		double V = LAST_RESULT(LiveTreeVolume);
 		

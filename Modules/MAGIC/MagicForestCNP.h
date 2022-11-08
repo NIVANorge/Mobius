@@ -81,20 +81,14 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto OrganicNSolubilized      = RegisterEquation(Model, "Organic N solubilized", MMolPerM2PerTs);
 	auto OrganicNMineralized      = RegisterEquation(Model, "Organic N mineralized", MMolPerM2PerTs);
 	auto DesiredNImmobilisation   = RegisterEquation(Model, "Desired N immobilization (microbial model only)", MMolPerM2PerTs);
-	
-	
 	auto DesiredNO3Immobilisation = RegisterEquation(Model, "Desired NO3 immobilisation", MMolPerM2PerTs);
 	auto DesiredNH4Immobilisation = RegisterEquation(Model, "Desired NH4 immobilisation", MMolPerM2PerTs);
-	
 	auto DesiredNO3Uptake         = RegisterEquation(Model, "Desired NO3 uptake", MMolPerM2PerTs);
 	auto DesiredNH4Uptake         = RegisterEquation(Model, "Desired NH4 uptake", MMolPerM2PerTs);
-	
 	auto NO3Immobilisation        = RegisterEquation(Model, "NO3 immobilisation", MMolPerM2PerTs);
 	auto NH4Immobilisation        = RegisterEquation(Model, "NH4 immobilisation", MMolPerM2PerTs);
-	
 	auto NO3Uptake                = RegisterEquation(Model, "NO3 uptake", MMolPerM2PerTs);
 	auto NH4Uptake                = RegisterEquation(Model, "NH4 uptake", MMolPerM2PerTs);
-	
 	auto OrganicNUptake           = RegisterEquation(Model, "Organic N uptake", MMolPerM2PerTs);
 	
 	auto NitrificationEq          = RegisterEquation(Model, "Nitrification", MMolPerM2PerTs);
@@ -125,6 +119,8 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	
 	
 	//From soil carbon module.
+	//auto TurnoverFast            = GetEquationHandle(Model, "Fast C turnover");
+	//auto TurnoverSlow            = GetEquationHandle(Model, "Slow C turnover");
 	auto OrganicCDecompositionEq = GetEquationHandle(Model, "Organic C turnover");
 	auto OrganicC                = GetEquationHandle(Model, "Organic C");
 	auto OrganicCSolubilized     = GetEquationHandle(Model, "Organic C solubilized");
@@ -152,7 +148,6 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 
 	
 	EQUATION(Model, InitialOrganicNScaled,
-		//WarningPrint("Organic C is ", RESULT(OrganicC), " init cn is ", PARAMETER(InitialPoolCN));
 		return RESULT(OrganicC) / PARAMETER(InitialPoolCN);
 	)
 	

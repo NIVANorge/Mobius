@@ -11,10 +11,12 @@ A soil carbon module for MAGIC Forest.
 	auto Dimensionless = RegisterUnit(Model);
 	auto MolPerM2      = RegisterUnit(Model, "mol/m2");
 	auto MMolPerM2     = RegisterUnit(Model, "mmol/m2");
+	auto MMolPerM3     = RegisterUnit(Model, "mmol/m3");
 	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
 	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	auto PerYear       = RegisterUnit(Model, "1/year");
 	auto KgPerM2       = RegisterUnit(Model, "kg/m2");
+	auto M2PerKg       = RegisterUnit(Model, "m2/kg");
 
 
 	auto Compartment = GetIndexSetHandle(Model, "Compartment");
@@ -29,9 +31,14 @@ A soil carbon module for MAGIC Forest.
 	auto TurnoverRateSlow             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of slow-decomposable C", PerYear, 0.01, 0.0, 1.0);
 	auto FastSlowMassFlowRate         = RegisterParameterDouble(Model, SoilCarbon, "Mass flow rate from fast to slow C pool", PerYear, 0.01, 0.0, 1.0);
 	
-	
 	auto Solubilization               = RegisterParameterDouble(Model, SoilCarbon, "Solubilization", Dimensionless, 0.0, 0.0, 1.0, "Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.");
 	auto CUseEfficiency               = RegisterParameterDouble(Model, SoilCarbon, "C use efficiency", Dimensionless, 0.0, 0.0, 1.0, "Fraction of non-solubilized decomposed organic C that becomes biomass and is returned to the organic C pool. The rest is mineralized/respired as CO2.");
+	
+	auto CECParams = RegisterParameterGroup(Model, "Cation exchange capacity", Compartment);
+	
+	auto CECVariesByOrgC              = RegisterParameterBool(Model, CECParams, "CEC varies by organic C", false);
+	auto CECOrgCLinearCoeff           = RegisterParameterDouble(Model, CECParams, "CEC - org C linear coefficient", M2PerKg, 0.0, 0.0, 100.0);
+	
 	
 	auto TurnoverFast           = RegisterEquation(Model, "Fast C turnover", MMolPerM2PerTs);
 	auto TurnoverSlow           = RegisterEquation(Model, "Slow C turnover", MMolPerM2PerTs);
@@ -48,13 +55,18 @@ A soil carbon module for MAGIC Forest.
 	auto OrganicCSlowMass       = RegisterEquation(Model, "Organic C slow pool (mass)", KgPerM2);
 	auto OrganicCMass           = RegisterEquation(Model, "Organic C (mass)", KgPerM2);
 	
+	auto DOCConc                = RegisterEquation(Model, "DOC concentration", MMolPerM3);
+	
 	auto InitialOrganicCFast    = RegisterEquationInitialValue(Model, "Initial organic C fast-decomposable", MMolPerM2);
 	auto InitialOrganicCSlow    = RegisterEquationInitialValue(Model, "Initial organic C slow-decomposable", MMolPerM2);
 	
 	SetInitialValue(Model, OrganicCFast, InitialOrganicCFast);
 	SetInitialValue(Model, OrganicCSlow, InitialOrganicCSlow);
 	
+	auto Discharge              = GetEquationHandle(Model, "Discharge");
 	
+	auto CationExchangeCapacityEq  = GetEquationHandle(Model, "Cation exchange capacity");
+	auto CationExchangeCapacity    = GetParameterDoubleHandle(Model, "Cation exchange capacity");
 	
 	auto TreeSpecies               = GetIndexSetHandle(Model, "Tree species");
 	auto TreeCompartment           = GetIndexSetHandle(Model, "Tree compartment");
@@ -178,6 +190,18 @@ A soil carbon module for MAGIC Forest.
 	
 	EQUATION(Model, OrganicCMass,
 		return RESULT(OrganicCFastMass) + RESULT(OrganicCSlowMass);
+	)
+	
+	EQUATION(Model, DOCConc,
+		return RESULT(OrganicCSolubilized) / RESULT(Discharge);
+	)
+	
+	
+	EQUATION_OVERRIDE(Model, CationExchangeCapacityEq,
+		double cec = PARAMETER(CationExchangeCapacity);
+		double computed = cec + (LAST_RESULT(OrganicC) - PARAMETER(InitialOrganicC)*1e3)*PARAMETER(CECOrgCLinearCoeff);
+		if(PARAMETER(CECVariesByOrgC)) return computed;
+		return cec;
 	)
 	
 }

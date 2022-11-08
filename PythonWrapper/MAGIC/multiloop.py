@@ -17,18 +17,21 @@ def set_single_series_value(ds, name, year, value) :
 def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year=True) :
 	soilfile, lakefile1, lakefile2, depofile, seqfile = excelfiles
 	
-	soil_df = pd.read_excel(soilfile, sheet_name='CCE-soil', header=16, skiprows=[17], index_col=1)
-	lake_df = pd.read_excel(lakefile1, sheet_name='CCE-lake', header=16, skiprows=[17], index_col=1)
-	lake_df_2 = pd.read_excel(lakefile2, sheet_name='WRI-Lake 2019', header=16, skiprows=[17], index_col=1)   ##OOOOPS, hard coded sheet name..
-	depo_df = pd.read_excel(depofile, sheet_name='CCE-depo', header=16, skiprows=[17], index_col=1)
-	nh4_df  = pd.read_excel(seqfile, sheet_name='CCE-NH4', header=15, skiprows=[16,17], index_col=1)
-	no3_df  = pd.read_excel(seqfile, sheet_name='CCE-NO3', header=15, skiprows=[16,17], index_col=1)
-	so4_df  = pd.read_excel(seqfile, sheet_name='CCE-SO4', header=15, skiprows=[16,17], index_col=1)
+	##OOOOPS, hard coded sheet names...
+	soil_df = pd.read_excel(soilfile, sheet_name='Tusen1995-soil', header=16, skiprows=[17], index_col=1)
+	lake_df = pd.read_excel(lakefile1, sheet_name='Tusen1995-lake', header=16, skiprows=[17], index_col=1)
+	lake_df_2 = pd.read_excel(lakefile2, sheet_name='Tusen2019-lake', header=16, skiprows=[17], index_col=1)
+	depo_df = pd.read_excel(depofile, sheet_name='Tusen1995-depo', header=16, skiprows=[17], index_col=1)
+	nh4_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-NH4', header=17, index_col=1)
+	no3_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-NO3', header=17, index_col=1)
+	so4_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-SO4', header=17, index_col=1)
+	cl_df   = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-Cl', header=17, index_col=1)
 	
 	
 	#TODO: These should have been read in from the file!
 	n_sequence_years   = [1800, 1880, 1920, 1940, 1950, 1960, 1970, 1975, 1980, 1985, 1990, 1995, 2000]
 	so4_sequence_years = [1800, 1880, 1920, 1940, 1945, 1955, 1960, 1970, 1975, 1980, 1985, 1990, 2000]
+	cl_sequence_years  = [1800, 1995, 2019, 2020]
 	
 	input_index = cu.get_input_date_index(dataset)
 	full_index = pd.date_range(pd.to_datetime('1800-1-1'), '2100-1-1', freq='MS') #TODO: this is not that good...
@@ -44,7 +47,9 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 	
 		if id not in lake_df_2.index : continue                        #TODO: maybe run 1-point sample then instead!
 	
-		print('Running lake %s (ID %d)\n' % (soil['*Name'], id))
+		name_name = '*Name'
+		#name_name = "'    each year (depend on lake chem)"    # caused by new formatting of the excel sheet
+		print('Running lake %s (ID %d)\n' % (soil[name_name], id))
 		
 		lake = lake_df.loc[id, :]
 		lake2 = lake_df_2.loc[id, :]
@@ -53,8 +58,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		nh4 = nh4_df.loc[id, :]
 		no3 = no3_df.loc[id, :]
 		so4 = so4_df.loc[id, :]
-		
-		
+		cl  = cl_df.loc[id, :]
 		
 		ds = dataset.copy()
 		
@@ -89,7 +93,8 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		elems = ['Ca', 'Mg', 'Na', 'K', 'SO4', 'NH4', 'NO3']
 		
 		for elem in elems :
-			ds.set_parameter_double('%s sinks' % elem, ['Soil'], soil['Upt%s'%elem])
+			#ds.set_parameter_double('%s sinks' % elem, ['Soil'], soil['Upt%s'%elem])
+			ds.set_parameter_double('%s sinks' % elem, ['Soil'], soil[elem])
 		
 		#TODO: Other C/N params
 		
@@ -120,8 +125,8 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		
 		
 		# TODO: What to do about discharge when having two different values (for two different years)
-		ds.set_parameter_double('Discharge', ['Soil'], lake['Qs'])
-		ds.set_parameter_double('Discharge', ['Lake'], lake['Qs'])
+		ds.set_parameter_double('Discharge', ['Soil'], lake['Runoff'])
+		ds.set_parameter_double('Discharge', ['Lake'], lake['Runoff'])
 		
 		elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
 		
@@ -134,7 +139,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 	
 		ds.set_parameter_double('Relative area', ['Lake'], lake['RelArea']*0.01)
 		ds.set_parameter_double('Relative area', ['Soil'], 1.0-lake['RelArea']*0.01)
-		ds.set_parameter_double('Depth', ['Lake'], lake['RetTime']*lake['Qs']/(lake['RelArea']*0.01))
+		ds.set_parameter_double('Depth', ['Lake'], lake['RetTime']*lake['Runoff']/(lake['RelArea']*0.01))
 		
 		ds.set_parameter_double('(log10) Al(OH)3 dissociation equilibrium constant', ['Lake'], lake['KAl'])
 		
@@ -147,7 +152,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		#NOTE NO3 retention as in OKA's study.
 		S_N = 5.0
 		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0 * S_N / (lake['Qs'] + S_N))
-		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0 * S_N / (lake['Qs'] + S_N))
+		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0 * S_N / (lake['Runoff'] + S_N))
 		
 		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
 		
@@ -171,15 +176,19 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 			'NH4' : np.full(len(full_index), np.nan),
 			'NO3' : np.full(len(full_index), np.nan),
 			'SO4' : np.full(len(full_index), np.nan),
+			'Cl'  : np.full(len(full_index), np.nan),
 		})
 		
 		scale_df.set_index('Dates', inplace=True)
 		
 		for yr in range(0, len(n_sequence_years)) :
-			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NH4'] = nh4['(year%d)' %(yr+1)]
-			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NO3'] = no3['(year%d)' %(yr+1)]
-			scale_df.loc[pd.to_datetime('%d-6-1' % so4_sequence_years[yr]), 'SO4'] = so4['(year%d)' %(yr+1)]
-		
+			hdr = 'ScalFact' if yr==0 else 'ScalFact.%d'%yr
+			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NH4'] = nh4[hdr]
+			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NO3'] = no3[hdr]
+			if yr < len(so4_sequence_years) :
+				scale_df.loc[pd.to_datetime('%d-6-1' % so4_sequence_years[yr]), 'SO4'] = so4[hdr]
+			if yr < len(cl_sequence_years) :
+				scale_df.loc[pd.to_datetime('%d-6-1' % cl_sequence_years[yr]), 'Cl'] = cl[hdr]
 		#sdf = scale_df.dropna()
 		#print(sdf)
 		
@@ -189,6 +198,8 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		ds.set_input_series('NH4 wet deposition scaling factor', [], scale_df['NH4'].values[mask], alignwithresults=True)
 		ds.set_input_series('NO3 wet deposition scaling factor', [], scale_df['NO3'].values[mask], alignwithresults=True)
 		ds.set_input_series('SO4 wet deposition scaling factor', [], scale_df['SO4'].values[mask], alignwithresults=True)
+		for elem in ['Ca', 'Mg', 'Na', 'K', 'Cl'] :
+			ds.set_input_series('%s wet deposition scaling factor'%elem, [], scale_df['Cl'].values[mask], alignwithresults=True)
 		
 		#### DEPON sheet:
 		
@@ -215,12 +226,11 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 				value = sea_salt + excess1
 			ds.set_parameter_double('%s wet deposition' % elem, [], value)    
 		
-		ds.set_parameter_double('Precipitation', [], depo['Ppt'])
-		
-		
-		
+		ds.set_parameter_double('Precipitation', [], depo['Precip'])
 		
 		loopfun(ds, id, soil, depo, lake)
 		
 		ds.delete()
+	
+	
 	
