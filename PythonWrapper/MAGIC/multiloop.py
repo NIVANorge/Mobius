@@ -31,7 +31,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 	#TODO: These should have been read in from the file!
 	n_sequence_years   = [1800, 1880, 1920, 1940, 1950, 1960, 1970, 1975, 1980, 1985, 1990, 1995, 2000]
 	so4_sequence_years = [1800, 1880, 1920, 1940, 1945, 1955, 1960, 1970, 1975, 1980, 1985, 1990, 2000]
-	cl_sequence_years  = [1800, 1995, 2019, 2020]
+	cl_sequence_years  = [1800, 1993, 1995, 1997, 2017, 2019, 2021]
 	
 	input_index = cu.get_input_date_index(dataset)
 	full_index = pd.date_range(pd.to_datetime('1800-1-1'), '2100-1-1', freq='MS') #TODO: this is not that good...
