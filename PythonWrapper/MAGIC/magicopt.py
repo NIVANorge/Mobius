@@ -93,6 +93,20 @@ def get_nh4_setup(dataset, idx, obsname, which='R') :
 				('NH4(+) ionic concentration', [waterindex], '%s NH4' %obsname, [], 1.0)
 				]
 	return params, comparisons
+	
+def get_no3_setup(dataset, idx, obsname, which='R') :
+	parname = 'NO3Sink_%s' % which
+	wantparams = [parname]
+	
+	params = get_params(dataset, wantparams, idx)
+	
+	params[parname].set(min=-100.0, max=0.0)
+	
+	soilindex, waterindex = idx
+	comparisons = [
+				('NO3(-) ionic concentration', [waterindex], '%s NO3' %obsname, [], 1.0)
+				]
+	return params, comparisons
 
 
 def get_acid_anion_setup(dataset, idx, obsname='Observed runoff conc', so4dep = False):

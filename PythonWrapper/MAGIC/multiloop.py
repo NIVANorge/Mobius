@@ -167,10 +167,9 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		ds.set_parameter_double('(-log10) pK 2nd equilibrium constant for triprotic organic acid', ['Lake'], lake['pK2'])
 		ds.set_parameter_double('(-log10) pK 3rd equilibrium constant for triprotic organic acid', ['Lake'], lake['pK3'])
 		
-		#NOTE NO3 retention as in OKA's study.
-		S_N = 5.0
-		q_s = lake['Runoff'] / (lake['RelArea']*0.01)
-		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0 * S_N / (q_s + S_N))
+
+		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0)
+		ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
 		
 		#### LAKE sheet 2 :
 		
