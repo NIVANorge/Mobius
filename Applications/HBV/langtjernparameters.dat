@@ -1,92 +1,109 @@
-# Parameter file generated for Carbon model V0.0 at 2019-02-12 14:59:00
+# Parameter file generated for model HBV, containing modules (Degree-day PET V0.2, HBV-Snow V0.0, HBV V0.2) at 2022-11-17 11:15:42
 
 index_sets:
 "Landscape units" : {"Forest"}
-"Reaches" : {"R1"}
+"Snow distribution box" : {"(generated)"}
 
 parameters:
-###################### (no index sets) ######################
-"Timesteps" :     #(days) [0, 18446744073709551615]
-10957
 
-"Start date" :     # ["1000-01-01", "3000-12-31"]
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
 1986-01-01
 
-###################### "Landscape units" ######################
-"Degree day factor" :     #(mm/°C/day) [1.5, 4] Degree day factor, rate at which the snow will melt water in snow will freeze
-2.5
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2000-01-01
 
-"Refreezing coefficient" :     #(dimensionless) [0.01, 0.1] Proportion of meltwater that can refreeze
-0.05
 
-"Storage fraction" :     #(dimensionless) [0.01, 0.2] Proportion of meltwater that can be stored in the snowpack
-0.1
+{ module "Degree-day PET" version "0.2"
 
-"Snow threshold temperature" :     #(°C) [-3, 5] Threshold temperature above which precipitation falls as rain
-0
+	# Potential evapotranspiration ("Landscape units") #
 
-"Initial snow depth" :     #(mm) [0, 9999] The depth of snow, expressed as water equivalents, at the start of the simulation
-0
+	"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
+	0.12
 
-"Growing degree threshold" :     #(°C) [-4, 4] The temperature at or above which plant growth and hence evapotranspiration are assumed to occur
-0
+	"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
+	0
 
-"Degree day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] Describes the baseline dependency of evapotranspiration on air temperature. The parameter represents the number of millimetres water evapotranspired per degree celcius above the growing degree threshold when evapotranspiration rates are not soil moisture limited
-0.12
 
-"Fraction of field capacity where evapotranspiration reaches its maximal" :     #(dimensionless) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.7
+} # end of module "Degree-day PET"
 
-"Field capacity" :     #(mm) [10, 600] Maximum soil moisture storage in upper soil layer
-150
+{ module "HBV-Snow" version "0.0"
 
-"Beta recharge exponent" :     #(dimensionless) [1, 10] Power parameter that determines the relative contribution to groundwater recharge
-1
+	# Snow (no index sets) #
 
-"Initial soil moisture" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
-100
+	"Temperature below which precipitation falls as snow" :     #(°C) [-4, 4] 
+	0
 
-###################### "Reaches" ######################
-"Recession coefficient for groundwater slow flow (K1)" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.1
+	"Temperature above which snow melts" :     #(°C) [-4, 4] 
+	0
 
-"Recession coefficient for groundwater fast flow (K0)" :     #(/day) [-1.79769313486232e+308, 1.79769313486232e+308]
-0.2
+	"Degree-day factor for snow melt" :     #(mm/°C/day) [0, 5] 
+	2.74
 
-"Threshold for second runoff in groundwater storage (UZL)" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
-2
+	"Liquid water fraction" :     #(dimensionless) [0, 1] Amount of melt water each unit of snow can hold before it is released
+	0.1
 
-"Initial groundwater storage" :     #(mm) [-1.79769313486232e+308, 1.79769313486232e+308]
-10
+	"Refreeze efficiency" :     #(dimensionless) [0, 1] 
+	0.5
 
-"Flow routing max base" :     #(day) [1, 10] Width of the convolution filter that smooths out the flow from the groundwater to the river over time
-1
+	"Snow distribution coefficient of variation" :     #(dimensionless) [0, 1] 0 gives even snow distribution among boxes, 1 or higher gives a very skew distribution.
+	0.5
 
-"Catchment area" :     #(km2) [-1.79769313486232e+308, 1.79769313486232e+308]
-1
+	"Minimal snow depth before snow fall is distributed unevenly" :     #(mm) [0, 50000] 
+	0
 
-"Reach has effluent input" :
-false
+	"Snow depth at which snow cover is considered full" :     #(mm) [0, 1000]
+	50
 
-"Effluent flow" :     #(m3/day) [0, 99999999] The rate of liquid inputs to a reach from e.g. sewage treatment works
-0
+	"Initial snow depth as water equivalent" :     #(mm) [0, 50000]
+	0
 
-"Reach length" :     #(m) [0.1, 999999] The length of the main stem of the stream / reach in a subcatchment
-1000
 
-"Reach width" :     #(m) [0.1, 9999] The average width of the main stem of the stream / reach in a subcatchment
-1
+	# Snow distribution ("Snow distribution box") #
 
-"a" :     #(/m2) [1e-005, 0.99] The flow velocity 'a' parameter V=aQ^b
-0.4
+	"Snow box area fraction" :     #(dimensionless) [0, 1]
+	1
 
-"b" :     #(dimensionless) [0.1, 0.99] The flow velocity 'b' parameter V=aQ^b
-0.67
 
-"Initial reach flow" :     #(m3/day) [0.0001, 9999999] The flow in the reach at the start of the simulation. This parameter is only used for reaches that don't have other reaches as inputs.
-1000
+} # end of module "HBV-Snow"
 
-###################### "Reaches" "Landscape units" ######################
-"%" :     #(dimensionless) [0, 100] How much of the catchment area that is made up by this type of land cover.
-100
+{ module "HBV" version "0.2"
 
+	# Land params (no index sets) #
+
+	"Field capacity" :     #(dimensionless) [0, 1000]
+	50
+
+	"Level where ETP is potential" :     #(dimensionless) [0, 1] Soil moisture fraction of field capacity where evapotranspiration is starting to be reduced
+	0.9
+
+	"Max. infiltration" :     #(mm/day) [1, 10000]
+	100
+
+	"Draw-up scaling factor" :     #(mm/day) [0, 100]
+	2
+
+	"Max. percolation fraction" :     #(dimensionless) [0, 1]
+	0.8
+
+	"Percolation nonlinear coefficient" :     #(dimensionless) [0, 1]
+	0
+
+	"Deep percolation" :     #(mm/day) [0, 1000]
+	6
+
+	"Upper zone rate 1" :     #(dimensionless) [0, 1]
+	0.2
+
+	"Upper zone rate 2" :     #(dimensionless) [0, 1]
+	0.02
+
+	"Upper zone threshold" :     #(dimensionless) [0, 1000]
+	10
+
+	"Lower zone rate" :     #(dimensionless) [0, 1]
+	0.01
+
+
+} # end of module "HBV"

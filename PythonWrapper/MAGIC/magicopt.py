@@ -80,6 +80,18 @@ def get_so4_setup(dataset, idx) :
 	return params, comparisons
 	
 
+def get_nh4_lake_setup(dataset, idx, obsname) :
+	wantparams = ['nitrif']
+	
+	params = get_params(dataset, wantparams, idx)
+	
+	soilindex, waterindex = idx
+	comparisons = [
+				('NH4(+) ionic concentration', [waterindex], '%s NO3' %obsname, [], 1.0)
+				]
+	return params, comparisons
+
+
 def get_acid_anion_setup(dataset, idx, obsname='Observed runoff conc', so4dep = False):
 	
 	wantparams = ['NO3Sink_S']  #TODO: Only works for MAGIC_simple

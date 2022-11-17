@@ -8,14 +8,19 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/HBV.h"
+#include "../../Modules/HBV/HBVSnow.h"
+#include "../../Modules/HBV/HBV.h"
+#include "../../Modules/PET.h"
+
 
 
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("HBV");
+	mobius_model *Model = BeginModelDefinition("HBV", true);
 	
+	AddDegreeDayPETModule(Model);
+	AddHBVSnowModule(Model);
 	AddHBVModel(Model);
 	
 	return Model;
