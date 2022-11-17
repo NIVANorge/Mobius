@@ -98,7 +98,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		#ds.set_parameter_double('Organic acid concentration', ['Soil'], soil['DOC'])
 		ds.set_parameter_double('Organic acid concentration', ['Soil'], 100.0)
 	
-		ds.set_parameter_double('Nitrification', ['Soil'], -soil['Nitrif'])
+		ds.set_parameter_double('Nitrification', ['Soil'], -100.0)
 		
 		elems = ['Ca', 'Mg', 'Na', 'K', 'SO4', 'NH4', 'NO3']
 		
@@ -157,7 +157,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		ds.set_parameter_double('CO2 partial pressure', ['Lake'], lake['pCO2'])
 		ds.set_parameter_double('Organic acid concentration', ['Lake'], lake['DOC'])
 		
-		ds.set_parameter_double('Nitrification', ['Lake'], -lake['Nitrif'])
+		ds.set_parameter_double('Nitrification', ['Lake'], -100.0)
 		
 		ds.set_parameter_double('(-log10) pK 1st equilibrium constant for triprotic organic acid', ['Lake'], lake['pK1'])
 		ds.set_parameter_double('(-log10) pK 2nd equilibrium constant for triprotic organic acid', ['Lake'], lake['pK2'])
