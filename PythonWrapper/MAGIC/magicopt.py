@@ -81,13 +81,15 @@ def get_so4_setup(dataset, idx) :
 	
 
 def get_nh4_lake_setup(dataset, idx, obsname) :
-	wantparams = ['nitrif']
+	wantparams = ['nitrif_R']
 	
 	params = get_params(dataset, wantparams, idx)
 	
+	params['nitrif_R'].set(min=-100.0, max=0.0)
+	
 	soilindex, waterindex = idx
 	comparisons = [
-				('NH4(+) ionic concentration', [waterindex], '%s NO3' %obsname, [], 1.0)
+				('NH4(+) ionic concentration', [waterindex], '%s NH4' %obsname, [], 1.0)
 				]
 	return params, comparisons
 
