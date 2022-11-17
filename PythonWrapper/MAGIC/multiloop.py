@@ -32,7 +32,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 	so4_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-SO4', header=17, index_col=1)
 	cl_df   = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-Cl', header=17, index_col=1)
 	
-	doc_df  = pd.read_excel(resfile, sheet_name='Soil1 params', header=16, skiprows=[17], index_col=1)
+	doc_df  = pd.read_excel(resfile, sheet_name='Soil1 params', header=13, skiprows=[14], index_col=1)
 	
 	#TODO: These should have been read in from the file!
 	no3_sequence_years = [1800, 1880, 1930, 1940, 1950, 1970, 1980, 1985, 1992, 1998, 2005, 2012, 2020]
