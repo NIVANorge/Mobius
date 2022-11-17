@@ -14,7 +14,7 @@ def set_single_series_value(ds, name, year, value) :
 	ds.set_input_series(name, [], series.values)
 
 def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=0) :
-	soilfile1, soilfile2, lakefile1, lakefile2, depofile1, depofile2, seqfile = excelfiles
+	soilfile1, soilfile2, lakefile1, lakefile2, depofile1, depofile2, seqfile, resfile = excelfiles
 	
 	##OOOOPS, hard coded sheet names...
 	if do_year == 0 or do_year == -1 :
@@ -32,6 +32,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 	so4_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-SO4', header=17, index_col=1)
 	cl_df   = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-Cl', header=17, index_col=1)
 	
+	doc_df  = pd.read_excel(resfile, sheet_name='Soil1 params', header=16, skiprows=[17], index_col=1)
 	
 	#TODO: These should have been read in from the file!
 	no3_sequence_years = [1800, 1880, 1930, 1940, 1950, 1970, 1980, 1985, 1992, 1998, 2005, 2012, 2020]
@@ -66,6 +67,8 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		so4 = so4_df.loc[id, :]
 		cl  = cl_df.loc[id, :]
 		
+		doc_row = doc_df.loc[id, :]
+		
 		ds = dataset.copy()
 		
 		
@@ -96,7 +99,8 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		ds.set_parameter_double('Temperature', ['Soil'], soil['Temp'])
 		ds.set_parameter_double('CO2 partial pressure', ['Soil'], soil['PCO2'])
 		#ds.set_parameter_double('Organic acid concentration', ['Soil'], soil['DOC'])
-		ds.set_parameter_double('Organic acid concentration', ['Soil'], 100.0)
+		#ds.set_parameter_double('Organic acid concentration', ['Soil'], 100.0)
+		ds.set_parameter_double('Organic acid concentration', ['Soil'], doc_row['DOC'])
 	
 		ds.set_parameter_double('Nitrification', ['Soil'], -100.0)
 		
