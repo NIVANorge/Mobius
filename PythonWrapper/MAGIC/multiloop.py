@@ -69,6 +69,10 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		
 		doc_row = doc_df.loc[id, :]
 		
+		if np.isnan(doc_row['DOC']) : continue
+		if do_year==-1 and soil['WeSO4'] > 0.0 : continue
+		
+		
 		ds = dataset.copy()
 		
 		
