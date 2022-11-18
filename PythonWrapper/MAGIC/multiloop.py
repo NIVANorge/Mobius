@@ -217,6 +217,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 		
 		#### DEPON sheet:
 		
+		
 		elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
 		
 		depo_ref_year = depo['Year']
@@ -225,8 +226,11 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=
 			index_elem = elem
 			if elem == 'Cl': index_elem = 'CL'   #sigh
 			scale = 1.0
-			if elem in scale_df.columns :
-				invscale = scale_df[elem]['%d-1-1'%depo_ref_year]    # Compensate for the fact that the reference year may not have been scaled as 1.0 in the sequence
+			scale_elem = elem
+			if elem in ['Ca', 'Mg', 'Na', 'K'] :
+				scale_elem = 'Cl'
+			if scale_elem in scale_df.columns :
+				invscale = scale_df[scale_elem]['%d-1-1'%depo_ref_year]    # Compensate for the fact that the reference year may not have been scaled as 1.0 in the sequence
 				#print('%s scale in %d was %f'%(elem,depo_ref_year,invscale))
 				scale = 1.0 / invscale
 				
