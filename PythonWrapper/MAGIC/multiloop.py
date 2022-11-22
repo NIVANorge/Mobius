@@ -13,24 +13,31 @@ def set_single_series_value(ds, name, year, value) :
 	series['%s-6-1'%year] = value
 	ds.set_input_series(name, [], series.values)
 
-
-def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year=True) :
-	soilfile, lakefile1, lakefile2, depofile, seqfile = excelfiles
+def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, do_year=0) :
+	soilfile1, soilfile2, lakefile1, lakefile2, depofile1, depofile2, seqfile, resfile = excelfiles
 	
 	##OOOOPS, hard coded sheet names...
-	soil_df = pd.read_excel(soilfile, sheet_name='Tusen1995-soil', header=16, skiprows=[17], index_col=1)
-	lake_df = pd.read_excel(lakefile1, sheet_name='Tusen1995-lake', header=16, skiprows=[17], index_col=1)
-	lake_df_2 = pd.read_excel(lakefile2, sheet_name='Tusen2019-lake', header=16, skiprows=[17], index_col=1)
-	depo_df = pd.read_excel(depofile, sheet_name='Tusen1995-depo', header=16, skiprows=[17], index_col=1)
+	if do_year == 0 or do_year == -1 :
+		soil_df = pd.read_excel(soilfile1, sheet_name='Tusen1995-soil', header=16, skiprows=[17], index_col=1)
+		lake_df = pd.read_excel(lakefile1, sheet_name='Tusen1995-lake', header=16, skiprows=[17], index_col=1)
+		lake_df_2 = pd.read_excel(lakefile2, sheet_name='Tusen2019-lake', header=16, skiprows=[17], index_col=1)
+		depo_df = pd.read_excel(depofile1, sheet_name='Tusen1995-depo', header=16, skiprows=[17], index_col=1)
+	else :
+		soil_df = pd.read_excel(soilfile2, sheet_name='Tusen2019-soil', header=16, skiprows=[17], index_col=1)
+		lake_df = pd.read_excel(lakefile2, sheet_name='Tusen2019-lake', header=16, skiprows=[17], index_col=1)
+		lake_df_2 = pd.read_excel(lakefile1, sheet_name='Tusen1995-lake', header=16, skiprows=[17], index_col=1)
+		depo_df = pd.read_excel(depofile2, sheet_name='Tusen2019-depo', header=16, skiprows=[17], index_col=1)
 	nh4_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-NH4', header=17, index_col=1)
 	no3_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-NO3', header=17, index_col=1)
 	so4_df  = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-SO4', header=17, index_col=1)
 	cl_df   = pd.read_excel(seqfile, sheet_name='Tusen1995-WC-Cl', header=17, index_col=1)
 	
+	doc_df  = pd.read_excel(resfile, sheet_name='Soil1 params', header=13, skiprows=[14], index_col=1)
 	
 	#TODO: These should have been read in from the file!
-	n_sequence_years   = [1800, 1880, 1920, 1940, 1950, 1960, 1970, 1975, 1980, 1985, 1990, 1995, 2000]
-	so4_sequence_years = [1800, 1880, 1920, 1940, 1945, 1955, 1960, 1970, 1975, 1980, 1985, 1990, 2000]
+	no3_sequence_years = [1800, 1880, 1930, 1940, 1950, 1970, 1980, 1985, 1992, 1998, 2005, 2012, 2020]
+	nh4_sequence_years = [1800, 1880, 1920, 1950, 1970, 1975, 1980, 1985, 1992, 1999, 2004, 2014, 2020]
+	so4_sequence_years = [1800, 1880, 1940, 1945, 1970, 1975, 1985, 1991, 1999, 2013, 2014, 2016, 2020]
 	cl_sequence_years  = [1800, 1993, 1994, 1996, 1997, 2017, 2018, 2020, 2021]
 	
 	input_index = cu.get_input_date_index(dataset)
@@ -45,7 +52,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		if limit_num >= 0 and loop_idx >= limit_num : break
 		loop_idx += 1
 	
-		if id not in lake_df_2.index : continue                        #TODO: maybe run 1-point sample then instead!
+		#if id not in lake_df_2.index : continue                        #TODO: maybe run 1-point sample then instead!
 	
 		name_name = '*Name'
 		#name_name = "'    each year (depend on lake chem)"    # caused by new formatting of the excel sheet
@@ -59,6 +66,12 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		no3 = no3_df.loc[id, :]
 		so4 = so4_df.loc[id, :]
 		cl  = cl_df.loc[id, :]
+		
+		doc_row = doc_df.loc[id, :]
+		
+		if np.isnan(doc_row['DOC']) : continue
+		if do_year==-1 and soil['WeSO4'] > 0.0 : continue
+		
 		
 		ds = dataset.copy()
 		
@@ -83,12 +96,17 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		ds.set_parameter_double('Soil sulfate adsorption max capacity', ['Soil'], soil['Emx'])
 		ds.set_parameter_double('(log10) Al(OH)3 dissociation equilibrium constant', ['Soil'], soil['KAl'])
 		
+		ds.set_parameter_double('(-log10) pK 1st equilibrium constant for triprotic organic acid', ['Soil'], soil['pK1'])
+		ds.set_parameter_double('(-log10) pK 2nd equilibrium constant for triprotic organic acid', ['Soil'], soil['pK2'])
+		ds.set_parameter_double('(-log10) pK 3rd equilibrium constant for triprotic organic acid', ['Soil'], soil['pK3'])
+		
 		ds.set_parameter_double('Temperature', ['Soil'], soil['Temp'])
 		ds.set_parameter_double('CO2 partial pressure', ['Soil'], soil['PCO2'])
 		#ds.set_parameter_double('Organic acid concentration', ['Soil'], soil['DOC'])
-		ds.set_parameter_double('Organic acid concentration', ['Soil'], 100.0)
+		#ds.set_parameter_double('Organic acid concentration', ['Soil'], 100.0)
+		ds.set_parameter_double('Organic acid concentration', ['Soil'], doc_row['DOC'])
 	
-		ds.set_parameter_double('Nitrification', ['Soil'], -soil['Nitrif'])
+		ds.set_parameter_double('Nitrification', ['Soil'], -100.0)
 		
 		elems = ['Ca', 'Mg', 'Na', 'K', 'SO4', 'NH4', 'NO3']
 		
@@ -147,19 +165,19 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		ds.set_parameter_double('CO2 partial pressure', ['Lake'], lake['pCO2'])
 		ds.set_parameter_double('Organic acid concentration', ['Lake'], lake['DOC'])
 		
-		ds.set_parameter_double('Nitrification', ['Lake'], -lake['Nitrif'])
+		ds.set_parameter_double('Nitrification', ['Lake'], -100.0)
 		
-		#NOTE NO3 retention as in OKA's study.
-		S_N = 5.0
-		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0 * S_N / (lake['Qs'] + S_N))
-		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0 * S_N / (lake['Runoff'] + S_N))
+		ds.set_parameter_double('(-log10) pK 1st equilibrium constant for triprotic organic acid', ['Lake'], lake['pK1'])
+		ds.set_parameter_double('(-log10) pK 2nd equilibrium constant for triprotic organic acid', ['Lake'], lake['pK2'])
+		ds.set_parameter_double('(-log10) pK 3rd equilibrium constant for triprotic organic acid', ['Lake'], lake['pK3'])
 		
-		#ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
-		
+
+		ds.set_parameter_double('NO3 sinks', ['Lake'], -100.0)
+		ds.set_parameter_double('NO3 sinks', ['Soil'], -100.0)
 		
 		#### LAKE sheet 2 :
 		
-		if two_year :
+		if do_year==-1 :
 			elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
 			
 			year = lake2['Year']
@@ -181,10 +199,10 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		
 		scale_df.set_index('Dates', inplace=True)
 		
-		for yr in range(0, len(n_sequence_years)) :
+		for yr in range(0, len(no3_sequence_years)) :
 			hdr = 'ScalFact' if yr==0 else 'ScalFact.%d'%yr
-			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NH4'] = nh4[hdr]
-			scale_df.loc[pd.to_datetime('%d-6-1' % n_sequence_years[yr]),   'NO3'] = no3[hdr]
+			scale_df.loc[pd.to_datetime('%d-6-1' % nh4_sequence_years[yr]),   'NH4'] = nh4[hdr]
+			scale_df.loc[pd.to_datetime('%d-6-1' % no3_sequence_years[yr]),   'NO3'] = no3[hdr]
 			if yr < len(so4_sequence_years) :
 				scale_df.loc[pd.to_datetime('%d-6-1' % so4_sequence_years[yr]), 'SO4'] = so4[hdr]
 			if yr < len(cl_sequence_years) :
@@ -203,6 +221,7 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		
 		#### DEPON sheet:
 		
+		
 		elems = ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3']
 		
 		depo_ref_year = depo['Year']
@@ -211,8 +230,11 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 			index_elem = elem
 			if elem == 'Cl': index_elem = 'CL'   #sigh
 			scale = 1.0
-			if elem in scale_df.columns :
-				invscale = scale_df[elem]['%d-1-1'%depo_ref_year]    # Compensate for the fact that the reference year may not have been scaled as 1.0 in the sequence
+			scale_elem = elem
+			if elem in ['Ca', 'Mg', 'Na', 'K'] :
+				scale_elem = 'Cl'
+			if scale_elem in scale_df.columns :
+				invscale = scale_df[scale_elem]['%d-1-1'%depo_ref_year]    # Compensate for the fact that the reference year may not have been scaled as 1.0 in the sequence
 				#print('%s scale in %d was %f'%(elem,depo_ref_year,invscale))
 				scale = 1.0 / invscale
 				
@@ -228,9 +250,11 @@ def do_magic_loop(dataset, excelfiles, loopfun, limit_num=-1, do_id=-1, two_year
 		
 		ds.set_parameter_double('Precipitation', [], depo['Precip'])
 		
-		loopfun(ds, id, soil, depo, lake)
+		try :
+			loopfun(ds, id, soil, depo, lake)
+		except RuntimeError as err :
+			print('Got an error for lake %d :' % id, err)
+            
 		
 		ds.delete()
-	
-	
 	
