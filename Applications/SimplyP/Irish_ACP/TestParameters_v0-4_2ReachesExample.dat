@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplySnow V0.1, SimplyQ V0.4.2 Ballycanew, SimplySed V0.5.0, SimplyP V0.4.2 reactiveP) at 2022-11-22 14:59:25
+# Parameter file generated for model SimplyP, containing modules (Thornthwaite PET V1.0, SimplySnow V0.1, SimplyQ V0.4.2 Ballycanew, SimplySed V0.5.1, SimplyP V0.4.2 reactiveP) at 2022-11-23 15:11:36
 
 index_sets:
 "Reaches" : {"Coull" {"Aboyne" "Coull"}}
@@ -97,14 +97,14 @@ parameters:
 
 } # end of module "SimplyQ"
 
-{ module "SimplySed" version "0.5.0"
+{ module "SimplySed" version "0.5.1"
 
 	# Erodibility and sediments (no index sets) #
 
-	"Reach sediment input scaling factor" :     #(kg/m^3) [0, 100] Calibrated parameter linking simulated sediment input from land to simulated flow from land
+	"Reach sediment input scaling factor" :     #(kg/m^3) [0, 100] Calibrated parameter linking simulated sediment input and flow from land, the a coefficient in the relationship input = aQ^b
 	4
 
-	"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
+	"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] Calibrated parameter linking simulated sediment input and flow from land, the b exponent in the relationship input = aQ^b
 	2
 
 
@@ -123,7 +123,7 @@ parameters:
 	"Reduction of load in sediment" :     #(dimensionless) [0, 1] Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.
 	0 0 0
 
-	"Dynamic erodibility" :     # Requires one of your land use classes to be 'Arable' (exact name match). If set to 'true', the model simulates the change in erodibility on arable land through the year due to cropping and harvesting
+	"Change erodibility through the year on arable land?" :     # Should only be used for arable land. If set to 'true', the model includes a simple estimate of the increase in erodibility due to cropping and harvesting
 	false false false
 
 	"Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
