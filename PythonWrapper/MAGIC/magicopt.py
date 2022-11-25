@@ -130,7 +130,7 @@ def get_acid_anion_setup(dataset, idx, obsname='Observed runoff conc', so4dep = 
 	return params, comparisons
 
 	
-def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False) :
+def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=False, obsE=False, sat_wt=10.0) :
 	
 	wantparams = ['ECa_S', 'EMg_S', 'ENa_S', 'EK_S', 'WCa_S', 'WMg_S', 'WNa_S', 'WK_S']    #Maybe also OA_S
 
@@ -169,10 +169,10 @@ def get_base_cations_setup(dataset, idx, obsname='Observed runoff conc', usemax=
 				('K(+) ionic concentration', [waterindex], '%s K' %obsname, [], 1.0),
 				]
 	comparisons2 = [
-				('Exchangeable Ca on soil as % of CEC', [soilindex], 'Observed ECa', [], 10.0),
-				('Exchangeable Mg on soil as % of CEC', [soilindex], 'Observed EMg', [], 10.0),
-				('Exchangeable Na on soil as % of CEC', [soilindex], 'Observed ENa', [], 10.0),
-				('Exchangeable K on soil as % of CEC', [soilindex], 'Observed EK', [], 10.0),
+				('Exchangeable Ca on soil as % of CEC', [soilindex], 'Observed ECa', [], sat_wt),
+				('Exchangeable Mg on soil as % of CEC', [soilindex], 'Observed EMg', [], sat_wt),
+				('Exchangeable Na on soil as % of CEC', [soilindex], 'Observed ENa', [], sat_wt),
+				('Exchangeable K on soil as % of CEC', [soilindex], 'Observed EK', [], sat_wt),
 				]
 	if obsE :
 		comparisons += comparisons2
