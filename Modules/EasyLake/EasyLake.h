@@ -241,7 +241,7 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 	)
 	
 	
-	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);
+	auto Latitude         = RegisterParameterDouble(Model, PhysParams, "Latitude", Degrees, 60.0, -90.0, 90.0);   // Hmm, this is not used. Why is it here?
 	auto InitialEpilimnionTemperature = RegisterParameterDouble(Model, PhysParams, "Initial epilimnion temperature", DegreesCelsius, 20.0, 0.0, 50.0);
 	auto InitialBottomTemperature     = RegisterParameterDouble(Model, PhysParams, "Initial bottom temperature", DegreesCelsius, 4.0, 0.0, 50.0);
 	
@@ -652,7 +652,7 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 		bool   ismix      = (bool)RESULT(IsMixing);
 		double z_e_winter = PARAMETER(EpilimnionWinterThickness);
 		double dz0        = PARAMETER(EpilimnionThickeningRate);
-		double z_e_prev   = LAST_RESULT(EpilimnionThickness);		
+		//double z_e_prev   = LAST_RESULT(EpilimnionThickness);		
 		double z_b        = LAST_RESULT(WaterLevel);
 		double T_e        = LAST_RESULT(EpilimnionTemperature);
 		double T_b        = LAST_RESULT(BottomTemperature);
@@ -665,7 +665,8 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 		double dz = dz0*(1.0 + 2.0*(day - prevmix));
 		
 		if(!ismix && T_e > T_b)   // The last clause is to not get deepening in winter.
-			z_e = z_e_prev + dz;
+			//z_e = z_e_prev + dz;
+			z_e = z_e_winter + dz;
 		
 		return std::min(z_e, z_b-1.0);
 	)
