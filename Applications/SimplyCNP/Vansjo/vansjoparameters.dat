@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.2, SimplySnow V0.1, SimplyQ V0.4.3, Simply soil temperature V0.1, SimplySed V0.5.0, SimplyN V_dev_02, SimplyC V0.0.3, SimplyC TOC V0.0, SimplyP V0.4.2, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2022-12-02 10:59:47
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.2, SimplySnow V0.1, SimplyQ V0.4.3, Simply soil temperature V0.1, SimplySed V0.5.0, SimplyN V_dev_02, SimplyC V0.0.3, SimplyC TOC V0.0, SimplyP V0.4.2, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2022-12-02 11:31:43
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -121,7 +121,7 @@ parameters:
 	# Erodibility and sediments (no index sets) #
 
 	"Reach sediment input scaling factor" :     #(kg/m^3) [0, 100] Calibrated parameter linking simulated sediment input from land to simulated flow from land
-	16
+	8
 
 	"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
 	2
