@@ -807,7 +807,7 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 		bool is_ice = (bool)RESULT(IsIce);
 		double Hice = RESULT(IceThickness);
 		
-		double surfaceheatflux = RESULT(SurfaceHeatFlux);
+		//double surfaceheatflux = RESULT(SurfaceHeatFlux);
 		double shortwavein     = RESULT(ShortwaveRadiation)*RESULT(IceAttenuationCoefficient);
 		
 		//NOTE: The amount of shortwave radiation that is absorbed by the ice and contributes to melting
@@ -820,13 +820,14 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 			double iceT = (factor * iceformationtemp + airT) / (1.0 + factor);  // Approximation of ice temperature. TODO: factor out to separate equation?
 			dIce_dt += 2.0*iceHeatConductionCoeff * (iceformationtemp-iceT) / (2.0*Hice);
 			//NOTE: Stefan's law, but turned into ODE equation:
-			// Hice_n = sqrt(Hice_{n-1}^2 + Y)
-			// -> d(Hice^2)/dt = Y
+			// Hice_n = sqrt(Hice_{n-1}^2 + Y)    with Y = 2*ice_heat_conduct*(ice_formation - ice_t)
+			// => d(Hice^2)/dt = Y
 			// and d(Hice^2)/dt = 2*Hice*d(Hice)/dt
+			// => d(Hice)/dt = Y / (2*Hice)
 		}
 		else if(is_ice)
 		{
-			dIce_dt += - shortwavein - surfaceheatflux;
+			dIce_dt += - shortwavein;// - surfaceheatflux;    //Note: above surface heat flux is turned off when there is ice.
 		}
 		
 		dIce_dt = 86400.0*dIce_dt / (latentHeatOfFreezing*iceDensity);
@@ -854,7 +855,7 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 		double area   = RESULT(LakeSurfaceArea);
 		
 		double surfaceheatflux = RESULT(SurfaceHeatFlux);
-		if(RESULT(IsIce)) surfaceheatflux = 0.0;
+		//if(RESULT(IsIce)) surfaceheatflux = 0.0;
 		
 		
 		// NOTE: The amount of shortwave that penetrates the ice and contributes to heating the water below. Currently this assumes that no shortwave reaches the lake bottom and is absorbed there instead.
@@ -885,7 +886,7 @@ The implementation is informed by the implementation in [GOTM](https://github.co
 		double inflow_dT = (inflowT  - meanT)*inflowQ/volume;
 		double rain_dT   = (rainT    - meanT)*rainQ/volume;
 		if(rainT == 0.0 && meanT <= 0.0) rain_dT = 0.0; //NOTE: We don't want falling snow that just adds to the ice to heat the lake.
-		double outflow_dT= (outflowT - meanT)*outflowQ/volume;
+		double outflow_dT= -(outflowT - meanT)*outflowQ/volume;
 		
 		return 86400.0*(heat + iceEnergy) / (specificHeatCapacityOfWater * mass) + inflow_dT + rain_dT + outflow_dT;
 		// s/day * J/s / (J/(K*kg) * kg) = K/day = oC/day

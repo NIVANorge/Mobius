@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.2, SimplyQ V0.4.2, Simply soil temperature V0.1, SimplySed V0.4, SimplyN V_dev_02, SimplyC Vtest_03, SimplyC TOC V0.0, SimplyP V0.4, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2022-01-05 14:16:37
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.2, SimplySnow V0.1, SimplyQ V0.4.3, Simply soil temperature V0.1, SimplySed V0.5.0, SimplyN V_dev_02, SimplyC V0.0.3, SimplyC TOC V0.0, SimplyP V0.4.2, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2022-12-02 10:59:47
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -29,7 +29,7 @@ parameters:
 
 } # end of module "Degree-day PET"
 
-{ module "SimplyQ" version "0.4.2"
+{ module "SimplySnow" version "0.1"
 
 	# Snow (no index sets) #
 
@@ -40,13 +40,14 @@ parameters:
 	1.6
 
 
+} # end of module "SimplySnow"
+
+{ module "SimplyQ" version "0.4.3"
+
 	# Hydrology (no index sets) #
 
 	"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
 	0
-
-	"Soil field capacity" :     #(mm) [0, 1000] 
-	170
 
 	"Baseflow index" :     #(dimensionless) [0, 1] 
 	0.26
@@ -81,6 +82,9 @@ parameters:
 	"Soil water time constant" :     #(days) [0.01, 40] 
 	3.9 3.9
 
+	"Soil field capacity" :     #(mm) [0, 1000] 
+	170 170
+
 
 	# Land cover ("Reaches" "Landscape units") #
 
@@ -112,30 +116,15 @@ parameters:
 
 } # end of module "Simply soil temperature"
 
-{ module "SimplySed" version "0.4"
+{ module "SimplySed" version "0.5.0"
 
 	# Erodibility and sediments (no index sets) #
-
-	"Dynamic erodibility" :     # Requires one of your land use classes to be 'Arable' (exact name match). If set to 'true', the model simulates the change in erodibility on arable land through the year due to cropping and harvesting
-	true
 
 	"Reach sediment input scaling factor" :     #(kg/m^3) [0, 100] Calibrated parameter linking simulated sediment input from land to simulated flow from land
 	16
 
 	"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
 	2
-
-	"Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
-	60
-
-	"Day of year when soil erodibility is at its max for autumn-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment
-	304
-
-
-	# Seasonal erodibility by subcatchment ("Reaches") #
-
-	"Proportion of spring grown crops" :     #(dimensionless) [0, 1] Proportion of total arable land that is spring-sown crops. Only needed if Dynamic erodibility is set to true and one of your land use classes is Arable
-	0.65 0.65 0.65 0.65
 
 
 	# Land slope ("Reaches" "Landscape units") #
@@ -154,6 +143,18 @@ parameters:
 
 	"Reduction of load in sediment" :     #(dimensionless) [0, 1] Proportional reduction in load of sediment delivered to the reach due to management measures, e.g. buffer strips, filter fences, conservation tillage, etc.
 	0 0
+
+	"Dynamic erodibility" :     # Requires one of your land use classes to be 'Arable' (exact name match). If set to 'true', the model simulates the change in erodibility on arable land through the year due to cropping and harvesting
+	true false
+
+	"Day of year when soil erodibility is at its max for spring-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and spring-sown crops are present in the catchment
+	60 60
+
+	"Day of year when soil erodibility is at its max for autumn-grown crops" :     #(Julian day) [30, 335] Parameter only used if Dynamic erodibility is set to true and autumn-sown crops are present in the catchment
+	304 304
+
+	"Proportion of spring grown crops" :     #(dimensionless) [0, 1] Proportion of total arable land that is spring-sown crops. Only needed if Dynamic erodibility is set to true.
+	0.65 0.65
 
 
 } # end of module "SimplySed"
@@ -222,33 +223,39 @@ parameters:
 
 } # end of module "SimplyN"
 
-{ module "SimplyC" version "test_03"
+{ module "SimplyC" version "0.0.3"
 
 	# Carbon global (no index sets) #
 
-	"Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 20] 
+	"Soil DOC computation" :     # [constant, equilibrium, dynamic] constant: all soil water has constant DOC conc., equilibrium: conc. is just determined by temperature and SO4, dynamic: conc tends toward the equilibrium, but will be diluted when there is water input to the soil.
+	equilibrium
+
+	"Deep soil/groundwater DOC computation" :     # [constant, soil_avg, mass_balance] constant: constant conc., soil_avg: conc in deep soil is avg. of soil runoff, mass_balance: DOC mass balance is computed, with a decay half life.
+	constant
+
+	"Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100] Only used if soil DOC is dynamic
+	3
+
+	"Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 0.1] Only used if soil DOC is dynamic or equilibrium
 	0.0265
 
-	"Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 20] 
+	"Soil temperature DOC creation square coefficient" :     #(1/(°C)2) [0, 0.1] Only used if soil DOC is dynamic of equilibrium
+	0
+
+	"Soil carbon solubility response to SO4 deposition" :     #(1/(mg/l)) [0, 0.1] Only used if soil DOC is dynamic or equilibrium
 	0.05
 
-	"Mineral soil/groundwater DOC concentration" :     #(mg/l) [0, 70] 
+	"Deep soil/groundwater DOC concentration" :     #(mg/l) [0, 70] Only used if deep soil conc. is constant
 	7.69
+
+	"Deep soil/groundwater DOC half life" :     #(day) [0.5, 1000] Only used if deep soil conc. is mass_balance
+	70
 
 
 	# Carbon land ("Landscape units") #
 
-	"Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100] 
-	3 3
-
 	"Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0
 	7.48 7.48
-
-	"DOC mineralisation+sorption rate" :     #(1/day) [0, 1] 
-	0.401069518716578 0.401069518716578
-
-	"Compute mineralisation+sorption rate from baseline conc." :     # If true, use the baseline concentration to determine mineralisation+sorption rate, otherwise use the mineralisation+sorption rate to determine baseline concentration
-	true true
 
 
 } # end of module "SimplyC"
@@ -263,7 +270,7 @@ parameters:
 
 } # end of module "SimplyC TOC"
 
-{ module "SimplyP" version "0.4"
+{ module "SimplyP" version "0.4.2"
 
 	# Phosphorous (no index sets) #
 
@@ -277,7 +284,7 @@ parameters:
 	95
 
 	"Phosphorous sorption coefficient" :     #(l/mg) [0, 0.1] Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model
-	-0.002
+	0
 
 	"Particulate P enrichment factor" :     #(dimensionless) [1, 5] P content of eroded sediment compared to P content of bulk soils (multiplicative factor)
 	1.51

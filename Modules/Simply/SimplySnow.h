@@ -38,7 +38,7 @@ The basic simple snow module factored out from SimplyQ
 	
 	EQUATION(Model, PrecipitationFallingAsSnow,
 		double precip = INPUT(Precipitation);
-		return (INPUT(AirTemperature) < 0) ? precip : 0.0;
+		return (INPUT(AirTemperature) <= 0) ? precip : 0.0;
 	)
 	
 	EQUATION(Model, PrecipitationFallingAsRain,
