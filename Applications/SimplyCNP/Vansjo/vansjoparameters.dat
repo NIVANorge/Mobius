@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.2, SimplySnow V0.1, SimplyQ V0.4.3, Simply soil temperature V0.1, SimplySed V0.5.0, SimplyN V_dev_02, SimplyC V0.0.3, SimplyC TOC V0.0, SimplyP V0.4.2, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2022-12-02 11:31:43
+# Parameter file generated for model SimplyCNP, containing modules (Degree-day PET V0.2, SimplySnow V0.1, SimplyQ V0.4.3, Simply soil temperature V0.1, SimplySed V0.5.0, SimplyN V_dev_02, SimplyC V0.0.3, SimplyC TOC V0.0, SimplyP V0.4.2, Easy-Lake physical V0.3, Easy-Lake CNP V_dev) at 2022-12-08 14:59:22
 
 index_sets:
 "Landscape units" : {"Arable" "Semi-natural"}
@@ -188,10 +188,10 @@ parameters:
 	1000
 
 	"Reach denitrification rate at 20°C" :     #(m3/day) [0, 10] 
-	0.001
+	0.006
 
 	"(Q10) Reach denitrification rate response to 10°C change in temperature" :     #(dimensionless) [1, 5] 
-	4
+	1.4
 
 	"Quick flow is overland" :     # Whether quick flow water is clear or brings DIN from the soil
 	false
@@ -203,7 +203,7 @@ parameters:
 	3.5 0.5
 
 	"Net annual DIN input to soil" :     #(kg/Ha/year) [0, 1000] Inputs from deposition and fertilizer
-	130 6.6
+	160 18
 
 	"Fertilization start day" :     #(day) [1, 365]
 	60 60
@@ -231,7 +231,7 @@ parameters:
 	equilibrium
 
 	"Deep soil/groundwater DOC computation" :     # [constant, soil_avg, mass_balance] constant: constant conc., soil_avg: conc in deep soil is avg. of soil runoff, mass_balance: DOC mass balance is computed, with a decay half life.
-	constant
+	mass_balance
 
 	"Baseline Soil DOC dissolution rate" :     #(mg/l/day) [0, 100] Only used if soil DOC is dynamic
 	3
@@ -249,13 +249,13 @@ parameters:
 	7.69
 
 	"Deep soil/groundwater DOC half life" :     #(day) [0.5, 1000] Only used if deep soil conc. is mass_balance
-	70
+	200
 
 
 	# Carbon land ("Landscape units") #
 
 	"Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0
-	7.48 7.48
+	8.5 8.5
 
 
 } # end of module "SimplyC"
@@ -265,7 +265,7 @@ parameters:
 	# TOC (no index sets) #
 
 	"Suspended sediment carbon content" :     #(dimensionless) [0, 1] Fraction of mass of suspended sediment that is organic carbon
-	0.03
+	0.01
 
 
 } # end of module "SimplyC TOC"
@@ -278,13 +278,13 @@ parameters:
 	true
 
 	"Run in calibration mode" :     # Run model in calibration mode? If true, the initial agricultural soil water TDP concentration (and therefore EPC0) is calibrated and used to estimate the phosphorus sorption coefficient. If false, the sorption coefficient is read in from the parameter file
-	true
+	false
 
 	"Soil mass per m2" :     #(kg/m^2) [0, 200] Estimate as topsoil depth * bulk density. Used to estimate the initial mass of labile soil P. Mostly important if you are interested in longer-term changes in soil P content
 	95
 
 	"Phosphorous sorption coefficient" :     #(l/mg) [0, 0.1] Gradient of linear relationship between labile P and TDP concentration. This value is only used if calibration run mode is set to false, otherwise it is estimated by the model
-	0
+	0.02
 
 	"Particulate P enrichment factor" :     #(dimensionless) [1, 5] P content of eroded sediment compared to P content of bulk soils (multiplicative factor)
 	1.51
@@ -308,7 +308,7 @@ parameters:
 	10 0
 
 	"Initial soil water TDP concentration and EPC0" :     #(mg/l) [0, 10] Recommend setting this to 0 for semi-natural (or low soil P) land, and just providing a value for agricultural (or high soil P land). If the dynamic soil P option is set to false, this value is the soil water TDP concentration throughout the model run
-	0.13 0.0015
+	0.2 0.0015
 
 	"Initial total soil P content" :     #(mg/kg) [0, 10000] 
 	1200 873
@@ -354,7 +354,7 @@ parameters:
 	5 5 3.1 4
 
 	"Epilimnion thickening rate" :     #(m/day2) [0, 0.05] Empirical rate of how fast the thickness of the epilimnion grows during summer.
-	0 0 0.0001 0.0001
+	0 0 0 0
 
 	"Initial ice thickness" :     #(m) [0, 10]
 	0 0 0 0
@@ -391,10 +391,10 @@ parameters:
 	0
 
 	"DOC settling velocity" :     #(m/day) [0, 10]
-	0.001
+	0.002
 
 	"DOC optical cross-section" :     #(m2/mg) [0.001, 1] Can be used to scale the photomineralization speed
-	2e-06
+	3e-05
 
 
 	# Initial lake concentrations (no index sets) #
