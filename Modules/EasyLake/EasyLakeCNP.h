@@ -485,7 +485,8 @@ Currently in early development.
 	EQUATION(Model, HypolimnionDINMass,
 		return
 			  RESULT(EpilimnionHypolimnionDINFlux)
-			- RESULT(HypolimnionDINSettling);
+			- RESULT(HypolimnionDINSettling)
+			- RESULT(HypolimnionDenitrification);
 	)
 	
 	EQUATION(Model, HypolimnionDINConcentration,
