@@ -8,7 +8,7 @@
 static void
 AddSimplyPModel(mobius_model *Model)
 {
-	BeginModule(Model, "SimplyP", "0.4.2 reactiveP");
+	BeginModule(Model, "SimplyP", "0.4.3 reactiveP");
 	
 	SetModuleDescription(Model, R""""(
 SimplyP is a parsimonious phosphorus model. It was originally implemented in Python and published as
@@ -16,6 +16,8 @@ SimplyP is a parsimonious phosphorus model. It was originally implemented in Pyt
 [Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132](https://doi.org/10.1002/2016WR020132)
 
 For news, updates and references, see [the model's github home page](https://github.com/NIVANorge/Mobius/tree/master/Applications/SimplyP)
+
+New to version 0.4.3: Added TRP flux
 
 New to version "reactiveP":
 Added in extra P fractions to enable simulation of total reactive P (TRP), as this P fraction is commonly measured by automatic sensors at high frequency.
@@ -351,6 +353,7 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 
 	auto DailyMeanStreamTPFlux = RegisterEquation(Model, "Reach daily mean TP flux", KgPerDay);
 	auto DailyMeanStreamSRPFlux = RegisterEquation(Model, "Reach daily mean SRP flux", KgPerDay);
+	auto DailyMeanStreamTRPFlux = RegisterEquation(Model, "Reach daily mean TRP flux", KgPerDay);
 	auto TDPConcentration = RegisterEquation(Model, "Reach TDP concentration", MgPerL); //Volume-weighted daily mean
 	auto PPConcentration  = RegisterEquation(Model, "Reach PP concentration", MgPerL); //Volume-weighted daily mean
 	auto TPConcentration  = RegisterEquation(Model, "Reach TP concentration", MgPerL); //Volume-weighted daily mean
@@ -394,6 +397,10 @@ For reference, here is [the original Python implementation of SimplyP](https://g
 	
 	EQUATION(Model, TRPConcentration,
 		return RESULT(SRPConcentration) + RESULT(PRPConcentration);
+	)
+	
+	EQUATION(Model, DailyMeanStreamTRPFlux,
+		return RESULT(DailyMeanStreamTDPFlux) * PARAMETER(SRPFraction) + RESULT(DailyMeanStreamPPFlux) * PARAMETER(PRPFraction);
 	)
 	
 	EndModule(Model);
