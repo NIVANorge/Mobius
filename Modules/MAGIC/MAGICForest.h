@@ -224,10 +224,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto PO4BasicInputs          = RegisterEquation(Model, "PO4 non-process inputs", MMolPerM2PerTs);
 	
 	// The following are re-registered and defined in the decomp-uptake module:
-	auto TotalTreeDecompCaSource = RegisterEquation(Model, "Total Ca source from tree decomposition", MEqPerM2PerTs);
-	auto TotalTreeDecompMgSource = RegisterEquation(Model, "Total Mg source from tree decomposition", MEqPerM2PerTs);
-	auto TotalTreeDecompNaSource = RegisterEquation(Model, "Total Na source from tree decomposition", MEqPerM2PerTs);
-	auto TotalTreeDecompKSource  = RegisterEquation(Model, "Total K source from tree decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompCaSource = RegisterEquation(Model, "Total Ca source from litter decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompMgSource = RegisterEquation(Model, "Total Mg source from litter decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompNaSource = RegisterEquation(Model, "Total Na source from litter decomposition", MEqPerM2PerTs);
+	auto TotalTreeDecompKSource  = RegisterEquation(Model, "Total K source from litter decomposition", MEqPerM2PerTs);
 	auto TotalTreeCaUptake       = RegisterEquation(Model, "Total tree Ca uptake", MEqPerM2PerTs);
 	auto TotalTreeMgUptake       = RegisterEquation(Model, "Total tree Mg uptake", MEqPerM2PerTs);
 	auto TotalTreeNaUptake       = RegisterEquation(Model, "Total tree Na uptake", MEqPerM2PerTs);

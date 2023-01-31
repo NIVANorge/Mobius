@@ -54,6 +54,8 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	auto TreeGrowthPars       = RegisterParameterGroup(Model, "Tree growth", TreeClass);
 	
 	auto MaxGrowthRate        = RegisterParameterDouble(Model, TreeGrowthPars, "Un-restricted tree growth rate at 20°C", PerYear, 0.0, 0.0, 1000.0);
+	auto ShadingFactor        = RegisterParameterDouble(Model, TreeGrowthPars, "Shading factor", Dimensionless, 0.0, 0.0, 1000.0, "Factor of how much other species affect the growth of this one");
+	auto ShadingMin           = RegisterParameterDouble(Model, TreeGrowthPars, "Shading min", M3PerHa, 0.0, 0.0, 1000.0, "Allow volumes up to this before considering shading");
 	auto GrowthQ10            = RegisterParameterDouble(Model, TreeGrowthPars, "Growth rate Q10", Dimensionless, 1.0, 1.0, 5.0);
 	
 	
@@ -121,42 +123,42 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 
 	auto LeftOnGroundByDisturbance = RegisterEquation(Model, "Tree mass left on ground by disturbance", TPerHa);
 	auto TotalLeftOnGroundByDisturbance = RegisterEquationCumulative(Model, "Tree mass left on ground by disturbance averaged over forest patches", LeftOnGroundByDisturbance, ForestPatch, PatchArea);
-	auto LitterPerCompartment = RegisterEquation(Model, "Litter per compartment", TPerHaPerTs);
-	auto DeadTreeMass         = RegisterEquation(Model, "Dead tree biomass", TPerHa);
-	auto DeadTreeDecomp       = RegisterEquation(Model, "Dead tree decomposition", TPerHaPerTs);
+	auto LitterPerCompartment = RegisterEquation(Model, "Litterfall per compartment", TPerHaPerTs);
+	auto DeadTreeMass         = RegisterEquation(Model, "Litter biomass", TPerHa);
+	auto DeadTreeDecomp       = RegisterEquation(Model, "Litter decomposition", TPerHaPerTs);
 	
 	SetInitialValue(Model, LitterPerCompartment, LitterPerCompartment);
 	
-	auto InitialDeadTreeMass  = RegisterEquationInitialValue(Model, "Initial dead tree mass", TPerHa);
+	auto InitialDeadTreeMass  = RegisterEquationInitialValue(Model, "Initial litter mass", TPerHa);
 	SetInitialValue(Model, DeadTreeMass, InitialDeadTreeMass);
 	
-	auto TreeDecompCSourceMass = RegisterEquation(Model, "C source from tree decomposition (mass)", KgPerM2PerTs);
-	auto TreeDecompCSource    = RegisterEquation(Model, "C source from tree decomposition", MMolPerM2PerTs);
-	auto TreeDecompNSource    = RegisterEquation(Model, "N source from tree decomposition", MMolPerM2PerTs);
-	auto TreeDecompPSource    = RegisterEquation(Model, "P source from tree decomposition", MMolPerM2PerTs);
-	auto TreeDecompCaSource   = RegisterEquation(Model, "Ca source from tree decomposition", MEqPerM2PerTs);
-	auto TreeDecompMgSource   = RegisterEquation(Model, "Mg source from tree decomposition", MEqPerM2PerTs);
-	auto TreeDecompNaSource   = RegisterEquation(Model, "Na source from tree decomposition", MEqPerM2PerTs);
-	auto TreeDecompKSource    = RegisterEquation(Model, "K source from tree decomposition", MEqPerM2PerTs);
+	auto TreeDecompCSourceMass = RegisterEquation(Model, "C source from litter decomposition (mass)", KgPerM2PerTs);
+	auto TreeDecompCSource    = RegisterEquation(Model, "C source from litter decomposition", MMolPerM2PerTs);
+	auto TreeDecompNSource    = RegisterEquation(Model, "N source from litter decomposition", MMolPerM2PerTs);
+	auto TreeDecompPSource    = RegisterEquation(Model, "P source from litter decomposition", MMolPerM2PerTs);
+	auto TreeDecompCaSource   = RegisterEquation(Model, "Ca source from litter decomposition", MEqPerM2PerTs);
+	auto TreeDecompMgSource   = RegisterEquation(Model, "Mg source from litter decomposition", MEqPerM2PerTs);
+	auto TreeDecompNaSource   = RegisterEquation(Model, "Na source from litter decomposition", MEqPerM2PerTs);
+	auto TreeDecompKSource    = RegisterEquation(Model, "K source from litter decomposition", MEqPerM2PerTs);
 	
 	SetInitialValue(Model, TreeDecompCSource, TreeDecompCSource);
 	
-	auto TotalTreeDecompCSourceSpecies  = RegisterEquationCumulative(Model, "Total C source from tree decomposition per species", TreeDecompCSource, TreeCompartment);
-	auto TotalTreeDecompNSourceSpecies  = RegisterEquationCumulative(Model, "Total N source from tree decomposition per species", TreeDecompNSource, TreeCompartment);
-	auto TotalTreeDecompPSourceSpecies  = RegisterEquationCumulative(Model, "Total P source from tree decomposition per species", TreeDecompPSource, TreeCompartment);
-	auto TotalTreeDecompCaSourceSpecies = RegisterEquationCumulative(Model, "Total Ca source from tree decomposition per species", TreeDecompCaSource, TreeCompartment);
-	auto TotalTreeDecompMgSourceSpecies = RegisterEquationCumulative(Model, "Total Mg source from tree decomposition per species", TreeDecompMgSource, TreeCompartment);
-	auto TotalTreeDecompNaSourceSpecies = RegisterEquationCumulative(Model, "Total Na source from tree decomposition per species", TreeDecompNaSource, TreeCompartment);
-	auto TotalTreeDecompKSourceSpecies  = RegisterEquationCumulative(Model, "Total K source from tree decomposition per species", TreeDecompKSource, TreeCompartment);
+	auto TotalTreeDecompCSourceSpecies  = RegisterEquationCumulative(Model, "Total C source from litter decomposition per species", TreeDecompCSource, TreeCompartment);
+	auto TotalTreeDecompNSourceSpecies  = RegisterEquationCumulative(Model, "Total N source from litter decomposition per species", TreeDecompNSource, TreeCompartment);
+	auto TotalTreeDecompPSourceSpecies  = RegisterEquationCumulative(Model, "Total P source from litter decomposition per species", TreeDecompPSource, TreeCompartment);
+	auto TotalTreeDecompCaSourceSpecies = RegisterEquationCumulative(Model, "Total Ca source from litter decomposition per species", TreeDecompCaSource, TreeCompartment);
+	auto TotalTreeDecompMgSourceSpecies = RegisterEquationCumulative(Model, "Total Mg source from litter decomposition per species", TreeDecompMgSource, TreeCompartment);
+	auto TotalTreeDecompNaSourceSpecies = RegisterEquationCumulative(Model, "Total Na source from litter decomposition per species", TreeDecompNaSource, TreeCompartment);
+	auto TotalTreeDecompKSourceSpecies  = RegisterEquationCumulative(Model, "Total K source from litter decomposition per species", TreeDecompKSource, TreeCompartment);
 	
-	auto TotalTreeDecompCSourcePerCompartment = RegisterEquationCumulative(Model, "Total C source from tree decomposition per compartment (mass)", TreeDecompCSourceMass, TreeClass);
-	auto TotalTreeDecompCSource  = RegisterEquationCumulative(Model, "Total C source from tree decomposition", TotalTreeDecompCSourceSpecies, TreeClass);
-	auto TotalTreeDecompNSource  = RegisterEquationCumulative(Model, "Total N source from tree decomposition", TotalTreeDecompNSourceSpecies, TreeClass);
-	auto TotalTreeDecompPSource  = RegisterEquationCumulative(Model, "Total P source from tree decomposition", TotalTreeDecompPSourceSpecies, TreeClass);
-	auto TotalTreeDecompCaSource = RegisterEquationCumulative(Model, "Total Ca source from tree decomposition", TotalTreeDecompCaSourceSpecies, TreeClass);
-	auto TotalTreeDecompMgSource = RegisterEquationCumulative(Model, "Total Mg source from tree decomposition", TotalTreeDecompMgSourceSpecies, TreeClass);
-	auto TotalTreeDecompNaSource = RegisterEquationCumulative(Model, "Total Na source from tree decomposition", TotalTreeDecompNaSourceSpecies, TreeClass);
-	auto TotalTreeDecompKSource  = RegisterEquationCumulative(Model, "Total K source from tree decomposition", TotalTreeDecompKSourceSpecies, TreeClass);
+	auto TotalTreeDecompCSourcePerCompartment = RegisterEquationCumulative(Model, "Total C source from litter decomposition per compartment (mass)", TreeDecompCSourceMass, TreeClass);
+	auto TotalTreeDecompCSource  = RegisterEquationCumulative(Model, "Total C source from litter decomposition", TotalTreeDecompCSourceSpecies, TreeClass);
+	auto TotalTreeDecompNSource  = RegisterEquationCumulative(Model, "Total N source from litter decomposition", TotalTreeDecompNSourceSpecies, TreeClass);
+	auto TotalTreeDecompPSource  = RegisterEquationCumulative(Model, "Total P source from litter decomposition", TotalTreeDecompPSourceSpecies, TreeClass);
+	auto TotalTreeDecompCaSource = RegisterEquationCumulative(Model, "Total Ca source from litter decomposition", TotalTreeDecompCaSourceSpecies, TreeClass);
+	auto TotalTreeDecompMgSource = RegisterEquationCumulative(Model, "Total Mg source from litter decomposition", TotalTreeDecompMgSourceSpecies, TreeClass);
+	auto TotalTreeDecompNaSource = RegisterEquationCumulative(Model, "Total Na source from litter decomposition", TotalTreeDecompNaSourceSpecies, TreeClass);
+	auto TotalTreeDecompKSource  = RegisterEquationCumulative(Model, "Total K source from litter decomposition", TotalTreeDecompKSourceSpecies, TreeClass);
 	
 #ifdef FOREST_STANDALONE
 	auto FractionOfYear       = RegisterEquation(Model, "Fraction of year", Dimensionless);
@@ -184,15 +186,19 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 		for(index_t Species = FIRST_INDEX(TreeClass); Species != INDEX_COUNT(TreeClass); ++Species)
 			Vtot += LAST_RESULT(LiveTreeVolume, Species, Patch);
 		
+		double effV = V;
+		double s = PARAMETER(ShadingFactor);
+		if(V >= PARAMETER(ShadingMin))
+			effV = Vtot * (s + 1.0);
 		if(std::isfinite(in)) return in;
 		
-		//double computed = r*V*(1.0 - Vtot/K);
+		double computed = r*V*(1.0 - effV/K);
 		
 		// TODO: This isn't really an exact solution. Reason being that if you have multiple species they would compete during the growth. May not be a problem.
 		//double exprt = std::exp(r);
 		//double computed = (K*V*exprt) / (K + Vtot*(exprt-1)) - V;
-		double expmrt = std::exp(-r);
-		double computed = K / (1.0 + ((K -V)/Vtot)*expmrt) - V;
+		//double expmrt = std::exp(-r);
+		//double computed = K / (1.0 + ((K - V)/Vtot)*expmrt) - V;
 		
 		if(!std::isfinite(computed)) computed = 0.0;
 		
@@ -263,13 +269,15 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 	)
 	
 	EQUATION(Model, DeadTreeDecomp,
-		return LAST_RESULT(DeadTreeMass) * (1.0 - std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)));
+		double r = (1.0 - std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear)));
+		//double r = 1.0 - std::pow(1.0 - PARAMETER(TreeDecompRate), RESULT(FractionOfYear));
+		return LAST_RESULT(DeadTreeMass) * r;
 	)
 	
 	EQUATION(Model, InitialDeadTreeMass,
 		double invdt = RESULT(FractionOfYear);
 		double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRate), invdt);
-		double bef = PARAMETER(BefYoung);  //NOTE: Hmm, should be the full bef, but can't access it
+		double bef = PARAMETER(BefYoung) + PARAMETER(BefAgeDep)*std::exp(-INPUT(StandAge)*0.01);;  //NOTE: Need to compute it since it can't be accessed.
 		
 		//NOTE: Again, we can't use result of cumulative equations in initial value computations for some reason.
 		double volavg = 0.0;
@@ -279,9 +287,12 @@ AddMAGICForestDecompUptakeModel(mobius_model *Model)
 			volavg += PARAMETER(PatchArea, Patch) * vol;
 		}
 		
+		double r2 = 1.0 - std::pow(1.0 - PARAMETER(TreeDecompRate), RESULT(FractionOfYear));
+		
 		double turnoveravg = volavg * bef * r;
 		
 		return turnoveravg / (1.0 - std::exp(-PARAMETER(TreeDecompRate)*RESULT(FractionOfYear))); // Steady state:   turnover = decomposition
+		//return turnoveravg / r2;
 	)
 	
 	EQUATION(Model, LeftOnGroundByDisturbance,

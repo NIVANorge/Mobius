@@ -141,9 +141,9 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	// From the forest decomp-uptake module
 	auto TotalTreeNUptake       = GetEquationHandle(Model, "Total tree N uptake");
 	auto TotalTreePUptake       = GetEquationHandle(Model, "Total tree P uptake");
-	auto TotalTreeDecompCSource = GetEquationHandle(Model, "Total C source from tree decomposition");
-	auto TotalTreeDecompNSource = GetEquationHandle(Model, "Total N source from tree decomposition");
-	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from tree decomposition");
+	auto TotalTreeDecompCSource = GetEquationHandle(Model, "Total C source from litter decomposition");
+	auto TotalTreeDecompNSource = GetEquationHandle(Model, "Total N source from litter decomposition");
+	auto TotalTreeDecompPSource = GetEquationHandle(Model, "Total P source from litter decomposition");
 	
 
 	

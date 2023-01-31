@@ -15,6 +15,7 @@ A soil carbon module for MAGIC Forest.
 	auto MMolPerM2PerYear = RegisterUnit(Model, "mmol/m2/year");
 	auto MMolPerM2PerTs = RegisterUnit(Model, "mmol/m2/month");
 	auto PerYear       = RegisterUnit(Model, "1/year");
+	auto PerTs         = RegisterUnit(Model, "1/month");
 	auto KgPerM2       = RegisterUnit(Model, "kg/m2");
 	auto M2PerKg       = RegisterUnit(Model, "m2/kg");
 
@@ -27,8 +28,9 @@ A soil carbon module for MAGIC Forest.
 	auto InitialOrganicC              = RegisterParameterDouble(Model, SoilCarbon, "Initial organic C", MolPerM2, 0.0, 0.0, 1e8, "Only used if not in steady state initially");
 	auto OrganicCFastFraction         = RegisterParameterDouble(Model, SoilCarbon, "Initial relative size of fast C pool", Dimensionless, 0.5, 0.0, 1.0, "Only used if not in steady state initially");
 	auto OrganicCLitter               = RegisterParameterDouble(Model, SoilCarbon, "Organic C litter", MMolPerM2PerYear, 0.0, 0.0, 1e6, "Litter in addition to what is computed by the forest module");
-	auto TurnoverRateFast             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of fast-decomposable C", PerYear, 0.1, 0.0, 1.0);
-	auto TurnoverRateSlow             = RegisterParameterDouble(Model, SoilCarbon, "Turnover rate of slow-decomposable C", PerYear, 0.01, 0.0, 1.0);
+	auto LossRateFast                 = RegisterParameterDouble(Model, SoilCarbon, "Loss rate of fast-decomposable C", PerYear, 0.1, 0.0, 1.0, "Solubilized and mineralized C");
+	auto LossRateSlow                 = RegisterParameterDouble(Model, SoilCarbon, "Loss rate of slow-decomposable C", PerYear, 0.01, 0.0, 1.0, "Solubilized and mineralized C");
+	auto MicrobialQ10                 = RegisterParameterDouble(Model, SoilCarbon, "Microbial Q10", Dimensionless, 1, 1, 5, "If different from 1, does not work that well with the steady-state");
 	auto FastSlowMassFlowRate         = RegisterParameterDouble(Model, SoilCarbon, "Mass flow rate from fast to slow C pool", PerYear, 0.01, 0.0, 1.0);
 	
 	auto Solubilization               = RegisterParameterDouble(Model, SoilCarbon, "Solubilization", Dimensionless, 0.0, 0.0, 1.0, "Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.");
@@ -37,9 +39,11 @@ A soil carbon module for MAGIC Forest.
 	auto CECParams = RegisterParameterGroup(Model, "Cation exchange capacity", Compartment);
 	
 	auto CECVariesByOrgC              = RegisterParameterBool(Model, CECParams, "CEC varies by organic C", false);
-	auto CECOrgCLinearCoeff           = RegisterParameterDouble(Model, CECParams, "CEC - org C linear coefficient", M2PerKg, 0.0, 0.0, 100.0);
+	auto CECOrgCLinearCoeff           = RegisterParameterDouble(Model, CECParams, "CEC - org C linear coefficient", M2PerKg, 0.0, 0.0, 100.0, "Relative to the initial organic C parameter (not steady state)");
 	
 	
+	auto LossRateFastEq         = RegisterEquation(Model, "Loss rate fast", PerTs);
+	auto LossRateSlowEq         = RegisterEquation(Model, "Loss rate slow", PerTs);
 	auto TurnoverFast           = RegisterEquation(Model, "Fast C turnover", MMolPerM2PerTs);
 	auto TurnoverSlow           = RegisterEquation(Model, "Slow C turnover", MMolPerM2PerTs);
 	auto TotalTurnover          = RegisterEquation(Model, "Organic C turnover", MMolPerM2PerTs);
@@ -63,15 +67,16 @@ A soil carbon module for MAGIC Forest.
 	SetInitialValue(Model, OrganicCFast, InitialOrganicCFast);
 	SetInitialValue(Model, OrganicCSlow, InitialOrganicCSlow);
 	
-	auto Discharge              = GetEquationHandle(Model, "Discharge");
+	auto Discharge                 = GetEquationHandle(Model, "Discharge");
+	auto Temperature               = GetEquationHandle(Model, "Temperature");
 	
 	auto CationExchangeCapacityEq  = GetEquationHandle(Model, "Cation exchange capacity");
 	auto CationExchangeCapacity    = GetParameterDoubleHandle(Model, "Cation exchange capacity");
 	
 	auto TreeSpecies               = GetIndexSetHandle(Model, "Tree species");
 	auto TreeCompartment           = GetIndexSetHandle(Model, "Tree compartment");
-	auto TotalTreeDecompCSource    = GetEquationHandle(Model, "Total C source from tree decomposition");
-	auto CSourceTreeDecomp         = GetEquationHandle(Model, "C source from tree decomposition");
+	auto TotalTreeDecompCSource    = GetEquationHandle(Model, "Total C source from litter decomposition");
+	auto CSourceTreeDecomp         = GetEquationHandle(Model, "C source from litter decomposition");
 	auto FractionOfYear            = GetEquationHandle(Model, "Fraction of year");
 	
 	auto IsSoil                    = GetParameterBoolHandle(Model, "This is a soil compartment");
@@ -91,13 +96,11 @@ A soil carbon module for MAGIC Forest.
 		
 		double f = RESULT(FractionOfYear);
 		double In = forest + f*PARAMETER(OrganicCLitter);
-		//double r_F = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), f);
-		//double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
-		double r_F = std::exp(PARAMETER(TurnoverRateFast)*f) - 1;
-		double r_FS = std::exp(PARAMETER(FastSlowMassFlowRate)*f) - 1;
-		double a = PARAMETER(Solubilization);
-		double b = PARAMETER(CUseEfficiency);
-		double steady = In / ((r_F + r_FS)*(1.0 - (1.0-a)*b));
+		double r_F = 1.0 - std::pow(1.0 - PARAMETER(LossRateFast), f);
+		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
+		double steady = In / ((r_F + r_FS));
+		
+		//WarningPrint("Steady is ", steady, "\n");
 		
 		if(PARAMETER(InitialSteady))
 			return steady;
@@ -109,10 +112,8 @@ A soil carbon module for MAGIC Forest.
 		double provided = PARAMETER(InitialOrganicC)*(1.0 - PARAMETER(OrganicCFastFraction))*1000.0; //mol->mmol
 		
 		double f = RESULT(FractionOfYear);
-		//double r_S = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), f);
-		//double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
-		double r_S = std::exp(PARAMETER(TurnoverRateSlow)*f) - 1;
-		double r_FS = std::exp(PARAMETER(FastSlowMassFlowRate)*f) - 1;
+		double r_S = 1.0 - std::pow(1.0 - PARAMETER(LossRateSlow), f);
+		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), f);
 		double steady = RESULT(OrganicCFast) * r_FS / r_S;
 		
 		if(PARAMETER(InitialSteady))
@@ -121,16 +122,30 @@ A soil carbon module for MAGIC Forest.
 		return provided;
 	)
 	
+	EQUATION(Model, LossRateFastEq,
+		double ry = PARAMETER(LossRateFast)*std::pow(PARAMETER(MicrobialQ10), (RESULT(Temperature) - 20.0) / 10.0);
+		return 1.0 - std::pow(1.0 - ry, RESULT(FractionOfYear));
+	)
+	
+	EQUATION(Model, LossRateSlowEq,
+		double ry = PARAMETER(LossRateSlow)*std::pow(PARAMETER(MicrobialQ10), (RESULT(Temperature) - 20.0) / 10.0);
+		return 1.0 - std::pow(1.0 - ry, RESULT(FractionOfYear));
+	)
+	
 	EQUATION(Model, TurnoverFast,
-		//double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateFast), RESULT(FractionOfYear));
-		double r = std::exp(PARAMETER(TurnoverRateFast)*RESULT(FractionOfYear)) - 1;
-		return LAST_RESULT(OrganicCFast)*r;
+		double r = RESULT(LossRateFastEq);
+		double s = PARAMETER(Solubilization);
+		double c = PARAMETER(CUseEfficiency);
+		//double r = std::exp(-PARAMETER(LossRateFast)*RESULT(FractionOfYear)) - 1;
+		return LAST_RESULT(OrganicCFast)*r/(s + (1-s)*(1-c));
 	)
 	
 	EQUATION(Model, TurnoverSlow,
-		//double r = 1.0 - std::pow(1.0 - PARAMETER(TurnoverRateSlow), RESULT(FractionOfYear));
-		double r = std::exp(PARAMETER(TurnoverRateSlow)*RESULT(FractionOfYear)) - 1;
-		return LAST_RESULT(OrganicCSlow)*r;
+		double r = RESULT(LossRateSlowEq);
+		double s = PARAMETER(Solubilization);
+		double c = PARAMETER(CUseEfficiency);
+		//double r = std::exp(-PARAMETER(LossRateSlow)*RESULT(FractionOfYear)) - 1;
+		return LAST_RESULT(OrganicCSlow)*r/(s + (1-s)*(1-c));
 	)
 	
 	EQUATION(Model, TotalTurnover,
@@ -150,8 +165,8 @@ A soil carbon module for MAGIC Forest.
 	)
 	
 	EQUATION(Model, FastSlowMassFlow,
-		//double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), RESULT(FractionOfYear));
-		double r_FS = std::exp(PARAMETER(FastSlowMassFlowRate)*RESULT(FractionOfYear)) - 1;
+		double r_FS = 1.0 - std::pow(1.0 - PARAMETER(FastSlowMassFlowRate), RESULT(FractionOfYear));
+		//double r_FS = std::exp(-PARAMETER(FastSlowMassFlowRate)*RESULT(FractionOfYear)) - 1;
 		return LAST_RESULT(OrganicCFast)*r_FS;
 	)
 	
@@ -159,18 +174,15 @@ A soil carbon module for MAGIC Forest.
 		double forest = RESULT(TotalTreeDecompCSource);
 		if(!PARAMETER(IsTop) || !PARAMETER(IsSoil)) forest = 0.0;
 		return
-			  LAST_RESULT(OrganicCFast)
+			  LAST_RESULT(OrganicCFast) * (1.0 - RESULT(LossRateFastEq))
 			+ forest
-			+ PARAMETER(OrganicCLitter)
-			- RESULT(TurnoverFast)
-			+ RESULT(OrganicCInBiomass)
+			+ PARAMETER(OrganicCLitter)*RESULT(FractionOfYear)
 			- RESULT(FastSlowMassFlow);
 	)
 	
 	EQUATION(Model, OrganicCSlow,
 		return
-			  LAST_RESULT(OrganicCSlow)
-			- RESULT(TurnoverSlow)
+			  LAST_RESULT(OrganicCSlow)*(1.0 - RESULT(LossRateSlowEq))
 			+ RESULT(FastSlowMassFlow);
 	)
 	
