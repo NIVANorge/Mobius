@@ -1,0 +1,22 @@
+# Parameter file generated for model eDNA, containing modules () at 2022-12-09 12:40:42
+
+parameters:
+
+# System (no index sets) #
+
+#TODO: make same as in input file when that is properly set up
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+2021-01-01 00:00:00
+
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2021-01-01 00:12:00
+
+
+# Global eDNA parameters (no index sets) #
+
+"eDNA shedding rate per fish biomass" :     #(ng/kg/ts) [-1.79769313486232e+308, 1.79769313486232e+308]
+0
+
+"eDNA decay rate" :     #(1/ts) [-1.79769313486232e+308, 1.79769313486232e+308]
+0

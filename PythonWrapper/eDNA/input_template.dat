@@ -1,0 +1,11 @@
+
+# TODO: set sensible values
+
+start_date : 2021-1-1
+end_date   : 2021-1-2
+
+index_set_dependencies :
+"Reach flow"  : {"Reach"}
+"Reach volume" : {"Reach"}
+
+inputs:
