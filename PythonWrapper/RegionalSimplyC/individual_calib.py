@@ -78,18 +78,28 @@ def main() :
 	
 	skip_timesteps = 50      #Model 'burn-in' period
 	
-	do_doc   = True         # If false, only calibrate on hydrology. Can be beneficial to do one run of that first.
+	do_doc   = False         # If false, only calibrate on hydrology. Can be beneficial to do one run of that first.
+	do_iter_callback = False   # For debug porpoises.
 
 	start_date = '1985-1-1'
 	end_date   = '2017-12-31'
 	
-	do_single_only = 11      # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
+	do_single_only = -1      # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
 	
 	
 	comparisons = [('Reach flow (daily mean, cumecs)', ['River'], 'Observed flow', [], 1.0)]
 	if do_doc :
 		comparisons.append(('Reach DOC concentration (volume weighted daily mean)', ['River'], 'Observed DOC', [], 0.4))
 			   
+	
+	def iter_callback(params, iter, resid, *args, **kws) :
+		if iter % 100 == 0 :
+			print('Optim iteration %d' % iter)
+	
+	iter_cb = None
+	if do_iter_callback :
+		iter_cb = iter_callback
+	
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
@@ -130,7 +140,7 @@ def main() :
 		
 		res_method = resid_rel_conc if rel_conc else resid
 		
-		mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=res_method, method='nelder', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
+		mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=res_method, method='nelder', iter_cb=iter_cb, norm=False, skip_timesteps=skip_timesteps)
 		
 		if rel_conc :
 			set_rel_conc_params(res.params, dataset)
