@@ -1,4 +1,4 @@
-# Parameter file generated for model SimplyC (quantom), containing modules (SimplySnow Nordic V0.0, Degree-day PET V0.2, Simply soil temperature V0.1, SimplyQ V0.4.2 Ballycanew, SuperEasyLake V0.0, AwfullySimplySed V0.0.1, SimplyC V0.0.3, SimplyC TOC V0.0, SuperEasyLakeC V0.0) at 2022-06-15 13:50:19
+# Parameter file generated for model SimplyC (regional), containing modules (Solar radiation V0.1, Priestley-Taylor PET V0.1, SimplySnow V0.1, SimplyQ V0.4.3, Simply soil temperature V0.1, SuperEasyLake V0.0, SimplyC V0.0.3, SuperEasyLakeC V0.0) at 2023-03-09 14:04:19
 
 index_sets:
 "Landscape units" : {"Forest" "Shrubs" "Peat"}
@@ -15,72 +15,57 @@ parameters:
 2018-01-01
 
 
-{ module "SimplySnow Nordic" version "0.0"
+{ module "Solar radiation" version "0.1"
+
+	# Solar radiation (no index sets) #
+
+	"Latitude" :     #(°) [-90, 90]
+	60
+
+	"Elevation" :     #(m) [0, 8848]
+	0
+
+
+} # end of module "Solar radiation"
+
+{ module "Priestley-Taylor PET" version "0.1"
+
+	# Potential evapotranspiration (no index sets) #
+
+	"Net emissivity at 0 vapor pressure" :     #(dimensionless) [0, 1]
+	0.34
+
+	"Change in emissivity caused by vapor pressure" :     #(kPa^{-1/2}) [0, 0.5]
+	0.139
+
+
+	# Potential evapotranspiration by land use ("Landscape units") #
+
+	"PET multiplication factor" :     #(dimensionless) [0.3, 4] 
+	0 1.28 1.28
+
+
+} # end of module "Priestley-Taylor PET"
+
+{ module "SimplySnow" version "0.1"
 
 	# Snow (no index sets) #
-
-	"Temperature below which precipitation falls as snow" :     #(°C) [-4, 4] 
-	-0.532788084702347
-
-	"Temperature above which snow melts" :     #(°C) [-4, 4] 
-	0.996585398838034
-
-	"Degree-day factor for snow melt" :     #(mm/°C/day) [0, 5] 
-	3.19133324785616
-
-	"Liquid water fraction" :     #(dimensionless) [0, 1] Amount of melt water each unit of snow can hold before it is released
-	0.249303720590798
-
-	"Snow depth at which snow cover is considered full" :     #(mm) [0, 1000]
-	50
 
 	"Initial snow depth as water equivalent" :     #(mm) [0, 50000]
 	0
 
-
-} # end of module "SimplySnow Nordic"
-
-{ module "Degree-day PET" version "0.2"
-
-	# Potential evapotranspiration ("Landscape units") #
-
-	"Degree-day evapotranspiration" :     #(mm/°C/day) [0.05, 0.2] 
-	0.115222354863579 0.115222354863579 0.115222354863579
-
-	"Minimal temperature for evapotranspiration" :     #(°C) [-5, 5] 
-	-1.15325395383932 -1.15325395383932 -1.15325395383932
+	"Degree-day factor for snowmelt" :     #(mm/°C/day) [0, 5] 
+	2.74
 
 
-} # end of module "Degree-day PET"
+} # end of module "SimplySnow"
 
-{ module "Simply soil temperature" version "0.1"
-
-	# Global soil temperature parameters (no index sets) #
-
-	"Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
-	-0.957322043094847
-
-	"Initial soil temperature" :     #(°C) [-30, 40]
-	0
-
-
-	# Soil temperature parameters (varying by soil or land class) ("Landscape units") #
-
-	"Soil thermal conductivity over specific heat capacity" :     #(1E-6 m2/s) [0.01, 0.8] Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)
-	0.3 0.3 0.3
-
-
-} # end of module "Simply soil temperature"
-
-{ module "SimplyQ" version "0.4.2 Ballycanew"
+{ module "SimplyQ" version "0.4.3"
 
 	# Hydrology (no index sets) #
 
-	"Quick flow rate inflection point" :     #(mm/day) [1, 200] Quick flow scales to the combined input of rainfall and snow melt, but the proportion flattens out towards 1 near the inflection point.
-	126.234951788709
-
-	"Quick flow dryness limit" :     #(dimensionless) [0, 1] At what fraction of field capacity quick flow stops
-	0.978379236466255
+	"Proportion of precipitation that contributes to quick flow" :     #(dimensionless) [0, 1] 
+	0.02
 
 	"Baseflow index" :     #(dimensionless) [0, 1] 
 	0
@@ -128,6 +113,25 @@ parameters:
 
 } # end of module "SimplyQ"
 
+{ module "Simply soil temperature" version "0.1"
+
+	# Global soil temperature parameters (no index sets) #
+
+	"Snow depth / soil temperature factor" :     #(/cm) [-3, -0.001] Defines empirical relationship between snow depth and its insulating effect on soils, incorporating the conversion from snow depth in water equivalent to snow depth
+	-0.957322043094847
+
+	"Initial soil temperature" :     #(°C) [-30, 40]
+	0
+
+
+	# Soil temperature parameters (varying by soil or land class) ("Landscape units") #
+
+	"Soil thermal conductivity over specific heat capacity" :     #(1E-6 m2/s) [0.01, 0.8] Soil thermal conductivity (W/m/°C, range 0.4-0.8) divided by soil specific heat capacity (MJ/m3/°C, range 1.0-1.3; more like 4-15 if there is freeze-thaw)
+	0.3 0.3 0.3
+
+
+} # end of module "Simply soil temperature"
+
 { module "SuperEasyLake" version "0.0"
 
 	# Lake physical ("Reaches") #
@@ -145,23 +149,10 @@ parameters:
 	5 10
 
 	"Outflow rating curve magnitude" :     #(m/s) [0.01, 100]
-	11 1
+	10 1
 
 
 } # end of module "SuperEasyLake"
-
-{ module "AwfullySimplySed" version "0.0.1"
-
-	# Erodibility and sediments (no index sets) #
-
-	"Reach sediment input scaling factor" :     #(dimensionless) [0, 100] Calibrated parameter linking simulated sediment input from land to simulated flow from land
-	1
-
-	"Sediment input non-linear coefficient" :     #(dimensionless) [0.1, 5] 
-	2
-
-
-} # end of module "AwfullySimplySed"
 
 { module "SimplyC" version "0.0.3"
 
@@ -177,7 +168,7 @@ parameters:
 	3
 
 	"Soil temperature DOC creation linear coefficient" :     #(1/°C) [0, 0.1] Only used if soil DOC is dynamic or equilibrium
-	0.03
+	0.025
 
 	"Soil temperature DOC creation square coefficient" :     #(1/(°C)2) [0, 0.1] Only used if soil DOC is dynamic of equilibrium
 	-0.001
@@ -195,20 +186,10 @@ parameters:
 	# Carbon land ("Landscape units") #
 
 	"Baseline Soil DOC concentration" :     #(mg/l) [0, 100] Equilibrium concentration under the following conditions: Soil water flow=0, Soil temperature = 0, SO4 deposition = 0
-	8.4 8.4 8.4
+	10 10 10
 
 
 } # end of module "SimplyC"
-
-{ module "SimplyC TOC" version "0.0"
-
-	# TOC (no index sets) #
-
-	"Suspended sediment carbon content" :     #(dimensionless) [0, 1] Fraction of mass of suspended sediment that is organic carbon
-	0.05
-
-
-} # end of module "SimplyC TOC"
 
 { module "SuperEasyLakeC" version "0.0"
 

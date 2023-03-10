@@ -32,8 +32,11 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			params['STC_A'].min = 0.05
 			params['STC_A'].max = 0.3
 			
-			params['kT'].min = 0.0
-			params['kT'].max = 0.2
+			params['kT1'].min = 0.0
+			params['kT1'].max = 0.2
+			
+			params['kT2'].min = -0.002
+			params['kT2'].max = 0.002
 
 			params['kSO4'].min = 0.0
 			params['kSO4'].max = 0.002
@@ -41,7 +44,7 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			params['baseDOC_A'].min = 1
 			params['baseDOC_A'].max = 25
 			
-			params['cDOC_A'].max = 3
+			params['cDOC'].max = 3
 	elif num_lu == 2 :
 		if do_hydro :
 			
@@ -76,8 +79,8 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			params['STC_F'].max = 0.3
 			params['STC_P'].set(expr='STC_F')
 			
-			params['kT'].min = 0.0
-			params['kT'].max = 0.2
+			params['kT1'].min = 0.0
+			params['kT1'].max = 0.2
 
 			params['kSO4'].min = 0.0
 			params['kSO4'].max = 0.002
@@ -96,8 +99,7 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 				params['baseDOC_P'].max = 50
 			
 			
-			params['cDOC_F'].max = 3
-			params['cDOC_P'].set(expr='cDOC_F')
+			params['cDOC'].max = 3
 
 	elif num_lu == 3 :
 		if do_hydro :
@@ -137,8 +139,8 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			params['STC_S'].set(expr='STC_F')
 			params['STC_P'].set(expr='STC_F')
 			
-			params['kT'].min = 0.0
-			params['kT'].max = 0.2
+			params['kT1'].min = 0.0
+			params['kT1'].max = 0.2
 
 			params['kSO4'].min = 0.0
 			params['kSO4'].max = 0.002
@@ -152,18 +154,20 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			params['baseDOC_P'].max = 50
 			
 
-			params['cDOC_S'].set(expr='cDOC_F')
-			params['cDOC_P'].set(expr='cDOC_F')
+			params['cDOC'].max = 3
 	
 	
-def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3, relative_conc=False) :
+def setup_calibration_params(dataset, do_doc=True, do_hydro=True, relative_conc=False) :
+	
+	num_lu = len(dataset.get_indexes('Landscape units'))
+	haslake = (len(dataset.get_indexes('Reaches')) > 1)
 	
 	if num_lu == 1 :
-		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'All':'A', 'R0':'r0'})
+		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'All':'A', 'River':'r0'})
 	elif num_lu == 2:
-		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'LowC':'F', 'HighC':'P', 'R0':'r0'})
+		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'LowC':'F', 'HighC':'P', 'River':'r0'})
 	elif num_lu == 3 :
-		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'Forest':'F', 'Shrubs':'S', 'Peat':'P', 'R0':'r0'})
+		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'Forest':'F', 'Shrubs':'S', 'Peat':'P', 'River':'r0'})
 	
 	wantparams = []
 	
@@ -179,6 +183,9 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3, rela
 		wantparams2 += ['baseDOC_F']
 	else :
 		wantparams2 += ['baseDOC']
+		
+	if haslake :
+		wantparams2 += ['DOChllake']
 	
 	if do_hydro :
 		wantparams += wantparams1
@@ -191,6 +198,9 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, num_lu=3, rela
 	params = cu.parameter_df_to_lmfit(calib_df)
 	if relative_conc :
 		params.add(lmfit.Parameter('aux_baseDOC_P', value=1.0, min=1.0, max=5.0, user_data={'parameter_type':'model_parameter'}))
+	
+	#print('Params before config')
+	#params.pretty_print()
 	
 	configure_params(params, do_doc, do_hydro, num_lu, relative_conc)
 	

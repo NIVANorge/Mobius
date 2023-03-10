@@ -70,17 +70,26 @@ def resid_rel_conc(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 
 def main() :
 
-	reduced_only = True      # Some catchments with large lakes or bad flow data are removed
-
-	start_date = '1985-1-1'
-	timesteps  = 12052       #NOTE: Some catchments have only late data. Could alternatively have individual periods per catchment
+	# Configuration.
+	
+	reduced_only = True      # Some catchments with bad discharge data are removed
+	rel_conc = False         # Calibrate one base DOC concentrations, and set base conc in other lu based on that. Only makes sense for >1 lu
+	n_lu     = 1             # Only works for one land use class now.
 	
 	skip_timesteps = 50      #Model 'burn-in' period
 	
-	comparisons = [
-                ('Reach flow (daily mean, cumecs)', ['R0'], 'Observed flow', [], 1.0),
-                ('Reach DOC concentration (volume weighted daily mean)', ['R0'], 'Observed DOC', [], 0.4),
-               ]
+	do_doc   = True         # If false, only calibrate on hydrology. Can be beneficial to do one run of that first.
+
+	start_date = '1985-1-1'
+	end_date   = '2017-12-31'
+	
+	do_single_only = 11      # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
+	
+	
+	comparisons = [('Reach flow (daily mean, cumecs)', ['River'], 'Observed flow', [], 1.0)]
+	if do_doc :
+		comparisons.append(('Reach DOC concentration (volume weighted daily mean)', ['River'], 'Observed DOC', [], 0.4))
+			   
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
@@ -90,46 +99,53 @@ def main() :
 		
 		if reduced_only and row['reduced_set']=='n' : continue
 		
-		if catch_name != 'Langtjern03' : continue
+		if do_single_only >= 0 and catch_no != do_single_only : continue    # Debug option to just run one catchment
 		
 		print('********** Processing location %s ***********' % catch_name)
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/norm2_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/optim_params_%d_%s.dat' % (catch_no, catch_name)
-		parfile = 'MobiusFiles/template_params_2lu_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/optim_hydro_2lu_%d_%s.dat' % (catch_no, catch_name)
-		#parfile = 'MobiusFiles/template_params_1lu_%d_%s.dat' % (catch_no, catch_name)
+
+		if n_lu == 1 :
+			if do_doc :
+				parfile = 'MobiusFiles/OptimResults/optim_hydro_params_1lu_%d_%s.dat' % (catch_no, catch_name)
+			else :
+				parfile = 'MobiusFiles/template_params_1lu_%d_%s.dat' % (catch_no, catch_name)
+		else :
+			raise Exception('Only one land use type is functional now. The script is not updated for the latest version of more lu types')
 		
 		dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 		
-		dataset.set_parameter_uint('Timesteps', [], timesteps)
 		dataset.set_parameter_time('Start date', [], start_date)
+		dataset.set_parameter_time('End date', [], end_date)
 		
 		dataset.run_model()
 		
-		params = setup_calibration_params(dataset, do_hydro=True, do_doc=True, num_lu=2, relative_conc=True)
+		params = setup_calibration_params(dataset, do_hydro=True, do_doc=do_doc, relative_conc=rel_conc)
+		
+		print('Initial parameter setup')
+		params.pretty_print()
 		
 		print('Initial GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		
-		#mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=resid, method='nelder', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
-		mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=resid_rel_conc, method='nelder', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
+		res_method = resid_rel_conc if rel_conc else resid
 		
-		#cu.set_parameter_values(res.params, dataset)
-		set_rel_conc_params(res.params, dataset)
+		mi, res = cu.minimize_residuals(params, dataset, comparisons, residual_method=res_method, method='nelder', iter_cb=None, norm=False, skip_timesteps=skip_timesteps)
 		
+		if rel_conc :
+			set_rel_conc_params(res.params, dataset)
+		else :
+			cu.set_parameter_values(res.params, dataset)
 		
 		dataset.run_model()
 		print('Final GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		print('\n\n\n')
 		
-		#dataset.write_parameters_to_file('MobiusFiles/optim_hydro_2lu_%d_%s' % (catch_no, catch_name))
-		#dataset.write_parameters_to_file('MobiusFiles/norm4_optim_params_DOC_%d_%s.dat' % (catch_no, catch_name))
-		#dataset.write_parameters_to_file('MobiusFiles/optim_DOC_1lu_%d_%s.dat' % (catch_no, catch_name))
-		#dataset.write_parameters_to_file('MobiusFiles/optim_DOC_2lu_%d_%s.dat' % (catch_no, catch_name))
-		dataset.write_parameters_to_file('MobiusFiles/optim_DOC_2lu_rel_conc_%d_%s.dat' % (catch_no, catch_name))
+		if do_doc :
+			dataset.write_parameters_to_file('MobiusFiles/OptimResults/optim_DOC_%dlu_%s_%d_%s.dat' % (n_lu, 'rel_conc' if rel_conc else '', catch_no, catch_name))
+		else :
+			dataset.write_parameters_to_file('MobiusFiles/OptimResults/optim_hydro_params_%dlu_%d_%s.dat' % (n_lu, catch_no, catch_name))
 		
 		dataset.delete()
 		

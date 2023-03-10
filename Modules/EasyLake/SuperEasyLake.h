@@ -3,7 +3,7 @@
 static void
 AddSuperEasyLakeModule(mobius_model *Model)
 {
-	BeginModule(Model, "SuperEasyLake", "0.0");
+	BeginModule(Model, "SuperEasyLake", "0.1");
 	
 	SetModuleDescription(Model, R""""(
 Simplified version of EasyLake.
@@ -27,11 +27,8 @@ Simplified version of EasyLake.
 	auto PhysParams = RegisterParameterGroup(Model, "Lake physical", Reach);
 	
 	auto IsLake                         = RegisterParameterBool(Model, PhysParams, "This section is a lake", false, "If false this is a river section: ignore the parameters below");
-	auto InitialLakeSurfaceArea         = RegisterParameterDouble(Model, PhysParams, "Initial lake surface area", M2, 1e3, 0.0, 371e9);
-	auto LakeLength                     = RegisterParameterDouble(Model, PhysParams, "Lake length", M, 300.0, 0.0, 1.03e6);
-	auto LakeShoreSlope                 = RegisterParameterDouble(Model, PhysParams, "Lake shore slope", MPerM, 0.2, 0.0, 4.0, "This parameter should be adjusted when calibrating lake outflow. Slope is roughly 2*depth/width");
-	auto WaterLevelAtWhichOutflowIsZero = RegisterParameterDouble(Model, PhysParams, "Water level at which outflow is 0", M, 10.0, 0.0, 1642.0);
-	auto OutflowRatingCurveMagnitude    = RegisterParameterDouble(Model, PhysParams, "Outflow rating curve magnitude", MPerS, 1.0, 0.01, 100.0);
+	auto LakeVolume                     = RegisterParameterDouble(Model, PhysParams, "Lake volume", M3, 1e3, 0.0, 371e9);
+	auto LakeSurfaceArea                = RegisterParameterDouble(Model, PhysParams, "Lake surface area", M2, 1e3, 0.0, 371e9);
 	
 	auto Precipitation    = RegisterInput(Model, "Precipitation", MmPerDay);
 	auto AirTemperature   = RegisterInput(Model, "Air temperature", DegreesCelsius);
@@ -42,35 +39,13 @@ Simplified version of EasyLake.
 	auto FlowInputFromUpstream = GetEquationHandle(Model, "Flow input from upstream");
 	auto FlowInputFromLand     = GetEquationHandle(Model, "Flow input from land");
 	
-	
 	auto LakeSolver = RegisterSolver(Model, "Lake solver", 0.1, IncaDascru);
 	
-	auto LakeVolume        = RegisterEquationODE(Model, "Lake volume", M3, LakeSolver);
-	auto InitialLakeVolume = RegisterEquationInitialValue(Model, "Initial lake volume", M3);
-	SetInitialValue(Model, LakeVolume, InitialLakeVolume);
-	
-	auto LakeSurfaceArea   = RegisterEquation(Model, "Lake surface area", M2, LakeSolver);
-	SetInitialValue(Model, LakeSurfaceArea, InitialLakeSurfaceArea);
-	
-	auto WaterLevel = RegisterEquationODE(Model, "Water level", M, LakeSolver);
-	SetInitialValue(Model, WaterLevel, WaterLevelAtWhichOutflowIsZero);
-	
-	//auto EpilimnionVolume  = RegisterEquation(Model, "Epilimnion volume", M3, LakeSolver);  //NOTE: In their current form, they are just put on the solver to not cause circular references in EasyLakeCNP.
-	//auto HypolimnionVolume = RegisterEquation(Model, "Hypolimnion volume", M3, LakeSolver);
-	
-	auto DVDT        = RegisterEquation(Model, "Change in lake volume", M3PerDay, LakeSolver);
-	auto OutletWaterLevel = RegisterEquation(Model, "Outlet water level", M, LakeSolver);
 	auto LakeOutflow = RegisterEquation(Model, "Lake outflow", M3PerS, LakeSolver);
 	//auto Evaporation = RegisterEquation(Model, "Evaporation", MmPerDay, LakeSolver);       // TODO: Add degree-day or something?
 	
 	auto DailyMeanLakeOutflow = RegisterEquationODE(Model, "Lake outflow (daily mean)", M3PerS, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeOutflow);
-	
-	
-	auto LakeLengthComputation = RegisterEquationInitialValue(Model, "Lake length computation", M);
-	ParameterIsComputedBy(Model, LakeLength, LakeLengthComputation, true);
-	
-	
 	
 	auto ThisIsALake  = RegisterConditionalExecution(Model, "This is a lake", IsLake, true);
 	auto ThisIsARiver = RegisterConditionalExecution(Model, "This is a river", IsLake, false);
@@ -90,40 +65,11 @@ Simplified version of EasyLake.
 		return upstreamflow;
 	)
 	
-	
-	EQUATION(Model, LakeLengthComputation,
-		return 0.5*PARAMETER(InitialLakeSurfaceArea)*PARAMETER(LakeShoreSlope)/PARAMETER(WaterLevelAtWhichOutflowIsZero);
-	)
-	
-	
-	EQUATION(Model, InitialLakeVolume,
-		return 0.5 * PARAMETER(WaterLevelAtWhichOutflowIsZero) * PARAMETER(InitialLakeSurfaceArea);
-	)
-	
-	EQUATION(Model, DVDT,
-		double inflow = RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand);
-		return (inflow - RESULT(LakeOutflow)) * 86400.0 + 1e-3 * (INPUT(Precipitation) /*- RESULT(Evaporation)*/) * RESULT(LakeSurfaceArea);
-	)
-	
-	EQUATION(Model, LakeVolume,
-		return RESULT(DVDT);
-	)
-	
-	EQUATION(Model, LakeSurfaceArea,
-		return 2.0 * RESULT(WaterLevel)*PARAMETER(LakeLength)/PARAMETER(LakeShoreSlope);
-	)
-	
-	EQUATION(Model, WaterLevel,
-		return 0.5 * (PARAMETER(LakeShoreSlope) / (PARAMETER(LakeLength) * RESULT(WaterLevel))) * RESULT(DVDT);
-	)
-	
-	EQUATION(Model, OutletWaterLevel,
-		return Max(0.0, RESULT(WaterLevel) - PARAMETER(WaterLevelAtWhichOutflowIsZero));
-	)
-	
 	EQUATION(Model, LakeOutflow,
-		double outletlevel = RESULT(OutletWaterLevel);
-		return PARAMETER(OutflowRatingCurveMagnitude)*outletlevel*outletlevel;
+		// flow in = flow out
+		double inflow = RESULT(FlowInputFromUpstream) + RESULT(FlowInputFromLand);
+		double precip = 1e-3 * INPUT(Precipitation) * PARAMETER(LakeSurfaceArea) / 86400.0;
+		return inflow + precip;
 	)
 	
 	EQUATION(Model, DailyMeanLakeOutflow,
@@ -155,7 +101,7 @@ Simple DOC processing for SuperEasyLake.
 	
 	auto LakeC  = RegisterParameterGroup(Model, "Lake Carbon");
 	
-	auto LakeDOCHl = RegisterParameterDouble(Model, LakeC, "Lake DOC half life", Days, 50.0, 1.0, 10000.0);
+	auto LakeDOCHl = RegisterParameterDouble(Model, LakeC, "Lake DOC half life", Days, 50.0, 1.0, 10000.0, "", "DOChllake");
 	
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 	
@@ -174,7 +120,7 @@ Simple DOC processing for SuperEasyLake.
 	auto GroundwaterDOCConcentration = GetEquationHandle(Model, "Groundwater DOC concentration");
 	
 	auto LakeOutflow           = GetEquationHandle(Model, "Lake outflow");
-	auto LakeVolume            = GetEquationHandle(Model, "Lake volume");
+	auto LakeVolume            = GetParameterDoubleHandle(Model, "Lake volume");
 	
 	auto IsLake                = GetParameterBoolHandle(Model, "This section is a lake");
 	
@@ -196,7 +142,7 @@ Simple DOC processing for SuperEasyLake.
 	
 	EQUATION(Model, InitialLakeDOCMass,
 		//TODO: This is not that good. Should use lake's own steady state in computation...
-		return RESULT(GroundwaterDOCConcentration);
+		return RESULT(GroundwaterDOCConcentration)*PARAMETER(LakeVolume)*1e-3;
 	)
 	
 	EQUATION(Model, LakeDOCMass,
@@ -208,7 +154,7 @@ Simple DOC processing for SuperEasyLake.
 	)
 	
 	EQUATION(Model, LakeDOCConcentration,
-		return SafeDivide(RESULT(LakeDOCMass), RESULT(LakeVolume)) * 1000.0;
+		return SafeDivide(RESULT(LakeDOCMass), PARAMETER(LakeVolume)) * 1000.0;
 	)
 	
 	EQUATION(Model, LakeDOCFlux,

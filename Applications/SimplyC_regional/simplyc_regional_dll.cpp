@@ -15,18 +15,29 @@
 
 #include "../../Modules/SimplySoilTemperature.h"
 
+//#include "../../Modules/Simply/SimplySed.h"
+#include "../../Modules/EasyLake/SuperEasyLake.h"
+
 
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("SimplyC (regional)");
+	mobius_model *Model = BeginModelDefinition("SimplyC (regional)", true);
 	
 	AddMaxSolarRadiationModule(Model);
 	AddPriestleyTaylorPETModule2(Model);
 	AddSimplySnowModule(Model);
 	AddSimplyHydrologyModule(Model);
 	AddSoilTemperatureModel(Model);
+	//AddSimplyCModel(Model);
+	
+	AddSuperEasyLakeModule(Model);
+	
+	//AddAwfullySimplySedimentModule(Model);
 	AddSimplyCModel(Model);
+	//AddSimplyTOCModule(Model);
+	
+	AddSuperEasyLakeCModule(Model);
 	
 	return Model;
 }
