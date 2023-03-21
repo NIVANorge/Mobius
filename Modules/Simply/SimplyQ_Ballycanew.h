@@ -16,7 +16,7 @@ static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplyQ", "0.4.2 Ballycanew");
+	BeginModule(Model, "SimplyQ", "0.4.3 Ballycanew");
 	
 	SetModuleDescription(Model, R""""(
 This is an adaption of a hydrology module originally implemented in Python as a part of the model SimplyP, which was published as
@@ -25,6 +25,9 @@ This is an adaption of a hydrology module originally implemented in Python as a 
 
 New to version 0.4.2:
 - Removed minimum groundwater flow parameter, to maintain mass balance
+
+0.4.3
+- Change how evapotranspiration is limited by dryness.
 )"""");
 	
 	auto Dimensionless     = RegisterUnit(Model);
@@ -135,7 +138,9 @@ New to version 0.4.2:
 	)
 	
 	EQUATION(Model, Evapotranspiration,
-		return RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+		// s_response(water, 0.5*fc, fc, 0, pet)
+		return SCurveResponse(RESULT(SoilWaterVolume), 0.5*PARAMETER(SoilFieldCapacity), PARAMETER(SoilFieldCapacity), 0.0, RESULT(PotentialEvapotranspiration));
+		//return RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
 	)
 	
 	EQUATION(Model, SoilWaterVolume,

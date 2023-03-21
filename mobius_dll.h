@@ -566,6 +566,7 @@ DllGetParameterEnum(void *DataSetPtr, const char *Name, char **IndexNames, u64 I
 	mobius_data_set *DataSet = (mobius_data_set *)DataSetPtr;
 	u64 Value = GetParameterValue(DataSet, Name, IndexNames, IndexCount, ParameterType_Enum).ValUInt;
 	const parameter_spec &Spec = DataSet->Model->Parameters[GetParameterHandle(DataSet->Model, Name)];
+	
 	return Spec.EnumNames[Value];
 	
 	CHECK_ERROR_END

@@ -20,7 +20,6 @@ Simplified version of EasyLake.
 	auto M3PerDay      = RegisterUnit(Model, "m3/day");
 	auto MPerM         = RegisterUnit(Model, "m/m");
 	auto DegreesCelsius = RegisterUnit(Model, "°C");
-	
 
 	
 	auto Reach      = GetIndexSetHandle(Model, "Reaches");
@@ -86,7 +85,7 @@ Simplified version of EasyLake.
 static void
 AddSuperEasyLakeCModule(mobius_model *Model)
 {
-	BeginModule(Model, "SuperEasyLakeC", "0.0");
+	BeginModule(Model, "SuperEasyLakeC", "0.0.1");
 	
 	SetModuleDescription(Model, R""""(
 Simple DOC processing for SuperEasyLake.
@@ -96,12 +95,17 @@ Simple DOC processing for SuperEasyLake.
 	auto KgPerDay   = RegisterUnit(Model, "kg/day");
 	auto MgPerL     = RegisterUnit(Model, "mg/l");
 	auto Days       = RegisterUnit(Model, "days");
+	auto PerDay     = RegisterUnit(Model, "1/day");
+	auto M2PerMJ       = RegisterUnit(Model, "m2/MJ");
 	
 	auto Reach = GetIndexSetHandle(Model, "Reaches");
 	
 	auto LakeC  = RegisterParameterGroup(Model, "Lake Carbon");
 	
-	auto LakeDOCHl = RegisterParameterDouble(Model, LakeC, "Lake DOC half life", Days, 50.0, 1.0, 10000.0, "", "DOChllake");
+	//auto LakeDOCHl = RegisterParameterDouble(Model, LakeC, "Lake DOC half life", Days, 50.0, 1.0, 10000.0, "", "DOChllake");
+	//auto LakeDOCBreak         = RegisterParameterDouble(Model, LakeC, "Lake DOC breakdown in darkness", PerDay, 0.0, 0.0, 1.0, "", "DOCdark");
+	auto LakeDOCRad           = RegisterParameterDouble(Model, LakeC, "Lake DOC radiation breakdown", M2PerMJ, 0.0, 0.0, 1.0, "", "DOCrad");
+	   
 	
 	auto LakeSolver = GetSolverHandle(Model, "Lake solver");
 	
@@ -112,6 +116,8 @@ Simple DOC processing for SuperEasyLake.
 	auto LakeDOCFlux          = RegisterEquation(Model, "Lake DOC flux", KgPerDay, LakeSolver);
 	auto DailyMeanLakeDOCFlux = RegisterEquationODE(Model, "Daily mean lake DOC flux", KgPerDay, LakeSolver);
 	ResetEveryTimestep(Model, DailyMeanLakeDOCFlux);
+	
+	auto Shortwave            = GetInputHandle(Model, "Net shortwave radiation");  // TODO: Probably need removal to depend on shortwave for larger lakes.
 	
 	
 	auto ReachDailyMeanDOCFlux = GetEquationHandle(Model, "DOC flux from reach, daily mean");
@@ -166,7 +172,10 @@ Simple DOC processing for SuperEasyLake.
 	)
 	
 	EQUATION(Model, LakeDOCLoss,
-		return RESULT(LakeDOCMass) * HalfLifeToRate(PARAMETER(LakeDOCHl));
+		//return RESULT(LakeDOCMass) * HalfLifeToRate(PARAMETER(LakeDOCHl));
+		//double rate = PARAMETER(LakeDOCBreak) + PARAMETER(LakeDOCRad)*INPUT(Shortwave);
+		double rate = PARAMETER(LakeDOCRad)*INPUT(Shortwave);
+		return RESULT(LakeDOCMass) * rate;
 	)
 	
 	EndModule(Model);

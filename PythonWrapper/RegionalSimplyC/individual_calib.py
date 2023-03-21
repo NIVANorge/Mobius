@@ -37,7 +37,11 @@ def resid(params, dataset, comparisons, norm=False, skip_timesteps=0) :
     
 	dataset_copy = dataset.copy()
 	cu.set_parameter_values(params, dataset_copy)
-	dataset_copy.run_model()
+	
+	finished = dataset_copy.run_model(ms_timeout=1500)
+	if not finished :
+		print('Timeout')
+		return np.inf
 
 	residuals = resid_main(params, dataset_copy, comparisons, norm, skip_timesteps)
 
@@ -58,7 +62,10 @@ def resid_rel_conc(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 	
 	set_rel_conc_params(params, dataset_copy)
 	
-	dataset_copy.run_model()
+	finished = dataset_copy.run_model(ms_timeout = 1500)
+	if not finished :
+		print('Timeout')
+		return np.inf
 
 	residuals = resid_main(params, dataset_copy, comparisons, norm, skip_timesteps)
 
@@ -72,19 +79,20 @@ def main() :
 
 	# Configuration.
 	
-	reduced_only = True      # Some catchments with bad discharge data are removed
-	rel_conc = False         # Calibrate one base DOC concentrations, and set base conc in other lu based on that. Only makes sense for >1 lu
-	n_lu     = 1             # Only works for one land use class now.
+	reduced_only = True        # Some catchments with bad discharge data are removed
+	rel_conc = False           # Calibrate one base DOC concentrations, and set base conc in other lu based on that. Only makes sense for >1 lu
+	n_lu     = 1               # The script only works for one land use class right now.
 	
-	skip_timesteps = 50      #Model 'burn-in' period
+	skip_timesteps = 50        #Model 'burn-in' period
 	
-	do_doc   = False         # If false, only calibrate on hydrology. Can be beneficial to do one run of that first.
-	do_iter_callback = False   # For debug porpoises.
+	do_doc   = False#True            # If false, only calibrate on hydrology. Can be beneficial to do one run of that first.
+	do_iter_callback = False   # For debugging porpoises.
 
 	start_date = '1985-1-1'
 	end_date   = '2017-12-31'
 	
-	do_single_only = -1      # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
+	do_single_only = -1        # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
+	skip_until = 27            # Skip until catchment with this catch_no. Set to -1 to not skip.
 	
 	
 	comparisons = [('Reach flow (daily mean, cumecs)', ['River'], 'Observed flow', [], 1.0)]
@@ -103,6 +111,8 @@ def main() :
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	
+	done_skipping = (skip_until < 0)
+	
 	for index, row in catch_setup.iterrows():
 		catch_no = row['met_index']
 		catch_name = row['name']
@@ -110,8 +120,12 @@ def main() :
 		if reduced_only and row['reduced_set']=='n' : continue
 		
 		if do_single_only >= 0 and catch_no != do_single_only : continue    # Debug option to just run one catchment
+		if skip_until >= 0 and catch_no == skip_until :
+			done_skipping = True
+		if not done_skipping :
+			continue
 		
-		print('********** Processing location %s ***********' % catch_name)
+		print('********** Processing location %d %s ***********' % (catch_no, catch_name))
 		
 		infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
 

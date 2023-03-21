@@ -67,11 +67,14 @@ def main(num_lu=3) :
 		if islake :
 			lake_area = row['area_km2']*lu[3]*1e6  # Area in m^2
 			#TODO: Maybe use fancy retention time formula instead?
-			lake_depth = 3     #Ooops, very rough estimate. Kind of ok since there is less mixing with bottom layers in case of deeper lakes?
+			lake_depth = row['lake_depth']     #Ooops, very rough estimate. Kind of ok since there is less mixing with bottom layers in case of deeper lakes?
 			lake_volume = lake_area*lake_depth/3 # Pyramidal or conical shape.
 			
 			dataset.set_parameter_double('Lake surface area', ['Lake'], lake_area)
 			dataset.set_parameter_double('Lake volume', ['Lake'], lake_volume)
+			
+		if row['mineral_layer'] == 'y' :
+			dataset.set_parameter_enum('Deep soil/groundwater DOC computation', [], 'mass_balance')
 		
 		
 		if num_lu == 1 :

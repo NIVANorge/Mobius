@@ -6,7 +6,7 @@ import lmfit
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
 
-def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
+def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False, has_lake = False, mineral_soil = False):
 	
 	
 	if num_lu == 1 :
@@ -20,6 +20,13 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			
 			params['Ts_A'].min = 1
 			params['Ts_A'].max = 15
+			
+			if mineral_soil :
+				params['Tg'].min = 20
+				params['Tg'].max = 200
+				
+				params['bfi'].min = 0.01
+				params['bfi'].max = 0.5
 
 		if do_doc :
 			
@@ -42,9 +49,18 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False):
 			params['kSO4'].max = 0.002
 			
 			params['baseDOC_A'].min = 1
-			params['baseDOC_A'].max = 25
+			params['baseDOC_A'].max = 35
 			
 			params['cDOC'].max = 3
+			
+			if has_lake :
+				params['DOCrad'].min = 0
+				params['DOCrad'].max = 0.001
+				
+			if mineral_soil :
+				params['DOChlgw'].min = 30
+				params['DOChlgw'].max = 200
+			
 	elif num_lu == 2 :
 		if do_hydro :
 			
@@ -162,6 +178,12 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, relative_conc=
 	num_lu = len(dataset.get_indexes('Landscape units'))
 	haslake = (len(dataset.get_indexes('Reaches')) > 1)
 	
+	#dataset.set_parameter_enum('Deep soil/groundwater DOC computation', [], 'bliff')
+	test = dataset.get_parameter_enum('Deep soil/groundwater DOC computation', [])
+	print(test)
+	
+	mineral_soil = (test == 'mass_balance')
+	
 	if num_lu == 1 :
 		param_df = cu.get_double_parameters_as_dataframe(dataset, index_short_name={'All':'A', 'River':'r0'})
 	elif num_lu == 2:
@@ -185,7 +207,11 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, relative_conc=
 		wantparams2 += ['baseDOC']
 		
 	if haslake :
-		wantparams2 += ['DOChllake']
+		wantparams2 += ['DOCrad']
+	
+	if mineral_soil :
+		wantparams1 += ['bfi', 'Tg']
+		wantparams2 += ['DOChlgw']
 	
 	if do_hydro :
 		wantparams += wantparams1
@@ -202,6 +228,6 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, relative_conc=
 	#print('Params before config')
 	#params.pretty_print()
 	
-	configure_params(params, do_doc, do_hydro, num_lu, relative_conc)
+	configure_params(params, do_doc, do_hydro, num_lu, relative_conc, haslake, mineral_soil)
 	
 	return params

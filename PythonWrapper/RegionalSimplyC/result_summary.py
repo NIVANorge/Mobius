@@ -29,7 +29,8 @@ def main() :
 	
 	reduced_only = True
 	
-	setups = ['optim_DOC_1lu', 'optim_DOC_2lu', 'optim_DOC_2lu_fast_highC', 'optim_DOC_2lu_rel_conc', 'norm2_optim_params_DOC', 'norm4_optim_params_DOC']
+	#setups = ['optim_DOC_1lu', 'optim_DOC_2lu', 'optim_DOC_2lu_fast_highC', 'optim_DOC_2lu_rel_conc', 'norm2_optim_params_DOC', 'norm4_optim_params_DOC']
+	setups = ['optim_DOC_1lu_']
 	
 	print('%25s\t%25s\tNS(Q)  NS(DOC conc)  NS(DOC conc month)  NS(DOC flux)  NS(DOC flux month)  | ts_F  ts_P  ts_S  | DOC_F  DOC_P  DOC_S' % ('Catchment', 'Setup'))
 	
@@ -44,23 +45,23 @@ def main() :
 		for setup in setups :
 			
 			infile  = 'MobiusFiles/inputs_%d_%s.dat' % (catch_no, catch_name)
-			parfile = 'MobiusFiles/%s_%d_%s.dat' % (setup, catch_no, catch_name)
+			parfile = 'MobiusFiles/OptimResults/%s_%d_%s.dat' % (setup, catch_no, catch_name)
 			
 			try:
 				dataset = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 			except:
-				print('Unable to load files for %s %d %s' % (setup, catch_no, catch_name))
+				#print('Unable to load files for %s %d %s' % (setup, catch_no, catch_name))
 				continue
 			
 			dataset.run_model()
 			
-			simmedQ   = ('Reach flow (daily mean, cumecs)', ['R0'])
+			simmedQ   = ('Reach flow (daily mean, cumecs)', ['River'])
 			observedQ = ('Observed flow', [])
 
-			simmeddocflux = ('DOC flux from reach, daily mean', ['R0'])
+			simmeddocflux = ('DOC flux from reach, daily mean', ['River'])
 			obsdocflux    = ('Observed DOC flux', [])
 
-			simmeddocconc = ('Reach DOC concentration (volume weighted daily mean)', ['R0'])
+			simmeddocconc = ('Reach DOC concentration (volume weighted daily mean)', ['River'])
 			observeddocconc = ('Observed DOC', [])
 			
 			sim_df = cu.get_result_dataframe(dataset, [simmedQ, simmeddocflux, simmeddocconc])
