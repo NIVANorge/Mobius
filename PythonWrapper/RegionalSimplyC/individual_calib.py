@@ -13,7 +13,7 @@ cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfi
 wr.initialize('../../Applications/SimplyC_regional/simplyc_regional.dll')
 
 
-def resid_main(params, dataset, comparisons, norm=False, skip_timesteps=0):
+def resid_main(params, dataset, comparisons, norm=False, skip_timesteps=0, finished = True):
 	
 	residuals = []
 	for i, comparison in enumerate(comparisons):
@@ -22,14 +22,17 @@ def resid_main(params, dataset, comparisons, norm=False, skip_timesteps=0):
 		sim = dataset.get_result_series(simname, simindexes)[skip_timesteps:]
 		obs = dataset.get_input_series(obsname, obsindexes, alignwithresults=True)[skip_timesteps:]
 
-		if np.isnan(sim).any() :
-			raise ValueError('Got a NaN in the simulated data')
+		#if np.isnan(sim).any() :
+		#	raise ValueError('Got a NaN in the simulated data')
 		
 		nvalues = np.sum(~np.isnan(obs))
 
 		resid = np.sqrt(weight)*(sim - obs) / (np.nanmean(obs) * np.sqrt(nvalues))
 
 		residuals.append(resid)
+		
+	if not finished :
+		residuals = np.full_like(finished, np.inf)
 	
 	return residuals
 
@@ -39,11 +42,8 @@ def resid(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 	cu.set_parameter_values(params, dataset_copy)
 	
 	finished = dataset_copy.run_model(ms_timeout=1500)
-	if not finished :
-		print('Timeout')
-		return np.inf
 
-	residuals = resid_main(params, dataset_copy, comparisons, norm, skip_timesteps)
+	residuals = resid_main(params, dataset_copy, comparisons, norm, skip_timesteps, finished)
 
 	dataset_copy.delete()   
     
@@ -63,11 +63,8 @@ def resid_rel_conc(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 	set_rel_conc_params(params, dataset_copy)
 	
 	finished = dataset_copy.run_model(ms_timeout = 1500)
-	if not finished :
-		print('Timeout')
-		return np.inf
 
-	residuals = resid_main(params, dataset_copy, comparisons, norm, skip_timesteps)
+	residuals = resid_main(params, dataset_copy, comparisons, norm, skip_timesteps, finished)
 
 	dataset_copy.delete()   
     
@@ -85,14 +82,14 @@ def main() :
 	
 	skip_timesteps = 50        #Model 'burn-in' period
 	
-	do_doc   = False#True            # If false, only calibrate on hydrology. Can be beneficial to do one run of that first.
+	do_doc           = True   # If False, only calibrate on hydrology. Must be run with hydrology only once first before running with DOC.
 	do_iter_callback = False   # For debugging porpoises.
 
 	start_date = '1985-1-1'
 	end_date   = '2017-12-31'
 	
 	do_single_only = -1        # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
-	skip_until = 27            # Skip until catchment with this catch_no. Set to -1 to not skip.
+	skip_until = -1            # Skip until catchment with this catch_no. Set to -1 to not skip.
 	
 	
 	comparisons = [('Reach flow (daily mean, cumecs)', ['River'], 'Observed flow', [], 1.0)]
@@ -149,7 +146,7 @@ def main() :
 		print('Initial parameter setup')
 		params.pretty_print()
 		
-		print('Initial GOF')
+		print('\nInitial GOF')
 		cu.print_goodness_of_fit(dataset, comparisons, skip_timesteps=skip_timesteps)
 		
 		res_method = resid_rel_conc if rel_conc else resid

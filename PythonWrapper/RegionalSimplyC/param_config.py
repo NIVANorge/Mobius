@@ -6,7 +6,7 @@ import lmfit
 cu = SourceFileLoader("mobius_calib_uncert_lmfit", r"..\mobius_calib_uncert_lmfit.py").load_module()
 
 
-def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False, has_lake = False, mineral_soil = False):
+def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False, has_lake=False, mineral_soil=False):
 	
 	
 	if num_lu == 1 :
@@ -22,11 +22,11 @@ def configure_params(params, do_doc, do_hydro, num_lu=3, relative_conc=False, ha
 			params['Ts_A'].max = 15
 			
 			if mineral_soil :
-				params['Tg'].min = 20
+				params['Tg'].min = 10
 				params['Tg'].max = 200
 				
 				params['bfi'].min = 0.01
-				params['bfi'].max = 0.5
+				params['bfi'].max = 0.2        # If higher, some of the catchments behave badly
 
 		if do_doc :
 			
@@ -180,7 +180,7 @@ def setup_calibration_params(dataset, do_doc=True, do_hydro=True, relative_conc=
 	
 	#dataset.set_parameter_enum('Deep soil/groundwater DOC computation', [], 'bliff')
 	test = dataset.get_parameter_enum('Deep soil/groundwater DOC computation', [])
-	print(test)
+	#print(test)
 	
 	mineral_soil = (test == 'mass_balance')
 	

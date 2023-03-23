@@ -58,6 +58,10 @@ def main(num_lu=3) :
 		if reachlen < 500.0 : reachlen = 500.0    #To not cause numeric instability
 		dataset.set_parameter_double('Reach length', ['River'], reachlen)
 		
+		dataset.set_parameter_double('Initial in-stream flow', ['River'], 0.001)
+		if islake :
+			dataset.set_parameter_double('Initial in-stream flow', ['Lake'], 0.001)   # Affects initial groundwater volume unfortunately
+		
 		lu = [float(a)*0.01 for a in row['lu_FSPLO'].strip('[]').split(',')]   #Percent to fraction
 		
 		lu_forest = lu[0]

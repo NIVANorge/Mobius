@@ -527,7 +527,7 @@ class DataSet :
 
 		string = mobiusdll.DllGetParameterEnum(self.datasetptr, _CStr(name), _PackIndexes(indexes), len(indexes))
 		check_dll_error()
-		return string.value.decode('utf-8')
+		return string.decode('utf-8')
 		
 	def get_parameter_double_min_max(self, name) :
 		'''

@@ -138,7 +138,6 @@ New to version 0.4.2:
 	)
 	
 	EQUATION(Model, Evapotranspiration,
-		// s_response(water, 0.5*fc, fc, 0, pet)
 		return SCurveResponse(RESULT(SoilWaterVolume), 0.5*PARAMETER(SoilFieldCapacity), PARAMETER(SoilFieldCapacity), 0.0, RESULT(PotentialEvapotranspiration));
 		//return RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
 	)

@@ -45,6 +45,7 @@ AddSimplyCModel(mobius_model *Model)
 	auto ConstGw = EnumValue(Model, DeepSoilDOCType, "constant");
 	auto SoilAvg = EnumValue(Model, DeepSoilDOCType, "soil_avg");
 	auto MassBal = EnumValue(Model, DeepSoilDOCType, "mass_balance");
+	//auto Weird   = EnumValue(Model, DeepSoilDOCType, "weird");
 	
 	auto BaselineSoilDOCDissolutionRate         = RegisterParameterDouble(Model, CarbonParamsGlobal, "Baseline Soil DOC dissolution rate", MgPerLPerDay, 0.1, 0.0, 100.0, "Only used if soil DOC is dynamic", "cDOC");
 	auto SoilTemperatureDOCLinearCoefficient    = RegisterParameterDouble(Model, CarbonParamsGlobal, "Soil temperature DOC creation linear coefficient", PerC, 0.0, 0.0, 0.1, "Only used if soil DOC is dynamic or equilibrium", "kT1");
@@ -292,9 +293,14 @@ AddSimplyCModel(mobius_model *Model)
 		double constant = PARAMETER(DeepSoilDOCConcentration);
 		double soilavg  = RESULT(AvgSoilWaterDOCConcentration);
 		
+		//double gwflow = RESULT(GroundwaterFlow);
+		//double sflow  = RESULT(TotalSoilWaterFlow);// + RESULT(QuickFlow);
+		//double weird = LinearResponse(SafeDivide(gwflow, gwflow + sflow), 0.0, 1.0, PARAMETER(DeepSoilDOCConcentration), RESULT(AvgSoilWaterDOCConcentration));
+		
 		auto type = PARAMETER(DeepSoilDOCType);
 		if(type == ConstGw) return constant;
 		else if(type == MassBal) return massbal;
+		//else if(type == Weird) return weird;
 		return soilavg;
 	)
 	

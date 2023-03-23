@@ -31,13 +31,15 @@ static void
 AddSimplyHydrologyModule(mobius_model *Model)
 {
 	
-	BeginModule(Model, "SimplyQ", "0.4.3");
+	BeginModule(Model, "SimplyQ", "0.4.6");
 	
 	SetModuleDescription(Model, R""""(
 This is an adaption of a hydrology module originally implemented in Python as a part of the model SimplyP, which was published as
 
 [Jackson-Blake LA, Sample JE, Wade AJ, Helliwell RC, Skeffington RA. 2017. Are our dynamic water quality models too complex? A comparison of a new parsimonious phosphorus model, SimplyP, and INCA-P. Water Resources Research, 53, 5382–5399. doi:10.1002/2016WR020132](https://doi.org/10.1002/2016WR020132)
 
+New to version 0.4.6
+- Change how evapotranspiration is affected by dryness.
 New to version 0.4.5:
 - Made field capacity vary by land class
 New to version 0.4.2:
@@ -138,7 +140,8 @@ New to version 0.4.2:
 	
 	
 	EQUATION(Model, Evapotranspiration,
-		return RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+		//return RESULT(PotentialEvapotranspiration) * (1.0 - exp(log(0.01) * RESULT(SoilWaterVolume) / PARAMETER(SoilFieldCapacity)));
+		return SCurveResponse(RESULT(SoilWaterVolume), 0.5*PARAMETER(SoilFieldCapacity), PARAMETER(SoilFieldCapacity), 0.0, RESULT(PotentialEvapotranspiration));
 	)
 	
 	EQUATION(Model, SoilWaterVolume,
