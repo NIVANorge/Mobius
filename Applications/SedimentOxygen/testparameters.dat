@@ -72,10 +72,12 @@ parameters:
 10
 
 "Upper layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the topmost one belonging to production zone
-9
+#9
+3
 
 "Lower layer of production zone" :     #(dimensionless) [1, 100] Which of the layers are the lowest one belonging to the production zone
-10
+#10
+4
 
 "Z resolution" :     #(cm) [0.001, 1] Thickness of each computed layer
 0.025
