@@ -88,7 +88,7 @@ def main() :
 	start_date = '1985-1-1'
 	end_date   = '2017-12-31'
 	
-	do_single_only = -1        # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
+	do_single_only = 32        # Set the catch_no of the catchment you want to run if you only want to run one. Set to -1 to run all.
 	skip_until = -1            # Skip until catchment with this catch_no. Set to -1 to not skip.
 	
 	
@@ -101,10 +101,7 @@ def main() :
 		if iter % 100 == 0 :
 			print('Optim iteration %d' % iter)
 	
-	iter_cb = None
-	if do_iter_callback :
-		iter_cb = iter_callback
-	
+	iter_cb = iter_callback if do_iter_callback else None
 	
 	catch_setup = pd.read_csv('catchment_organization.csv', sep='\t')
 	

@@ -29,15 +29,15 @@ DllBuildModel()
 	mobius_model *Model = BeginModelDefinition("SimplyC (quantom)", true);
 	
 	//AddThornthwaitePETModule(Model);
-	//AddSimplySnowNordicModule(Model);
+	AddSimplySnowNordicModule(Model);
 	//AddHBVSnowModule(Model);
-	AddSimplySnowModule(Model);
+	//AddSimplySnowModule(Model);
 	
 	AddDegreeDayPETModule(Model);
 	AddSoilTemperatureModel(Model);
 	AddSimplyHydrologyModule(Model);
 	
-	//AddSuperEasyLakeModule(Model);
+	AddSuperEasyLakeModule(Model);
 	
 	//AddAwfullySimplySedimentModule(Model);
 	AddSimplySedimentModule(Model);
@@ -45,7 +45,7 @@ DllBuildModel()
 	AddSimplyCModel(Model);
 	AddSimplyTOCModule(Model);
 	
-	//AddSuperEasyLakeCModule(Model);
+	AddSuperEasyLakeCModule(Model);
 	
 	return Model;
 }
