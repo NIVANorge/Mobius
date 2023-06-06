@@ -139,6 +139,7 @@ New to version 2.0:
 	auto LogKdObsSed                = RegisterParameterDouble(Model, ChemPars, "(log10) inorganic-water partitioning coefficient (Kd) in sediments", LPerKgMin, 8.0, -3.0, 12.0);
 	auto EstLogKOCWater             = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in water", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
 	auto EstLogKOCSed               = RegisterParameterBool(Model, ChemPars, "Estimate the POC-water partitioning coefficent in sediments", false, "If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group");
+	auto EstLogKDOC                 = RegisterParameterBool(Model, ChemPars, "Estimate the DOC-water partitioning coefficient", true);
 	auto MolecularWeight            = RegisterParameterDouble(Model, ChemPars, "Molecular weight", GPerMol, 400.0, 0.0, 10000.0);
 	auto DegradHLWater25            = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in water", Days, 1e3, 1.0, 1e5, "Reference value at 25°C");
 	auto DegradHLSed25              = RegisterParameterDouble(Model, ChemPars, "Degradation half-life in sediments", Days, 4.17e8, 1.0, 1e10, "Reference value at 25°C");
@@ -428,7 +429,12 @@ New to version 2.0:
 		double logKOW = RESULT(LogKOWWater);
 		double a      = PARAMETER(DOCParA);
 		double b      = PARAMETER(DOCParB);
-		double K_DOC  = b*std::pow(10.0, logKOW*a);
+		double obs    = PARAMETER(LogKOCObsWater);
+		double K_DOC;
+		if(PARAMETER(EstLogKDOC))
+			K_DOC  = b*std::pow(10.0, logKOW*a);
+		else
+			K_DOC  = obs;
 		return Zw_wat*K_DOC*rho_oc;
 	)
 	
@@ -437,7 +443,12 @@ New to version 2.0:
 		double logKOW = RESULT(LogKOWSed);
 		double a      = PARAMETER(DOCParA);
 		double b      = PARAMETER(DOCParB);
-		double K_DOC  = b*std::pow(10.0, logKOW*a);
+		double obs    = PARAMETER(LogKOCObsSed);
+		double K_DOC;
+		if(PARAMETER(EstLogKDOC))
+			K_DOC  = b*std::pow(10.0, logKOW*a);
+		else
+			K_DOC  = obs;
 		return Zw_sed*K_DOC*rho_oc;
 	)
 	
