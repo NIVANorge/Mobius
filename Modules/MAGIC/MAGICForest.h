@@ -102,16 +102,16 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto PartialPressureCO2In    = RegisterInput(Model, "CO2 partial pressure", Percent, true);           
 	auto OAConcentrationIn       = RegisterInput(Model, "Organic acid concentration", MMolPerM3, true);
 	
-	auto CaDepositionTot         = RegisterInput(Model, "Total Ca deposition", MEqPerM2PerTs);
-	auto MgDepositionTot         = RegisterInput(Model, "Total Mg deposition", MEqPerM2PerTs);
-	auto NaDepositionTot         = RegisterInput(Model, "Total Na deposition", MEqPerM2PerTs);
-	auto KDepositionTot          = RegisterInput(Model, "Total K deposition", MEqPerM2PerTs);
-	auto NH4DepositionTot        = RegisterInput(Model, "Total NH4 deposition", MEqPerM2PerTs);
-	auto SO4DepositionTot        = RegisterInput(Model, "Total SO4 deposition", MEqPerM2PerTs);
-	auto ClDepositionTot         = RegisterInput(Model, "Total Cl deposition", MEqPerM2PerTs);
-	auto NO3DepositionTot        = RegisterInput(Model, "Total NO3 deposition", MEqPerM2PerTs);
-	auto FDepositionTot          = RegisterInput(Model, "Total F deposition", MEqPerM2PerTs);
-	auto PO4DepositionTot        = RegisterInput(Model, "Total PO4 deposition", MEqPerM2PerTs);
+	auto CaDepositionTot         = RegisterInput(Model, "Total Ca deposition", MEqPerM2PerTs, true);
+	auto MgDepositionTot         = RegisterInput(Model, "Total Mg deposition", MEqPerM2PerTs, true);
+	auto NaDepositionTot         = RegisterInput(Model, "Total Na deposition", MEqPerM2PerTs, true);
+	auto KDepositionTot          = RegisterInput(Model, "Total K deposition", MEqPerM2PerTs, true);
+	auto NH4DepositionTot        = RegisterInput(Model, "Total NH4 deposition", MEqPerM2PerTs, true);
+	auto SO4DepositionTot        = RegisterInput(Model, "Total SO4 deposition", MEqPerM2PerTs, true);
+	auto ClDepositionTot         = RegisterInput(Model, "Total Cl deposition", MEqPerM2PerTs, true);
+	auto NO3DepositionTot        = RegisterInput(Model, "Total NO3 deposition", MEqPerM2PerTs, true);
+	auto FDepositionTot          = RegisterInput(Model, "Total F deposition", MEqPerM2PerTs, true);
+	auto PO4DepositionTot        = RegisterInput(Model, "Total PO4 deposition", MEqPerM2PerTs, true);
 	
 	auto CaWetDepositionIn       = RegisterInput(Model, "Ca conc in precipitation", MEqPerM2PerTs);
 	auto MgWetDepositionIn       = RegisterInput(Model, "Mg conc in precipitation", MEqPerM2PerTs);
