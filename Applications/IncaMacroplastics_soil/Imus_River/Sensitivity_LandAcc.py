@@ -18,8 +18,8 @@ calib = imp.load_source('calib', calib_fpath)
 mobius.initialize(r'C:/MOBIUS/Mobius/Applications/IncaMacroplastics/incamacroplastics_soil.dll')
 
 
-infile = 'inputs_Ismus_Best_optimistic_Remediation2006_soil.dat'
-parfile = 'params_Ismus_MACRO_2lu_LandAcc_Soil_Agromet.dat'
+infile = 'inputs_Ismus_Remediation2006.dat'
+parfile = 'params_Ismus_LandAcc.dat'
 
 
 dataset = mobius.DataSet.setup_from_parameter_and_input_files(parfile, infile)
