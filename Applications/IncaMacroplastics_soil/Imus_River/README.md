@@ -9,3 +9,5 @@ Files include:
 
 To run the model and perform sensitivity analyses with the python scripts above, pre-requirements include to clone the [MOBIUS github repository](https://github.com/NIVANorge/Mobius/tree/master) to your local device at "C:/MOBIUS/".
 If you clone it elsewhere, you have to update the L. 12, 15 and 18 of the sensitivity scripts.
+
+You can then use the MOBIUS user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) to run IncaMacroplastics. Please read the [MOBIUS github repository](https://github.com/NIVANorge/Mobius/tree/master), the [MOBIUS PythonWrapper](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper) and the [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) pages for detailed instructions.
