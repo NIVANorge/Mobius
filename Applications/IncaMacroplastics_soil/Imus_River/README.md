@@ -1,5 +1,5 @@
 # Example of application to Imus River Philippines 
-Model inputs, parameters and sensitivity scripts for manuscript "Modelling macroplastic fluxes in the Imus catchment: Impacts of long-term accumulation and extreme events" (Clayer et al.)
+Model inputs, parameters and sensitivity scripts for manuscript "Modelling macroplastic fluxes in the Imus catchment: Impacts of long-term accumulation and extreme events" (Clayer et al.).
 These files include input and parameter (default and range of parameter values) for simulating macroplastic export and retention in the Imus River catchment in the Philippines using [MOBIUS](https://doi.org/10.5194/gmd-14-1885-2021).
 
 Files include: 
