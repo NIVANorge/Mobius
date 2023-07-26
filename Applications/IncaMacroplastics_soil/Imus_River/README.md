@@ -6,6 +6,7 @@ Files include:
 - IncaMacroplastics input files (inputs_Ismus_####.dat) following two scenarios ("default" and "Remediation2006")
 - IncaMacroplastics parameter files (params_Ismus_####.dat) for two calibrations ("LandAcc" and "RiverAcc")
 - Two pythons scripts (Sensitivity_####.py) used to perform the Monte Carlo sensitivity analyses for each calibration ("LandAcc" and "RiverAcc") using the "mobius_calib_uncert_lmfit.py" of the [MOBIUS PythonWrapper](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper)
+Note that scenario "Remediation2006" is referred to as "RA 9003 enforcement" in the Clayer et al. manuscript.
 
 To run the model and perform sensitivity analyses with the python scripts above, pre-requirements include to clone the [MOBIUS github repository](https://github.com/NIVANorge/Mobius/tree/master) to your local device at "C:/MOBIUS/". If you clone it elsewhere, you have to update the L. 12, 15 and 18 of the sensitivity scripts. Then, compile IncaMacroplastics following [these instructions](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes) to produce the "incamacroplastics_soil.dll" model executable file. An executable file is available here but it might not be compatible with your computer setup. We recommend to compile your own.
 
