@@ -12,4 +12,4 @@ To run the model and perform sensitivity analyses with the python scripts above,
 
 You can then use the MOBIUS user interface [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) to run IncaMacroplastics. Please read the [MOBIUS github repository](https://github.com/NIVANorge/Mobius/tree/master), the [MOBIUS PythonWrapper](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper) and the [MobiView](https://github.com/NIVANorge/Mobius#the-mobiview-graphical-user-interface) pages for detailed instructions.
 
-Model outputs from the sensitivity scripts are stored [here](http://www.hydroshare.org/resource/8697e34af0224f61baebf0478d6e0ee3)
+Model outputs, observed macroplatics and household waste data are stored [here](http://www.hydroshare.org/resource/8697e34af0224f61baebf0478d6e0ee3)
