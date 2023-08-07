@@ -1,11 +1,30 @@
-
-# TODO: set sensible values
-
 start_date : 2021-1-1
 end_date   : 2021-1-2
+
+additional_timeseries :
+"observed eDNA"
 
 index_set_dependencies :
 "Reach flow"  : {"Reach"}
 "Reach volume" : {"Reach"}
+"observed eDNA" : {"Reach" "Fish species"}
 
 inputs:
+"observed eDNA" {"1155" "oncgor"} linear_interpolate:
+2021-08-14	23.628464
+2021-08-19	23.628464
+
+"observed eDNA" {"955" "oncgor"} :
+2021-08-18	4.680834
+
+"observed eDNA" {"640" "oncgor"} :
+2021-08-18	1.642588
+
+"observed eDNA" {"405" "oncgor"} :
+2021-08-18	0.263301
+
+"observed eDNA" {"202" "oncgor"} :
+2021-08-18	3.6923E-02
+
+"observed eDNA" {"1" "oncgor"} :
+2021-08-18	1.70993E-03
