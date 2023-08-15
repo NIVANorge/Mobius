@@ -1609,6 +1609,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				
 				if(!Success)
 				{
+#if 0
 					ErrorPrint("Solver: \"", SolverSpec.Name, "\", Timestep: ", RunState->Timestep, "\n");
 					ErrorPrint("Indexes:\n");
 					for(index_set_h IndexSet : BatchGroup.IndexSets)
@@ -1624,6 +1625,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 						++EquationIdx;
 					}
 					FatalError();
+#endif
 				}
 				
 				//NOTE: Store out the final results from this solver to the main dataset.

@@ -255,6 +255,7 @@ New to V0.3: Multiple contaminants at a time.
 	auto GroundwaterContaminantFluxToReach = RegisterEquation(Model, "Groundwater contaminant flux to reach", NgPerKm2PerDay, SoilSolver);
 	auto ContaminantMassInGroundwater      = RegisterEquationODE(Model, "Contaminant mass in groundwater", NgPerKm2, SoilSolver);
 	SetInitialValue(Model, ContaminantMassInGroundwater, InitialContaminantMassInGroundwater);
+	auto GroundwaterContaminantConcentration = RegisterEquation(Model, "Groundwater contaminant concentration", NgPerM3);
 	
 	EQUATION(Model, InitialContaminantMassInSoil,
 		double concinsoc = PARAMETER(InitialSoilSOCContaminantConcentration);
@@ -464,6 +465,10 @@ New to V0.3: Multiple contaminants at a time.
 		  RESULT(SoilContaminantFluxToGroundwater)
 		- RESULT(GroundwaterContaminantFluxToReach)
 		- RESULT(GroundwaterContaminantDegradation);
+	)
+	
+	EQUATION(Model, GroundwaterContaminantConcentration,
+		return SafeDivide(RESULT(ContaminantMassInGroundwater), RESULT(WaterDepth, Groundwater))*1e-3;
 	)
 
 	

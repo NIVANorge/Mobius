@@ -22,6 +22,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto MEqPerM2PerYear = RegisterUnit(Model, "meq/m2/year");
 	auto YearPerTs       = RegisterUnit(Model, "year/month");
 	auto Percent         = RegisterUnit(Model, "%");
+	auto Years           = RegisterUnit(Model, "years");
 	
 	//auto Compartment             = GetIndexSetHandle(Model, "Compartment");
 	auto Compartment             = RegisterIndexSet(Model, "Compartment");
@@ -54,6 +55,10 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto NO3Weathering           = RegisterParameterDouble(Model, Weathering, "NO3 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WNO3");
 	auto FWeathering             = RegisterParameterDouble(Model, Weathering, "F weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WF");
 	auto PO4Weathering           = RegisterParameterDouble(Model, Weathering, "PO4 weathering", MEqPerM2PerYear, 0.0, 0.0, 200.0, "", "WPO4");
+	
+	auto WeatheringStartIncrease = RegisterParameterUInt(Model, Weathering, "Start year for weathering increase", Years, 2020, 1000, 3000);
+	auto WeatheringIncreaseRate  = RegisterParameterDouble(Model, Weathering, "Yearly weathering increase", Dimensionless, 0.0, 0.0, 1.0, "Fraction relative to base value.", "WInc");
+	
 	
 	auto Deposition              = RegisterParameterGroup(Model, "Deposition");
 	
@@ -210,6 +215,8 @@ Forest growth driver module developed as part of the CatchCAN project.
 	auto FExternalFlux           = RegisterEquation(Model, "Sum of F fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
 	auto PO4ExternalFlux         = RegisterEquation(Model, "Sum of PO4 fluxes not related to discharge", MEqPerM2PerTs, CompartmentSolver);
 	
+	
+	auto WeatheringScale         = RegisterEquation(Model, "Weathering scaling factor", Dimensionless);
 	
 	//The following four are re-registered and defined in the CNP module
 	auto NO3Inputs               = RegisterEquation(Model, "NO3 inputs", MMolPerM2PerTs);
@@ -375,26 +382,32 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 #undef SEDIMENTATION
 	
-	
-	
+	EQUATION(Model, WeatheringScale,
+		double rate       = PARAMETER(WeatheringIncreaseRate);
+		int    start_year = PARAMETER(WeatheringStartIncrease);
+		int    year       = CURRENT_TIME().Year;
+		if(year < start_year)
+			return 1.0;
+		return (year - start_year)*rate + 1.0;
+	)
 	
 	EQUATION(Model, NO3BasicInputs,
 		double deposition = RESULT(NO3Deposition);
-		double weathering = PARAMETER(NO3Weathering)*RESULT(FractionOfYear);
+		double weathering = PARAMETER(NO3Weathering)*RESULT(FractionOfYear)*RESULT(WeatheringScale);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, NH4BasicInputs,
 		double deposition = RESULT(NH4Deposition);
-		double weathering = PARAMETER(NH4Weathering)*RESULT(FractionOfYear);
+		double weathering = PARAMETER(NH4Weathering)*RESULT(FractionOfYear)*RESULT(WeatheringScale);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
 	
 	EQUATION(Model, PO4BasicInputs,
 		double deposition = RESULT(PO4Deposition);
-		double weathering = PARAMETER(PO4Weathering)*RESULT(FractionOfYear);
+		double weathering = PARAMETER(PO4Weathering)*RESULT(FractionOfYear)*RESULT(WeatheringScale);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering;
 	)
@@ -406,7 +419,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	//TODO: The uptake should maybe be limited so that the mass never goes in the negative, but it may not be a problem
 	EQUATION(Model, CaExternalFlux,
 		double deposition = RESULT(CaDeposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(CaWeathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(CaWeathering)*RESULT(WeatheringScale);
 		double forest     = RESULT(TotalTreeDecompCaSource) - RESULT(TotalTreeCaUptake);
 		double sed        = RESULT(CaSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -416,7 +429,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, MgExternalFlux,
 		double deposition = RESULT(MgDeposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(MgWeathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(MgWeathering)*RESULT(WeatheringScale);
 		double forest     = RESULT(TotalTreeDecompMgSource) - RESULT(TotalTreeMgUptake);
 		double sed        = RESULT(MgSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -426,7 +439,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, NaExternalFlux,
 		double deposition = RESULT(NaDeposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(NaWeathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(NaWeathering)*RESULT(WeatheringScale);
 		double forest     = RESULT(TotalTreeDecompNaSource) - RESULT(TotalTreeNaUptake);
 		double sed        = RESULT(NaSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -436,7 +449,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, KExternalFlux,
 		double deposition = RESULT(KDeposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(KWeathering)*RESULT(WeatheringScale);
 		double forest     = RESULT(TotalTreeDecompKSource) - RESULT(TotalTreeKUptake);
 		double sed        = RESULT(KSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) { deposition = 0.0; forest = 0.0; }
@@ -450,7 +463,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, SO4ExternalFlux,
 		double deposition = RESULT(SO4Deposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(SO4Weathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(SO4Weathering)*RESULT(WeatheringScale);
 		double sed        = RESULT(SO4SedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering - sed;
@@ -462,7 +475,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, ClExternalFlux,
 		double deposition = RESULT(ClDeposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(ClWeathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(ClWeathering)*RESULT(WeatheringScale);
 		double sed        = RESULT(ClSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering - sed;
@@ -470,7 +483,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 	
 	EQUATION(Model, FExternalFlux,
 		double deposition = RESULT(FDeposition);
-		double weathering = RESULT(FractionOfYear)*PARAMETER(FWeathering);
+		double weathering = RESULT(FractionOfYear)*PARAMETER(FWeathering)*RESULT(WeatheringScale);
 		double sed        = RESULT(FSedimentationEq);
 		if(!PARAMETER(ThisIsATopCompartment)) deposition = 0.0;
 		return deposition + weathering - sed;
