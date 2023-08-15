@@ -1,0 +1,12 @@
+# Application of eDNA model to Jakobselva (Norway) and associated uncertainty analysis 
+Model inputs, parameters and sensitivity scripts for manuscript "... update with MS title..." (Engesmo et al.).
+These files include input, parameter, and workflow for simulating fish eDNA and biomass distribution along the Jakobselva river (Norway) using [MOBIUS](https://doi.org/10.5194/gmd-14-1885-2021).
+
+Files include: 
+- hydrological module: input file ('inputs_Karpelva.dat'), calibration parameter file (for the adjacent river "Karpelva", 'params_Karpelva_PERSiST_2lu_CAL_2009_2015.dat') and parameter file ('params_Jakobselva_PERSiST_2lu.dat') to run the [PERSiST model](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist) ('persist.dll') and estimate daily river discharge and water volume in each of the 6 river reaches.
+- interpolation: modelled daily river discharge and volumes, outputs of PERSiST ('Q_Vol_results_5d_180821.csv') and associated MATLAB script ('Q_and_V_interpolation_MATLAB.txt') to interpolate those to minutes and each 20-m river segment and save the data to the 'Q_reaches.dat' and 'Vol_reaches.dat' (not included here because of their large size).
+- A iPython notebook ('FishyBusiness.ipynb') used to import interpolated input reach volumes and discharge, define parameters, run the model (single run) and perform the Monte Carlo sensitivity analyses using the "mobius_calib_uncert_lmfit.py" of the [MOBIUS PythonWrapper](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper) along with its input and parameter files ('input_template.dat' and 'templatepars.dat') and python uncertainty script ('uncertainty.py').
+
+To run the model and perform sensitivity analyses with the scripts above, pre-requirements include to clone the [MOBIUS github repository](https://github.com/NIVANorge/Mobius/tree/master) to your local device and execute the iPython notebook from this folder. To run PERSiST and eDNA, you should preferably compile your own executables ('.dll') following [these instructions](https://github.com/NIVANorge/Mobius#compile-a-model-run-it-and-make-some-changes) to produce the "edna.dll" and "persist.dll" model executable files. Executable file are available here but they might not be compatible with your computer setup. We recommend to compile your owns.
+
+Please read the [MOBIUS github repository](https://github.com/NIVANorge/Mobius/tree/master), and the [MOBIUS PythonWrapper](https://github.com/NIVANorge/Mobius/tree/master/PythonWrapper) pages for detailed instructions about how to use MOBIUS.

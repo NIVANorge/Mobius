@@ -1,0 +1,63 @@
+%%% Interpolating the reach volume and daily discharge (for the 6 main river reaches) to minutely and each 20-m river segment
+
+%%Defining the lengths of each river reach (in m) for river volume calculations
+dist = [15100 4040 4050 4710 6300 4000];
+
+%% Preliminary step to perform prior to run the rest of the script is to import the 'Q_Vol_results_5d_180821.csv' as QV (renaming "Date" by "date")
+%% 'Q_Vol_results_5d_180821.csv' includes reach daily volumes and water discharge from Aug 10th, 2021 to Aug 19th 2021 estimated with PERSiST
+%% Variable 1 is date, Variables 2 to 7 are water discharge and 8 to 13 are volumes
+
+%% Redimensioning the volumes of each reach to a 20-m reach (dividing by the lenghts and multiplying by 20).
+QV(:,8:end) = array2table(table2array(QV(:,8:end)) ./ dist .* 20,'VariableNames',QV.Properties.VariableNames(8:end));
+
+%% Defining date as "datetime type" and changing hours to midday.
+QV.date = datetime(QV.date,'Format','yyyy-MM-dd HH:mm');
+QV.date(1) = '2021-08-10 12:00';
+QV.date(2) = '2021-08-11 12:00';
+QV.date(3) = '2021-08-12 12:00';
+QV.date(4) = '2021-08-13 12:00';
+QV.date(5) = '2021-08-14 12:00';
+QV.date(6) = '2021-08-15 12:00';
+QV.date(7) = '2021-08-16 12:00';
+QV.date(8) = '2021-08-17 12:00';
+QV.date(9) = '2021-08-18 12:00';
+QV.date(10) = '2021-08-19 12:00';
+
+%% Interpolating daily data for the 6 river segments to minutely data.
+QV_m = retime(table2timetable(QV),'minutely','makima');
+
+%% Visual inspection of the interpolation from daily to minutely
+figure; plot(QV.date, QV.Vol_6,'bo'); hold on; plot(QV_m.date, QV_m.Vol_6,'k-');
+figure; plot(QV.date, QV.Q_6,'bo'); hold on; plot(QV_m.date, QV_m.Q_6,'k-');
+figure; plot(QV.date, QV.Q_1,'bo'); hold on; plot(QV_m.date, QV_m.Q_1,'k-');
+
+%% Interpolating linearly along the river transect for each 20-m river segment.
+%% x is the number of segment reaches, y is the number of minutes (and also lenght of QV_m)
+x = 1:1156;
+y = 1:12961;
+[Xq,Yq] = meshgrid(x,y);
+
+%% Interpolating reach volume from 6 reaches to each 20-m segment
+grid_pos_Vol = [1 102 304 523 798 1056];  % these are the position of the 6 river reaches to interpolate from, here taken at the middle of the reach for volume interpolating.
+Vol_reach = interp2(grid_pos_Vol, [1:1:12961],table2array(QV_m(:,7:end)),Xq,Yq,'linear');
+
+% Since the last interpolation point (1056) is not at the end of the interpolation meshgrid (1156). We need to extrapolate from 1056 to 1156.
+for i = 1: 12961;
+	Vol_reach(i,:) = interp1(1:1:1056, Vol_reach(i,1:1056), 1:1:1156,'linear','extrap');
+end
+
+%% Interpolating discharge from 6 reaches to each 20-m segment
+grid_pos_Q = [1 202 405 640 955 1156]; % these are the position of the 6 river reaches to interpolate from, here taken at the outlet of the reach for discharge interpolating.
+Q_reach = interp2(grid_pos_Q, [1:1:12961],table2array(QV_m(:,1:6)),Xq,Yq);
+
+%% Putting interpolated data into tables with date.
+Q_reaches = array2table(Q_reach);
+Q_reaches.date = QV_m.date;
+Q_reaches = movevars(Q_reaches, "date", "Before", "Q_reach1");
+Vol_reaches = array2table(Vol_reach);
+Vol_reaches.date = QV_m.date;
+Vol_reaches = movevars(Vol_reaches, "date", "Before", "Vol_reach1");
+
+%% Writing tables to ".dat" files for later use.
+writetable(Q_reaches, 'Q_reaches.dat');
+writetable(Vol_reaches, 'Vol_reaches.dat');
