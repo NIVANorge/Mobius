@@ -1609,7 +1609,7 @@ INNER_LOOP_BODY(RunInnerLoop)
 				
 				if(!Success)
 				{
-#if 0
+#if !MOBIUS_IGNORE_SOLVER_ERRORS
 					ErrorPrint("Solver: \"", SolverSpec.Name, "\", Timestep: ", RunState->Timestep, "\n");
 					ErrorPrint("Indexes:\n");
 					for(index_set_h IndexSet : BatchGroup.IndexSets)

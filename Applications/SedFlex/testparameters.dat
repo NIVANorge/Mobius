@@ -117,7 +117,7 @@ parameters:
 	# Chemicals ("Chemical") #
 
 	"(log10) Octanol-water partitioning coefficient" :     #(dimensionless) [-3, 10] Reference value at 25°C
-	6.96 7.5 7.94 7.98 8.02 8.4 8.75 6.46 6.95 7.11 7.53 7.57 7.76 7.65 0.01 8.23 8.6
+	6.96 7.5 7.94 7.98 8.02 8.4 8.75 6.46 6.95 7.11 7.53 7.57 7.76 7.65 8.01 8.23 8.6
 
 	"(log10) Octanol-air partitioning coefficient" :     #(dimensionless) [-3, 14] Reference value at 25°C
 	11.04 11.63 12.2 12.22 12.26 12.36 13 10.9 11.4 11.52 11.98 12 12.17 12.1 12.06 12.34 12.84

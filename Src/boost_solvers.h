@@ -11,6 +11,11 @@
 
 #if !defined(BOOST_SOLVERS_H)
 
+#if !defined(MOBIUS_IGNORE_SOLVER_ERRORS)
+#define MOBIUS_IGNORE_SOLVER_ERRORS 0
+#endif
+
+
 #include <boost/numeric/odeint.hpp>
 
 typedef boost::numeric::ublas::vector<double> vec_boost;
@@ -73,20 +78,26 @@ MOBIUS_SOLVER_FUNCTION(BoostRosenbrock4Impl_)
 	}
 	catch(const no_progress_error &Err)
 	{
+#if !MOBIUS_IGNORE_SOLVER_ERRORS
 		ErrorPrint("ERROR: A \"no progress error\" occurred in the Rosenbrock4 solver.\n");
 		ErrorPrint("Message: ", Err.what(), "\n");
+#endif
 		return false;
 	}
 	catch(const step_adjustment_error &Err)
 	{
+#if !MOBIUS_IGNORE_SOLVER_ERRORS
 		ErrorPrint("ERROR: A \"step adjustment error\" occurred in the Rosenbrock4 solver.\n");
 		ErrorPrint("Message: ", Err.what(), "\n");
+#endif
 		return false;
 	}
 	catch(const odeint_error &Err)
 	{
+#if !MOBIUS_IGNORE_SOLVER_ERRORS
 		ErrorPrint("ERROR: An \"odeint error\" occurred in the Rosenbrock4 solver.\n");
 		ErrorPrint("Message: ", Err.what(), "\n");
+#endif
 		return false;
 	}
 	
