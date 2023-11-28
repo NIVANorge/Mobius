@@ -1,6 +1,12 @@
 # Application of MAGIC to Langtjern with future scenarios of deposition and climate change
 
 We used MAGIC to simulate water chemistry from 1860 to 2100 using historical and projected deposition and climate. 
-New in this application of MAGIC on Langtjern is 
-  i) a solubility control of dissolved organic carbon (DOC) from S deposition, which allows inclusion of the changing role of organic acids in chemical recovery
-  ii) user-defined changes in weathering rates.
+New in this application of MAGIC on Langtjern are:
+>1) a solubility control of dissolved organic carbon (DOC) from S deposition, which allows inclusion of the changing role of organic acids in chemical recovery\
+>2) user-defined changes in weathering rates.
+\
+List of files included here:
+>"MAGIC_processing_LAE.ipynb" main Jupyter Notebook to process input data and run sensitivity analyses for increase in weathering rates\
+>"magic_input_processing_LAE.py" python script to process input data, called within the Jupyter notebook\
+>"example_Langtjern_best.xls" input dataset, weather, discharge, deposition, observed concentration in stream and soil\
+>"langtjern_parameters_Best_SO4Control_addCl_new.dat" MAGIC parameter file, previously calibrated separately\
