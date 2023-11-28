@@ -9,4 +9,4 @@ List of files included here:
 >1) "MAGIC_processing_LAE.ipynb" main Jupyter Notebook to process input data and run sensitivity analyses for increase in weathering rates
 >2) "magic_input_processing_LAE.py" python script to process input data, called within the Jupyter notebook
 >3) "example_Langtjern_best.xls" input dataset, weather, discharge, deposition, observed concentration in stream and soil
->4) "langtjern_parameters_Best_SO4Control_addCl_new.dat" MAGIC parameter file, previously calibrated separately
+>4) "langtjern_parameters_Best_SO4Control_addCl_new.dat" MAGIC parameter file, this includes all parameters previously calibrated
