@@ -1,0 +1,529 @@
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+
+
+def year_range(begin_year, end_year, monthly=True) :
+	start = pd.to_datetime('%s-1-1' % begin_year, yearfirst=True)
+	end   = pd.to_datetime('%s-12-1' % end_year if monthly else '%s-1-1' % end_year, yearfirst=True)
+	
+	#return np.array(pd.date_range(start = start, end = end, freq='MS' if monthly else 'AS'))
+	return pd.date_range(start = start, end = end, freq='MS' if monthly else 'AS')
+
+def empty_input_df(begin_year, end_year) :
+	return pd.DataFrame(index = year_range(begin_year, end_year))
+
+
+def add_ts(input_df, source, dest_name, aggr_method='mean', patch_ref_range = None, source_freq='M', present=None, delta=1.0) :
+	
+	#TODO: Check if source_freq is D or M. (otherwise won't work)
+	
+	if source_freq == 'M' :
+		monthly = source
+	elif source_freq == 'Y' :
+		yearly = source
+	else :
+		if aggr_method == 'sum' :
+			monthly = source.resample('MS').sum(min_count=28)  #This min count is not ideal, we could also use mean, and multiply with length of month
+		elif aggr_method == 'mean' :
+			monthly = source.resample('MS').mean()
+	if patch_ref_range is not None:
+		patch_range = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
+		input_df_future = input_df.copy()
+		input_df_future.drop(input_df_future.loc[:patch_range[0]].index, inplace=True)
+	
+	if present is not None:
+		present_year = year_range(present,present)
+		input_df_past = input_df.copy()
+		input_df_past.drop(input_df_past.loc[present_year[-1]:].index, inplace=True)
+	
+	for index, row in input_df.iterrows() :
+		if index in monthly.index :
+			input_df.loc[index, dest_name] = monthly[index]
+#	if patch_ref_range is not None:
+#		for index, row in input_df_future.iterrows() :
+#			if index in monthly.index :
+#				input_df_future.loc[index, dest_name] = monthly[index]
+	
+	if patch_ref_range is not None:
+		distr = np.zeros(12)
+		count = np.zeros(12)
+		std = np.zeros(12)
+	
+		for index, val in monthly.items() :
+			if not np.isnan(val) :
+				if index in patch_range :
+					distr[index.month-1] += val
+					count[index.month-1] += 1
+		for i in range(12):
+			std[i]=np.nanstd(monthly[monthly.index.month == i+1])
+		
+		if aggr_method == 'sum' :
+			distr /= np.nansum(monthly[patch_range].values)
+			assert np.abs(np.sum(distr) - 1.0) < 1e-8
+		elif aggr_method == 'mean' :
+			distr /= count
+		
+		min_count = 365
+		if source_freq=='M' : min_count = 12
+		
+		yearly = source.resample('AS').sum(min_count=min_count)
+		if aggr_method == 'mean' :
+		# We still want the min count to not get thrown off by a year where there are only december values. However, the mean() function does not provide this
+			yearly /= min_count
+		
+		all_mean = np.nanmean(yearly.values)
+		
+		yearly_f = yearly.copy()
+		yearly = yearly.reindex(year_range(input_df_past.index[0].year, input_df_past.index[-1].year, False))
+		yearly_f = yearly_f.reindex(year_range(input_df_future.index[0].year, input_df_future.index[-1].year, False))
+		#if dest_name=='Potential evapotranspiration' : 
+		
+		
+		ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=False)
+		ref_val = np.nanmean([yearly[ref_date] for ref_date in ref_dates])
+        
+		ref_dates2 = year_range(2002, 2022, monthly=False)
+		ref_val2 = np.nanmean([yearly[ref_date] for ref_date in ref_dates2])
+		
+		first_idx = yearly.first_valid_index()
+		last_idx = yearly_f.index[-1]
+		
+		#if dest_name == 'Precipitation' :       
+		mid_idx = yearly_f.last_valid_index()
+		idx_m = np.searchsorted(yearly_f.index, mid_idx)
+		yearly_f[yearly_f.index[idx_m]] = ref_val2
+		
+		idx = np.searchsorted(yearly.index, first_idx)
+		idx_f = np.searchsorted(yearly_f.index, last_idx)
+		yearly[yearly.index[idx-1]] = ref_val2
+		
+		yearly_f[yearly_f.index[idx_f]] = ref_val2 * (1+(delta-1)*100/85)
+		print('Reference value for %s is ' %dest_name) 
+		print(ref_val2)
+		#TODO: Provide different methods for filling in holes
+		yearly = yearly.interpolate(limit_area=None, limit_direction='both')
+		yearly_f = yearly_f.interpolate(limit_area=None, limit_direction='both')
+		
+		
+		#input_df[dest_name] = np.zeros(len(input_df.index))
+		
+		for index, row in input_df_past.iterrows() :
+			if index not in monthly.index :
+				yr_val = yearly[pd.to_datetime('%s-1-1' % index.year, yearfirst=True)]
+				m_val  = distr[index.month-1]
+				std_val  = std[index.month-1] * np.random.randn()
+				if aggr_method == 'sum' :
+					if np.absolute(std_val) < yr_val * m_val :
+						input_df.loc[index, dest_name] = yr_val * m_val #+ 0.04* std_val
+					else :
+						input_df.loc[index, dest_name] = yr_val * m_val #+ 0.01* std_val
+				elif aggr_method == 'mean' :
+					input_df.loc[index, dest_name] = m_val + yr_val - all_mean #+ 0.04* std_val
+		
+		for index, row in input_df_future.iterrows() :
+			if index not in monthly.index :
+				yr_val_f = yearly_f[pd.to_datetime('%s-1-1' % index.year, yearfirst=True)]
+				m_val_f  = distr[index.month-1]
+				std_val_f  = std[index.month-1] * np.random.randn() *1.5
+				if aggr_method == 'sum' :
+					if np.absolute(std_val_f) < yr_val_f * m_val_f :
+						input_df.loc[index, dest_name] = yr_val_f * m_val_f #+ 0.04*std_val_f
+					else :
+						input_df.loc[index, dest_name] = yr_val_f * m_val_f #+ 0.01 * std_val_f
+				elif aggr_method == 'mean' :
+					input_df.loc[index, dest_name] = m_val_f + yr_val_f - all_mean #+ 0.04*std_val_f 
+
+
+
+
+def add_precip_ts(input_df, source, patch_ref_range=None, source_freq='M', present=(2022), delta=1.0) :#, source_is_mm=True) :
+	add_ts(input_df, source, 'Precipitation', 'sum', patch_ref_range, source_freq, present, delta)
+	#if source_is_mm : input_df['Precipitation'] *= 1e-3     #NOTE MAGIC wants this in m/month instead of mm/month
+    
+def add_precip_ref_ts(input_df, source, patch_ref_range=None, source_freq='M', present=(2022), delta=1.0) :#, source_is_mm=True) :
+	add_ts(input_df, source, 'Precipitation_ref', 'sum', patch_ref_range, source_freq, present, delta)
+	#if source_is_mm : input_df['Precipitation'] *= 1e-3     #NOTE MAGIC wants this in m/month instead of mm/month
+	
+
+def add_air_temperature_ts(input_df, source, patch_ref_range=None, source_freq='M', present=(2022), delta=1.0) :
+	add_ts(input_df, source, 'Air temperature', 'mean', patch_ref_range, source_freq, present, delta)
+	
+def add_runoff_ts(input_df, source, source_freq='M', initial_value = None) :
+	add_ts(input_df, source, 'Runoff', 'sum', patch_ref_range=None, source_freq=source_freq)
+	if initial_value is not None :
+		input_df['Runoff'].values[0] = initial_value
+	
+	#TODO: Re-scale in case it is given in m3/s or something like that.
+	
+def add_pet_ts(input_df, source, patch_ref_range=None, source_freq='M', present=(2022), delta=1.0) :
+	add_ts(input_df, source, 'Potential evapotranspiration', 'sum', patch_ref_range, source_freq, present, delta)
+	
+def add_deposition_ts(
+	input_df, source_df, runoff_df, source_is_mg_l=True, runoff_is_mg_l=True, n_dep_given_as_n=True, s_dep_given_as_s=True,
+	sea_salt_ref='Cl', sea_salt_ref_range=None, 
+	patch_scale=None, patch_ref_range=(1989,1992),
+	so4_weathering=0.0, ca_excess_weight=0.5, ca_ref_range=None, n_dry_deposition_factor=1.0, alt_runoff = None) :
+	'''
+	input_df  : The dataframe you want to write the inputs to. It must already have a 'Precipitation' and a 'Runoff' column (units: mm)
+	source_df : A date-indexed dataframe with observed concentrations in precipitation, with columns ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F']   F is optional
+	runoff_df : A date-indexed dataframe with observed concentrations in runoff, with the same columns as source_df.
+	source_is_mg_l : True if the unit of the source_df is mg/l, False if they are meq/m3=µeq/l
+	runoff_is_mg_l : True if the unit of the runoff_df is mg/l, False if they are meq/m3=µeq/l
+	n_dep_given_as_n : Only relevant if source is mg/l: True if the mass of NO3 and NH4 deposition is given as the mass of N, False if it is given as the mass of the full molecule.
+	s_dep_given_as_s : Only relevant if source is mg/l: True if the mass of SO4 deposition is given as the mass of S, False if it is given as the mass of the full molecule.
+	sea_salt_ref : The reference deposition series for sea salt correction. Usually 'Cl', but can also use 'Mg'.
+	sea_salt_ref_range : pair (start_year, end_year). This is the range that is used to compute the sea_salt_factor and the SO4* factor.
+	patch_scale : A date-indexed dataframe containing some of the columns of the input_df. Should have some values of historical deposition relative to a reference year. Example : get_emep_deposition_scales()
+	patch_ref_range : pair (start_year, end_year). Range of years to compute the reference value that scales the values used for patching.
+	so4_weathering : how much of the so4 runoff should be accounted for by weathering and not deposition
+	ca_ref_range : If not None, compute Ca excess deposition relative to SO4 excess deposition with reference to this range.
+	ca_excess_weight : Ca excess deposition relative to SO4 excess deposition is multiplied with this value
+	n_dry_deposition_factor : Multiply NH4 and NO3 deposition by this value
+	'''
+	
+	
+	source_df = source_df.resample('MS').mean()
+	source_df = source_df.interpolate(limit_area='inside')
+	
+	runoff_df2 = runoff_df.resample('MS').mean()
+	runoff_df2 = runoff_df2.interpolate(limit_area='inside')
+	
+	if sea_salt_ref_range is not None:
+		cl_range = year_range(sea_salt_ref_range[0], sea_salt_ref_range[1], monthly=True)
+	else:
+		cl_range = source_df.index.intersection(runoff_df2.index)
+	
+	def get_converted_conc(df, element, convert) :
+		charge = {
+			'Ca' : 2.0,
+			'Mg' : 2.0,
+			'Na' : 1.0,
+			'K'  : 1.0,
+			'NH4': 1.0,
+			'SO4': 2.0,
+			'Cl' : 1.0,
+			'NO3': 1.0,
+			'F'  : 1.0,
+		}
+		atomic_mass = {
+			'Ca' : 40.0,
+			'Mg' : 24.3,
+			'Na' : 23.0,
+			'K'  : 39.0,
+			'NH4': 14.0 if n_dep_given_as_n else 18.0,
+			'SO4': 32.1 if s_dep_given_as_s else 96.0,
+			'Cl' : 35.5,
+			'NO3': 14.0 if n_dep_given_as_n else 62.0,
+			'F'  : 19.0,
+		}
+		if convert :
+			#Convert conc from [mg/l] to [meq/m3]
+			return (df[element] * charge[element] / atomic_mass[element]) * 1000.0
+		else :
+			#Assume source is in [meq/m3] = [µeq/l]
+			return df[element]
+	
+	sea_salt_ratio = {
+		'Ca' : 0.037,
+		'Mg' : 0.196,
+		'Na' : 0.856,
+		'K'  : 0.018,
+		#'NH4':
+		'SO4': 0.103,
+		#'Cl' :
+		#'NO3':
+		#'F'  :    #TODO!!! What to do about F?
+	}
+	
+	def add_single(obs, name, nonmarine=None) :
+		add_single_deposition_ts(input_df, obs, nonmarine, name, None if (patch_scale is None or name not in patch_scale) else patch_scale[name], patch_ref_range)
+	
+	obs_ss_conc = get_converted_conc(source_df, sea_salt_ref, source_is_mg_l)
+	
+	if sea_salt_ref == 'Cl' :
+		obs_cl_conc = obs_ss_conc
+	else :
+		obs_cl_conc = obs_ss_conc / sea_salt_ratio[sea_salt_ref]	
+	
+	obs_cl_dep    = obs_cl_conc * input_df['Precipitation_ref'] * 1e-3      #TODO: 1e-3 is if precip is given in mm. Otherwise, remove that factor!
+	
+	#print(obs_cl_dep.resample('AS').sum())
+	
+	Q = input_df['Runoff']*1e-3        # Convert mm to m
+	if alt_runoff is not None :
+		Q = alt_runoff['Runoff']*1e-3
+	
+	#TODO: This is probably correct, because we can't assume the sea salt ref runs straight through??
+	obs_cl_runoff_conc = get_converted_conc(runoff_df2, 'Cl', runoff_is_mg_l)
+	obs_cl_runoff = obs_cl_runoff_conc * Q            
+	
+	sea_salt_factor = np.sum(obs_cl_runoff[cl_range].values) / np.sum(obs_cl_dep[cl_range].values)
+	
+	print('The sea salt factor was: %g' % sea_salt_factor)
+	
+	## SO4 computation:
+	sea_salt_so4_conc = obs_cl_conc * 0.103 * sea_salt_factor
+	sea_salt_so4_dep = obs_cl_dep * 0.103 * sea_salt_factor
+	obs_so4_conc = get_converted_conc(source_df, 'SO4', source_is_mg_l)
+	
+	obs_so4_dep = obs_so4_conc * input_df['Precipitation_ref'] * 1e-3
+	
+	obs_so4_runoff_conc = get_converted_conc(runoff_df2, 'SO4', runoff_is_mg_l)
+	obs_so4_runoff = obs_so4_runoff_conc * Q
+	
+	#print(input_df['Runoff'][cl_range])
+	#print(obs_so4_runoff)
+	#print(obs_so4_dep)
+	
+	computed_excess_so4_dep = obs_so4_runoff - so4_weathering/12.0 - sea_salt_so4_dep   #TODO: instead of dividing by 12.0, that should really be sensitive to month length
+	obs_excess_so4_dep = obs_so4_dep - sea_salt_so4_dep
+	
+	so4_excess_factor = np.sum(computed_excess_so4_dep[cl_range].values) / np.sum(obs_excess_so4_dep[cl_range].values)
+	
+	print('The SO4* factor was %g' % so4_excess_factor)
+	
+	projected_so4_excess = so4_excess_factor*(obs_so4_conc - sea_salt_so4_conc)
+	add_single(sea_salt_so4_conc + projected_so4_excess, 'SO4')
+	
+	
+	add_single(obs_ss_conc*sea_salt_factor, sea_salt_ref)
+	if sea_salt_ref != 'Cl' :
+		add_single(obs_cl_conc * sea_salt_factor, 'Cl')
+
+	for element in ['Ca', 'Mg', 'Na', 'K'] :
+		if element is sea_salt_ref : continue
+		
+		ss_conc = obs_cl_conc * sea_salt_factor * sea_salt_ratio[element]   #NOTE: The sea_salt_ratio is in eq/eq, so no need to use charge and molar mass here
+		
+		if (ca_ref_range is not None) and element == 'Ca' :
+			ca_range = year_range(ca_ref_range[0], ca_ref_range[1], monthly=True)
+		
+			ss_ca_dep = ss_conc * input_df['Precipitation_ref'] * 1e-3
+			
+			#NOTE: No runoff correction for Ca deposition possible due to retention!
+			obs_ca_conc = get_converted_conc(source_df, 'Ca', source_is_mg_l)
+			obs_ca_dep = obs_ca_conc * input_df['Precipitation_ref'] * 1e-3
+			
+			excess_ca_dep = obs_ca_dep - ss_ca_dep
+			
+			#ca_excess_factor = np.nansum(excess_ca_dep[ca_range].values) / np.nansum(computed_excess_so4_dep[ca_range].values)  #TODO: ratio to computed or to obs? We scale with comp. later, so should use that?
+			ca_excess_factor = 0.08
+			
+			print('The Ca* factor was %g' % ca_excess_factor)
+			
+			projected_ca_excess = projected_so4_excess*ca_excess_factor*ca_excess_weight
+			ca_conc = ss_conc + projected_ca_excess
+			
+			add_single(ca_conc, 'Ca', projected_ca_excess)
+		else :
+			add_single(ss_conc, element)
+		
+		#Computing NH4 and NO3:
+		
+		#TODO: NH4 and NO3 dry deposition!
+		
+		nh4_conc = get_converted_conc(source_df, 'NH4', source_is_mg_l)*n_dry_deposition_factor
+		add_single(nh4_conc, 'NH4')
+		
+		no3_conc = get_converted_conc(source_df, 'NO3', source_is_mg_l)*n_dry_deposition_factor
+		add_single(no3_conc, 'NO3')
+		
+		
+		#TODO: F !
+	
+	
+	input_df['Cl conc in precipitation'] = 7.937785 + 0.1428571 * input_df['SO4 conc in precipitation']
+	#Adding observed values too:
+	
+	for element in runoff_df :
+		if element not in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'H', 'pH',
+							'OA', 'Exc. Ca soil', 'Exc. Mg soil', 'Exc. Na soil', 'Exc. K soil', 'Total base saturation soil', 'Aln+', 'ANC'] : continue
+		if np.isnan(runoff_df[element]).all() : continue
+		
+		input_df['Observed runoff conc %s' % element] = get_converted_conc(runoff_df, element, runoff_is_mg_l) #runoff_df[element]
+	
+	
+	
+	
+def add_single_deposition_ts(input_df, source, nonmarine=None, element_name='Cl', patch_scale=None, patch_ref_range=(1989,1992)) :
+
+	#NOTE: Only works if source is monthly. Should only be called by the above function!
+	#NOTE: We have a separate patch source for Ca, which is the non-marine deposition only..
+	if element_name == 'Ca':
+		ref_dates = year_range(1974, 2022, monthly=True)
+		print('Reference year for Ca is: %d' % (1974))
+	else:
+		ref_dates = year_range(patch_ref_range[0], patch_ref_range[1], monthly=True)
+
+	source = source.reindex(input_df.index)
+	if nonmarine is not None :
+		nonmarine = nonmarine.reindex(input_df.index)
+		patch_offset = np.nanmean((source-nonmarine)[ref_dates])    #NOTE: For Ca we still want to use the marine deposition as a base.
+		scale_val    = np.nanmean(nonmarine[ref_dates])
+	elif patch_scale is not None :
+		patch_offset = 0.0
+		scale_val = np.nanmean(source[ref_dates])
+	else :
+		patch_offset = 0.0
+		scale_val = np.nanmean(source)
+	
+	if element_name == 'SO4' : print('scale for %s is : %f' % (element_name, scale_val))
+	
+	if patch_scale is not None :
+		patch = patch_offset + patch_scale * scale_val
+		
+		for index, val in source.items() :
+			if np.isnan(val) and (index in patch.index) :
+				#print('patching %s with %f at %s' % (element_name, patch[index], index))
+				source[index] = patch[index]
+	else :
+		#NOTE: This makes everything before const. equal to this value when we later interpolate
+		first_idx = source.first_valid_index()
+		idx = np.searchsorted(source.index, first_idx)
+		last_idx = source.last_valid_index()
+		idx_l = np.searchsorted(source.index, last_idx)
+		source[source.index[idx-1]] = patch_offset + scale_val  #patch_scale is supposed to be constantly equal to 1
+		if source[source.index[idx_l]] != source[source.index[-1]]:
+			source[source.index[idx_l+1]] = patch_offset + scale_val  #patch_scale is supposed to be constantly equal to 1
+	source = source.interpolate(limit_area=None, limit_direction='both')
+	#input_df['Total %s deposition' % element_name] = source * input_df['Precipitation'] * 1e-3
+	input_df['%s conc in precipitation' % element_name] = source
+
+	
+def get_emep_deposition_scales() :
+	#NOTE: This is really just correct for an area around Birkenes. We should make something more general.
+
+	emep = {
+		'Date' : pd.to_datetime(['1850-1-1', '1915-1-1', '1925-1-1', '1940-1-1', '1955-1-1', '1960-1-1', '1965-1-1', '1970-1-1', '1975-1-1', '1980-1-1', '1985-1-1', '1990-1-1','2017-1-1', '2021-1-1', '2023-1-1', '2030-1-1', '2050-1-1', '2100-1-1'], yearfirst=True),
+		#'Ca'   : [0.5, 0.81, 0.82, 0.89, 1.1, 1.13, 1.24, 1.30, 1.20, 1.17, 1.06, 1.0, 1.0, 1.0, 0.84, 0.79],
+		'Ca'   : [0.05, 0.61, 0.64, 0.78, 1.2, 1.26, 1.48, 1.60, 1.41, 1.34, 1.13, 1.0, 1.0, 1.0, 0.1764, 0.84 * 0.14492, 0.79 * 0.14492, 0.79 * 0.14492],  #Since the scaling for Ca is only applied to 0.5*(excess deposition) now, we use the same series for Ca as for SO4
+		'SO4'  : [0.05, 0.61, 0.64, 0.78, 1.2, 1.26, 1.48, 1.60, 1.41, 1.34, 1.13, 1.0, 1.0, 1.0, 0.1764, 0.60 * 0.14492, 0.563 * 0.14492, 0.563 * 0.14492],
+		'NH4'  : [0.0, np.nan, np.nan, np.nan, np.nan, 0.99, 1.0, 1.02, 1.12, 1.14, 1.12, 1.0, 1.0, 1.0, 0.3390, 0.948 * 0.324675, 0.985 * 0.324675, 0.985 * 0.324675],
+		'NO3'  : [0.0, np.nan, np.nan, np.nan, np.nan, 0.53, 0.63, 0.74, 0.76, 0.84, 0.84, 1.0, 1.0, 1.0, 0.4060, 0.58 * 0.33595, 0.445 * 0.33595, 0.445 * 0.33595],
+	}
+	
+	emep_df = pd.DataFrame(emep)
+	emep_df.set_index('Date', inplace=True)
+	
+	return emep_df
+	
+def get_emep_deposition_scales_future() :
+	#NOTE: This is really just correct for an area around Birkenes. We should make something more general.
+
+	emep = {
+		'Date' : pd.to_datetime(['2017-1-1', '2021-1-1', '2030-1-1', '2050-1-1'], yearfirst=True),
+		#'Ca'   : [0.5, 0.81, 0.82, 0.89, 1.1, 1.13, 1.24, 1.30, 1.20, 1.17, 1.06, 1.0],
+		'Ca'   : [1.0, 1.0, 0.84, 0.79],  #Since the scaling for Ca is only applied to 0.5*(excess deposition) now, we use the same series for Ca as for SO4
+		'SO4'  : [1.0, 1.0, 0.84, 0.79],
+		'NH4'  : [1.0, 1.0, 1.07, 1.11],
+		'NO3'  : [1.0, 1.0, 0.58, 0.45],
+	}
+	
+	emep_df_future = pd.DataFrame(emep)
+	emep_df_future.set_index('Date', inplace=True)
+	
+	return emep_df_future
+    
+    
+def plot_inputs(input_df) :
+	num = len(input_df.columns)
+	
+	fig, ax = plt.subplots(num)
+	fig.set_size_inches(20, 5*num)
+	
+	for idx, col in enumerate(input_df) :
+		if col.startswith('Observed') :
+			input_df[col].plot(ax=ax[idx], legend=col, marker='o')
+		else :	
+			input_df[col].plot(ax=ax[idx], legend=col)
+	
+	
+def write_as_input_file(input_df, filename) :
+	
+	type = os.path.splitext(filename)[1]
+	if type not in ['.dat', '.xlsx','.csv'] :
+		raise Exception('Unsupported file extension %s. Only dat and xlsx are supported.' % type)
+	
+	try :
+		os.makedirs(os.path.dirname(filename), exist_ok=True)
+	except :
+		#Do nothing. We expect a failure if there is no directory in the path name
+		dum=0
+		
+	def get_unit(name) :
+		units = {
+			'Runoff' : 'mm/month',
+			'Observed runoff conc' : 'meq/m3',
+		}
+		for key in units :
+			if name.startswith(key) :
+				return units[key]
+		return None
+	
+	accepted_met = ['Air temperature', 'Precipitation', 'Runoff', 'Potential evapotranspiration']
+	accepted_dep = (['%s conc in precipitation' % elem for elem in ['Ca', 'Mg', 'Na', 'K', 'NH4', 'SO4', 'Cl', 'NO3', 'F', 'PO4']])
+	
+	accepted = accepted_met + accepted_dep
+	
+	if type == '.dat' :
+		of = open(filename, 'w')
+		
+		of.write('start_date: %s\n' % pd.to_datetime(input_df.index.values[0]).date())
+		of.write('end_date: %s\n' % pd.to_datetime(input_df.index.values[-1]).date())
+		
+		of.write('\n')	
+		
+		additional = []
+		for col in input_df :
+			if col not in accepted : additional.append(col)
+		
+		if len(additional) > 0 :
+			of.write('additional_timeseries:\n')
+			for col in additional :
+				of.write('"%s"' % col)
+				unit = get_unit(col)
+				if unit is not None :
+					of.write(' unit "%s"' % unit)
+				of.write('\n')
+			of.write('\n')
+		
+		of.write('inputs:\n')
+		
+		for ts in input_df :
+			of.write('"%s" :\n' % ts)
+			for index, row in input_df.iterrows() :
+				val = row[ts]
+				if not np.isnan(val) :
+					of.write('%s\t%g\n' % (index.date(), val))
+			of.write('\n\n\n')
+				
+		of.close()
+	elif type == '.xlsx' :
+		df = input_df.copy()
+		df.index = df.index.strftime('%Y-%m-%d') # We have to do this because excel does not like date-formatted things earlier than 1900-1-1
+		
+		met_cols = [met for met in accepted_met if met in df.columns]
+		dep_cols = [dep for dep in accepted_dep if dep in df.columns]
+		rest_cols = [col for col in df.columns if (col not in accepted_met and col not in accepted_dep)]
+		
+		#print(met_cols)
+		#print(dep_cols)
+		with pd.ExcelWriter(filename, engine='xlsxwriter') as wr :
+			df.to_excel(wr, 'Meteorological', columns=met_cols)
+			df.to_excel(wr, 'Deposition', columns=dep_cols)
+			#df.to_excel(wr, 'Observed', columns=rest_cols)
+			df[rest_cols].dropna(how='all').to_excel(wr, 'Observed') #Don't write empty rows for this sheet.
+			#wr.save()
+	elif type == '.csv' :
+		df = input_df.copy()
+		df.to_csv(filename)
+	
+	
+	
+	
+	
