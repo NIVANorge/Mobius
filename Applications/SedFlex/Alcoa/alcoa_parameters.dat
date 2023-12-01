@@ -1,0 +1,298 @@
+# Parameter file generated for model SedFlex, containing modules (SedFlex abiotic V0.2) at 2023-11-29 13:48:39
+
+index_sets:
+"Compartment" : {"River_surf" "River_deep" "Mosjoen_surf" "Mosjoen_imd" "Mosjoen_deep" "Inner_surf" "Inner_imd" "Inner_deep" "Middle_surf" "Middle_imd" "Middle_deep" "Outer_surf" "Outer_deep"}
+"Boundary compartment" : {"Vefsna" "Ocean"}
+"Chemical" : {"As" "Cd" "Cr" "Cu" "Hg" "Ni" "Pb" "Zn"}
+
+parameters:
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+1990-01-01
+
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2022-12-31
+
+
+{ module "SedFlex abiotic" version "0.2"
+
+	# Atmosphere (no index sets) #
+
+	"Air-side mass transfer coefficient" :     #(m/day) [0, 1000]
+	100
+
+	"Water-side mass transfer coefficent" :     #(m/day) [0, 10]
+	1
+
+	"Scavenging ratio" :     #(dimensionless) [0, 2000000] The ratio between a raindrop's volume to the volume of air it sweeps through when falling
+	200000
+
+	"Volume fraction of aerosols" :     #(dimensionless) [0, 1e-10]
+	4e-12
+
+	"Particle dry deposition rate" :     #(m/day) [0, 200]
+	25
+
+	"Residence time of the atmospheric compartment" :     #(day) [0.1, 10]
+	0.5
+
+	"Volume of the atmospheric compartment" :     #(m3) [100000, 100000000000]
+	12000000000
+
+
+	# Water compartment ("Compartment") #
+
+	"Water surface area" :     #(m2) [0, 361900000000000] Surface area covered by water compartment
+	925000 900000 720000 520000 420000 2830000 2600000 2000000 2490000 2000000 1790000 20120000 17000000
+
+	"Water effective height" :     #(m) [0, 10984] Vertical thickness of water compartment
+	10 40 10 40 50 10 40 200 10 40 280 10 400
+
+	"POC concentration" :     #(mg/m3) [0, 1000] Particulate organic carbon concentration
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"DOC concentration" :     #(mg/m3) [0, 10000] Dissolved organic carbon concentration
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"BC concentration" :     #(mg/m3) [0, 100] Black carbon (soot) concentration
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"Inorganic concentration" :     #(mg/m3) [0, 1000] Particulate inorganic concentration
+	1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000
+
+	"Density of suspended inorganic" :     #(kg/L) [0, 10] Mass density of dry material
+	2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6
+
+	"POC settling velocity" :     #(m/day) [0, 20] Also applies to BC and mineral particles
+	0.525 0 1.157 8.467 0 1.157 5.095 0 0.466 0.466 0 0.466 0
+
+	"Degradation in water" :     # Whether or not chemicals can react/degrade in this water compartment
+	false false false false false false false false false false false false false
+
+	"Is below" :     #(dimensionless) [0, 9999] The numerical index of the other water compartment that this water compartment is below. If this is a surface layer, set the number to 10000
+	10000 0 10000 2 3 10000 5 6 10000 8 9 10000 11
+
+
+	# Sediment compartment ("Compartment") #
+
+	"Sediment surface area" :     #(m2) [0, 361900000000000] Surface area covered by the sediments of this compartment
+	25000 900000 200000 100000 420000 230000 600000 2000000 490000 210000 1790000 3120000 1700000
+
+	"Sediment effective height" :     #(m) [0, 10] Thickness of the sediment layer
+	0.1 0.05 0.1 0.05 0.05 0.1 0.05 0.05 0.1 0.05 0.05 0.1 0.05
+
+	"Sediment porosity" :     #(dimensionless) [0, 1]
+	0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86 0.86
+
+	"Sediment inorganic density" :     #(kg/L) [0, 10] Mass density of dry inorganic material
+	2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6 2.6
+
+	"Sediment POC volume fraction" :     #(dimensionless) [0, 0.2] Fraction of solid sediments that is particulate organic carbon
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"Sediment BC volume fraction" :     #(dimensionless) [0, 0.1] Fraction of solid sediments that is black carbon (soot)
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"Sediment DOC concentration" :     #(mg/m3) [0, 1000000] Concentration in pore water
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"POC mineralization half-life" :     #(day) [0, 100000]
+	30000 30000 30000 30000 30000 30000 30000 30000 30000 30000 30000 30000 30000
+
+	"Burial velocity" :     #(m/day) [0, 5e-06]
+	3.29e-07 3.29e-07 7.12e-07 1.64e-06 1.97e-06 7.12e-07 1.64e-06 1.97e-06 7.12e-07 1.1e-06 1.32e-06 1.1e-06 1.32e-06
+
+	"Resuspension velocity" :     #(m/day) [0, 3e-05]
+	2.087e-06 2.087e-06 3.091e-06 3.893e-06 3.4e-07 3.091e-06 1.279e-06 3.24e-07 3.698e-06 1.223e-06 2.92e-07 1.223e-06 2.92e-07
+
+	"Sediment-water mass transfer coeffcient" :     #(m/day) [0, 0.05] Also applies to DOC
+	0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024 0.0024
+
+	"Degradation in sediment" :     # Whether or not chemicals can react/degrade in this sediment compartment
+	false false false false false false false false false false false false false
+
+
+	# Chemicals ("Chemical") #
+
+	"(log10) Octanol-water partitioning coefficient" :     #(dimensionless) [-3, 10] Reference value at 25°C
+	-100 -100 -100 -100 -100 -100 -100 -100
+
+	"(log10) Octanol-air partitioning coefficient" :     #(dimensionless) [-3, 14] Reference value at 25°C
+	-100 -100 -100 -100 -100 -100 -100 -100
+
+	"(-log10) Henry's law constant" :     #(-log10(kPa m3/mol)) [-5, 10] Reference value at 25°C
+	-100 -100 -100 -100 -100 -100 -100 -100
+
+	"(log10) POC-water partitioning coefficient in water" :     #(log10(L/kg(OC))) [-3, 12]
+	-100 -100 -100 -100 -100 -100 -100 -100
+
+	"(log10) POC-water partitioning coefficent in sediments" :     #(log10(L/kg(OC))) [-3, 12]
+	-100 -100 -100 -100 -100 -100 -100 -100
+
+	"(log10) inorganic-water partitioning coefficient (Kd) in water" :     #(log10(L/kg(min)) [-3, 12]
+	5.9 3.6 4.1 4.9 5.6 5.6 5.9 5.9
+
+	"(log10) inorganic-water partitioning coefficient (Kd) in sediments" :     #(log10(L/kg(min)) [-3, 12]
+	4.6 3 4.6 4.2 3.7 4.1 4.4 4.1
+
+	"Estimate the POC-water partitioning coefficent in water" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
+	false false false false false false false false
+
+	"Estimate the POC-water partitioning coefficent in sediments" :     # If true, ignore the above value, and estimate K_POC = b*K_OW^a, where a and b are given in the KOC approximation parameter group
+	false false false false false false false false
+
+	"Molecular weight" :     #(g/mol) [0, 10000]
+	74.922 112.411 51.996 63.557 200.59 58.693 207.2 65.38
+
+	"Degradation half-life in water" :     #(day) [1, 100000] Reference value at 25°C
+	1000000000 1000000000 1000000000 1000000000 1000000000 1000000000 1000000000 1000000000
+
+	"Degradation half-life in sediments" :     #(day) [1, 10000000000] Reference value at 25°C
+	4170000000 4170000000 4170000000 4170000000 4170000000 4170000000 4170000000 4170000000
+
+	"Internal energy change of the OA phase" :     #(kJ/mol) [-300, 300] Often equivalent to enthalpy of phase change
+	0 0 0 0 0 0 0 0
+
+	"Internal energy change of the OW phase" :     #(kJ/mol) [-300, 300] Often equivalent to enthalpy of phase change
+	0 0 0 0 0 0 0 0
+
+	"Internal energy change of the AW phase" :     #(kJ/mol) [-300, 300] Often equivalent to enthalpy of phase change
+	0 0 0 0 0 0 0 0
+
+	"Toxic equivalent factor" :     #(dimensionless) [0, 50]
+	1 1 1 1 1 1 1 1
+
+
+	# KOC approximation (no index sets) #
+
+	"K_POC a parameter" :     #(dimensionless) [0.1, 10] From the approximation K_POC = b*K_OW^a if used
+	1
+
+	"K_POC b parameter" :     #(dimensionless) [0, 10] From the approximation K_POC = b*K_OW^a if used
+	0.35
+
+	"K_DOC a parameter" :     #(dimensionless) [0.1, 10] From the approximation K_DOC = b*K_OW^a
+	1
+
+	"K_DOC b parameter" :     #(dimensionless) [0, 10] From the approximation K_DOC = b*K_OW^a
+	0.08
+
+	"K_BC a parameter" :     #(dimensionless) [0.1, 10] From the approximation K_BC = b*K_OW^a
+	1.6
+
+	"K_BC b parameter" :     #(dimensionless) [0, 10] From the approximation K_BC = b*K_OW^a
+	0.0398
+
+	"K_aerosol a parameter" :     #(dimensionless) [0.1, 10] From the approximation K_aerosol = b*K_OA^a
+	1
+
+	"K_aerosol b parameter" :     #(dimensionless) [0, 10] From the approximation K_aerosol = b*K_OA^a
+	3.8
+
+
+	# Atmospheric background ("Chemical") #
+
+	"Background atmospheric concentration" :     #(g/m3) [0, 100000000]
+	0 0 0 0 0 0 0 0
+
+
+	# Boundary background ("Chemical" "Boundary compartment") #
+
+	"Background concentration in boundary" :     #(g/m3) [0, 100000000]
+	0 0.00015
+	0 3e-05
+	0 0.0001
+	0 0.0003
+	0 1e-06
+	0 0.0005
+	0 0.0002
+	0 0.0015
+
+
+	# Initial concentrations ("Chemical" "Compartment") #
+
+	"Initial concentration in water" :     #(g/m3) [0, 100000000]
+	0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015 0.00015
+	3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05 3e-05
+	0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001
+	0.003 0.003 0.003 0.003 0.003 0.003 0.003 0.003 0.003 0.003 0.003 0.003 0.003
+	1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06 1e-06
+	0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005 0.0005
+	2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05 2e-05
+	0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015 0.0015
+
+	"Initial concentration in sediments" :     #((variable)) [0, 100000000]
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0 0 0 0 0 0
+
+	"Unit of initial sediment concentration" :     # [g_per_m3_wet, g_per_kg_dry, g_per_g_toc]
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+	g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet g_per_m3_wet
+
+
+	# Flow rates ("Compartment" "Compartment") #
+
+	"Flow rate" :     #(m3/s) [0, 10000]
+	0 0 350 0 0 886 0 0 0 0 0 0 0
+	10 0 0 635 0 0 316 0 0 0 0 0 0
+	940 0 0 0 0 116 0 0 0 0 0 0 0
+	0 635 10 0 0 0 316 0 0 0 0 0 0
+	0 0 0 0 0 0 0 190 0 0 0 0 0
+	116 0 696 0 0 0 0 0 1295 0 0 0 0
+	0 326 0 326 0 40 0 0 0 610 0 0 0
+	0 0 0 0 190 0 0 0 0 0 480 0 0
+	0 0 0 0 0 1065 0 0 0 0 0 2180 0
+	0 0 0 0 0 0 670 0 0 0 0 0 1110
+	0 0 0 0 0 0 0 480 0 0 0 0 2790
+	0 0 0 0 0 0 0 0 1950 0 0 0 0
+	0 0 0 0 0 0 0 0 0 1170 2790 0 0
+
+
+	# Boundary flows ("Compartment" "Boundary compartment") #
+
+	"Flow to boundary" :     #(m3/s) [0, 10000]
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 2305
+	0 4060
+
+	"Flow from boundary" :     #(m3/s) [0, 10000]
+	170 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 0
+	0 2075
+	0 4000
+
+
+} # end of module "SedFlex abiotic"
