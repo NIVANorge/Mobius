@@ -43,7 +43,12 @@ WarningPrint(t Value, v... Tail)
 
 #include "../mobius.h"
 
-#include "../Modules/SimplyP.h"
+#include "../../Modules/PET.h"
+#include "../../Modules/Simply/SimplySnow.h"
+#define SIMPLYQ_GROUNDWATER
+#include "../../Modules/Simply/SimplyQ.h"
+#include "../../Modules/Simply/SimplySed.h"
+#include "../../Modules/Simply/SimplyP.h"
 
 
 mobius_model    *Model   = nullptr;;
@@ -59,12 +64,13 @@ void BuildModel()
 	
 	//The following has to be switched out if you want to use a different model.
 	
-	Model = BeginModelDefinition("SimplyP");
+	Model = BeginModelDefinition("SimplyP", true);   //'true' signifies that we want an "End date" parameter instead of a "Timesteps" parameter
 	
-	AddSimplyPHydrologyModule(Model);
-	AddSimplyPSedimentModule(Model);
-	AddSimplyPPhosphorusModule(Model);
-	AddSimplyPInputToWaterBodyModule(Model);
+	AddThornthwaitePETModule(Model);
+	AddSimplySnowModule(Model);
+	AddSimplyHydrologyModule(Model);
+	AddSimplySedimentModule(Model);
+	AddSimplyPModel(Model);
 }
 
 
