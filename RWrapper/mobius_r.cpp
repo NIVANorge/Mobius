@@ -43,12 +43,12 @@ WarningPrint(t Value, v... Tail)
 
 #include "../mobius.h"
 
-#include "../../Modules/PET.h"
-#include "../../Modules/Simply/SimplySnow.h"
+#include "../Modules/PET.h"
+#include "../Modules/Simply/SimplySnow.h"
 #define SIMPLYQ_GROUNDWATER
-#include "../../Modules/Simply/SimplyQ.h"
-#include "../../Modules/Simply/SimplySed.h"
-#include "../../Modules/Simply/SimplyP.h"
+#include "../Modules/Simply/SimplyQ.h"
+#include "../Modules/Simply/SimplySed.h"
+#include "../Modules/Simply/SimplyP.h"
 
 
 mobius_model    *Model   = nullptr;;
