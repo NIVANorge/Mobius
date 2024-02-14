@@ -40,6 +40,7 @@ WarningPrint(t Value, v... Tail)
 
 
 #define MOBIUS_ERROR_OVERRIDE
+#define MOBIUS_ALLOW_OLE 0
 
 #include "../mobius.h"
 
