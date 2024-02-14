@@ -8,7 +8,7 @@
 #endif
 
 
-#ifndef MOBIUS_ALLOW_OLE
+#if !MOBIUS_ALLOW_OLE
 
 void ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 {
