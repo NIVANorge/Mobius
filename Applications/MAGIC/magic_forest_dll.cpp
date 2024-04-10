@@ -9,7 +9,7 @@
 #include "../../mobius_dll.h"
 
 #include "../../Modules/MAGIC/MAGIC_Core_wrapper.h"
-#include "../../Modules/MAGIC/MagicForestDecompUptake.h"
+#include "../../Modules/MAGIC/MAGICForestDecompUptake.h"
 #include "../../Modules/MAGIC/MAGICForest.h"
 #include "../../Modules/MAGIC/ABCD.h"
 #include "../../Modules/MAGIC/MagicForestSoilCarbon.h"
