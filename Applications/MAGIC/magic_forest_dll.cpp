@@ -8,7 +8,7 @@
 
 #include "../../mobius_dll.h"
 
-#include "../../Modules/MAGIC/MAGIC_Core_Wrapper.h"
+#include "../../Modules/MAGIC/MAGIC_Core_wrapper.h"
 #include "../../Modules/MAGIC/MagicForestDecompUptake.h"
 #include "../../Modules/MAGIC/MAGICForest.h"
 #include "../../Modules/MAGIC/ABCD.h"
