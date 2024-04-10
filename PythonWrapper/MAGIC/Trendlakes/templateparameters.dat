@@ -1,0 +1,505 @@
+# Parameter file generated for model MAGIC Forest, containing modules (ABCD V0.1, MAGIC Core V0.1, MAGIC Forest V_dev, MAGIC Forest decomposition and uptake V0.0.3, MAGIC Forest soil carbon V_dev, MAGIC Forest CNP V0.0.1) at 2024-04-10 10:24:30
+
+index_sets:
+"Compartment" : {"Soil" "Lake"}
+"Forest patch" : {"None"}
+"Tree species" : {"None"}
+"Tree compartment" : {"None"}
+
+parameters:
+
+# System (no index sets) #
+
+"Start date" :     # [1000-01-01, 3000-01-01] The start date is inclusive
+1880-01-01
+
+"End date" :     # [1000-01-01, 3000-01-01] The end date is inclusive
+2020-01-01
+
+
+{ module "ABCD" version "0.1"
+
+	# ABCD hydrology (no index sets) #
+
+	"Precipitation interception" :     #(dimensionless) [0, 1] Fraction of precipitation that is intercepted in the canopy and evaporates
+	0
+
+	"a (propensity for runoff below saturation)" :     #(dimensionless) [0.5, 1] A value of 1 means no runoff when soil moisture is below field capacity
+	0.66632625493083
+
+	"b (field capacity)" :     #(mm) [0, 500]
+	100
+
+	"c (baseflow index)" :     #(dimensionless) [0, 1]
+	0.999581723695774
+
+	"d (groundwater flow rate)" :     #(1/month) [0, 20]
+	10.3708037001607
+
+	"Snow melts above this temperature" :     #(°C) [-4, 4]
+	-3.06362860632149
+
+	"Precipitation falls as snow below this temperature" :     #(°C) [0.001, 10] This is an offset from the snow melt temperature. Must be nonzero
+	5.42136438077195
+
+	"Initial snow pack (water equivalents)" :     #(mm) [0, 5000]
+	0
+
+
+} # end of module "ABCD"
+
+{ module "MAGIC Core" version "0.1"
+
+	# Convergence parameters (no index sets) #
+
+	"Convergence criterion" :     #(dimensionless) [0.01, 10] Convergence criterion to stop solution routine, difference in total plus and total minus charges in solution NOTE: CONV = 1.0 is usual, but smaller values may be needed (at computational cost) if reliable pH's above 6-7 are needed
+	1
+
+	"Solver sub-step length" :     #(months) [0.001, 1] Length of intermediate step between each time the solution is rebalanced
+	0.3
+
+
+	# Compartment parameters ("Compartment") #
+
+	"This is a soil compartment" :
+	true false
+
+	"Relative area" :     #(dimensionless) [0, 1] The fraction of the catchment covered by this compartment
+	0.95 0.05
+
+	"Depth" :     #(m) [0, 100] 
+	0.4 2
+
+	"Porosity" :     #(dimensionless) [0, 1] 
+	0.5 0
+
+	"Bulk density" :     #(kg/m3) [0, 2000] 
+	738 0
+
+	"Cation exchange capacity" :     #(meq/kg) [0, 500] 
+	109 0
+
+	"Soil sulfate adsorption capacity, half saturation" :     #(meq/m3) [0, 1000] 
+	100 0
+
+	"Soil sulfate adsorption max capacity" :     #(meq/kg) [0, 1] 
+	0.1 0
+
+	"(log10) Al(OH)3 dissociation equilibrium constant" :     #(dimensionless) [-10, 10] 
+	11.32 9.25
+
+	"Al(OH)3 dissociation equation exponent" :     #(dimensionless) [1, 5] 
+	3 3
+
+	"(-log10) pK 1st equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+	3.04 3.04
+
+	"(-log10) pK 2nd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+	4.51 4.51
+
+	"(-log10) pK 3rd equilibrium constant for triprotic organic acid" :     #(dimensionless) [-10, 10]
+	6.46 6.46
+
+	"(-log10) pK Al(A) equilibrium constant for [(Al3+)(A3-)]" :     #(dimensionless) [-10, 10]
+	0 0
+
+	"(-log10) pK Al(HA)+ equilibrium constant for [(Al3+)(HA2-)+]" :     #(dimensionless) [-10, 10]
+	0 0
+
+	"Initial exchangeable Ca on soil as % of CEC" :     #(%) [0, 100] 
+	14.42 0
+
+	"Initial exchangeable Mg on soil as % of CEC" :     #(%) [0, 100] 
+	4.1 0
+
+	"Initial exchangeable Na on soil as % of CEC" :     #(%) [0, 100] 
+	1.25 0
+
+	"Initial exchangeable K on soil as % of CEC" :     #(%) [0, 100] 
+	3.4 0
+
+
+	# Flow fractions ("Compartment" "Compartment") #
+
+	"Flow fraction" :     #(dimensionless) [0, 1] How large of a fraction of the discharge of this compartment (the row) goes to another compartment (the column)
+	0 1
+	0 0
+
+
+} # end of module "MAGIC Core"
+
+{ module "MAGIC Forest" version "_dev"
+
+	# General (no index sets) #
+
+	"Use measured runoff when available" :     # If this is off, it will always use the value computed by the hydrology module.
+	true
+
+
+	# Climate ("Compartment") #
+
+	"CO2 partial pressure" :     #(%) [0.1, 2] Default value for timesteps where no input series value is provided
+	0.33 0.12
+
+	"Organic acid concentration" :     #(mmol/m3) [0, 200] Default value for timesteps where no input series value is provided
+	45 38
+
+	"Adjust OA concentration based on SO4 concentration" :
+	true true
+
+	"Reduction in OA by SO4" :     #(dimensionless) [0, 10]
+	0.17 0.17
+
+	"Minimal compartment temperature" :     #(°C) [-10, 10]
+	0.4 0.4
+
+	"This is a top compartment" :     # True if it receives deposition. Also, if it interacts with the forest module
+	true true
+
+
+	# Weathering ("Compartment") #
+
+	"Ca weathering" :     #(meq/m2/year) [0, 200] 
+	31 0
+
+	"Mg weathering" :     #(meq/m2/year) [0, 200] 
+	6.65 0
+
+	"Na weathering" :     #(meq/m2/year) [0, 200] 
+	8.88 0
+
+	"K weathering" :     #(meq/m2/year) [0, 200] 
+	1.42 0
+
+	"NH4 weathering" :     #(meq/m2/year) [0, 200] 
+	0 0
+
+	"SO4 weathering" :     #(meq/m2/year) [0, 200] 
+	0 0
+
+	"Cl weathering" :     #(meq/m2/year) [0, 200] 
+	0 0
+
+	"NO3 weathering" :     #(meq/m2/year) [0, 200] 
+	0 0
+
+	"F weathering" :     #(meq/m2/year) [0, 200] 
+	0 0
+
+	"PO4 weathering" :     #(meq/m2/year) [0, 200] 
+	0 0
+
+	"Start year for weathering increase" :     #(years) [1000, 3000]
+	2000 2000
+
+	"Yearly weathering increase" :     #(dimensionless) [0, 1] Fraction relative to base value.
+	0 0
+
+
+	# Deposition (no index sets) #
+
+	"Ca conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"Mg conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"Na conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"K conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"NH4 conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"SO4 conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"Cl conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"NO3 conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"F conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"PO4 conc in precipitation" :     #(meq/m3) [0, 200] Multiplied with Precipitation to get wet deposition if Wet deposition or Total deposition is not provided for this element
+	0
+
+	"Ca dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"Mg dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"Na dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"K dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"NH4 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"SO4 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"Cl dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"NO3 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"F dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+	"PO4 dry deposition factor" :     #(dimensionless) [1, 5] Factor to multiply wet deposition to get total deposition if Total deposition is not provided for this element
+	1
+
+
+	# Sedimentation ("Compartment") #
+
+	"Ca sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"Mg sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"Na sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"K sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"NH4 sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"SO4 sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"Cl sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0.5
+
+	"NO3 sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"F sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+	"PO4 sedimentation" :     #(m/year) [0, 10] For lakes
+	0 0
+
+
+} # end of module "MAGIC Forest"
+
+{ module "MAGIC Forest decomposition and uptake" version "0.0.3"
+
+	# Forest patches ("Forest patch") #
+
+	"Patch relative area" :     #(dimensionless) [0, 1]
+	1
+
+	"Patch carrying capacity" :     #(m3/Ha) [0, 10000]
+	0
+
+	"Forest volume at full forest cover" :     #(m3/Ha) [0, 10000] Forest volume when dry deposition reaches its maximum
+	0
+
+
+	# Initial tree volume ("Forest patch" "Tree species") #
+
+	"Initial live forest volume" :     #(m3/Ha) [0, 10000]
+	0
+
+
+	# Tree growth ("Tree species") #
+
+	"Un-restricted tree growth rate at 20°C" :     #(1/year) [0, 1000]
+	0
+
+	"Shading factor" :     #(dimensionless) [0, 1000] Factor of how much other species affect the growth of this one
+	0
+
+	"Shading min" :     #(m3/Ha) [0, 1000] Allow volumes up to this before considering shading
+	0
+
+	"Growth rate Q10" :     #(dimensionless) [1, 5]
+	1
+
+
+	# Tree (de)composition ("Tree species" "Tree compartment") #
+
+	"Biomass expansion factor in old trees" :     #(tonnes/m3) [0, 1] The a in bef = a + b*exp(-stand_age/100)
+	0
+
+	"Biomass expansion factor age dependence" :     #(tonnes/m3) [-1, 1] The b in bef = a + b*exp(-stand_age/100)
+	0
+
+	"Tree compartment turnover rate" :     #(1/year) [0, 1]
+	0
+
+	"Tree decomposition rate" :     #(1/year) [0, 1]
+	0.1
+
+	"Tree N concentration" :     #(mmol/kg) [0, 100000] mmol N per kg of tree biomass
+	0
+
+	"Tree P concentration" :     #(mmol/kg) [0, 100000] mmol P per kg of tree biomass
+	0
+
+	"Tree Ca concentration" :     #(meq/kg) [0, 100000] meq Ca per kg of tree biomass
+	0
+
+	"Tree Mg concentration" :     #(meq/kg) [0, 100000] meq Mg per kg of tree biomass
+	0
+
+	"Tree Na concentration" :     #(meq/kg) [0, 100000] meq Na per kg of tree biomass
+	0
+
+	"Tree K concentration" :     #(meq/kg) [0, 100000] meq K per kg of tree biomass
+	0
+
+
+} # end of module "MAGIC Forest decomposition and uptake"
+
+{ module "MAGIC Forest soil carbon" version "_dev"
+
+	# Soil carbon ("Compartment") #
+
+	"Initial steady state" :
+	false false
+
+	"Initial organic C" :     #(mol/m2) [0, 100000000] Only used if not in steady state initially
+	0 0
+
+	"Initial relative size of fast C pool" :     #(dimensionless) [0, 1] Only used if not in steady state initially
+	0.5 0.5
+
+	"Organic C litter" :     #(mmol/m2/year) [0, 1000000] Litter in addition to what is computed by the forest module
+	0 0
+
+	"Loss rate of fast-decomposable C" :     #(1/year) [0, 1] Solubilized and mineralized C
+	0.1 0.1
+
+	"Loss rate of slow-decomposable C" :     #(1/year) [0, 1] Solubilized and mineralized C
+	0.01 0.01
+
+	"Microbial Q10" :     #(dimensionless) [1, 5] If different from 1, does not work that well with the steady-state
+	1 1
+
+	"Mass flow rate from fast to slow C pool" :     #(1/year) [0, 1]
+	0.01 0.01
+
+	"Solubilization" :     #(dimensionless) [0, 1] Fraction of decomposed organic C,N and P that is solubilized as DOC, DON or DOP.
+	0 0
+
+	"C use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic C that becomes biomass and is returned to the organic C pool. The rest is mineralized/respired as CO2.
+	0 0
+
+
+	# Cation exchange capacity ("Compartment") #
+
+	"CEC varies by organic C" :
+	false false
+
+	"CEC - org C linear coefficient" :     #(m2/kg) [0, 100] Relative to the initial organic C parameter (not steady state)
+	0 0
+
+
+} # end of module "MAGIC Forest soil carbon"
+
+{ module "MAGIC Forest CNP" version "0.0.1"
+
+	# C, N, and P ("Compartment") #
+
+	"N use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic N that becomes biomass and is returned to the organic N pool. The rest is mineralized as NH4.
+	0 0
+
+	"P use efficiency" :     #(dimensionless) [0, 1] Fraction of non-solubilized decomposed organic P that becomes biomass and is returned to the organic P pool. The rest is mineralized as PO4.
+	0 0
+
+	"C/N ratio of litter" :     #(dimensionless) [0.1, 1000] Only for litter that is not computed by the forest module
+	10 10
+
+	"C/P ratio of litter" :     #(dimensionless) [0.1, 1000] Only for litter that is not computed by the forest module
+	10 10
+
+	"Initial pool C/N ratio" :     #(mol/m2) [0.1, 1000]
+	10 10
+
+	"Initial pool C/P ratio" :     #(mol/m2) [0.1, 1000]
+	10 10
+
+	"Nitrification" :     #(mmol/m2/year) [0, 500] NH4->NO3. Negative rate sets value as % of inputs
+	-100 -100
+
+	"Denitrification" :     #(mmol/m2/year) [0, 500] NO3->N2. Negative rate sets value as % of inputs
+	0 0
+
+	"N uptake at 0°C" :     #(mmol/m2/year) [0, 1000] Uptake in addition to what is computed by the forest module
+	0 0
+
+	"P uptake at 0°C" :     #(mmol/m2/year) [0, 1000] Uptake in addition to what is computed by the forest module
+	0 0
+
+	"Uptake Q10" :     #(dimensionless) [1, 5]
+	1 1
+
+	"NH4 uptake scale" :     #(dimensionless) [0, 1] Proportion of NH4 uptake of total inorganic N uptake
+	1 1
+
+	"Retention model" :     # [Simple, Gundersen, Microbial]
+	Simple Simple
+
+	"Desired NO3 immobilisation" :     #(mmol/m2/year) [0, 500] Simple only. Negative rate sets value as % of inputs
+	-98 -78.9
+
+	"Desired NH4 immobilisation" :     #(mmol/m2/year) [0, 500] Simple only. Negative rate sets value as % of inputs
+	0 0
+
+	"Desired PO4 immobilisation" :     #(mmol/m2/year) [0, 500] Simple only. Negative rate sets value as % of inputs
+	0 0
+
+	"N mineralization" :     #(mmol/m2/year) [0, 500] Simple only. Organic N -> NH4
+	0 0
+
+	"P mineralization" :     #(mmol/m2/year) [0, 500] Simple only. Organic P -> PO4
+	0 0
+
+	"C/N ratio of soil microbial community" :     #(dimensionless) [0.0001, 10] Gundersen and microbial only.
+	0.1 0.1
+
+	"C/P ratio of soil microbial community" :     #(dimensionless) [0.0001, 10] Gundersen and microbial only.
+	0.1 0.1
+
+	"Lower C/N threshold for NO3 immobilisation" :     #(dimensionless) [0, 100] Gundersen only. C/N below this value - 0% NO3 immobilisation
+	30 30
+
+	"Upper C/N threshold for NO3 immobilisation" :     #(dimensionless) [0, 100] Gundersen only. C/N above this value - 100% NO3 immobilisation
+	30 30
+
+	"Lower C/N threshold for NH4 immobilisation" :     #(dimensionless) [0, 100] Gundersen only. C/N below this value - 0% NH4 immobilisation
+	30 30
+
+	"Upper C/N threshold for NH4 immobilisation" :     #(dimensionless) [0, 100] Gundersen only. C/N above this value - 100% NH4 immobilisation
+	30 30
+
+	"Lower C/P threshold for PO4 immobilisation" :     #(dimensionless) [0, 100] Gundersen only. C/P below this value - 0% PO4 immobilisation
+	30 30
+
+	"Upper C/P threshold for PO4 immobilisation" :     #(dimensionless) [0, 100] Gundersen only. C/P above this value - 100% PO4 immobilisation
+	30 30
+
+	"Microbes immobilize inorganic N and P if necessary" :
+	true true
+
+	"Plants use inorganic N and P before soil microbes" :
+	true true
+
+	"Plants have access to organic N and P" :
+	true true
+
+
+} # end of module "MAGIC Forest CNP"
