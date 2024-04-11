@@ -457,7 +457,9 @@ New to V0.3: Multiple contaminants at a time.
 	
 	EQUATION(Model, GroundwaterContaminantDegradation,
 		double degradablemass = RESULT(ContaminantMassInGroundwater);
-		return HalfLifeToRate(PARAMETER(GroundwaterContaminantHalfLife)) * RESULT(SoilDegradationTemperatureModifier) * degradablemass;
+		double degr_temp = RESULT(SoilDegradationTemperatureModifier);
+		//double degr_temp = 1.0;
+		return HalfLifeToRate(PARAMETER(GroundwaterContaminantHalfLife)) * degr_temp * degradablemass;
 	)
 	
 	EQUATION(Model, ContaminantMassInGroundwater,
