@@ -1072,7 +1072,9 @@ SetInputSeries(mobius_data_set *DataSet, const char *Name, const char * const *I
 	}
 	
 	if(InputSeriesSize + TimestepOffset > DataSet->InputDataTimesteps)
-		FatalError("ERROR: When setting input series for \"", Name, "\", the length of the time series was longer than what was allocated space for in the dataset.\n");
+	{
+		FatalError("ERROR: When setting input series for \"", Name, "\", the length of the time series was longer than what was allocated space for in the dataset. Got ", InputSeriesSize, ", expected ", DataSet->InputDataTimesteps-TimestepOffset, "\n");
+	}
 	
 	for(size_t Idx = 0; Idx < DataSet->InputDataTimesteps; ++Idx)
 	{
