@@ -8,20 +8,24 @@ wr = SourceFileLoader("mobius", r"../../mobius.py").load_module()
 multi = SourceFileLoader("multiloop", r"../multiloop.py").load_module()
 magicopt = SourceFileLoader("magicopt",  r"../magicopt.py").load_module()
 
-wr.initialize('../../../Applications/MAGIC/magic_forest.dll')
+wr.initialize('../../../Applications/MAGIC/magic_forest.so')
 
 parfile = 'templateparameters.dat'
 infile  = 'templateinputs.dat'
 
 
-for lake_id in [....] :
+
+
+for lake_id in [0] :
 
 	ds = wr.DataSet.setup_from_parameter_and_input_files(parfile, infile)
 	
 	
-	ds.set_parameter_double("Depth", ["Soil"], 0.5)
+	ds.set_parameter_double("Depth", [" Soil"], 0.5)
+
+    # series is np.array with the one value per month from 1880 to 2020
 	
-	
+	# ds.set_input_series("Total Ca deposition", ["Soil"], series) 
 	
 	
 	
