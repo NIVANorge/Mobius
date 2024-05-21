@@ -30,8 +30,8 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto InitialPoolCP                = RegisterParameterDouble(Model, CNPPar, "Initial pool C/P ratio", MolPerM2, 10, 0.1, 1000);
 
 
-	auto Nitrification                = RegisterParameterDouble(Model, CNPPar, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NH4->NO3. Negative rate sets value as % of inputs");
-	auto Denitrification              = RegisterParameterDouble(Model, CNPPar, "Denitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NO3->N2. Negative rate sets value as % of inputs");
+	auto Nitrification                = RegisterParameterDouble(Model, CNPPar, "Nitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NH4->NO3. Negative rate sets value as % of inputs", "nitrif");
+	auto Denitrification              = RegisterParameterDouble(Model, CNPPar, "Denitrification", MMolPerM2PerYear, 0.0, 0.0, 500.0, "NO3->N2. Negative rate sets value as % of inputs", "denitrif");
 	
 	auto UptakeR0                     = RegisterParameterDouble(Model, CNPPar, "N uptake at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1000.0, "Uptake in addition to what is computed by the forest module");
 	auto PUptakeR0                    = RegisterParameterDouble(Model, CNPPar, "P uptake at 0°C", MMolPerM2PerYear, 0.0, 0.0, 1000.0, "Uptake in addition to what is computed by the forest module");
@@ -44,8 +44,8 @@ A CNP-module for MAGIC Forest. Based on previous MAGIC CN model developed by Ber
 	auto Microbial       = EnumValue(Model, RetentionModel, "Microbial");
 	
 	
-	auto DesiredNO3Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NO3 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
-	auto DesiredNH4Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NH4 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
+	auto DesiredNO3Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NO3 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs", "no3ret");
+	auto DesiredNH4Retention          = RegisterParameterDouble(Model, CNPPar, "Desired NH4 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs", "nh4ret");
 	auto DesiredPO4Retention          = RegisterParameterDouble(Model, CNPPar, "Desired PO4 immobilisation", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Negative rate sets value as % of inputs");
 	auto NMineralization              = RegisterParameterDouble(Model, CNPPar, "N mineralization", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Organic N -> NH4");
 	auto PMineralization              = RegisterParameterDouble(Model, CNPPar, "P mineralization", MMolPerM2PerYear, 0.0, 0.0, 500.0, "Simple only. Organic P -> PO4");
