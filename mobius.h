@@ -38,12 +38,15 @@
 
 
 //NOTE: we use the intrin header for __rdtsc(); The intrinsic is in different headers for different compilers. If you compile with a different compiler than what is already set up you have to add in some lines below.
+
+// NOTE: Commented this out because it was causing a problem somwhere, but it makes MOBIUS_PRINT_TIMING_INFO not work.
+/*
 #if defined(__GNUC__) || defined(__GNUG__)
 	#include <x86intrin.h>
 #elif defined(_MSC_VER)
 	#include <intrin.h>
 #endif
-
+*/
 
 typedef uint64_t u64;
 typedef uint32_t u32;

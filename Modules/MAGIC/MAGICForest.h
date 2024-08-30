@@ -281,7 +281,7 @@ Forest growth driver module developed as part of the CatchCAN project.
 		if(compute) par -= so4*so4factor;
 		
 		if(std::isfinite(in)) return in;
-		return par;
+		return std::max(0.0, par);
 	)
 	
 	

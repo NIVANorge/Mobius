@@ -1,14 +1,23 @@
 
-#ifndef _WIN32
+#ifndef MOBIUS_ALLOW_OLE
+#ifdef _WIN32
+	#define MOBIUS_ALLOW_OLE 1
+#else
+	#define MOBIUS_ALLOW_OLE 0
+#endif
+#endif
+
+
+#if !MOBIUS_ALLOW_OLE
 
 void ReadInputDependenciesFromSpreadsheet(mobius_model *Model, const char *Inputfile)
 {
-	FatalError("ERROR: Reading from Excel files is only supported on Windows.\n");
+	FatalError("ERROR: Reading from Excel files is not supported on this platform.\n");
 }
 
 void ReadInputsFromSpreadsheet(mobius_data_set *DataSet, const char *Inputfile)
 {
-	FatalError("ERROR: Reading from Excel files is only supported on Windows.\n");
+	FatalError("ERROR: Reading from Excel files is not supported on this platform.\n");
 }
 
 #else

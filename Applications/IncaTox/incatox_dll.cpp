@@ -5,6 +5,7 @@
 #define MOBIUS_EQUATION_PROFILING 0
 #define MOBIUS_PRINT_TIMING_INFO 0
 #define MOBIUS_INDEX_BOUNDS_TESTS 0
+#define MOBIUS_IGNORE_SOLVER_ERRORS 1
 //#define MOBIUS_TEST_INDEX_OVERFLOW
 
 #include "../../mobius_dll.h"
@@ -20,7 +21,7 @@
 mobius_model *
 DllBuildModel()
 {
-	mobius_model *Model = BeginModelDefinition("INCA-Tox");
+	mobius_model *Model = BeginModelDefinition("INCA-Tox", true);
 	
 	AddPersistModel(Model);
 	AddINCASedModel(Model);

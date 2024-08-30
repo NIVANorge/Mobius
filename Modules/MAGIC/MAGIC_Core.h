@@ -402,7 +402,7 @@ CalculateNetAlCharge(const magic_coeff &Coeff, double conc_H, double conc_Al, do
 		Term1 = (Term1 + (double)(2-Idx)*Coeff.K_Al[Idx])/conc_H;
 	
 	// Al-SO4 complexes
-	double Term2 = (Coeff.K_SO4[0] + Coeff.K_SO4[1]*conc_SO4)*conc_SO4;
+	double Term2 = (Coeff.K_SO4[0] - Coeff.K_SO4[1]*conc_SO4)*conc_SO4;
 	
 	// Al-F complexes
 	double Term3 = 0.0;

@@ -1,6 +1,6 @@
-# Application of eDNA model to Jakobselva (Norway) and associated uncertainty analysis 
+# Application of eDNA model to Grense Jakobselv (Norway) and associated uncertainty analysis 
 Model inputs, parameters and sensitivity scripts for manuscript "... update with MS title..." (Engesmo et al.).
-These files include input, parameter, and workflow for simulating fish eDNA and biomass distribution along the Jakobselva river (Norway) using [MOBIUS](https://doi.org/10.5194/gmd-14-1885-2021).
+These files include input, parameter, and workflow for simulating fish eDNA and biomass distribution along the Grense Jakobselv river (Norway) using [MOBIUS](https://doi.org/10.5194/gmd-14-1885-2021).
 
 Files include: 
 - hydrological module: input file ('inputs_Karpelva.dat'), calibration parameter file (for the adjacent river "Karpelva", 'params_Karpelva_PERSiST_2lu_CAL_2009_2015.dat') and parameter file ('params_Jakobselva_PERSiST_2lu.dat') to run the [PERSiST model](https://github.com/NIVANorge/Mobius/tree/master/Applications/Persist) ('persist.dll') and estimate daily river discharge and water volume in each of the 6 river reaches.

@@ -793,8 +793,9 @@ New to version 2.0:
 		double frac_oc = PARAMETER(SedPOCVolumeFraction);
 		double frac_bc = PARAMETER(SedBCVolumeFraction);
 		double rho_min = PARAMETER(SedDensity);
-		double phi     = PARAMETER(Porosity);
-		double mass_dry = (1.0-phi)*(frac_oc*rho_oc + frac_bc*rho_bc + (1.0-frac_oc-frac_bc)*rho_min)*1000.0;  // kg(dry) / m3
+		//double phi     = PARAMETER(Porosity);
+		//double mass_dry = (1.0-phi)*(frac_oc*rho_oc + frac_bc*rho_bc + (1.0-frac_oc-frac_bc)*rho_min)*1000.0;  // kg(dry) / m3
+		double mass_dry = (frac_oc*rho_oc + frac_bc*rho_bc + (1.0-frac_oc-frac_bc)*rho_min)*1000.0;  // kg(dry) / m3
 		double Conc = RESULT(FugacityInSed)*RESULT(SolidFCSed)*PARAMETER(MolecularWeight);   // g / m3
 		return Conc / mass_dry; 
 	)
@@ -816,12 +817,13 @@ New to version 2.0:
 	EQUATION(Model, ApparentDissolvedConcSed,
 		return RESULT(FugacityInSed)*RESULT(PorewaterFCSed)*PARAMETER(MolecularWeight);
 	)
-
+	
 	EQUATION(Model, SedimentToxicity,
-		double f_min = 1.0 - PARAMETER(SedPOCVolumeFraction) - PARAMETER(SedBCVolumeFraction);
-		double sediment_dry_density = (rho_oc*PARAMETER(SedPOCVolumeFraction) + rho_bc*PARAMETER(SedBCVolumeFraction) + PARAMETER(SedDensity)*f_min)*1e6; // kg(dry)/L -> kg(dry)/m3
-		double conc = RESULT(SedConcParticulate)*1e6; // g(pop)/m3 -> µg(pop)/m3
-		return PARAMETER(ToxicEquivalentFactor)*(conc / sediment_dry_density);
+		//double f_min = 1.0 - PARAMETER(SedPOCVolumeFraction) - PARAMETER(SedBCVolumeFraction);
+		//double sediment_dry_density = (rho_oc*PARAMETER(SedPOCVolumeFraction) + rho_bc*PARAMETER(SedBCVolumeFraction) + PARAMETER(SedDensity)*f_min)*1e6; // kg(dry)/L -> kg(dry)/m3
+		//double conc = RESULT(SedConcParticulate)*1e6; // g(pop)/m3 -> µg(pop)/m3
+		//return PARAMETER(ToxicEquivalentFactor)*(conc / sediment_dry_density);
+		return RESULT(SedConcParticulate)*1e6*PARAMETER(ToxicEquivalentFactor);
 	)
 	
 	EndModule(Model);
