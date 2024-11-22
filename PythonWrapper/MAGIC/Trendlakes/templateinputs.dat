@@ -1,6 +1,6 @@
 
 start_date : 1882-01-01
-end_date : 2020-12-01
+end_date : 2022-12-01
 
 
 additional_timeseries :
@@ -12,10 +12,16 @@ additional_timeseries :
 "Observed SO4" unit "meq/m3"
 "Observed Cl"  unit "meq/m3"
 "Observed NO3" unit "meq/m3"
+"Observed ANC"
+"Observed BC"
+"Observed SAA"
 "Observed ECa"
 "Observed EMg"
 "Observed ENa"
 "Observed EK"
+"Observed TOC (mmolpl)"
+"Observed TOC (mmolpm3)"
+"Observed TOC (mgpl)"
 "Observed soil pH"  unit "log10(mol/l)"
 "Observed lake pH"  unit "log10(mol/l)"
 

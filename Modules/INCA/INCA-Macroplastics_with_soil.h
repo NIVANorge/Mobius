@@ -104,6 +104,7 @@ INCA-Macroplastics is in early development
 	auto ItemMass                      = RegisterParameterDouble(Model, ClassParameters, "Item average mass", Kg, 0.1, 1e-3, 10.0);
 	auto PropensityToStayStuck         = RegisterParameterDouble(Model, ClassParameters, "Propensity to stay stuck", Dimensionless, 1.0, 0.0, 100.0, "Tuning parameter that makes it easier or harder for this item class to be remobilized");
 	auto ItemPerc                      = RegisterParameterDouble(Model, ClassParameters, "Item percentage", Dimensionless, 0.25, 0.0, 1.0);
+	auto ItemPercTimeseries            = RegisterInput(Model, "Item percentage", Dimensionless);
 
 	auto DragCoefficient = RegisterParameterDouble(Model, ClassParameters, "Drag coefficient", Dimensionless, 0.47);
 	auto SetDragCoefficient = RegisterEquationInitialValue(Model, "Set drag coefficient", Dimensionless);
@@ -477,7 +478,8 @@ INCA-Macroplastics is in early development
 		double Plastic = IF_INPUT_ELSE_PARAMETER(PlasticPercTimeseries, PlasticPerc);
 		double Mismanag = IF_INPUT_ELSE_PARAMETER(MismanagementTimeseries, Mismanagement);
 		double Population = IF_INPUT_ELSE_PARAMETER(TotalPopTimeseries, TotalPop);
-		return Waste * (Population * RESULT(PopCountReach) / RESULT(TotalPopEnd)) * Plastic * (Mismanag +((1.0 - Mismanag) * PARAMETER(MisManagAdjust))) * PARAMETER(ItemPerc) / PARAMETER(ReachLength) * PARAMETER(Percent) / 100.0;
+		double ItemPercentage = IF_INPUT_ELSE_PARAMETER(ItemPercTimeseries, ItemPerc);
+		return Waste * (Population * RESULT(PopCountReach) / RESULT(TotalPopEnd)) * Plastic * (Mismanag +((1.0 - Mismanag) * PARAMETER(MisManagAdjust))) * ItemPercentage / PARAMETER(ReachLength) * PARAMETER(Percent) / 100.0;
 	)
 	
 	EQUATION(Model, SoilLitterInputs,
