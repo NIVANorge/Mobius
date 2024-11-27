@@ -19,7 +19,7 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 		dataset_copy.delete()
 		#print('Model crashed. Params:')
 		#params.pretty_print()
-		return np.ones(len(comparisons))*100. #np.inf            #Sometimes the initialization of the selectivity coefficients crash with the wrong combination of values.
+		return np.ones(len(comparisons))*100000000. #np.inf            #Sometimes the initialization of the selectivity coefficients crash with the wrong combination of values.
 
 	residuals = []
 	for i, comparison in enumerate(comparisons):
@@ -32,11 +32,10 @@ def get_residuals(params, dataset, comparisons, norm=False, skip_timesteps=0) :
 			raise ValueError('Got a NaN in the simulated data')
 		
 		nvalues = np.sum(~np.isnan(obs))
-
+		
 		resid = np.sqrt(weight)*(sim - obs) / (np.nanmean(obs) * np.sqrt(nvalues))
-
-		#residuals.append(resid)
-		residuals.append(np.nansum(resid))
+		residuals.append(resid)
+		#residuals.append(np.nansum(resid))
 
 	dataset_copy.delete()   
     
@@ -95,7 +94,7 @@ def get_nh4_setup(dataset, idx, obsname, which='R') :
 	return params, comparisons
 	
 def get_no3_setup(dataset, idx, obsname, which='R') :
-	parname = 'NO3Sink_%s' % which
+	parname = 'denitrif_%s' % which
 	wantparams = [parname]
 	
 	params = get_params(dataset, wantparams, idx)
