@@ -1,5 +1,5 @@
 # News:
-The main development effort has been moved to [Mobius2](https://github.com/NIVANorge/Mobius2), which is a new and improved version of the Mobius framework. Many models are for now only supported in Mobius1, so this repository will not disappear.
+The main development effort has been moved to [Mobius2](https://github.com/NIVANorge/Mobius2), which is a new and improved version of the Mobius framework. Some models are still only supported in Mobius1, so this repository will not disappear.
 
 # Mobius
 *C++ Model Building System. Optimized for speed of execution.*
