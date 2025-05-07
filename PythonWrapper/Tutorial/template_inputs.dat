@@ -1,0 +1,10 @@
+
+# This file is a stub so that it can be filled with downloaded data.
+
+start_date : 2020-01-01
+end_date : 2020-12-31
+
+additional_timeseries :
+"observed Q"
+
+inputs :
